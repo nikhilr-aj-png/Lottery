@@ -219,6 +219,14 @@ export function LotteryProvider({ children }) {
     }
   });
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('lotto_events', JSON.stringify(events));
+    } catch (e) {
+      console.warn('Failed to save events to localStorage', e);
+    }
+  }, [events]);
+
   // User Tickets State
   const [tickets, setTickets] = useState(() => {
     const saved = localStorage.getItem('lotto_tickets');
