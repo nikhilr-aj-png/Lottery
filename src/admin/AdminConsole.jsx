@@ -124,13 +124,17 @@ export default function AdminConsole({ onLogout }) {
   const [manualWinnerNote, setManualWinnerNote] = useState('Special Seasonal Reward');
 
   // Create event form state
-  const [eventTitle, setEventTitle] = useState('Weekend Sovereign Super Pot 20 USDT');
-  const [ticketPrice, setTicketPrice] = useState('20');
-  const [durationHours, setDurationHours] = useState('96');
+  const [eventTitle, setEventTitle] = useState('Diwali Special Bumper Pot 10 USDT');
+  const [ticketPrice, setTicketPrice] = useState('10');
+  const [durationValue, setDurationValue] = useState('60');
+  const [durationUnit, setDurationUnit] = useState('minutes'); // 'minutes' | 'hours' | 'days'
+  const [prizeType, setPrizeType] = useState('range'); // 'range' | 'fixed'
+  const [minPrize, setMinPrize] = useState('10');
+  const [maxPrize, setMaxPrize] = useState('50');
   const [initialJackpot, setInitialJackpot] = useState('25000');
   const [eventWinningDigits, setEventWinningDigits] = useState('7429');
-  const [eventTheme, setEventTheme] = useState('cyberpunk');
-  const [eventBannerImage, setEventBannerImage] = useState(SEASONAL_PRESETS.cyberpunk.banner);
+  const [eventTheme, setEventTheme] = useState('diwali');
+  const [eventBannerImage, setEventBannerImage] = useState(SEASONAL_PRESETS.diwali.banner);
   const [eventWinnerSharePercent, setEventWinnerSharePercent] = useState('90');
 
   // Handle seasonal theme change
@@ -210,10 +214,14 @@ export default function AdminConsole({ onLogout }) {
     adminCreateEvent({
       title: eventTitle,
       ticketPrice,
-      durationHours,
-      initialSeedJackpot: initialJackpot,
+      durationValue,
+      durationUnit,
+      minPrize: prizeType === 'range' ? minPrize : null,
+      maxPrize: prizeType === 'range' ? maxPrize : null,
+      initialSeedJackpot: prizeType === 'fixed' ? initialJackpot : maxPrize,
       targetWinningDigits: eventWinningDigits,
       theme: eventTheme,
+      badge: SEASONAL_PRESETS[eventTheme]?.badge || 'SPECIAL EVENT',
       bannerImage: eventBannerImage,
       winnerSharePercent: eventWinnerSharePercent
     });
@@ -644,7 +652,7 @@ export default function AdminConsole({ onLogout }) {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
                         Ticket Price (USDT)
@@ -661,39 +669,117 @@ export default function AdminConsole({ onLogout }) {
 
                     <div>
                       <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                        Duration (Hours)
+                        Duration (कम से कम 1 मिनट / 60 sec)
                       </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={durationHours}
-                        onChange={(e) => setDurationHours(e.target.value)}
-                        className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
-                        required
-                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="number"
+                          min="1"
+                          value={durationValue}
+                          onChange={(e) => setDurationValue(e.target.value)}
+                          placeholder="e.g. 60"
+                          className="bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
+                          required
+                        />
+                        <select
+                          value={durationUnit}
+                          onChange={(e) => setDurationUnit(e.target.value)}
+                          className="bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-2 py-2 text-xs text-white outline-none cursor-pointer"
+                        >
+                          <option value="minutes">Minutes (मिनट)</option>
+                          <option value="hours">Hours (घंटे)</option>
+                          <option value="days">Days (दिन)</option>
+                        </select>
+                      </div>
+                      <p className="text-[10px] text-[#9b8f7c] mt-1">
+                        {durationUnit === 'minutes' ? `Pool will run for ${durationValue || 1} minute(s) (min 60s)` : `Pool will run for ${durationValue || 1} ${durationUnit}`}
+                      </p>
                     </div>
                   </div>
 
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs text-[#8b92a2] font-semibold">
-                        Max Jackpot / Win Up To (USDT)
+                  {/* Prize Distribution Structure */}
+                  <div className="p-3 rounded-xl bg-[#07090d] border border-[#272a31] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-[#8b92a2] font-semibold">
+                        Prize Structure / इनाम प्रकार
                       </label>
-                      <span className="text-[10px] text-amber-400 font-bold font-mono-numbers">
-                        Up To Cap
-                      </span>
+                      <div className="flex items-center gap-1 bg-[#141924] p-1 rounded-lg border border-[#272a31]">
+                        <button
+                          type="button"
+                          onClick={() => setPrizeType('range')}
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
+                            prizeType === 'range' ? 'bg-amber-400 text-black shadow' : 'text-[#8b92a2] hover:text-white'
+                          }`}
+                        >
+                          Range (10 - 50 USDT)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPrizeType('fixed')}
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
+                            prizeType === 'fixed' ? 'bg-amber-400 text-black shadow' : 'text-[#8b92a2] hover:text-white'
+                          }`}
+                        >
+                          Fixed Jackpot (25,000)
+                        </button>
+                      </div>
                     </div>
-                    <input
-                      type="number"
-                      min="100"
-                      value={initialJackpot}
-                      onChange={(e) => setInitialJackpot(e.target.value)}
-                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
-                      required
-                    />
-                    <p className="text-[10px] text-[#9b8f7c] mt-1">
-                      Single winner can win up to this jackpot pot amount.
-                    </p>
+
+                    {prizeType === 'range' ? (
+                      <div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] text-[#8b92a2] font-semibold mb-1">
+                              Min Prize (USDT) - कम से कम
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={minPrize}
+                              onChange={(e) => setMinPrize(e.target.value)}
+                              placeholder="10"
+                              className="w-full bg-[#0b0e14] border border-[#1f2737] focus:border-[#ffd700] rounded-lg px-2.5 py-1.5 text-xs text-white font-mono-numbers outline-none"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-[#8b92a2] font-semibold mb-1">
+                              Max Prize (USDT) - ज्यादा से ज्यादा
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={maxPrize}
+                              onChange={(e) => setMaxPrize(e.target.value)}
+                              placeholder="50"
+                              className="w-full bg-[#0b0e14] border border-[#1f2737] focus:border-[#ffd700] rounded-lg px-2.5 py-1.5 text-xs text-white font-mono-numbers outline-none"
+                              required
+                            />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-amber-400 mt-1.5 font-medium">
+                          🎯 Winner ko <span className="font-bold underline">{minPrize} USDT se {maxPrize} USDT</span> ke beech dynamic reward milega!
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-[11px] text-[#8b92a2] font-semibold mb-1">
+                          Fixed Win Up To Jackpot Pot (USDT)
+                        </label>
+                        <input
+                          type="number"
+                          min="10"
+                          value={initialJackpot}
+                          onChange={(e) => setInitialJackpot(e.target.value)}
+                          placeholder="25000"
+                          className="w-full bg-[#0b0e14] border border-[#1f2737] focus:border-[#ffd700] rounded-lg px-2.5 py-1.5 text-xs text-white font-mono-numbers outline-none"
+                          required
+                        />
+                        <p className="text-[10px] text-[#9b8f7c] mt-1">
+                          Single exact winner can win up to this jackpot amount.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -778,18 +864,54 @@ export default function AdminConsole({ onLogout }) {
                       className="w-full bg-[#0b0e14] border border-[#1f2737] focus:border-[#ffd700] rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono outline-none"
                     />
 
-                    {/* Banner Thumbnail Preview */}
+                    {/* Banner & Live Simulation Preview */}
                     {eventBannerImage && (
-                      <div className="relative h-20 rounded-lg overflow-hidden border border-[#272a31]">
-                        <img 
-                          src={eventBannerImage} 
-                          alt="Banner preview" 
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2">
-                          <span className="text-[10px] text-white font-bold bg-black/60 px-2 py-0.5 rounded border border-white/20">
-                            Banner Preview (All card text overlays on top)
-                          </span>
+                      <div className="space-y-2 mt-2">
+                        <div className="flex items-center justify-between text-[11px] text-[#8b92a2]">
+                          <span className="font-semibold text-amber-400">Live User Card Preview (कार्ड कैसा दिखेगा):</span>
+                          <span className="text-[10px] text-emerald-400 font-bold">Theme: {SEASONAL_PRESETS[eventTheme]?.name || eventTheme}</span>
+                        </div>
+                        
+                        {/* Simulation Mini Card */}
+                        <div className="relative rounded-2xl overflow-hidden border border-amber-500/40 p-4 shadow-xl bg-[#0e121a]">
+                          {/* Background Festive Banner */}
+                          <div 
+                            className="absolute inset-0 bg-cover bg-center opacity-30"
+                            style={{ backgroundImage: `url(${eventBannerImage})` }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#090c13] via-[#090c13]/70 to-transparent" />
+
+                          <div className="relative z-10 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm">
+                                {SEASONAL_PRESETS[eventTheme]?.badge || '🪔 DIWALI BUMPER'}
+                              </span>
+                              <span className="text-[10px] font-mono-numbers text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30">
+                                ⏱️ {durationValue || 60} {durationUnit}
+                              </span>
+                            </div>
+
+                            <div>
+                              <h4 className="font-display font-black text-sm text-white line-clamp-1">
+                                {eventTitle || 'Diwali Special Bumper Pot 10 USDT'}
+                              </h4>
+                              <p className="text-[10px] text-amber-400/90 font-medium">
+                                Entry: <span className="font-bold text-white">{ticketPrice} USDT</span>
+                              </p>
+                            </div>
+
+                            {/* Prize display */}
+                            <div className="p-2 rounded-xl bg-black/50 border border-amber-500/30 flex items-center justify-between">
+                              <span className="text-[10px] text-[#8b92a2] font-semibold">
+                                {prizeType === 'range' ? 'PRIZE RANGE (इनाम):' : 'JACKPOT POT:'}
+                              </span>
+                              <span className="font-mono-numbers font-black text-xs text-amber-300">
+                                {prizeType === 'range' 
+                                  ? `${minPrize || 10} – ${maxPrize || 50} USDT` 
+                                  : `Up to ${Number(initialJackpot || 25000).toLocaleString()} USDT`}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1686,66 +1808,87 @@ export default function AdminConsole({ onLogout }) {
 
               <form onSubmit={handleSaveSettings} className="space-y-5 max-w-2xl">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                      Minimum Withdrawal (USDT)
-                    </label>
+                  <div className="bg-[#07090d] p-3 rounded-xl border border-[#1f2737]">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs text-[#8b92a2] font-semibold">
+                        Minimum Withdrawal (USDT)
+                      </label>
+                      <span className="text-[10px] text-amber-400 font-bold">कम से कम निकासी</span>
+                    </div>
                     <input
                       type="number"
                       step="0.01"
                       value={minWithdrawal}
                       onChange={(e) => setMinWithdrawal(e.target.value)}
-                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
+                      className="w-full bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
                       required
                     />
+                    <p className="text-[10px] text-[#9b8f7c] mt-1.5 leading-relaxed">
+                      💡 User ke pass kam se kam itna balance hona chahiye withdrawal lagane ke liye.
+                    </p>
                   </div>
 
-                  <div>
-                    <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                      Maximum Single Withdrawal (USDT)
-                    </label>
+                  <div className="bg-[#07090d] p-3 rounded-xl border border-[#1f2737]">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs text-[#8b92a2] font-semibold">
+                        Maximum Single Withdrawal (USDT)
+                      </label>
+                      <span className="text-[10px] text-cyan-400 font-bold">अधिकतम निकासी</span>
+                    </div>
                     <input
                       type="number"
                       step="0.01"
                       value={maxWithdrawal}
                       onChange={(e) => setMaxWithdrawal(e.target.value)}
-                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
+                      className="w-full bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
                       required
                     />
+                    <p className="text-[10px] text-[#9b8f7c] mt-1.5 leading-relaxed">
+                      🛡️ Security limit: Ek baar me user isse zyada USDT withdraw nahi kar sakta.
+                    </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                      Platform House Maintenance Fee (%)
-                    </label>
+                  <div className="bg-[#07090d] p-3 rounded-xl border border-[#1f2737]">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs text-[#8b92a2] font-semibold">
+                        Platform House Charge / Fee (%)
+                      </label>
+                      <span className="text-[10px] text-emerald-400 font-bold">प्लेटफ़ॉर्म शुल्क</span>
+                    </div>
                     <input
                       type="number"
                       min="1"
                       max="20"
                       value={houseFeePercent}
                       onChange={(e) => setHouseFeePercent(e.target.value)}
-                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
+                      className="w-full bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
                       required
                     />
+                    <p className="text-[10px] text-[#05d5aa] mt-1.5 leading-relaxed">
+                      📌 <span className="font-bold">कब लगता है:</span> Jab user withdrawal request karta hai ya draw settle hota hai tab ye platform maintenance fee deduct hoti hai.
+                    </p>
                   </div>
 
-                  <div>
-                    <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                      Default Winner Pool Share (%)
-                    </label>
+                  <div className="bg-[#07090d] p-3 rounded-xl border border-[#1f2737]">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs text-[#8b92a2] font-semibold">
+                        Default Winner Pool Share (%)
+                      </label>
+                      <span className="text-[10px] text-amber-400 font-bold">विजेता हिस्सा</span>
+                    </div>
                     <input
                       type="number"
                       min="10"
                       max="100"
                       value={defaultWinnerSharePercent}
                       onChange={(e) => setDefaultWinnerSharePercent(e.target.value)}
-                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
+                      className="w-full bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
                       required
                     />
-                    <p className="text-[10px] text-[#64748b] mt-1">
-                      Internal % of pool awarded to exact winner. Hidden from public users.
+                    <p className="text-[10px] text-[#9b8f7c] mt-1.5 leading-relaxed">
+                      🏆 <span className="font-bold">90% Winner Share:</span> Pool collection ka 90% winner ko milta hai, baki 10% platform reserve me bachta hai.
                     </p>
                   </div>
                 </div>

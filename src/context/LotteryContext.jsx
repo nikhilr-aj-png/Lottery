@@ -6,6 +6,26 @@ const LotteryContext = createContext();
 
 const INITIAL_EVENTS = [
   {
+    id: 'evt-diwali-bumper-10',
+    title: '🪔 Diwali Special Mega Bumper Pot',
+    badge: '🪔 DIWALI BUMPER',
+    theme: 'diwali',
+    bannerImage: 'https://images.unsplash.com/photo-1605371924599-2d0365da1ae0?w=1200&q=80',
+    ticketPrice: 10,
+    minPrize: 10,
+    maxPrize: 50,
+    poolPrize: 50,
+    winnerSharePercent: 90,
+    drawTime: Date.now() + 60 * 60 * 1000,
+    status: 'active',
+    winningDigits: null,
+    targetWinningDigits: '7429',
+    participantsCount: 42,
+    ticketsSold: 42,
+    sha256Seed: '0x3f98a2b91c88e1bc74d021f980145ca7e3b0c44298fc1c149afbf4c8996fb924',
+    blockTarget: '#19,402,118'
+  },
+  {
     id: 'evt-daily-10',
     title: 'Daily Mega 10 USDT Pool',
     badge: 'DAILY MEGA',
@@ -186,7 +206,17 @@ export function LotteryProvider({ children }) {
   // Events State
   const [events, setEvents] = useState(() => {
     const saved = localStorage.getItem('lotto_events');
-    return saved ? JSON.parse(saved) : [...INITIAL_EVENTS, ...INITIAL_PAST_EVENTS];
+    if (!saved) return [...INITIAL_EVENTS, ...INITIAL_PAST_EVENTS];
+    try {
+      const parsed = JSON.parse(saved);
+      const hasDiwali = parsed.some(e => e.id === 'evt-diwali-bumper-10');
+      if (!hasDiwali) {
+        return [INITIAL_EVENTS[0], ...parsed];
+      }
+      return parsed;
+    } catch {
+      return [...INITIAL_EVENTS, ...INITIAL_PAST_EVENTS];
+    }
   });
 
   // User Tickets State
@@ -1073,70 +1103,7 @@ export function LotteryProvider({ children }) {
     return { success: true };
   };
 
-  // Admin Actions: Create Event with Banner & Seasonal Theme
-  const adminCreateEvent = async ({ 
-    title, 
-    ticketPrice, 
-    durationHours, 
-    initialSeedJackpot, 
-    targetWinningDigits,
-    theme = 'cyberpunk',
-    bannerImage = null,
-    winnerSharePercent = 90
-  }) => {
-    const cleanDigits = targetWinningDigits ? String(targetWinningDigits).replace(/\D/g, '').slice(0, 4) : null;
-    
-    // Choose festive badge if themed
-    let festiveBadge = 'CUSTOM DRAW';
-    if (theme === 'diwali') festiveBadge = '🪔 DIWALI BUMPER';
-    else if (theme === 'eid') festiveBadge = '🌙 EID MUBARAK';
-    else if (theme === 'holi') festiveBadge = '🎨 HOLI SPLASH';
-    else if (theme === 'durga_puja') festiveBadge = '🌺 DURGA UTSAV';
-    else if (theme === 'new_year') festiveBadge = '🎆 NEW YEAR GALA';
 
-    const newEvent = {
-      id: `evt-${Date.now()}`,
-      title: title || 'Custom Sovereign USDT Draw',
-      badge: festiveBadge,
-      theme: theme || 'cyberpunk',
-      bannerImage: bannerImage || null,
-      winnerSharePercent: parseFloat(winnerSharePercent) || 90,
-      ticketPrice: parseFloat(ticketPrice) || 10,
-      poolPrize: parseFloat(initialSeedJackpot) || 10000,
-      drawTime: Date.now() + (parseFloat(durationHours) || 96) * 3600 * 1000,
-      status: 'active',
-      winningDigits: cleanDigits || null,
-      targetWinningDigits: cleanDigits || null,
-      participantsCount: 1,
-      ticketsSold: 0,
-      sha256Seed: `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
-      blockTarget: `#${Math.floor(19400000 + Math.random() * 50000)}`
-    };
-
-    setEvents(prev => [newEvent, ...prev]);
-    showToast(`New Lottery Event '${newEvent.title}' deployed successfully!`);
-
-    try {
-      await supabase.from('lottery_events').insert({
-        id: newEvent.id,
-        title: newEvent.title,
-        badge: newEvent.badge,
-        ticket_price: newEvent.ticketPrice,
-        pool_prize: newEvent.poolPrize,
-        draw_time: newEvent.drawTime,
-        status: newEvent.status,
-        winning_digits: newEvent.winningDigits,
-        participants_count: newEvent.participantsCount,
-        tickets_sold: newEvent.ticketsSold,
-        sha256_seed: newEvent.sha256Seed,
-        block_target: newEvent.blockTarget
-      });
-    } catch (err) {
-      console.error('Supabase admin create error:', err);
-    }
-
-    return true;
-  };
 
   const adminApproveWithdrawal = async (orderId) => {
     const mockTx = `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
@@ -1199,15 +1166,6 @@ export function LotteryProvider({ children }) {
     }
   };
 
-  const adminDeleteEvent = async (eventId) => {
-    setEvents(prev => prev.filter(e => e.id !== eventId));
-    showToast('Lottery Event removed from platform', 'info');
-    try {
-      await supabase.from('lottery_events').delete().eq('id', eventId);
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   const adminFetchAllUsers = async () => {
     try {
@@ -1267,6 +1225,95 @@ export function LotteryProvider({ children }) {
         return { success: true };
       }
       return { success: false, error: error.message };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  const adminCreateEvent = async (eventData) => {
+    try {
+      const now = Date.now();
+      // Calculate duration in ms: supports minutes, hours, days
+      const durationVal = parseFloat(eventData.durationValue || eventData.durationHours || 1);
+      const unit = (eventData.durationUnit || 'hours').toLowerCase();
+      let durationMs = durationVal * 3600 * 1000;
+      if (unit === 'minutes' || unit === 'min' || unit === 'minute') {
+        durationMs = Math.max(60 * 1000, durationVal * 60 * 1000); // minimum 60 seconds (1 minute)
+      } else if (unit === 'days' || unit === 'day') {
+        durationMs = durationVal * 24 * 3600 * 1000;
+      } else {
+        durationMs = Math.max(60 * 1000, durationVal * 3600 * 1000);
+      }
+
+      const minPrize = eventData.minPrize ? parseFloat(eventData.minPrize) : null;
+      const maxPrize = eventData.maxPrize ? parseFloat(eventData.maxPrize) : null;
+      const poolPrize = maxPrize || parseFloat(eventData.initialSeedJackpot || 1000);
+
+      const newId = `evt-${Date.now().toString(36)}-${Math.floor(100 + Math.random() * 900)}`;
+      const newEvent = {
+        id: newId,
+        title: eventData.title || 'VIP Lottery Event',
+        badge: eventData.badge || (eventData.theme === 'diwali' ? '🪔 DIWALI BUMPER' : (eventData.theme === 'eid' ? '🌙 EID MUBARAK' : (eventData.theme === 'durga_puja' ? '🌺 DURGA UTSAV' : 'SPECIAL EVENT'))),
+        theme: eventData.theme || 'cyberpunk',
+        bannerImage: eventData.bannerImage || '',
+        ticketPrice: parseFloat(eventData.ticketPrice || 10),
+        poolPrize: poolPrize,
+        minPrize: minPrize,
+        maxPrize: maxPrize,
+        winnerSharePercent: parseFloat(eventData.winnerSharePercent || 90),
+        drawTime: now + durationMs,
+        status: 'active',
+        winningDigits: null,
+        targetWinningDigits: eventData.targetWinningDigits || '7429',
+        participantsCount: 0,
+        ticketsSold: 0,
+        sha256Seed: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+        blockTarget: `#${Math.floor(19400000 + Math.random() * 100000)}`
+      };
+
+      setEvents(prev => [newEvent, ...prev]);
+      showToast(`🎉 New Lottery Pool "${newEvent.title}" deployed successfully!`, 'success');
+
+      // Attempt Supabase sync
+      try {
+        await supabase.from('lottery_events').insert({
+          id: newEvent.id,
+          title: newEvent.title,
+          badge: newEvent.badge,
+          theme: newEvent.theme,
+          banner_image: newEvent.bannerImage,
+          ticket_price: newEvent.ticketPrice,
+          pool_prize: newEvent.poolPrize,
+          min_prize: newEvent.minPrize,
+          max_prize: newEvent.maxPrize,
+          winner_share_percent: newEvent.winnerSharePercent,
+          draw_time: newEvent.drawTime,
+          status: newEvent.status,
+          target_winning_digits: newEvent.targetWinningDigits,
+          sha256_seed: newEvent.sha256Seed
+        });
+      } catch (err) {
+        console.warn('Supabase event sync note:', err.message);
+      }
+
+      return { success: true, event: newEvent };
+    } catch (err) {
+      console.error('adminCreateEvent error:', err);
+      showToast('Failed to deploy lottery event: ' + err.message, 'error');
+      return { success: false, error: err.message };
+    }
+  };
+
+  const adminDeleteEvent = async (eventId) => {
+    try {
+      setEvents(prev => prev.filter(e => e.id !== eventId));
+      showToast('Lottery event removed from pool list', 'info');
+      try {
+        await supabase.from('lottery_events').delete().eq('id', eventId);
+      } catch (err) {
+        console.warn('Supabase event delete note:', err.message);
+      }
+      return { success: true };
     } catch (err) {
       return { success: false, error: err.message };
     }

@@ -21,8 +21,25 @@ export default function LotteryCard({ event, onSelect }) {
 
   const isCompleted = event.status === 'completed';
 
+  const getThemeStyling = () => {
+    switch (event.theme) {
+      case 'diwali':
+        return 'border-amber-500/60 shadow-[0_0_35px_rgba(245,158,11,0.22)] hover:border-amber-400 hover:shadow-[0_0_50px_rgba(245,158,11,0.4)]';
+      case 'eid':
+        return 'border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)] hover:border-emerald-400 hover:shadow-[0_0_40px_rgba(16,185,129,0.35)]';
+      case 'holi':
+        return 'border-pink-500/50 shadow-[0_0_30px_rgba(236,72,153,0.2)] hover:border-pink-400 hover:shadow-[0_0_40px_rgba(236,72,153,0.35)]';
+      case 'durga_puja':
+        return 'border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.2)] hover:border-red-400 hover:shadow-[0_0_40px_rgba(239,68,68,0.35)]';
+      case 'new_year':
+        return 'border-purple-500/50 shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:border-purple-400 hover:shadow-[0_0_40px_rgba(168,85,247,0.35)]';
+      default:
+        return 'border-[#272a31] hover:border-[#f5c451]/50';
+    }
+  };
+
   return (
-    <div className="glass-panel rounded-2xl p-6 relative flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+    <div className={`glass-panel rounded-2xl p-6 relative flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1 overflow-hidden ${getThemeStyling()}`}>
       {/* Seasonal Banner Image with Overlaid Text & Badges */}
       {event.bannerImage ? (
         <div className="relative -mx-6 -mt-6 mb-4 h-36 overflow-hidden border-b border-[#272a31]">
@@ -35,7 +52,7 @@ export default function LotteryCard({ event, onSelect }) {
           
           {/* Overlaid Badges */}
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-            <span className="text-[11px] font-mono-numbers px-2.5 py-1 rounded-md font-bold tracking-wider bg-black/70 backdrop-blur-md text-[#ffd700] border border-[#f5c451]/40 shadow-lg">
+            <span className="text-[11px] font-mono-numbers px-2.5 py-1 rounded-md font-bold tracking-wider bg-black/70 backdrop-blur-md text-[#ffd700] border border-[#f5c451]/40 shadow-lg flex items-center gap-1">
               {event.badge || 'FESTIVE SPECIAL'}
             </span>
             <span className="flex items-center gap-1.5 text-xs text-[#05d5aa] font-mono-numbers font-semibold bg-black/70 backdrop-blur-md px-2 py-0.5 rounded border border-[#05d5aa]/30">
@@ -80,8 +97,12 @@ export default function LotteryCard({ event, onSelect }) {
       <div className="my-4 p-4 rounded-xl bg-[#0b0e14]/80 border border-[#32353c] group-hover:border-[#f5c451]/40 transition-colors">
         <div className="text-xs text-[#9b8f7c] uppercase font-bold tracking-wider mb-1 flex items-center justify-between">
           <span className="flex items-center gap-1.5">
-            <span className="text-amber-400 font-extrabold">WIN UP TO</span>
-            <span className="text-[10px] text-[#9b8f7c] lowercase font-normal">(अधिकतम तक)</span>
+            <span className="text-amber-400 font-extrabold">
+              {event.minPrize && event.maxPrize ? 'PRIZE RANGE' : 'WIN UP TO'}
+            </span>
+            <span className="text-[10px] text-[#9b8f7c] lowercase font-normal">
+              {event.minPrize && event.maxPrize ? '(इनाम सीमा)' : '(अधिकतम तक)'}
+            </span>
           </span>
           <span className="text-[10px] text-[#05d5aa] font-semibold bg-[#05d5aa]/10 px-2 py-0.5 rounded border border-[#05d5aa]/20">
             Single Winner Pot
@@ -89,7 +110,9 @@ export default function LotteryCard({ event, onSelect }) {
         </div>
         <div className="flex items-baseline gap-2">
           <span className="font-display font-black text-3xl text-gold-gradient tracking-tight">
-            {event.poolPrize.toLocaleString()}
+            {event.minPrize && event.maxPrize 
+              ? `${event.minPrize} – ${event.maxPrize}` 
+              : event.poolPrize.toLocaleString()}
           </span>
           <span className="font-display font-black text-lg text-[#05d5aa]">
             USDT
