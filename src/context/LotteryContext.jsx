@@ -1,0 +1,1342 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
+import { supabase } from '../lib/supabase';
+
+const LotteryContext = createContext();
+
+const INITIAL_EVENTS = [
+  {
+    id: 'evt-daily-10',
+    title: 'Daily Mega 10 USDT Pool',
+    badge: 'DAILY MEGA',
+    theme: 'cyberpunk',
+    bannerImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80',
+    ticketPrice: 10,
+    poolPrize: 15420,
+    winnerSharePercent: 90,
+    drawTime: Date.now() + 18 * 3600 * 1000 + 42 * 60 * 1000,
+    status: 'active',
+    winningDigits: null,
+    targetWinningDigits: '7429',
+    participantsCount: 1542,
+    ticketsSold: 1542,
+    sha256Seed: '0x3f98a2b91c88e1bc74d021f980145ca7e3b0c44298fc1c149afbf4c8996fb924',
+    blockTarget: '#19,402,118'
+  },
+  {
+    id: 'evt-weekly-50',
+    title: 'Weekly High Roller 50 USDT',
+    badge: '🪔 DIWALI BUMPER',
+    theme: 'diwali',
+    bannerImage: 'https://images.unsplash.com/photo-1605371924599-2d0365da1ae0?w=1200&q=80',
+    ticketPrice: 50,
+    poolPrize: 64800,
+    winnerSharePercent: 90,
+    drawTime: Date.now() + 4 * 24 * 3600 * 1000 + 12 * 3600 * 1000,
+    status: 'active',
+    winningDigits: null,
+    targetWinningDigits: '5521',
+    participantsCount: 1296,
+    ticketsSold: 1296,
+    sha256Seed: '0x88f21cb47ae91b0177dfc021f981145ca7e3b0c44298fc1c149afbf4c8994781',
+    blockTarget: '#19,418,900'
+  },
+  {
+    id: 'evt-monthly-100',
+    title: 'Monthly Super Grand Jackpot',
+    badge: '🌺 DURGA UTSAV',
+    theme: 'durga_puja',
+    bannerImage: 'https://images.unsplash.com/photo-1603555501671-8f96b3fce8b5?w=1200&q=80',
+    ticketPrice: 100,
+    poolPrize: 250000,
+    winnerSharePercent: 90,
+    drawTime: Date.now() + 22 * 24 * 3600 * 1000,
+    status: 'active',
+    winningDigits: null,
+    targetWinningDigits: '9102',
+    participantsCount: 2500,
+    ticketsSold: 2500,
+    sha256Seed: '0x44cd918aa8fc1c149afbf4c8996fb9247ae3b0c44298fc1c149afbf4c89955bc',
+    blockTarget: '#19,492,000'
+  }
+];
+
+const INITIAL_PAST_EVENTS = [
+  {
+    id: 'evt-past-2840',
+    title: 'Weekly High Roller Draw #2840',
+    badge: 'COMPLETED DRAW',
+    theme: 'cyberpunk',
+    bannerImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80',
+    ticketPrice: 50,
+    poolPrize: 58000,
+    winnerSharePercent: 90,
+    drawTime: Date.now() - 36 * 3600 * 1000,
+    status: 'completed',
+    winningDigits: '1429',
+    targetWinningDigits: '1429',
+    participantsCount: 1160,
+    ticketsSold: 1160,
+    sha256Seed: '0x17b3a99fc1c149afbf4c8996fb9247ae3b0c44298fc1c149afbf4c8991209a',
+    blockTarget: '#19,380,410'
+  }
+];
+
+const INITIAL_WINNER_PAYOUTS = [
+  {
+    id: 'WP-8841',
+    eventId: 'evt-past-2840',
+    eventTitle: 'Weekly High Roller Draw #2840',
+    winnerUserId: 'usr-vip-102',
+    winnerUsername: 'LuckyPlayer77',
+    winnerAddress: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m',
+    winningDigits: '1429',
+    ticketsSold: 1160,
+    ticketPrice: 50,
+    totalPoolCollected: 58000,
+    winnerSharePercent: 90,
+    calculatedAmount: 52200,
+    payoutAmount: 52200,
+    status: 'completed',
+    approvedAt: Date.now() - 35 * 3600 * 1000,
+    txHash: '0x88f21cb47ae91b0177dfc021f981145ca7'
+  }
+];
+
+const INITIAL_TICKETS = [
+  {
+    id: 'tkt-101',
+    eventId: 'evt-daily-10',
+    eventTitle: 'Daily Mega 10 USDT Pool',
+    ticketNumber: '7429',
+    price: 10,
+    purchaseTime: Date.now() - 2 * 3600 * 1000,
+    status: 'active',
+    matchTier: null,
+    wonAmount: 0,
+    claimed: false
+  },
+  {
+    id: 'tkt-102',
+    eventId: 'evt-past-2840',
+    eventTitle: 'Weekly High Roller Draw #2840',
+    ticketNumber: '1429',
+    price: 50,
+    purchaseTime: Date.now() - 40 * 3600 * 1000,
+    status: 'won',
+    matchTier: 'EXACT 4/4 MATCH (SINGLE WINNER)',
+    wonAmount: 58000,
+    claimed: true
+  },
+  {
+    id: 'tkt-103',
+    eventId: 'evt-past-2840',
+    eventTitle: 'Weekly High Roller Draw #2840',
+    ticketNumber: '8429',
+    price: 50,
+    purchaseTime: Date.now() - 40 * 3600 * 1000,
+    status: 'lost',
+    matchTier: 'NO MATCH',
+    wonAmount: 0,
+    claimed: false
+  }
+];
+
+const INITIAL_WITHDRAWALS = [
+  {
+    id: 'W-8942',
+    amount: 500.0,
+    netDisbursal: 499.0,
+    networkFee: 1.0,
+    network: 'TRC-20',
+    address: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m',
+    requestedAt: Date.now() - 2 * 3600 * 1000,
+    slaTargetMs: Date.now() - 2 * 3600 * 1000 + 24 * 3600 * 1000,
+    status: 'processing',
+    txHash: null
+  },
+  {
+    id: 'W-8109',
+    amount: 1200.0,
+    netDisbursal: 1199.0,
+    networkFee: 1.0,
+    network: 'TRC-20',
+    address: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m',
+    requestedAt: Date.now() - 28 * 3600 * 1000,
+    slaTargetMs: Date.now() - 4 * 3600 * 1000,
+    status: 'completed',
+    txHash: '0x882a9f14309c690f01ba32c10b4297801a'
+  }
+];
+
+export function LotteryProvider({ children }) {
+  // Wallet State
+  const [wallet, setWallet] = useState(() => {
+    const saved = localStorage.getItem('lotto_wallet');
+    return saved ? JSON.parse(saved) : {
+      address: '0x71A9f24E68B8910d54F30C8B38194aE02919B42',
+      connected: true,
+      balance: 1840.50,
+      network: 'TRC-20',
+      lifetimeWon: 37884.0,
+      depositAddress: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m'
+    };
+  });
+
+  // Events State
+  const [events, setEvents] = useState(() => {
+    const saved = localStorage.getItem('lotto_events');
+    return saved ? JSON.parse(saved) : [...INITIAL_EVENTS, ...INITIAL_PAST_EVENTS];
+  });
+
+  // User Tickets State
+  const [tickets, setTickets] = useState(() => {
+    const saved = localStorage.getItem('lotto_tickets');
+    return saved ? JSON.parse(saved) : INITIAL_TICKETS;
+  });
+
+  // Withdrawals State
+  const [withdrawals, setWithdrawals] = useState(() => {
+    const saved = localStorage.getItem('lotto_withdrawals');
+    return saved ? JSON.parse(saved) : INITIAL_WITHDRAWALS;
+  });
+
+  // Winner Payouts Queue State (Admin approval required)
+  const [winnerPayouts, setWinnerPayouts] = useState(() => {
+    const saved = localStorage.getItem('lotto_winner_payouts');
+    return saved ? JSON.parse(saved) : INITIAL_WINNER_PAYOUTS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('lotto_winner_payouts', JSON.stringify(winnerPayouts));
+  }, [winnerPayouts]);
+
+  // User Authentication State
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
+
+  // Listen to Supabase Auth state changes
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProfile = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      if (!error && data) {
+        setProfile(data);
+        if (data.trc20_address) {
+          setWallet(prev => ({
+            ...prev,
+            address: data.trc20_address,
+            connected: true,
+            network: 'TRC-20'
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Fetch profile error:', err);
+    }
+  };
+
+  const checkUsernameAvailability = async (rawUsername) => {
+    const username = (rawUsername || '').trim();
+    if (!username) return { valid: false, message: 'User ID is required' };
+    
+    // Validation: Alphabet, number, underscore (_), and @ only
+    const validPattern = /^[a-zA-Z0-9_@]+$/;
+    if (!validPattern.test(username)) {
+      return { 
+        valid: false, 
+        message: 'Only letters, numbers, underscore (_) and @ are allowed' 
+      };
+    }
+
+    if (username.length < 3) {
+      return { valid: false, message: 'User ID must be at least 3 characters' };
+    }
+
+    if (username.length > 20) {
+      return { valid: false, message: 'User ID cannot exceed 20 characters' };
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .ilike('username', username)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Check username error:', error);
+        return { valid: true };
+      }
+
+      if (data) {
+        return { valid: false, message: 'This User ID is already taken. Please choose another.' };
+      }
+
+      return { valid: true, message: 'User ID is available!' };
+    } catch (err) {
+      console.error('Error checking username:', err);
+      return { valid: true };
+    }
+  };
+
+  const loginWithEmail = async (email, password) => {
+    const res = await supabase.auth.signInWithPassword({ email, password });
+    return res;
+  };
+
+  const signupWithEmail = async (email, password, username) => {
+    const res = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username: username ? username.trim() : (email ? email.split('@')[0] : 'user'),
+          full_name: username ? username.trim() : (email ? email.split('@')[0] : 'user')
+        }
+      }
+    });
+    return res;
+  };
+
+  const verifyEmailOtp = async (email, token, username, password = null) => {
+    let res = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'signup'
+    });
+
+    if (res.error) {
+      res = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'email'
+      });
+    }
+
+    if (!res.error && res.data?.user) {
+      setUser(res.data.user);
+      if (username) {
+        await supabase
+          .from('profiles')
+          .update({ username: username.trim(), full_name: username.trim() })
+          .eq('id', res.data.user.id);
+      }
+      await fetchProfile(res.data.user.id);
+    }
+
+    return res;
+  };
+
+  const resendSignupOtp = async (email) => {
+    const res = await supabase.auth.resend({
+      type: 'signup',
+      email
+    });
+    return res;
+  };
+
+  const loginWithGoogle = async () => {
+    const res = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+    return res;
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
+    setActiveTab('lotteries');
+    setSelectedEventForModal(null);
+    showToast('Successfully signed out.', 'info');
+  };
+
+  const updateTrc20Address = async (newAddress) => {
+    try {
+      if (user) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ trc20_address: newAddress, updated_at: new Date().toISOString() })
+          .eq('id', user.id);
+        if (error) throw error;
+      }
+      setWallet(prev => ({
+        ...prev,
+        address: newAddress,
+        connected: true,
+        network: 'TRC-20'
+      }));
+      setProfile(prev => prev ? ({ ...prev, trc20_address: newAddress }) : null);
+      return { success: true };
+    } catch (err) {
+      console.error('Failed to update TRC-20 address:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  // Active UI modal states
+  const [selectedEventForModal, setSelectedEventForModal] = useState(null);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [walletModalTab, setWalletModalTab] = useState('deposit');
+  const [activeTab, setActiveTab] = useState('lotteries');
+  const [winCelebration, setWinCelebration] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [isSupabaseSynced, setIsSupabaseSynced] = useState(false);
+
+  // Initial fetch from Supabase
+  useEffect(() => {
+    async function loadSupabaseData() {
+      try {
+        // 1. Fetch events
+        const { data: dbEvents, error: errEvents } = await supabase
+          .from('lottery_events')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!errEvents && dbEvents && dbEvents.length > 0) {
+          const mapped = dbEvents.map(e => ({
+            id: e.id,
+            title: e.title,
+            badge: e.badge,
+            ticketPrice: parseFloat(e.ticket_price),
+            poolPrize: parseFloat(e.pool_prize),
+            drawTime: Number(e.draw_time),
+            status: e.status,
+            winningDigits: e.winning_digits,
+            participantsCount: e.participants_count,
+            ticketsSold: e.tickets_sold,
+            sha256Seed: e.sha256_seed,
+            blockTarget: e.block_target
+          }));
+          setEvents(mapped);
+        }
+
+        // 2. Fetch tickets
+        const { data: dbTickets, error: errTickets } = await supabase
+          .from('lottery_tickets')
+          .select('*')
+          .order('purchase_time', { ascending: false });
+
+        if (!errTickets && dbTickets && dbTickets.length > 0) {
+          const mappedTickets = dbTickets.map(t => ({
+            id: t.id,
+            eventId: t.event_id,
+            eventTitle: t.event_title,
+            ticketNumber: t.ticket_number,
+            price: parseFloat(t.price),
+            purchaseTime: Number(t.purchase_time),
+            status: t.status,
+            matchTier: t.match_tier,
+            wonAmount: parseFloat(t.won_amount || 0),
+            claimed: t.claimed
+          }));
+          setTickets(mappedTickets);
+        }
+
+        // 3. Fetch withdrawals
+        const { data: dbWithdrawals, error: errWithdrawals } = await supabase
+          .from('lottery_withdrawals')
+          .select('*')
+          .order('requested_at', { ascending: false });
+
+        if (!errWithdrawals && dbWithdrawals && dbWithdrawals.length > 0) {
+          const mappedW = dbWithdrawals.map(w => ({
+            id: w.id,
+            amount: parseFloat(w.amount),
+            netDisbursal: parseFloat(w.net_disbursal),
+            networkFee: parseFloat(w.network_fee),
+            network: w.network,
+            address: w.destination_address,
+            requestedAt: Number(w.requested_at),
+            slaTargetMs: Number(w.sla_target_ms),
+            status: w.status,
+            txHash: w.tx_hash
+          }));
+          setWithdrawals(mappedW);
+        }
+
+        // 4. Fetch wallet
+        const { data: dbWallet, error: errWallet } = await supabase
+          .from('lottery_wallets')
+          .select('*')
+          .eq('address', wallet.address)
+          .single();
+
+        if (!errWallet && dbWallet) {
+          setWallet(prev => ({
+            ...prev,
+            balance: parseFloat(dbWallet.balance),
+            lifetimeWon: parseFloat(dbWallet.lifetime_won),
+            network: dbWallet.network || prev.network
+          }));
+        } else {
+          // Initialize wallet record in Supabase
+          await supabase.from('lottery_wallets').upsert({
+            address: wallet.address,
+            balance: wallet.balance,
+            lifetime_won: wallet.lifetimeWon,
+            network: wallet.network
+          });
+        }
+
+        setIsSupabaseSynced(true);
+      } catch (err) {
+        console.error('Supabase sync error (using local storage fallback):', err);
+      }
+    }
+
+    loadSupabaseData();
+  }, []);
+
+  // Sync to LocalStorage as instant local cache
+  useEffect(() => {
+    localStorage.setItem('lotto_wallet', JSON.stringify(wallet));
+  }, [wallet]);
+
+  useEffect(() => {
+    localStorage.setItem('lotto_events', JSON.stringify(events));
+  }, [events]);
+
+  useEffect(() => {
+    localStorage.setItem('lotto_tickets', JSON.stringify(tickets));
+  }, [tickets]);
+
+  useEffect(() => {
+    localStorage.setItem('lotto_withdrawals', JSON.stringify(withdrawals));
+  }, [withdrawals]);
+
+  const showToast = (message, type = 'success') => {
+    setToastMessage({ message, type, id: Date.now() });
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 4000);
+  };
+
+  // Wallet Actions
+  const toggleWalletConnection = () => {
+    setWallet(prev => {
+      const nextState = !prev.connected;
+      showToast(nextState ? `Crypto Wallet Connected (${prev.network})` : 'Wallet Disconnected', 'info');
+      return { ...prev, connected: nextState };
+    });
+  };
+
+  const switchNetwork = async (newNetwork) => {
+    setWallet(prev => ({ ...prev, network: newNetwork }));
+    showToast(`Network switched to ${newNetwork}`);
+    try {
+      await supabase.from('lottery_wallets').update({ network: newNetwork }).eq('address', wallet.address);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Deposit USDT
+  const depositUSDT = async (amount) => {
+    const val = parseFloat(amount);
+    if (isNaN(val) || val <= 0) return false;
+
+    const newBalance = parseFloat((wallet.balance + val).toFixed(2));
+    setWallet(prev => ({
+      ...prev,
+      balance: newBalance
+    }));
+
+    showToast(`Deposit confirmed! +${val.toFixed(2)} USDT credited to wallet.`);
+
+    try {
+      await supabase.from('lottery_wallets').upsert({
+        address: wallet.address,
+        balance: newBalance,
+        lifetime_won: wallet.lifetimeWon,
+        network: wallet.network
+      });
+    } catch (e) {
+      console.error(e);
+    }
+
+    return true;
+  };
+
+  // Helper: Check if a 4-digit number is already sold in an event
+  const isTicketNumberSold = (eventId, number) => {
+    if (!eventId || number === undefined || number === null) return false;
+    const formatted = String(number).padStart(4, '0');
+    return tickets.some(t => t.eventId === eventId && String(t.ticketNumber).padStart(4, '0') === formatted);
+  };
+
+  // Helper: Generate an unsold random 4-digit number for an event
+  const getUnsoldRandomNumber = (eventId) => {
+    const soldSet = new Set(
+      tickets
+        .filter(t => t.eventId === eventId)
+        .map(t => String(t.ticketNumber).padStart(4, '0'))
+    );
+    for (let i = 0; i < 10000; i++) {
+      const candidate = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+      if (!soldSet.has(candidate)) return candidate;
+    }
+    return String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+  };
+
+  // Helper: Suggest next available alternative
+  const suggestAlternative = (numStr, soldSet) => {
+    const base = parseInt(numStr, 10) || 1000;
+    for (let offset = 1; offset < 500; offset++) {
+      const alt1 = String((base + offset) % 10000).padStart(4, '0');
+      if (!soldSet.has(alt1)) return alt1;
+      const alt2 = String((base - offset + 10000) % 10000).padStart(4, '0');
+      if (!soldSet.has(alt2)) return alt2;
+    }
+    return '0000';
+  };
+
+  // Purchase Lottery Tickets
+  const buyTickets = async (eventId, ticketNumbers) => {
+    // 0. Strict Authentication Check: No ticket purchase without login
+    if (!user) {
+      showToast('Authentication required: Please log in to purchase lottery tickets!', 'error');
+      setIsAuthModalOpen(true);
+      return false;
+    }
+
+    const event = events.find(e => e.id === eventId);
+    if (!event) {
+      showToast('Event not found', 'error');
+      return false;
+    }
+
+    // Check if any requested ticket number is already sold in this event!
+    const activeTicketsForEvent = tickets.filter(t => t.eventId === eventId);
+    const soldSet = new Set(activeTicketsForEvent.map(t => String(t.ticketNumber).padStart(4, '0')));
+    
+    const seenInOrder = new Set();
+    for (const num of ticketNumbers) {
+      const formatted = String(num).padStart(4, '0');
+      if (soldSet.has(formatted)) {
+        const alt = suggestAlternative(formatted, soldSet);
+        showToast(`Combination #${formatted} is ALREADY SOLD OUT! Please select an available number (e.g. #${alt}).`, 'error');
+        return false;
+      }
+      if (seenInOrder.has(formatted)) {
+        showToast(`Duplicate ticket #${formatted} in order! Each ticket must be unique.`, 'error');
+        return false;
+      }
+      seenInOrder.add(formatted);
+    }
+
+    const totalCost = event.ticketPrice * ticketNumbers.length;
+    if (wallet.balance < totalCost) {
+      showToast(`Insufficient USDT Balance! Need ${totalCost} USDT, have ${wallet.balance.toFixed(2)} USDT`, 'error');
+      return false;
+    }
+
+    const newBalance = parseFloat((wallet.balance - totalCost).toFixed(2));
+
+    // Deduct balance
+    setWallet(prev => ({
+      ...prev,
+      balance: newBalance
+    }));
+
+    // Create tickets
+    const nowMs = Date.now();
+    const newTickets = ticketNumbers.map((num, i) => ({
+      id: `tkt-${nowMs}-${Math.floor(1000 + Math.random() * 9000)}-${i}`,
+      eventId: event.id,
+      eventTitle: event.title,
+      ticketNumber: num,
+      price: event.ticketPrice,
+      purchaseTime: nowMs,
+      status: 'active',
+      matchTier: null,
+      wonAmount: 0,
+      claimed: false
+    }));
+
+    setTickets(prev => [...newTickets, ...prev]);
+
+    // Increase event pool & tickets sold
+    const updatedPool = event.poolPrize + totalCost * 0.95;
+    const updatedTicketsSold = event.ticketsSold + ticketNumbers.length;
+    const updatedParticipants = event.participantsCount + 1;
+
+    setEvents(prev => prev.map(e => {
+      if (e.id === eventId) {
+        return {
+          ...e,
+          poolPrize: updatedPool,
+          ticketsSold: updatedTicketsSold,
+          participantsCount: updatedParticipants
+        };
+      }
+      return e;
+    }));
+
+    // Trigger mini celebratory confetti
+    confetti({
+      particleCount: 50,
+      spread: 60,
+      origin: { y: 0.8 },
+      colors: ['#ffd700', '#f5c451', '#05d5aa']
+    });
+
+    showToast(`Success! Purchased ${ticketNumbers.length} ticket(s) for ${totalCost} USDT. Good luck!`);
+
+    // Sync to Supabase in background
+    try {
+      // 1. Update wallet balance
+      await supabase.from('lottery_wallets').upsert({
+        address: wallet.address,
+        balance: newBalance,
+        lifetime_won: wallet.lifetimeWon,
+        network: wallet.network
+      });
+
+      // 2. Insert tickets
+      const dbTickets = newTickets.map(t => ({
+        id: t.id,
+        user_address: wallet.address,
+        event_id: t.eventId,
+        event_title: t.eventTitle,
+        ticket_number: t.ticketNumber,
+        price: t.price,
+        purchase_time: t.purchaseTime,
+        status: t.status,
+        match_tier: t.matchTier,
+        won_amount: t.wonAmount,
+        claimed: t.claimed
+      }));
+      await supabase.from('lottery_tickets').insert(dbTickets);
+
+      // 3. Update event in Supabase
+      await supabase.from('lottery_events').update({
+        pool_prize: updatedPool,
+        tickets_sold: updatedTicketsSold,
+        participants_count: updatedParticipants
+      }).eq('id', eventId);
+    } catch (err) {
+      console.error('Supabase write error:', err);
+    }
+
+    return true;
+  };
+
+  // Request 24h SLA Withdrawal
+  const requestWithdrawal = async (amount, destinationAddress, network = 'TRC-20') => {
+    if (!user) {
+      showToast('Authentication required: Please log in to request a withdrawal!', 'error');
+      setIsAuthModalOpen(true);
+      return false;
+    }
+
+    const val = parseFloat(amount);
+    if (isNaN(val) || val <= 0) {
+      showToast('Please enter a valid withdrawal amount', 'error');
+      return false;
+    }
+
+    if (val < 10) {
+      showToast('Minimum withdrawal is 10 USDT', 'error');
+      return false;
+    }
+
+    if (val > wallet.balance) {
+      showToast('Withdrawal amount exceeds available USDT balance', 'error');
+      return false;
+    }
+
+    if (!destinationAddress || destinationAddress.trim().length < 8) {
+      showToast('Please enter a valid recipient USDT wallet address', 'error');
+      return false;
+    }
+
+    const networkFee = network === 'TRC-20' ? 1.0 : (network === 'BEP-20' ? 0.8 : 8.0);
+    const netDisbursal = parseFloat((val - networkFee).toFixed(2));
+    const newBalance = parseFloat((wallet.balance - val).toFixed(2));
+
+    // Deduct from wallet balance
+    setWallet(prev => ({
+      ...prev,
+      balance: newBalance
+    }));
+
+    // Create withdrawal order with 24-Hour SLA target
+    const orderId = `W-${Math.floor(1000 + Math.random() * 9000)}`;
+    const nowMs = Date.now();
+    const newOrder = {
+      id: orderId,
+      amount: val,
+      netDisbursal,
+      networkFee,
+      network,
+      address: destinationAddress.trim(),
+      requestedAt: nowMs,
+      slaTargetMs: nowMs + 24 * 3600 * 1000,
+      status: 'processing',
+      txHash: null
+    };
+
+    setWithdrawals(prev => [newOrder, ...prev]);
+
+    showToast(`Withdrawal of ${val} USDT requested! Order #${orderId} queued with 24h SLA.`, 'success');
+
+    // Sync to Supabase
+    try {
+      await supabase.from('lottery_wallets').upsert({
+        address: wallet.address,
+        balance: newBalance,
+        lifetime_won: wallet.lifetimeWon,
+        network: wallet.network
+      });
+
+      await supabase.from('lottery_withdrawals').insert({
+        id: newOrder.id,
+        user_address: wallet.address,
+        amount: newOrder.amount,
+        net_disbursal: newOrder.netDisbursal,
+        network_fee: newOrder.networkFee,
+        network: newOrder.network,
+        destination_address: newOrder.address,
+        requested_at: newOrder.requestedAt,
+        sla_target_ms: newOrder.slaTargetMs,
+        status: newOrder.status,
+        tx_hash: newOrder.txHash
+      });
+    } catch (err) {
+      console.error('Supabase withdrawal error:', err);
+    }
+
+    return true;
+  };
+
+  // Draw Logic: Provably Fair 4-Digit Match & Automated Payout
+  const executeDraw = async (eventId, specifiedWinningDigits = null) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+
+    // Generate 4-digit winning sequence (e.g. '7429') if not specified
+    const winDigits = specifiedWinningDigits 
+      ? String(specifiedWinningDigits).padStart(4, '0')
+      : String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+
+    let totalWonByUser = 0;
+    let winningTicketsFound = [];
+
+    // Single Winner Logic: Exact 4-digit match only!
+    const activeTicketsForEvent = tickets.filter(t => t.eventId === eventId && t.status === 'active');
+    const exactWinners = activeTicketsForEvent.filter(t => t.ticketNumber === winDigits);
+
+    // Calculate pool collection & winner share %
+    const totalPoolCollected = event.ticketsSold > 0 
+      ? (event.ticketsSold * event.ticketPrice) 
+      : event.poolPrize;
+    const winnerSharePct = event.winnerSharePercent || 90;
+    const totalWinnerPool = parseFloat(((totalPoolCollected * winnerSharePct) / 100).toFixed(2));
+    const perWinnerCalculated = exactWinners.length > 0 
+      ? parseFloat((totalWinnerPool / exactWinners.length).toFixed(2))
+      : totalWinnerPool;
+
+    // Process tickets for this event
+    const updatedTickets = tickets.map(tkt => {
+      if (tkt.eventId === eventId && tkt.status === 'active') {
+        const num = tkt.ticketNumber;
+        const isExactWinner = (num === winDigits);
+
+        if (isExactWinner) {
+          totalWonByUser += perWinnerCalculated;
+          winningTicketsFound.push({ ...tkt, matchTier: 'EXACT 4/4 MATCH (SINGLE WINNER)', wonAmount: perWinnerCalculated });
+          return {
+            ...tkt,
+            status: 'won',
+            matchTier: 'EXACT 4/4 MATCH (SINGLE WINNER)',
+            wonAmount: perWinnerCalculated,
+            claimed: true
+          };
+        } else {
+          return {
+            ...tkt,
+            status: 'lost',
+            matchTier: 'NO MATCH',
+            wonAmount: 0,
+            claimed: false
+          };
+        }
+      }
+      return tkt;
+    });
+
+    setTickets(updatedTickets);
+
+    // Update event status
+    const nowMs = Date.now();
+    setEvents(prev => prev.map(e => {
+      if (e.id === eventId) {
+        return {
+          ...e,
+          status: 'completed',
+          winningDigits: winDigits,
+          drawTime: nowMs
+        };
+      }
+      return e;
+    }));
+
+    // Queue Winner Payout into Admin Approval Suite ("Winner Add USDT")
+    if (exactWinners.length > 0) {
+      const newPayouts = exactWinners.map((wTkt, idx) => ({
+        id: `WP-${Date.now()}-${idx}`,
+        eventId: event.id,
+        eventTitle: event.title,
+        ticketId: wTkt.id,
+        winnerAddress: wallet.address,
+        winnerUsername: profile?.username || user?.email?.split('@')[0] || 'LuckyWinner',
+        winningDigits: winDigits,
+        ticketsSold: event.ticketsSold,
+        ticketPrice: event.ticketPrice,
+        totalPoolCollected: totalPoolCollected,
+        winnerSharePercent: winnerSharePct,
+        calculatedAmount: perWinnerCalculated,
+        payoutAmount: perWinnerCalculated, // Editable in Admin Console!
+        status: 'pending_approval',
+        createdAt: nowMs
+      }));
+
+      setWinnerPayouts(prev => [...newPayouts, ...prev]);
+    }
+
+    if (totalWonByUser > 0) {
+      // Trigger Grand Celebration Confetti & Modal!
+      confetti({
+        particleCount: 180,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: ['#ffd700', '#f5c451', '#05d5aa', '#00f2fe', '#ffffff']
+      });
+
+      setWinCelebration({
+        eventTitle: event.title,
+        winningDigits: winDigits,
+        totalWon: totalWonByUser,
+        winningTickets: winningTicketsFound
+      });
+
+      showToast(`🏆 EXACT MATCH! Winning number [${winDigits}]! Payout of ${totalWonByUser.toLocaleString()} USDT queued for disbursal!`, 'success');
+    } else {
+      showToast(`Draw for ${event.title} completed! Winning number is [${winDigits}].`);
+    }
+
+    // Sync Draw and Winners to Supabase
+    try {
+      // 1. Update event
+      await supabase.from('lottery_events').update({
+        status: 'completed',
+        winning_digits: winDigits,
+        draw_time: nowMs
+      }).eq('id', eventId);
+
+      // 2. Update tickets in DB
+      for (const t of updatedTickets.filter(tk => tk.eventId === eventId)) {
+        await supabase.from('lottery_tickets').update({
+          status: t.status,
+          match_tier: t.matchTier,
+          won_amount: t.wonAmount,
+          claimed: t.claimed
+        }).eq('id', t.id);
+      }
+    } catch (err) {
+      console.error('Supabase draw sync error:', err);
+    }
+  };
+
+  // Admin Actions: Approve Winner Payout and Add USDT to Wallet
+  const adminApproveWinnerPayout = async (payoutId, editedAmount = null) => {
+    const payout = winnerPayouts.find(p => p.id === payoutId);
+    if (!payout) return { success: false, message: 'Payout not found' };
+
+    const finalAmount = (editedAmount !== null && !isNaN(editedAmount) && editedAmount > 0)
+      ? parseFloat(editedAmount)
+      : payout.payoutAmount;
+
+    // Credit to user wallet balance
+    const newBal = parseFloat((wallet.balance + finalAmount).toFixed(2));
+    const newWon = parseFloat((wallet.lifetimeWon + finalAmount).toFixed(2));
+
+    setWallet(prev => ({
+      ...prev,
+      balance: newBal,
+      lifetimeWon: newWon
+    }));
+
+    // Update winnerPayout status
+    setWinnerPayouts(prev => prev.map(p => {
+      if (p.id === payoutId) {
+        return {
+          ...p,
+          payoutAmount: finalAmount,
+          status: 'completed',
+          approvedAt: Date.now(),
+          txHash: `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`
+        };
+      }
+      return p;
+    }));
+
+    confetti({
+      particleCount: 160,
+      spread: 90,
+      origin: { y: 0.6 },
+      colors: ['#05d5aa', '#ffd700', '#00f2fe', '#ffffff']
+    });
+
+    showToast(`Approved! Added ${finalAmount.toFixed(2)} USDT directly to winner's wallet ✅`, 'success');
+    return { success: true };
+  };
+
+  const adminRejectWinnerPayout = (payoutId) => {
+    setWinnerPayouts(prev => prev.map(p => {
+      if (p.id === payoutId) {
+        return { ...p, status: 'rejected' };
+      }
+      return p;
+    }));
+    showToast('Winner payout rejected / on hold', 'info');
+    return { success: true };
+  };
+
+  const adminAddManualWinnerCredit = async (targetUsernameOrAddress, amount, note = 'Special Seasonal Reward') => {
+    const cleanAmount = parseFloat(amount);
+    if (isNaN(cleanAmount) || cleanAmount <= 0) {
+      showToast('Please enter a valid USDT amount', 'error');
+      return { success: false };
+    }
+
+    const newPayout = {
+      id: `WP-MANUAL-${Date.now()}`,
+      eventId: 'manual-reward',
+      eventTitle: note || 'Admin Manual USDT Reward',
+      ticketId: 'MANUAL',
+      winnerAddress: targetUsernameOrAddress || wallet.address,
+      winnerUsername: targetUsernameOrAddress || 'Direct Player',
+      winningDigits: '—',
+      ticketsSold: 0,
+      ticketPrice: 0,
+      totalPoolCollected: cleanAmount,
+      winnerSharePercent: 100,
+      calculatedAmount: cleanAmount,
+      payoutAmount: cleanAmount,
+      status: 'completed',
+      approvedAt: Date.now(),
+      txHash: `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`
+    };
+
+    setWinnerPayouts(prev => [newPayout, ...prev]);
+
+    const newBal = parseFloat((wallet.balance + cleanAmount).toFixed(2));
+    const newWon = parseFloat((wallet.lifetimeWon + cleanAmount).toFixed(2));
+    setWallet(prev => ({
+      ...prev,
+      balance: newBal,
+      lifetimeWon: newWon
+    }));
+
+    showToast(`Successfully added ${cleanAmount.toFixed(2)} USDT to player wallet!`, 'success');
+    return { success: true };
+  };
+
+  // Admin Actions: Create Event with Banner & Seasonal Theme
+  const adminCreateEvent = async ({ 
+    title, 
+    ticketPrice, 
+    durationHours, 
+    initialSeedJackpot, 
+    targetWinningDigits,
+    theme = 'cyberpunk',
+    bannerImage = null,
+    winnerSharePercent = 90
+  }) => {
+    const cleanDigits = targetWinningDigits ? String(targetWinningDigits).replace(/\D/g, '').slice(0, 4) : null;
+    
+    // Choose festive badge if themed
+    let festiveBadge = 'CUSTOM DRAW';
+    if (theme === 'diwali') festiveBadge = '🪔 DIWALI BUMPER';
+    else if (theme === 'eid') festiveBadge = '🌙 EID MUBARAK';
+    else if (theme === 'holi') festiveBadge = '🎨 HOLI SPLASH';
+    else if (theme === 'durga_puja') festiveBadge = '🌺 DURGA UTSAV';
+    else if (theme === 'new_year') festiveBadge = '🎆 NEW YEAR GALA';
+
+    const newEvent = {
+      id: `evt-${Date.now()}`,
+      title: title || 'Custom Sovereign USDT Draw',
+      badge: festiveBadge,
+      theme: theme || 'cyberpunk',
+      bannerImage: bannerImage || null,
+      winnerSharePercent: parseFloat(winnerSharePercent) || 90,
+      ticketPrice: parseFloat(ticketPrice) || 10,
+      poolPrize: parseFloat(initialSeedJackpot) || 10000,
+      drawTime: Date.now() + (parseFloat(durationHours) || 96) * 3600 * 1000,
+      status: 'active',
+      winningDigits: cleanDigits || null,
+      targetWinningDigits: cleanDigits || null,
+      participantsCount: 1,
+      ticketsSold: 0,
+      sha256Seed: `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+      blockTarget: `#${Math.floor(19400000 + Math.random() * 50000)}`
+    };
+
+    setEvents(prev => [newEvent, ...prev]);
+    showToast(`New Lottery Event '${newEvent.title}' deployed successfully!`);
+
+    try {
+      await supabase.from('lottery_events').insert({
+        id: newEvent.id,
+        title: newEvent.title,
+        badge: newEvent.badge,
+        ticket_price: newEvent.ticketPrice,
+        pool_prize: newEvent.poolPrize,
+        draw_time: newEvent.drawTime,
+        status: newEvent.status,
+        winning_digits: newEvent.winningDigits,
+        participants_count: newEvent.participantsCount,
+        tickets_sold: newEvent.ticketsSold,
+        sha256_seed: newEvent.sha256Seed,
+        block_target: newEvent.blockTarget
+      });
+    } catch (err) {
+      console.error('Supabase admin create error:', err);
+    }
+
+    return true;
+  };
+
+  const adminApproveWithdrawal = async (orderId) => {
+    const mockTx = `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+    setWithdrawals(prev => prev.map(w => {
+      if (w.id === orderId) {
+        return {
+          ...w,
+          status: 'completed',
+          txHash: mockTx,
+          slaTargetMs: Date.now()
+        };
+      }
+      return w;
+    }));
+
+    showToast(`Withdrawal #${orderId} approved and disbursed! TxHash: ${mockTx.slice(0, 10)}...`);
+
+    try {
+      await supabase.from('lottery_withdrawals').update({
+        status: 'completed',
+        tx_hash: mockTx
+      }).eq('id', orderId);
+    } catch (err) {
+      console.error('Supabase approval error:', err);
+    }
+  };
+
+  const adminRejectWithdrawal = async (orderId) => {
+    const order = withdrawals.find(w => w.id === orderId);
+    if (!order) return;
+
+    const newBalance = parseFloat((wallet.balance + order.amount).toFixed(2));
+    setWallet(prev => ({
+      ...prev,
+      balance: newBalance
+    }));
+
+    setWithdrawals(prev => prev.map(w => {
+      if (w.id === orderId) {
+        return { ...w, status: 'flagged' };
+      }
+      return w;
+    }));
+
+    showToast(`Withdrawal #${orderId} flagged/rejected. ${order.amount} USDT refunded to user.`, 'info');
+
+    try {
+      await supabase.from('lottery_withdrawals').update({
+        status: 'flagged'
+      }).eq('id', orderId);
+
+      await supabase.from('lottery_wallets').upsert({
+        address: wallet.address,
+        balance: newBalance,
+        lifetime_won: wallet.lifetimeWon,
+        network: wallet.network
+      });
+    } catch (err) {
+      console.error('Supabase rejection error:', err);
+    }
+  };
+
+  const adminDeleteEvent = async (eventId) => {
+    setEvents(prev => prev.filter(e => e.id !== eventId));
+    showToast('Lottery Event removed from platform', 'info');
+    try {
+      await supabase.from('lottery_events').delete().eq('id', eventId);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const adminFetchAllUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data) return data;
+      return [];
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+      return [];
+    }
+  };
+
+  const adminToggleUserStatus = async (userId, currentStatus) => {
+    const nextStatus = currentStatus === 'blocked' ? 'active' : 'blocked';
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ status: nextStatus, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+      if (!error) {
+        showToast(`User status updated to ${nextStatus.toUpperCase()}`, 'success');
+        return { success: true, nextStatus };
+      }
+      return { success: false, error: error.message };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  const adminUpdateUserRole = async (userId, newRole) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+      if (!error) {
+        showToast(`User role updated to ${newRole.toUpperCase()}`, 'success');
+        return { success: true };
+      }
+      return { success: false, error: error.message };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  const adminDeleteUser = async (userId) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+      if (!error) {
+        showToast('User profile removed from system', 'success');
+        return { success: true };
+      }
+      return { success: false, error: error.message };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
+  return (
+    <LotteryContext.Provider
+      value={{
+        wallet,
+        user,
+        profile,
+        isAuthModalOpen,
+        setIsAuthModalOpen,
+        authMode,
+        setAuthMode,
+        loginWithEmail,
+        signupWithEmail,
+        checkUsernameAvailability,
+        verifyEmailOtp,
+        resendSignupOtp,
+        loginWithGoogle,
+        logout,
+        updateTrc20Address,
+        events,
+        tickets,
+        withdrawals,
+        activeTab,
+        setActiveTab,
+        selectedEventForModal,
+        setSelectedEventForModal,
+        isWalletModalOpen,
+        setIsWalletModalOpen,
+        walletModalTab,
+        setWalletModalTab,
+        winCelebration,
+        setWinCelebration,
+        toastMessage,
+        showToast,
+        isSupabaseSynced,
+        toggleWalletConnection,
+        switchNetwork,
+        depositUSDT,
+        buyTickets,
+        requestWithdrawal,
+        executeDraw,
+        adminCreateEvent,
+        adminDeleteEvent,
+        adminApproveWithdrawal,
+        adminRejectWithdrawal,
+        adminFetchAllUsers,
+        adminToggleUserStatus,
+        adminUpdateUserRole,
+        adminDeleteUser,
+        winnerPayouts,
+        adminApproveWinnerPayout,
+        adminRejectWinnerPayout,
+        adminAddManualWinnerCredit,
+        isTicketNumberSold,
+        getUnsoldRandomNumber
+      }}
+    >
+      {children}
+    </LotteryContext.Provider>
+  );
+}
+
+export function useLottery() {
+  const context = useContext(LotteryContext);
+  if (!context) {
+    throw new Error('useLottery must be used within a LotteryProvider');
+  }
+  return context;
+}
