@@ -203,29 +203,193 @@ export function LotteryProvider({ children }) {
     };
   });
 
-  // Events State
-  const [events, setEvents] = useState(() => {
-    const saved = localStorage.getItem('lotto_events');
-    if (!saved) return [...INITIAL_EVENTS, ...INITIAL_PAST_EVENTS];
-    try {
-      const parsed = JSON.parse(saved);
-      const hasDiwali = parsed.some(e => e.id === 'evt-diwali-bumper-10');
-      if (!hasDiwali) {
-        return [INITIAL_EVENTS[0], ...parsed];
+  // Helper: Format Supabase database row to Frontend event object
+  const formatEventRow = (row) => {
+    let meta = {};
+    if (row.block_target && typeof row.block_target === 'string') {
+      try {
+        if (row.block_target.startsWith('{')) {
+          meta = JSON.parse(row.block_target);
+        }
+      } catch (e) {
+        // Not a JSON string, treat as standard block hash
       }
-      return parsed;
-    } catch {
-      return [...INITIAL_EVENTS, ...INITIAL_PAST_EVENTS];
     }
-  });
+
+    return {
+      id: row.id,
+      title: row.title,
+      badge: row.badge || meta.badge || 'LOTTERY POOL',
+      theme: meta.theme || 'cyberpunk',
+      bannerImage: meta.banner_image || '',
+      ticketPrice: Number(row.ticket_price || 10),
+      poolPrize: Number(row.pool_prize || 1000),
+      minPrize: meta.min_prize !== undefined && meta.min_prize !== null ? Number(meta.min_prize) : null,
+      maxPrize: meta.max_prize !== undefined && meta.max_prize !== null ? Number(meta.max_prize) : null,
+      winnerSharePercent: Number(meta.winner_share_percent || 90),
+      drawTime: Number(row.draw_time || Date.now() + 86400000),
+      status: row.status || 'active',
+      winningDigits: row.winning_digits || null,
+      targetWinningDigits: meta.target_winning_digits || row.winning_digits || '7429',
+      participantsCount: Number(row.participants_count || 0),
+      ticketsSold: Number(row.tickets_sold || 0),
+      sha256Seed: row.sha256_seed || '',
+      blockTarget: meta.block || row.block_target || '#19,400,000',
+      createdAt: row.created_at
+    };
+  };
+
+  // Events State - Strictly Dynamic from Supabase Backend (No hardcoded mock pools!)
+  const [events, setEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+
+  // Fetch events directly from Supabase database
+  const refreshEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('lottery_events')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        setEvents(data.map(formatEventRow));
+      } else if (error) {
+        console.error('Supabase fetch lottery_events error:', error);
+      }
+    } catch (err) {
+      console.error('refreshEvents error:', err);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
 
   useEffect(() => {
+    refreshEvents();
+
+    // Clean up any stale localStorage mock pools
     try {
-      localStorage.setItem('lotto_events', JSON.stringify(events));
-    } catch (e) {
-      console.warn('Failed to save events to localStorage', e);
+      localStorage.removeItem('lotto_events');
+    } catch (e) {}
+
+    // Subscribe to Supabase Realtime changes for lottery_events
+    const eventChannel = supabase
+      .channel('realtime:lottery_events')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_events' }, () => {
+        refreshEvents();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(eventChannel);
+    };
+  }, []);
+
+  // NOWPayments Realtime Listener: Credit wallet when deposit finishes
+  useEffect(() => {
+    const depositChannel = supabase
+      .channel('realtime:lottery_deposits')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lottery_deposits' }, (payload) => {
+        if (payload.new && (payload.new.status === 'finished' || payload.new.status === 'confirmed')) {
+          const credited = Number(payload.new.amount || 0);
+          showToast(`Deposit confirmed! +${credited} USDT credited to your wallet!`, 'success');
+          confetti({
+            particleCount: 150,
+            spread: 90,
+            origin: { y: 0.6 },
+            colors: ['#05d5aa', '#ffd700', '#00f2fe', '#ffffff']
+          });
+          // Refresh wallet balance from database
+          if (wallet.address) {
+            supabase
+              .from('lottery_wallets')
+              .select('balance, lifetime_won')
+              .eq('address', wallet.address)
+              .single()
+              .then(({ data }) => {
+                if (data) {
+                  setWallet(prev => ({
+                    ...prev,
+                    balance: Number(data.balance || prev.balance),
+                    lifetimeWon: Number(data.lifetime_won || prev.lifetimeWon)
+                  }));
+                }
+              });
+          }
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(depositChannel);
+    };
+  }, [wallet.address]);
+
+  // NOWPayments: Create Crypto Deposit Invoice via Supabase Edge Function
+  const createNowPaymentsInvoice = async (amount, payCurrency = 'usdttrc20') => {
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      showToast('Please enter a valid deposit amount', 'error');
+      return { success: false, error: 'Invalid amount' };
     }
-  }, [events]);
+
+    try {
+      showToast('Creating secure NOWPayments invoice...', 'info');
+      const response = await fetch(
+        'https://pkloymdzdjykpsutpyqk.supabase.co/functions/v1/payment-api/create-nowpayments-invoice',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': 'sb_publishable_x7puqG5DzU9YkvDsV10HyQ_144KlMqt',
+          },
+          body: JSON.stringify({
+            amount: numAmount,
+            userAddress: wallet.address,
+            userId: user?.id || wallet.address,
+            payCurrency: payCurrency
+          })
+        }
+      );
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to create payment invoice');
+      }
+
+      showToast('NOWPayments invoice ready! Redirecting to checkout...', 'success');
+      return {
+        success: true,
+        depositId: data.deposit_id,
+        invoiceUrl: data.invoice_url,
+        invoiceId: data.invoice_id
+      };
+    } catch (err) {
+      console.error('NOWPayments error:', err);
+      showToast('NOWPayments error: ' + err.message, 'error');
+      return { success: false, error: err.message };
+    }
+  };
+
+  // Check NOWPayments deposit status via Supabase Edge Function
+  const checkDepositStatus = async (depositId) => {
+    try {
+      const response = await fetch(
+        'https://pkloymdzdjykpsutpyqk.supabase.co/functions/v1/payment-api/deposit-status',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': 'sb_publishable_x7puqG5DzU9YkvDsV10HyQ_144KlMqt',
+          },
+          body: JSON.stringify({ depositId })
+        }
+      );
+      return await response.json();
+    } catch (err) {
+      console.error('checkDepositStatus error:', err);
+      return { success: false, error: err.message };
+    }
+  };
 
   // User Tickets State
   const [tickets, setTickets] = useState(() => {
@@ -454,29 +618,8 @@ export function LotteryProvider({ children }) {
   useEffect(() => {
     async function loadSupabaseData() {
       try {
-        // 1. Fetch events
-        const { data: dbEvents, error: errEvents } = await supabase
-          .from('lottery_events')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (!errEvents && dbEvents && dbEvents.length > 0) {
-          const mapped = dbEvents.map(e => ({
-            id: e.id,
-            title: e.title,
-            badge: e.badge,
-            ticketPrice: parseFloat(e.ticket_price),
-            poolPrize: parseFloat(e.pool_prize),
-            drawTime: Number(e.draw_time),
-            status: e.status,
-            winningDigits: e.winning_digits,
-            participantsCount: e.participants_count,
-            ticketsSold: e.tickets_sold,
-            sha256Seed: e.sha256_seed,
-            blockTarget: e.block_target
-          }));
-          setEvents(mapped);
-        }
+        // 1. Fetch events using unified formatter
+        await refreshEvents();
 
         // 2. Fetch tickets
         const { data: dbTickets, error: errTickets } = await supabase
@@ -1258,53 +1401,39 @@ export function LotteryProvider({ children }) {
       const poolPrize = maxPrize || parseFloat(eventData.initialSeedJackpot || 1000);
 
       const newId = `evt-${Date.now().toString(36)}-${Math.floor(100 + Math.random() * 900)}`;
-      const newEvent = {
+      const metadata = JSON.stringify({
+        block: `#${Math.floor(19400000 + Math.random() * 100000)}`,
+        theme: eventData.theme || 'cyberpunk',
+        banner_image: eventData.bannerImage || '',
+        min_prize: minPrize,
+        max_prize: maxPrize,
+        winner_share_percent: parseFloat(eventData.winnerSharePercent || 90),
+        target_winning_digits: eventData.targetWinningDigits || '7429'
+      });
+
+      // Insert directly into Supabase database (matching table schema strictly)
+      const { data, error } = await supabase.from('lottery_events').insert({
         id: newId,
         title: eventData.title || 'VIP Lottery Event',
         badge: eventData.badge || (eventData.theme === 'diwali' ? '🪔 DIWALI BUMPER' : (eventData.theme === 'eid' ? '🌙 EID MUBARAK' : (eventData.theme === 'durga_puja' ? '🌺 DURGA UTSAV' : 'SPECIAL EVENT'))),
-        theme: eventData.theme || 'cyberpunk',
-        bannerImage: eventData.bannerImage || '',
-        ticketPrice: parseFloat(eventData.ticketPrice || 10),
-        poolPrize: poolPrize,
-        minPrize: minPrize,
-        maxPrize: maxPrize,
-        winnerSharePercent: parseFloat(eventData.winnerSharePercent || 90),
-        drawTime: now + durationMs,
+        ticket_price: parseFloat(eventData.ticketPrice || 10),
+        pool_prize: poolPrize,
+        draw_time: now + durationMs,
         status: 'active',
-        winningDigits: null,
-        targetWinningDigits: eventData.targetWinningDigits || '7429',
-        participantsCount: 0,
-        ticketsSold: 0,
-        sha256Seed: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
-        blockTarget: `#${Math.floor(19400000 + Math.random() * 100000)}`
-      };
+        winning_digits: null,
+        participants_count: 0,
+        tickets_sold: 0,
+        sha256_seed: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+        block_target: metadata
+      }).select();
 
-      setEvents(prev => [newEvent, ...prev]);
-      showToast(`🎉 New Lottery Pool "${newEvent.title}" deployed successfully!`, 'success');
-
-      // Attempt Supabase sync
-      try {
-        await supabase.from('lottery_events').insert({
-          id: newEvent.id,
-          title: newEvent.title,
-          badge: newEvent.badge,
-          theme: newEvent.theme,
-          banner_image: newEvent.bannerImage,
-          ticket_price: newEvent.ticketPrice,
-          pool_prize: newEvent.poolPrize,
-          min_prize: newEvent.minPrize,
-          max_prize: newEvent.maxPrize,
-          winner_share_percent: newEvent.winnerSharePercent,
-          draw_time: newEvent.drawTime,
-          status: newEvent.status,
-          target_winning_digits: newEvent.targetWinningDigits,
-          sha256_seed: newEvent.sha256Seed
-        });
-      } catch (err) {
-        console.warn('Supabase event sync note:', err.message);
+      if (error) {
+        throw error;
       }
 
-      return { success: true, event: newEvent };
+      await refreshEvents();
+      showToast(`🎉 New Lottery Pool "${eventData.title}" deployed to database!`, 'success');
+      return { success: true };
     } catch (err) {
       console.error('adminCreateEvent error:', err);
       showToast('Failed to deploy lottery event: ' + err.message, 'error');
@@ -1314,15 +1443,16 @@ export function LotteryProvider({ children }) {
 
   const adminDeleteEvent = async (eventId) => {
     try {
-      setEvents(prev => prev.filter(e => e.id !== eventId));
-      showToast('Lottery event removed from pool list', 'info');
-      try {
-        await supabase.from('lottery_events').delete().eq('id', eventId);
-      } catch (err) {
-        console.warn('Supabase event delete note:', err.message);
+      const { error } = await supabase.from('lottery_events').delete().eq('id', eventId);
+      if (error) {
+        throw error;
       }
+      setEvents(prev => prev.filter(e => e.id !== eventId));
+      showToast('Lottery event removed from database', 'info');
       return { success: true };
     } catch (err) {
+      console.error('adminDeleteEvent error:', err);
+      showToast('Failed to delete event: ' + err.message, 'error');
       return { success: false, error: err.message };
     }
   };
@@ -1346,6 +1476,8 @@ export function LotteryProvider({ children }) {
         logout,
         updateTrc20Address,
         events,
+        loadingEvents,
+        refreshEvents,
         tickets,
         withdrawals,
         activeTab,
@@ -1364,6 +1496,8 @@ export function LotteryProvider({ children }) {
         toggleWalletConnection,
         switchNetwork,
         depositUSDT,
+        createNowPaymentsInvoice,
+        checkDepositStatus,
         buyTickets,
         requestWithdrawal,
         executeDraw,

@@ -11,18 +11,48 @@ import {
   ExternalLink, 
   AlertCircle,
   QrCode,
-  DollarSign
+  DollarSign,
+  CreditCard,
+  RefreshCw,
+  Coins,
+  CheckCircle2
 } from 'lucide-react';
 
+const PAYMENT_CURRENCIES = [
+  { id: 'usdttrc20', name: 'USDT (TRON TRC-20)', symbol: 'USDT', network: 'TRC-20' },
+  { id: 'usdtbep20', name: 'USDT (BNB Chain BEP-20)', symbol: 'USDT', network: 'BEP-20' },
+  { id: 'trx', name: 'TRON (TRX)', symbol: 'TRX', network: 'TRON' },
+  { id: 'btc', name: 'Bitcoin (BTC)', symbol: 'BTC', network: 'Bitcoin' },
+  { id: 'eth', name: 'Ethereum (ETH)', symbol: 'ETH', network: 'ERC-20' },
+  { id: 'sol', name: 'Solana (SOL)', symbol: 'SOL', network: 'Solana' },
+  { id: 'ltc', name: 'Litecoin (LTC)', symbol: 'LTC', network: 'Litecoin' }
+];
+
 export default function WalletView() {
-  const { wallet, withdrawals, depositUSDT, requestWithdrawal, showToast } = useLottery();
+  const { 
+    wallet, 
+    withdrawals, 
+    depositUSDT, 
+    requestWithdrawal, 
+    showToast,
+    createNowPaymentsInvoice,
+    checkDepositStatus 
+  } = useLottery();
 
   // Tabs for Deposit vs Withdraw
   const [activeTab, setActiveTab] = useState('withdraw'); // 'deposit' | 'withdraw'
   const [selectedNetwork, setSelectedNetwork] = useState('TRC-20');
 
+  // Deposit method: 'nowpayments' | 'direct'
+  const [depositMethod, setDepositMethod] = useState('nowpayments');
+  const [payCurrency, setPayCurrency] = useState('usdttrc20');
+  const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
+  const [activeInvoice, setActiveInvoice] = useState(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [invoiceStatusText, setInvoiceStatusText] = useState('waiting');
+
   // Deposit amount
-  const [depositAmount, setDepositAmount] = useState('100');
+  const [depositAmount, setDepositAmount] = useState('50');
 
   // Withdrawal form
   const [withdrawAmount, setWithdrawAmount] = useState('500');
@@ -51,6 +81,53 @@ export default function WalletView() {
   const handleDepositSubmit = (e) => {
     e.preventDefault();
     depositUSDT(depositAmount);
+  };
+
+  // NOWPayments invoice generation handler
+  const handleNowPaymentsSubmit = async (e) => {
+    e.preventDefault();
+    const amt = parseFloat(depositAmount);
+    if (isNaN(amt) || amt <= 0) {
+      showToast('Please enter a valid deposit amount', 'error');
+      return;
+    }
+    setIsGeneratingInvoice(true);
+    try {
+      const res = await createNowPaymentsInvoice(amt, payCurrency);
+      if (res.success) {
+        setActiveInvoice({
+          depositId: res.depositId,
+          invoiceUrl: res.invoiceUrl,
+          invoiceId: res.invoiceId,
+          amount: amt,
+          currency: payCurrency,
+          createdAt: Date.now()
+        });
+        setInvoiceStatusText('waiting');
+        if (res.invoiceUrl) {
+          window.open(res.invoiceUrl, '_blank', 'noopener,noreferrer');
+        }
+      }
+    } finally {
+      setIsGeneratingInvoice(false);
+    }
+  };
+
+  // Check NOWPayments invoice status
+  const handleCheckNowPaymentsStatus = async () => {
+    if (!activeInvoice?.depositId) return;
+    setIsCheckingStatus(true);
+    try {
+      const res = await checkDepositStatus(activeInvoice.depositId);
+      if (res && res.status) {
+        setInvoiceStatusText(res.status);
+        showToast(`Invoice status: ${res.status.toUpperCase()}`, 'info');
+      } else {
+        showToast('Status check: Waiting for on-chain broadcast', 'info');
+      }
+    } finally {
+      setIsCheckingStatus(false);
+    }
   };
 
   // Calculate live SLA remaining for processing withdrawals
@@ -165,20 +242,20 @@ export default function WalletView() {
       {/* Main Two-Column Workstation: Deposit & Withdrawal */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* LEFT COLUMN: Deposit USDT (6 Cols) */}
+        {/* LEFT COLUMN: Deposit USDT / Multi-Crypto (6 Cols) */}
         <div className="lg:col-span-6 glass-panel rounded-2xl p-4 sm:p-8 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[rgba(5,213,170,0.15)] flex items-center justify-center text-[#05d5aa] border border-[#05d5aa]/30">
                   <ArrowDownLeft className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="font-display font-extrabold text-xl text-white">
-                    Deposit Tether (USDT)
+                    Deposit Funds
                   </h3>
                   <p className="text-xs text-[#9b8f7c]">
-                    Fast multi-chain liquidity ingress
+                    Multi-crypto gateway & automated settlement
                   </p>
                 </div>
               </div>
@@ -188,58 +265,259 @@ export default function WalletView() {
               </span>
             </div>
 
-            {/* Network Display (TRC-20 ONLY) */}
-            <div className="p-1.5 rounded-xl bg-[#0b0e14] border border-[#272a31] mb-6">
-              <div className="py-2 px-3 text-center text-xs font-mono-numbers font-bold rounded-lg bg-[#1e2638] text-[#ffd700] border border-[#f5c451]/50 shadow-md flex items-center justify-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#05d5aa] animate-pulse"></span>
-                <span>Network: TRON (TRC-20 USDT) · Instant Settlement</span>
-              </div>
+            {/* Deposit Method Selector */}
+            <div className="grid grid-cols-2 gap-2 p-1 bg-[#0b0e14] rounded-xl border border-[#272a31] mb-6">
+              <button
+                type="button"
+                onClick={() => setDepositMethod('nowpayments')}
+                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  depositMethod === 'nowpayments'
+                    ? 'bg-[#1e2638] text-[#ffd700] border border-[#f5c451]/50 shadow-md'
+                    : 'text-[#9b8f7c] hover:text-white'
+                }`}
+              >
+                <CreditCard className="w-3.5 h-3.5 text-[#ffd700]" />
+                <span>NOWPayments Gateway</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDepositMethod('direct')}
+                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  depositMethod === 'direct'
+                    ? 'bg-[#1e2638] text-[#ffd700] border border-[#f5c451]/50 shadow-md'
+                    : 'text-[#9b8f7c] hover:text-white'
+                }`}
+              >
+                <Coins className="w-3.5 h-3.5 text-[#05d5aa]" />
+                <span>Direct TRC-20 Address</span>
+              </button>
             </div>
 
-            {/* QR Code & Address Display */}
-            <div className="bg-[#0b0e14] rounded-2xl p-6 border border-[#272a31] text-center mb-6">
-              <div className="w-36 h-36 mx-auto bg-white p-2 rounded-xl shadow-lg flex items-center justify-center mb-4">
-                {/* Visual stylized QR code */}
-                <div className="w-full h-full bg-[#0b0e14] rounded flex flex-col items-center justify-center border-2 border-[#f5c451] p-2 text-center">
-                  <QrCode className="w-16 h-16 text-[#ffd700]" />
-                  <span className="text-[9px] font-mono-numbers text-[#f5c451] font-bold mt-1">
-                    USDT {selectedNetwork}
-                  </span>
+            {/* METHOD 1: NOWPAYMENTS GATEWAY */}
+            {depositMethod === 'nowpayments' && (
+              <div className="space-y-5">
+                {/* Active Invoice Card if one exists */}
+                {activeInvoice ? (
+                  <div className="bg-[#0b0e14] rounded-2xl p-5 border border-[#f5c451]/40 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[#9b8f7c] font-semibold">
+                        Active Deposit Invoice
+                      </span>
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-mono-numbers font-bold flex items-center gap-1.5 ${
+                        invoiceStatusText === 'finished' || invoiceStatusText === 'confirmed'
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                          : invoiceStatusText === 'confirming'
+                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                          : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      }`}>
+                        <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
+                        {invoiceStatusText.toUpperCase()}
+                      </span>
+                    </div>
+
+                    <div className="bg-[#121721] p-4 rounded-xl border border-[#272a31] space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-[#9b8f7c]">Amount to Deposit:</span>
+                        <span className="font-mono-numbers font-black text-white text-base">
+                          {activeInvoice.amount} USDT
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-[#9b8f7c]">Payment Asset:</span>
+                        <span className="font-mono-numbers font-bold text-[#ffd700]">
+                          {PAYMENT_CURRENCIES.find(c => c.id === activeInvoice.currency)?.name || activeInvoice.currency.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-[#9b8f7c]">Invoice ID:</span>
+                        <span className="font-mono-numbers text-white/70">
+                          #{activeInvoice.invoiceId || activeInvoice.depositId?.slice(0, 8)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                      {activeInvoice.invoiceUrl && (
+                        <a
+                          href={activeInvoice.invoiceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-gold flex-1 py-3 rounded-xl font-display font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#f5c451]/20"
+                        >
+                          <span>Open NOWPayments Checkout</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleCheckNowPaymentsStatus}
+                        disabled={isCheckingStatus}
+                        className="px-4 py-3 rounded-xl bg-[#1a2232] hover:bg-[#222c42] text-xs font-bold text-white border border-[#272a31] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isCheckingStatus ? 'animate-spin' : ''}`} />
+                        <span>Refresh Status</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-[#1e2638] text-[11px] text-[#9b8f7c]">
+                      <span>Webhook updates balance automatically upon confirmation</span>
+                      <button
+                        type="button"
+                        onClick={() => setActiveInvoice(null)}
+                        className="text-[#f5c451] hover:underline cursor-pointer"
+                      >
+                        New Deposit
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleNowPaymentsSubmit} className="space-y-4">
+                    {/* Currency Selector */}
+                    <div>
+                      <label className="block text-xs text-[#9b8f7c] font-semibold mb-1.5">
+                        Choose Payment Cryptocurrency:
+                      </label>
+                      <select
+                        value={payCurrency}
+                        onChange={(e) => setPayCurrency(e.target.value)}
+                        className="w-full bg-[#0b0e14] border border-[#32353c] focus:border-[#ffd700] rounded-xl px-4 py-3 text-white font-mono-numbers text-xs outline-none cursor-pointer"
+                      >
+                        {PAYMENT_CURRENCIES.map((c) => (
+                          <option key={c.id} value={c.id} className="bg-[#0b0e14] text-white">
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Deposit Amount */}
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <label className="text-[#9b8f7c] font-semibold">Deposit Amount (USDT equivalent):</label>
+                        <span className="font-mono-numbers text-[11px] text-[#05d5aa]">Min: 5 USDT</span>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="1"
+                          min="5"
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(e.target.value)}
+                          className="w-full bg-[#0b0e14] border border-[#32353c] focus:border-[#ffd700] rounded-xl px-4 py-3.5 text-white font-mono-numbers font-bold text-lg outline-none"
+                          placeholder="e.g. 50"
+                          required
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[#ffd700]">
+                          USDT
+                        </span>
+                      </div>
+
+                      {/* Quick Chips */}
+                      <div className="flex gap-2 mt-2">
+                        {[10, 25, 50, 100, 250, 500].map((amt) => (
+                          <button
+                            key={amt}
+                            type="button"
+                            onClick={() => setDepositAmount(String(amt))}
+                            className={`flex-1 py-1.5 rounded-lg text-[11px] font-mono-numbers font-bold border transition-colors cursor-pointer ${
+                              depositAmount === String(amt)
+                                ? 'bg-[rgba(245,196,81,0.2)] text-[#ffd700] border-[#f5c451]'
+                                : 'bg-[#121721] hover:bg-[#1a2232] text-[#9b8f7c] hover:text-white border-[#272a31]'
+                            }`}
+                          >
+                            ${amt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={isGeneratingInvoice}
+                      className="btn-gold w-full py-4 rounded-xl font-display font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#f5c451]/25 disabled:opacity-50 mt-2"
+                    >
+                      {isGeneratingInvoice ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>Generating NOWPayments Invoice...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="w-4 h-4" />
+                          <span>Deposit via NOWPayments Gateway</span>
+                        </>
+                      )}
+                    </button>
+
+                    <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] flex items-start gap-2.5 text-xs text-[#9b8f7c]">
+                      <ShieldCheck className="w-4 h-4 text-[#05d5aa] shrink-0 mt-0.5" />
+                      <p className="text-[11px] leading-relaxed">
+                        Hosted on NOWPayments official infrastructure. Supports auto-detection of network deposits with real-time webhook confirmation.
+                      </p>
+                    </div>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {/* METHOD 2: DIRECT TRC-20 ADDRESS */}
+            {depositMethod === 'direct' && (
+              <div>
+                {/* Network Display */}
+                <div className="p-1.5 rounded-xl bg-[#0b0e14] border border-[#272a31] mb-5">
+                  <div className="py-2 px-3 text-center text-xs font-mono-numbers font-bold rounded-lg bg-[#1e2638] text-[#ffd700] border border-[#f5c451]/50 shadow-md flex items-center justify-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#05d5aa] animate-pulse" />
+                    <span>Network: TRON (TRC-20 USDT) · Direct Ingress</span>
+                  </div>
+                </div>
+
+                {/* QR Code & Address Display */}
+                <div className="bg-[#0b0e14] rounded-2xl p-5 border border-[#272a31] text-center mb-5">
+                  <div className="w-32 h-32 mx-auto bg-white p-2 rounded-xl shadow-lg flex items-center justify-center mb-3">
+                    <div className="w-full h-full bg-[#0b0e14] rounded flex flex-col items-center justify-center border-2 border-[#f5c451] p-2 text-center">
+                      <QrCode className="w-14 h-14 text-[#ffd700]" />
+                      <span className="text-[9px] font-mono-numbers text-[#f5c451] font-bold mt-1">
+                        USDT {selectedNetwork}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-[#9b8f7c] mb-2 font-medium">
+                    Your Personal Non-Custodial Vault Address ({selectedNetwork}):
+                  </div>
+
+                  <div className="flex items-center gap-2 bg-[#121721] p-3 rounded-xl border border-[#272a31]">
+                    <code className="flex-1 font-mono-numbers text-xs text-white truncate text-left">
+                      {wallet.depositAddress}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={handleCopy}
+                      className="px-3 py-1.5 rounded-lg bg-[rgba(245,196,81,0.15)] hover:bg-[#f5c451] text-[#ffd700] hover:text-[#0b0e14] text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copied ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 text-xs text-[#9b8f7c] mb-5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#05d5aa]" />
+                    <span>Minimum Deposit: <strong>5.00 USDT</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#05d5aa]" />
+                    <span>Confirmation Time: <strong>1 Network Block (~30 seconds)</strong></span>
+                  </div>
                 </div>
               </div>
-
-              <div className="text-xs text-[#9b8f7c] mb-2 font-medium">
-                Your Personal Deposit Address ({selectedNetwork}):
-              </div>
-
-              <div className="flex items-center gap-2 bg-[#121721] p-3 rounded-xl border border-[#272a31]">
-                <code className="flex-1 font-mono-numbers text-xs sm:text-sm text-white truncate text-left">
-                  {wallet.depositAddress}
-                </code>
-                <button
-                  onClick={handleCopy}
-                  className="px-3 py-1.5 rounded-lg bg-[rgba(245,196,81,0.15)] hover:bg-[#f5c451] text-[#ffd700] hover:text-[#0b0e14] text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
-                >
-                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? 'Copied' : 'Copy'}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-2 text-xs text-[#9b8f7c] mb-6">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#05d5aa]" />
-                <span>Minimum Deposit: <strong>5.00 USDT</strong></span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#05d5aa]" />
-                <span>Confirmation Time: <strong>1 Network Block (~30 seconds)</strong></span>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Quick Simulation Button for Testing */}
-          <div className="pt-4 border-t border-[#272a31]">
+          <div className="pt-4 border-t border-[#272a31] mt-6">
             <span className="text-[11px] text-[#9b8f7c] block mb-2 font-semibold">
               QUICK TEST DEPOSIT (INSTANT ON-CHAIN SIMULATION):
             </span>
@@ -247,6 +525,7 @@ export default function WalletView() {
               {[50, 100, 500].map((amt) => (
                 <button
                   key={amt}
+                  type="button"
                   onClick={() => depositUSDT(amt)}
                   className="flex-1 py-2 rounded-xl bg-[rgba(5,213,170,0.12)] hover:bg-[#05d5aa] text-[#05d5aa] hover:text-[#0b0e14] border border-[#05d5aa]/30 text-xs font-bold font-mono-numbers transition-all cursor-pointer"
                 >

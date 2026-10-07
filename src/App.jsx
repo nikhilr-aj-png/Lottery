@@ -55,6 +55,7 @@ function AuthRequiredPrompt({ title, onLogin, onHome }) {
 function LotteryAppContent() {
   const { 
     events, 
+    loadingEvents,
     activeTab, 
     setActiveTab, 
     selectedEventForModal, 
@@ -227,22 +228,43 @@ function LotteryAppContent() {
               </div>
 
               {/* Grid of Pools */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {activeEvents.map((event) => (
-                  <LotteryCard
-                    key={event.id}
-                    event={event}
-                    onSelect={(evt) => {
-                      if (!user) {
-                        showToast('Please log in to enter the event and purchase tickets!', 'info');
-                        setIsAuthModalOpen(true);
-                        return;
-                      }
-                      setSelectedEventForModal(evt);
-                    }}
-                  />
-                ))}
-              </div>
+              {loadingEvents ? (
+                <div className="py-20 text-center glass-panel rounded-3xl border border-[#272a31] p-8 space-y-4">
+                  <div className="w-12 h-12 mx-auto rounded-full border-2 border-[#ffd700] border-t-transparent animate-spin" />
+                  <p className="text-sm font-mono-numbers text-[#ffd700] font-semibold">
+                    Syncing on-chain pools from database...
+                  </p>
+                </div>
+              ) : activeEvents.length === 0 ? (
+                <div className="py-16 text-center glass-panel rounded-3xl border border-[#272a31] p-8 space-y-4">
+                  <div className="w-16 h-16 mx-auto rounded-2xl bg-[#1e2638] flex items-center justify-center text-[#ffd700] border border-[#f5c451]/30">
+                    <Sparkles className="w-8 h-8 animate-pulse text-[#ffd700]" />
+                  </div>
+                  <h3 className="text-xl font-display font-extrabold text-white">
+                    No Active Pools Right Now
+                  </h3>
+                  <p className="text-xs text-[#9b8f7c] max-w-md mx-auto leading-relaxed">
+                    All previous lottery pools have concluded or been settled. New autonomous smart contracts will be launched shortly by the administration.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {activeEvents.map((event) => (
+                    <LotteryCard
+                      key={event.id}
+                      event={event}
+                      onSelect={(evt) => {
+                        if (!user) {
+                          showToast('Please log in to enter the event and purchase tickets!', 'info');
+                          setIsAuthModalOpen(true);
+                          return;
+                        }
+                        setSelectedEventForModal(evt);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* How it works feature banners */}
               <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
