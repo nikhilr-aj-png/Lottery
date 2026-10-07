@@ -37,15 +37,22 @@ export default function WalletView() {
     showToast,
     createNowPaymentsInvoice,
     checkDepositStatus,
-    platformSettings
+    platformSettings,
+    walletModalTab
   } = useLottery();
 
   const minWithdrawalLimit = typeof platformSettings?.minWithdrawal === 'number' ? platformSettings.minWithdrawal : 5;
   const maxWithdrawalLimit = typeof platformSettings?.maxWithdrawal === 'number' ? platformSettings.maxWithdrawal : 10000;
   const treasuryAddress = platformSettings?.treasuryTrc20 || wallet.depositAddress;
 
-  // Tabs for Deposit vs Withdraw
-  const [activeTab, setActiveTab] = useState('withdraw'); // 'deposit' | 'withdraw'
+  // Tabs for Deposit vs Withdraw (defaults to deposit, syncs with requested tab)
+  const [activeTab, setActiveTab] = useState(() => walletModalTab || 'deposit');
+
+  useEffect(() => {
+    if (walletModalTab) {
+      setActiveTab(walletModalTab);
+    }
+  }, [walletModalTab]);
   const [selectedNetwork, setSelectedNetwork] = useState('TRC-20');
 
   // Deposit method: 'nowpayments' | 'direct'

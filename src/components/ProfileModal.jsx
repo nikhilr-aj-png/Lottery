@@ -23,6 +23,7 @@ export default function ProfileModal({ isOpen, onClose }) {
     logout,
     setIsWalletModalOpen, 
     setWalletModalTab,
+    setActiveTab,
     showToast
   } = useLottery();
 
@@ -124,9 +125,16 @@ export default function ProfileModal({ isOpen, onClose }) {
                   VIP
                 </span>
               </div>
-              <p className="text-[11px] text-[#9b8f7c] font-mono-numbers truncate mt-0.5">
-                {user?.email || 'Connected Account'}
-              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-[11px] text-[#9b8f7c] font-mono-numbers truncate">
+                  {user?.email || 'Connected Account'}
+                </p>
+                <span className="text-[#3b4150]">•</span>
+                <span className="text-[10px] text-[#f5c451] flex items-center gap-0.5 font-mono-numbers font-medium">
+                  <Lock className="w-2.5 h-2.5" />
+                  Permanent ID
+                </span>
+              </div>
             </div>
           </div>
           <button
@@ -271,13 +279,14 @@ export default function ProfileModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Quick Actions */}
+          {/* Quick Actions (Full Screen Page Navigation) */}
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => {
                 onClose();
                 setWalletModalTab('deposit');
-                setIsWalletModalOpen(true);
+                setActiveTab('wallet');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               className="py-2.5 rounded-xl bg-[rgba(5,213,170,0.15)] hover:bg-[rgba(5,213,170,0.25)] border border-[#05d5aa]/30 text-[#05d5aa] font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
             >
@@ -288,7 +297,8 @@ export default function ProfileModal({ isOpen, onClose }) {
               onClick={() => {
                 onClose();
                 setWalletModalTab('withdraw');
-                setIsWalletModalOpen(true);
+                setActiveTab('wallet');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               className="py-2.5 rounded-xl bg-[rgba(245,196,81,0.15)] hover:bg-[rgba(245,196,81,0.25)] border border-[#ffd700]/30 text-[#ffd700] font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
             >

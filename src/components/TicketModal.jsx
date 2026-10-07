@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLottery } from '../context/LotteryContext';
-import { X, Dices, RotateCcw, Plus, Trash2, ShieldCheck, Check, Sparkles, AlertCircle, LogIn, Lock } from 'lucide-react';
+import { X, ArrowLeft, Dices, RotateCcw, Plus, Trash2, ShieldCheck, Check, Sparkles, AlertCircle, LogIn, Lock, Wallet } from 'lucide-react';
 
 export default function TicketModal({ event, onClose }) {
   const { user, wallet, buyTickets, isTicketNumberSold, getUnsoldRandomNumber, showToast, setIsAuthModalOpen } = useLottery();
@@ -109,36 +109,56 @@ export default function TicketModal({ event, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-      <div className="glass-modal w-full max-w-4xl rounded-2xl overflow-hidden border border-[#f5c451]/35 my-auto max-h-[95vh] flex flex-col">
-        
-        {/* Header */}
-        <div className="bg-[#121721] px-6 py-4 border-b border-[rgba(245,196,81,0.2)] flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="badge-provably-fair px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#05d5aa] animate-ping" />
-                ROUND DRAW #{event.id.replace('evt-', '').toUpperCase()}
-              </span>
-              <span className="text-xs font-mono-numbers text-[#9b8f7c]">
-                Ticket Stake: {event.ticketPrice} USDT
-              </span>
-            </div>
-            <h2 className="font-display font-extrabold text-lg sm:text-xl text-white">
-              {event.title} <span className="text-[#ffd700]">Lucky Picker Terminal</span>
-            </h2>
-          </div>
-
+    <div className="fixed inset-0 z-50 bg-[#07090e] flex flex-col overflow-y-auto w-full min-h-screen animate-in fade-in duration-200">
+      
+      {/* Top Full-Screen Navigation Bar */}
+      <div className="sticky top-0 z-30 bg-[#0b0e14]/95 backdrop-blur-xl border-b border-[rgba(245,196,81,0.25)] px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-lg">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-xl bg-[#1a2232] text-[#9b8f7c] hover:text-white hover:bg-[#272a31] flex items-center justify-center transition-colors cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-[#141924] hover:bg-[#1f2738] text-xs font-bold text-[#f5c451] border border-[rgba(245,196,81,0.25)] flex items-center gap-2 transition-all cursor-pointer shadow-sm shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Return to Lobby</span>
+          </button>
+          
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="badge-provably-fair px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#05d5aa] animate-ping" />
+                ROUND #{event.id.replace('evt-', '').toUpperCase()}
+              </span>
+              <span className="text-xs font-mono-numbers text-[#9b8f7c]">
+                Stake: <strong className="text-white">{event.ticketPrice} USDT</strong>
+              </span>
+            </div>
+            <h1 className="font-display font-extrabold text-sm sm:text-lg text-white truncate max-w-[200px] sm:max-w-md">
+              {event.title} <span className="text-[#ffd700]">Terminal</span>
+            </h1>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {user && (
+            <div className="hidden sm:flex items-center gap-2 bg-[#121721] px-3.5 py-1.5 rounded-xl border border-[#272a31]">
+              <span className="text-xs text-[#9b8f7c]">Available:</span>
+              <span className="font-mono-numbers font-bold text-xs text-[#ffd700]">
+                {wallet.balance.toFixed(2)} USDT
+              </span>
+            </div>
+          )}
+          <button
+            onClick={onClose}
+            title="Close Terminal"
+            className="w-9 h-9 rounded-xl bg-[#1a2232] text-[#9b8f7c] hover:text-white hover:bg-[#272a31] flex items-center justify-center transition-colors cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
+      </div>
 
-        {/* Modal Body: 2 Columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 p-3 sm:p-6 overflow-y-auto">
+      {/* Full-Screen Workspace Body: 2 Columns */}
+      <div className="max-w-7xl mx-auto w-full p-4 sm:p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
           
           {/* LEFT COLUMN: 4-Digit Dial & Keypad (7 Cols) */}
           <div className="lg:col-span-7 flex flex-col gap-4 sm:gap-5">
@@ -456,8 +476,6 @@ export default function TicketModal({ event, onClose }) {
           </div>
 
         </div>
-
-      </div>
     </div>
   );
 }

@@ -602,13 +602,16 @@ export function LotteryProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const [needsUsernameSetup, setNeedsUsernameSetup] = useState(false);
+
   const fetchProfile = async (userId) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
+
       if (!error && data) {
         setProfile(data);
         if (data.trc20_address) {
@@ -619,9 +622,86 @@ export function LotteryProvider({ children }) {
             network: 'TRC-20'
           }));
         }
+
+        // Check if user has explicitly chosen a permanent username
+        const hasChosenUsername = Boolean(data.username_chosen || (data.username && !data.username.includes('@')));
+        if (!hasChosenUsername) {
+          setNeedsUsernameSetup(true);
+        } else {
+          setNeedsUsernameSetup(false);
+        }
+      } else {
+        // First-time OAuth login without existing profile record
+        const initialProfile = {
+          id: userId,
+          email: user?.email || '',
+          username: '',
+          full_name: user?.user_metadata?.full_name || '',
+          role: 'user',
+          status: 'active',
+          username_chosen: false
+        };
+        try {
+          await supabase.from('profiles').upsert(initialProfile);
+          setProfile(initialProfile);
+        } catch (e) {
+          console.error('Error inserting initial profile:', e);
+        }
+        setNeedsUsernameSetup(true);
       }
     } catch (err) {
       console.error('Fetch profile error:', err);
+    }
+  };
+
+  // One-time Permanent Username setup for Google/OAuth users
+  const setPermanentUsername = async (chosenUsername) => {
+    if (!user) return { success: false, error: 'Authentication required' };
+    const clean = (chosenUsername || '').trim();
+
+    const check = await checkUsernameAvailability(clean);
+    if (!check.valid) {
+      return { success: false, error: check.message };
+    }
+
+    try {
+      // 1. Upsert profile in Supabase database
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          username: clean,
+          full_name: clean,
+          email: user.email || '',
+          username_chosen: true,
+          updated_at: new Date().toISOString()
+        });
+
+      if (profileError) throw profileError;
+
+      // 2. Update auth user metadata
+      await supabase.auth.updateUser({
+        data: {
+          username: clean,
+          username_chosen: true
+        }
+      });
+
+      // 3. Update local states
+      setProfile(prev => ({
+        ...(prev || {}),
+        id: user.id,
+        username: clean,
+        full_name: clean,
+        username_chosen: true
+      }));
+
+      setNeedsUsernameSetup(false);
+      showToast(`Success! @${clean} is locked as your official permanent Player ID.`, 'success');
+      return { success: true };
+    } catch (err) {
+      console.error('setPermanentUsername error:', err);
+      return { success: false, error: err.message };
     }
   };
 
@@ -739,6 +819,7 @@ export function LotteryProvider({ children }) {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+    setNeedsUsernameSetup(false);
     setActiveTab('lotteries');
     setSelectedEventForModal(null);
     showToast('Successfully signed out.', 'info');
@@ -1779,7 +1860,11 @@ export function LotteryProvider({ children }) {
         adminUpdatePlatformSettings,
         fetchPlatformSettings,
         isTicketNumberSold,
-        getUnsoldRandomNumber
+        getUnsoldRandomNumber,
+        needsUsernameSetup,
+        setNeedsUsernameSetup,
+        setPermanentUsername,
+        checkUsernameAvailability
       }}
     >
       {children}

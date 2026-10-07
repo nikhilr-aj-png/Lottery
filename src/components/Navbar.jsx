@@ -42,7 +42,7 @@ export default function Navbar({ onOpenProfile }) {
       const tabNames = {
         tickets: 'My Tickets',
         results: 'Draw Results & Past Winners',
-        wallet: 'USDT Wallet & 24h Payouts'
+        wallet: 'USDT Wallet'
       };
       showToast(`Please log in to access ${tabNames[tabId] || 'this section'}!`, 'info');
       return;
@@ -57,7 +57,7 @@ export default function Navbar({ onOpenProfile }) {
     { id: 'lotteries', label: 'Home', icon: Flame },
     { id: 'tickets', label: 'My Tickets', icon: Ticket },
     { id: 'results', label: 'Results', icon: Trophy },
-    { id: 'wallet', label: 'Wallet & 24h Payouts', icon: Wallet },
+    { id: 'wallet', label: 'Wallet', icon: Wallet },
     { id: 'contact', label: 'Contact Us', icon: Headphones },
   ];
 
@@ -106,16 +106,16 @@ export default function Navbar({ onOpenProfile }) {
                   <button
                     key={item.id}
                     onClick={() => handleNavClick(item.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                       isActive
                         ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-sm font-bold'
                         : 'text-[#d2c5b0] hover:text-[#ffd700] hover:bg-white/5'
                     }`}
                   >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span>{item.label}</span>
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">{item.label}</span>
                     {isLocked && (
-                      <Lock className="w-2.5 h-2.5 text-[#9b8f7c] opacity-60 ml-0.5" />
+                      <Lock className="w-2.5 h-2.5 text-[#9b8f7c] opacity-60 ml-0.5 shrink-0" />
                     )}
                   </button>
                 );
@@ -141,13 +141,13 @@ export default function Navbar({ onOpenProfile }) {
                     </span>
                   </div>
 
-                  {/* Desktop Quick Deposit Button */}
+                  {/* Desktop Quick Deposit Button (Full screen page navigation) */}
                   <button
                     onClick={() => {
                       setWalletModalTab('deposit');
-                      setIsWalletModalOpen(true);
+                      handleNavClick('wallet');
                     }}
-                    className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[rgba(5,213,170,0.12)] text-[#05d5aa] hover:bg-[#05d5aa] hover:text-[#0b0e14] border border-[#05d5aa]/30 text-xs font-bold transition-all cursor-pointer"
+                    className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[rgba(5,213,170,0.12)] text-[#05d5aa] hover:bg-[#05d5aa] hover:text-[#0b0e14] border border-[#05d5aa]/30 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
                   >
                     <ArrowDownLeft className="w-3.5 h-3.5" />
                     Deposit
@@ -223,16 +223,16 @@ export default function Navbar({ onOpenProfile }) {
               })}
             </div>
 
-            {/* Quick Actions in drawer */}
+            {/* Quick Actions in drawer (Full-screen view) */}
             {isLoggedIn && (
               <div className="pt-2 border-t border-[#1f2737] flex gap-2">
                 <button
                   onClick={() => {
                     setWalletModalTab('deposit');
-                    setIsWalletModalOpen(true);
+                    handleNavClick('wallet');
                     setIsMobileMenuOpen(false);
                   }}
-                  className="flex-1 py-2 rounded-xl bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/30 text-xs font-bold flex items-center justify-center gap-1"
+                  className="flex-1 py-2 rounded-xl bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/30 text-xs font-bold flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
                 >
                   <ArrowDownLeft className="w-3.5 h-3.5" />
                   Deposit USDT
@@ -240,10 +240,10 @@ export default function Navbar({ onOpenProfile }) {
                 <button
                   onClick={() => {
                     setWalletModalTab('withdraw');
-                    setIsWalletModalOpen(true);
+                    handleNavClick('wallet');
                     setIsMobileMenuOpen(false);
                   }}
-                  className="flex-1 py-2 rounded-xl bg-[rgba(245,196,81,0.15)] text-[#ffd700] border border-[#f5c451]/30 text-xs font-bold flex items-center justify-center gap-1"
+                  className="flex-1 py-2 rounded-xl bg-[rgba(245,196,81,0.15)] text-[#ffd700] border border-[#f5c451]/30 text-xs font-bold flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
                 >
                   <ArrowUpRight className="w-3.5 h-3.5" />
                   Withdraw 24h

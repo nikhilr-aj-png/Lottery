@@ -10,6 +10,7 @@ import MyTicketsView from './components/MyTicketsView';
 import ResultsView from './components/ResultsView';
 import ProfileModal from './components/ProfileModal';
 import AuthModal from './components/AuthModal';
+import UsernameSetupModal from './components/UsernameSetupModal';
 import WinnerCelebrationModal from './components/WinnerCelebrationModal';
 import RulesModal from './components/RulesModal';
 import Toast from './components/Toast';
@@ -372,6 +373,9 @@ function LotteryAppContent() {
 
       {/* Auth Modal for Email/Password & Google Login */}
       <AuthModal />
+
+      {/* One-Time Username Setup for Google/OAuth Users */}
+      <UsernameSetupModal />
 
       <WalletModal />
       <WinnerCelebrationModal />
