@@ -34,7 +34,13 @@ import {
   Upload,
   Coins,
   Award,
-  Edit3
+  Edit3,
+  MessageSquare,
+  Mail,
+  Send,
+  Inbox,
+  AtSign,
+  User
 } from 'lucide-react';
 
 const SEASONAL_PRESETS = {
@@ -101,11 +107,19 @@ export default function AdminConsole({ onLogout }) {
     adminToggleUserStatus,
     adminUpdateUserRole,
     adminDeleteUser,
+    supportTickets = [],
+    fetchSupportTickets,
+    adminUpdateTicketStatus,
+    adminDeleteTicket,
     showToast
   } = useLottery();
 
-  // Navigation tab: 'overview' | 'pools' | 'withdrawals' | 'users' | 'winner-payouts' | 'settings'
+  // Navigation tab: 'overview' | 'pools' | 'withdrawals' | 'users' | 'winner-payouts' | 'support' | 'settings'
   const [activeAdminTab, setActiveAdminTab] = useState('overview');
+
+  // Support Inquiries state
+  const [supportFilter, setSupportFilter] = useState('all'); // 'all' | 'pending' | 'replied' | 'resolved'
+  const [supportSearchQuery, setSupportSearchQuery] = useState('');
 
   // User management state
   const [usersList, setUsersList] = useState([]);
@@ -317,6 +331,27 @@ export default function AdminConsole({ onLogout }) {
     return true;
   });
 
+  // Filtered support tickets list
+  const filteredSupportTickets = supportTickets.filter(t => {
+    if (supportFilter === 'pending') return t.status === 'pending';
+    if (supportFilter === 'replied') return t.status === 'replied';
+    if (supportFilter === 'resolved') return t.status === 'resolved';
+    return true;
+  }).filter(t => {
+    if (!supportSearchQuery) return true;
+    const q = supportSearchQuery.toLowerCase();
+    return (
+      (t.id && t.id.toLowerCase().includes(q)) ||
+      (t.name && t.name.toLowerCase().includes(q)) ||
+      (t.username && t.username.toLowerCase().includes(q)) ||
+      (t.email && t.email.toLowerCase().includes(q)) ||
+      (t.subject && t.subject.toLowerCase().includes(q)) ||
+      (t.message && t.message.toLowerCase().includes(q))
+    );
+  });
+
+  const pendingSupportCount = supportTickets.filter(t => t.status === 'pending').length;
+
   return (
     <div className="min-h-screen bg-[#07090d] text-[#e1e2eb] flex flex-col font-sans">
       {/* Top Navbar */}
@@ -450,6 +485,23 @@ export default function AdminConsole({ onLogout }) {
             {winnerPayouts.filter(p => p.status === 'pending_approval').length > 0 && (
               <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-emerald-500 text-black font-bold font-mono-numbers animate-pulse">
                 {winnerPayouts.filter(p => p.status === 'pending_approval').length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => { setActiveAdminTab('support'); fetchSupportTickets(); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeAdminTab === 'support'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
+                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>Support & Inquiries</span>
+            {pendingSupportCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-red-500 text-white font-bold font-mono-numbers animate-pulse">
+                {pendingSupportCount}
               </span>
             )}
           </button>
@@ -1942,6 +1994,288 @@ export default function AdminConsole({ onLogout }) {
                 </button>
               </form>
             </div>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB 7: SUPPORT & USER INQUIRIES                                */}
+        {/* ============================================================== */}
+        {activeAdminTab === 'support' && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            {/* Header & KPI */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#0d1117] border border-[#272a31] p-5 rounded-2xl">
+              <div>
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-amber-400" />
+                  <h2 className="font-display font-extrabold text-lg text-white">
+                    Support & User Inquiries Desk
+                  </h2>
+                  {pendingSupportCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 font-bold font-mono-numbers animate-pulse">
+                      {pendingSupportCount} Pending
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-[#8b92a2] mt-1">
+                  Incoming questions, deposit issues, and withdrawal SLA tickets submitted by users.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={fetchSupportTickets}
+                className="px-3.5 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2232] text-xs font-bold text-[#ffd700] border border-[#272a31] flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Refresh Inquiries</span>
+              </button>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0d1117] border border-[#272a31] p-3 rounded-2xl">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                {[
+                  { id: 'all', label: 'All Inquiries', count: supportTickets.length },
+                  { id: 'pending', label: 'Pending', count: supportTickets.filter(t => t.status === 'pending').length },
+                  { id: 'replied', label: 'Replied', count: supportTickets.filter(t => t.status === 'replied').length },
+                  { id: 'resolved', label: 'Resolved', count: supportTickets.filter(t => t.status === 'resolved').length }
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setSupportFilter(f.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                      supportFilter === f.id
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                        : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span>{f.label}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/40 font-mono-numbers">
+                      {f.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative min-w-[240px]">
+                <Search className="w-3.5 h-3.5 text-[#8b92a2] absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={supportSearchQuery}
+                  onChange={(e) => setSupportSearchQuery(e.target.value)}
+                  placeholder="Search user, email, problem..."
+                  className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Inquiries List */}
+            {filteredSupportTickets.length === 0 ? (
+              <div className="text-center py-16 bg-[#0d1117] border border-[#272a31] rounded-2xl p-8 space-y-3">
+                <div className="w-12 h-12 mx-auto rounded-xl bg-white/5 flex items-center justify-center text-[#8b92a2]">
+                  <Inbox className="w-6 h-6" />
+                </div>
+                <h3 className="font-display font-bold text-white text-base">
+                  No Support Inquiries Found
+                </h3>
+                <p className="text-xs text-[#8b92a2] max-w-sm mx-auto">
+                  {supportSearchQuery || supportFilter !== 'all'
+                    ? 'No inquiries match your current search or status filter.'
+                    : 'All user queries have been addressed or no messages have been submitted yet.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredSupportTickets.map((ticket) => {
+                  const isPending = ticket.status === 'pending';
+                  const isReplied = ticket.status === 'replied';
+                  const isResolved = ticket.status === 'resolved';
+
+                  // Pre-filled email subject and body
+                  const emailSubject = `Re: [EarnFlow Support] ${ticket.subject} (Ticket #${ticket.id})`;
+                  const emailBody = `Hello ${ticket.name},\n\nThank you for reaching out to EarnFlow.In Support regarding Ticket #${ticket.id}.\n\nYour Inquiry:\n"${ticket.message}"\n\nResponse:\n\n\n--\nEarnFlow.in Administrative Support Desk\nsupport@earnflow.in`;
+
+                  // Direct Gmail Web Compose link
+                  const gmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(ticket.email)}&su=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+                  
+                  // Default system / mobile mailto link
+                  const mailtoUrl = `mailto:${ticket.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+
+                  const handleReplyGmail = () => {
+                    window.open(gmailComposeUrl, '_blank', 'noopener,noreferrer');
+                    if (ticket.status === 'pending') {
+                      adminUpdateTicketStatus(ticket.id, 'replied');
+                    }
+                  };
+
+                  const handleReplyDefaultMail = () => {
+                    window.location.href = mailtoUrl;
+                    if (ticket.status === 'pending') {
+                      adminUpdateTicketStatus(ticket.id, 'replied');
+                    }
+                  };
+
+                  return (
+                    <div
+                      key={ticket.id}
+                      className={`bg-[#0d1117] border rounded-2xl p-5 sm:p-6 transition-all space-y-4 ${
+                        isPending
+                          ? 'border-amber-500/40 shadow-[0_0_15px_rgba(245,196,81,0.05)]'
+                          : isReplied
+                          ? 'border-blue-500/30'
+                          : 'border-[#272a31] opacity-80'
+                      }`}
+                    >
+                      {/* Ticket Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#1f2737]">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <span className="font-mono-numbers font-black text-amber-400 text-sm">
+                            #{ticket.id}
+                          </span>
+                          <span className="text-xs text-[#8b92a2]">·</span>
+                          <span className="px-2.5 py-0.5 rounded-lg bg-[#141924] text-[#ffd700] border border-[#272a31] text-[11px] font-semibold">
+                            {ticket.subject}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span className="text-[11px] font-mono-numbers text-[#8b92a2]">
+                            {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : 'Just now'}
+                          </span>
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono-numbers font-bold uppercase tracking-wider flex items-center gap-1 ${
+                              isPending
+                                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                : isReplied
+                                ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                                : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                            }`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full bg-current ${isPending ? 'animate-pulse' : ''}`} />
+                            {ticket.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* User Info Bar */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#07090d] p-3.5 rounded-xl border border-[#1f2737] text-xs">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-amber-400 shrink-0" />
+                          <div>
+                            <span className="text-[10px] text-[#8b92a2] block">Real Name:</span>
+                            <span className="text-white font-bold">{ticket.name}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <AtSign className="w-4 h-4 text-[#05d5aa] shrink-0" />
+                          <div>
+                            <span className="text-[10px] text-[#8b92a2] block">User ID / Username:</span>
+                            <span className="font-mono-numbers text-white">
+                              {ticket.username ? `@${ticket.username}` : (ticket.userId || 'Guest User')}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-[#00f2fe] shrink-0" />
+                          <div>
+                            <span className="text-[10px] text-[#8b92a2] block">Contact Email:</span>
+                            <span className="font-mono-numbers text-emerald-400 font-bold truncate block">
+                              {ticket.email}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Message Content */}
+                      <div>
+                        <span className="text-[11px] text-[#8b92a2] font-semibold block mb-1.5">
+                          Problem / Inquiry Details:
+                        </span>
+                        <div className="bg-[#07090d] p-4 rounded-xl border border-[#272a31] text-xs text-white leading-relaxed whitespace-pre-wrap font-sans">
+                          {ticket.message}
+                        </div>
+                      </div>
+
+                      {/* Action Bar */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                        {/* Reply Buttons */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* Gmail Reply Button */}
+                          <button
+                            type="button"
+                            onClick={handleReplyGmail}
+                            className="btn-gold px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#f5c451]/15"
+                            title="Open Google Gmail web composer in a new tab"
+                          >
+                            <Mail className="w-3.5 h-3.5 text-black" />
+                            <span>Reply via Gmail Web</span>
+                            <ExternalLink className="w-3 h-3 text-black opacity-70" />
+                          </button>
+
+                          {/* Default Mail App (Phone/Laptop) Button */}
+                          <button
+                            type="button"
+                            onClick={handleReplyDefaultMail}
+                            className="px-3.5 py-2 rounded-xl bg-[#141924] hover:bg-[#1f2738] text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition-colors cursor-pointer"
+                            title="Open phone or computer default mail client (Gmail/Outlook/Mail app)"
+                          >
+                            <Send className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Default Mail App</span>
+                          </button>
+                        </div>
+
+                        {/* Status & Delete Buttons */}
+                        <div className="flex items-center gap-2">
+                          {!isReplied && (
+                            <button
+                              type="button"
+                              onClick={() => adminUpdateTicketStatus(ticket.id, 'replied')}
+                              className="px-3 py-1.5 rounded-lg bg-blue-950/30 hover:bg-blue-950/60 text-blue-400 border border-blue-500/30 text-xs font-bold transition-colors cursor-pointer"
+                            >
+                              Mark Replied
+                            </button>
+                          )}
+                          {!isResolved && (
+                            <button
+                              type="button"
+                              onClick={() => adminUpdateTicketStatus(ticket.id, 'resolved')}
+                              className="px-3 py-1.5 rounded-lg bg-emerald-950/30 hover:bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Mark Resolved</span>
+                            </button>
+                          )}
+                          {isResolved && (
+                            <button
+                              type="button"
+                              onClick={() => adminUpdateTicketStatus(ticket.id, 'pending')}
+                              className="px-3 py-1.5 rounded-lg bg-amber-950/30 hover:bg-amber-950/60 text-amber-400 border border-amber-500/30 text-xs font-bold transition-colors cursor-pointer"
+                            >
+                              Reopen
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Delete ticket #${ticket.id}?`)) {
+                                adminDeleteTicket(ticket.id);
+                              }
+                            }}
+                            className="p-2 rounded-lg bg-red-950/20 hover:bg-red-950/50 text-red-400 border border-red-500/20 hover:border-red-500/40 transition-colors cursor-pointer"
+                            title="Delete Ticket"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

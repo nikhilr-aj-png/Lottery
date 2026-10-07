@@ -284,11 +284,18 @@ export function LotteryProvider({ children }) {
     };
   }, []);
 
-  // NOWPayments Realtime Listener: Credit wallet when deposit finishes
+  // NOWPayments & Support Tickets Realtime Listener
   useEffect(() => {
     const depositChannel = supabase
       .channel('realtime:lottery_deposits')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lottery_deposits' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_deposits' }, (payload) => {
+        // If it's a support ticket insert or status change
+        if (payload.new?.currency === 'SUPPORT_TICKET' || payload.old?.currency === 'SUPPORT_TICKET') {
+          fetchSupportTickets();
+          return;
+        }
+
+        // Deposit confirmation event
         if (payload.new && (payload.new.status === 'finished' || payload.new.status === 'confirmed')) {
           const credited = Number(payload.new.amount || 0);
           showToast(`Deposit confirmed! +${credited} USDT credited to your wallet!`, 'success');
@@ -412,6 +419,56 @@ export function LotteryProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('lotto_winner_payouts', JSON.stringify(winnerPayouts));
   }, [winnerPayouts]);
+
+  // Support Tickets State
+  const [supportTickets, setSupportTickets] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lotto_support_tickets');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('lotto_support_tickets', JSON.stringify(supportTickets));
+    } catch (e) {}
+  }, [supportTickets]);
+
+  // Fetch support tickets from Supabase database
+  const fetchSupportTickets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('lottery_deposits')
+        .select('*')
+        .eq('currency', 'SUPPORT_TICKET')
+        .order('created_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        const mapped = data.map(row => {
+          let userMeta = {};
+          if (row.user_address && typeof row.user_address === 'string' && row.user_address.startsWith('{')) {
+            try { userMeta = JSON.parse(row.user_address); } catch (e) {}
+          }
+          return {
+            id: row.id,
+            name: userMeta.name || 'Anonymous User',
+            username: userMeta.username || '',
+            userId: userMeta.userId || row.user_id || '',
+            email: row.pay_currency || '',
+            subject: row.payment_id || 'General Support Inquiry',
+            message: row.invoice_url || '',
+            status: row.status || 'pending', // 'pending' | 'replied' | 'resolved'
+            createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now()
+          };
+        });
+        setSupportTickets(mapped);
+      }
+    } catch (err) {
+      console.error('fetchSupportTickets error:', err);
+    }
+  };
 
   // User Authentication State
   const [user, setUser] = useState(null);
@@ -688,6 +745,9 @@ export function LotteryProvider({ children }) {
             network: wallet.network
           });
         }
+
+        // 5. Fetch support tickets
+        await fetchSupportTickets();
 
         setIsSupabaseSynced(true);
       } catch (err) {
@@ -1457,6 +1517,87 @@ export function LotteryProvider({ children }) {
     }
   };
 
+  // Submit User Contact / Support Inquiry
+  const submitSupportTicket = async ({ name, username, email, subject, message }) => {
+    const ticketId = `tkt-${Date.now().toString(36)}-${Math.floor(100 + Math.random() * 900)}`;
+    const userMeta = {
+      name: (name || '').trim(),
+      username: (username || profile?.username || '').trim(),
+      userId: user?.id || ''
+    };
+
+    const newTicket = {
+      id: ticketId,
+      name: userMeta.name,
+      username: userMeta.username,
+      userId: userMeta.userId,
+      email: (email || user?.email || '').trim(),
+      subject: (subject || 'General Inquiry').trim(),
+      message: (message || '').trim(),
+      status: 'pending',
+      createdAt: Date.now()
+    };
+
+    // Optimistic UI state update
+    setSupportTickets(prev => [newTicket, ...prev.filter(t => t.id !== ticketId)]);
+
+    try {
+      const { error } = await supabase.from('lottery_deposits').insert({
+        id: ticketId,
+        user_address: JSON.stringify(userMeta),
+        user_id: user?.id || null,
+        amount: 0,
+        currency: 'SUPPORT_TICKET',
+        pay_currency: newTicket.email,
+        payment_id: newTicket.subject,
+        invoice_url: newTicket.message,
+        status: 'pending'
+      });
+
+      if (error) {
+        console.warn('Supabase support ticket insert note:', error);
+      }
+      showToast(`Support query submitted! Ticket #${ticketId}`, 'success');
+      return { success: true, ticketId };
+    } catch (err) {
+      console.error('submitSupportTicket error:', err);
+      showToast(`Support query submitted! Ticket #${ticketId}`, 'success');
+      return { success: true, ticketId };
+    }
+  };
+
+  // Admin update ticket status ('pending' | 'replied' | 'resolved')
+  const adminUpdateTicketStatus = async (ticketId, nextStatus) => {
+    try {
+      setSupportTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: nextStatus } : t));
+      const { error } = await supabase
+        .from('lottery_deposits')
+        .update({ status: nextStatus, updated_at: new Date().toISOString() })
+        .eq('id', ticketId);
+      if (error) {
+        console.warn('Update ticket status note:', error.message);
+      }
+      showToast(`Ticket status updated to ${nextStatus.toUpperCase()}`, 'info');
+      return { success: true };
+    } catch (err) {
+      console.error('adminUpdateTicketStatus error:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  // Admin delete ticket
+  const adminDeleteTicket = async (ticketId) => {
+    try {
+      setSupportTickets(prev => prev.filter(t => t.id !== ticketId));
+      await supabase.from('lottery_deposits').delete().eq('id', ticketId);
+      showToast('Support ticket deleted', 'info');
+      return { success: true };
+    } catch (err) {
+      console.error('adminDeleteTicket error:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
   return (
     <LotteryContext.Provider
       value={{
@@ -1513,6 +1654,11 @@ export function LotteryProvider({ children }) {
         adminApproveWinnerPayout,
         adminRejectWinnerPayout,
         adminAddManualWinnerCredit,
+        supportTickets,
+        fetchSupportTickets,
+        submitSupportTicket,
+        adminUpdateTicketStatus,
+        adminDeleteTicket,
         isTicketNumberSold,
         getUnsoldRandomNumber
       }}

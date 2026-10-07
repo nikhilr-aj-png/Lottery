@@ -12,7 +12,8 @@ import {
   ChevronDown,
   User,
   LogIn,
-  Lock
+  Lock,
+  Headphones
 } from 'lucide-react';
 
 export default function Navbar({ onOpenProfile }) {
@@ -33,8 +34,9 @@ export default function Navbar({ onOpenProfile }) {
   const isLoggedIn = !!user;
 
   const handleNavClick = (tabId) => {
-    // Unauthenticated visitors are restricted to Homepage only
-    if (!isLoggedIn && tabId !== 'lotteries') {
+    // Unauthenticated visitors are allowed on public tabs: lotteries, contact, terms, privacy
+    const publicTabs = ['lotteries', 'contact', 'terms', 'privacy'];
+    if (!isLoggedIn && !publicTabs.includes(tabId)) {
       setIsMobileMenuOpen(false);
       setIsAuthModalOpen(true);
       const tabNames = {
@@ -56,6 +58,7 @@ export default function Navbar({ onOpenProfile }) {
     { id: 'tickets', label: 'My Tickets', icon: Ticket },
     { id: 'results', label: 'Results', icon: Trophy },
     { id: 'wallet', label: 'Wallet & 24h Payouts', icon: Wallet },
+    { id: 'contact', label: 'Contact Us', icon: Headphones },
   ];
 
   return (
@@ -98,7 +101,7 @@ export default function Navbar({ onOpenProfile }) {
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
-                const isLocked = !isLoggedIn && item.id !== 'lotteries';
+                const isLocked = !isLoggedIn && !['lotteries', 'contact'].includes(item.id);
                 return (
                   <button
                     key={item.id}
@@ -197,7 +200,7 @@ export default function Navbar({ onOpenProfile }) {
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
-                const isLocked = !isLoggedIn && item.id !== 'lotteries';
+                const isLocked = !isLoggedIn && !['lotteries', 'contact'].includes(item.id);
                 return (
                   <button
                     key={item.id}

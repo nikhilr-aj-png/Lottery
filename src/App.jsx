@@ -15,6 +15,7 @@ import RulesModal from './components/RulesModal';
 import Toast from './components/Toast';
 import TermsPage from './pages/TermsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import ContactPage from './pages/ContactPage';
 import AdminPortal from './admin/AdminPortal';
 import { ShieldCheck, Flame, Trophy, Sparkles, ShieldAlert, Lock, LogIn } from 'lucide-react';
 
@@ -348,6 +349,11 @@ function LotteryAppContent() {
           <PrivacyPolicyPage onBackToHome={() => setActiveTab('lotteries')} />
         )}
 
+        {/* VIEW 7: CONTACT US PAGE */}
+        {activeTab === 'contact' && (
+          <ContactPage onBackToHome={() => setActiveTab('lotteries')} />
+        )}
+
       </main>
 
       {/* Global Modals */}
@@ -417,7 +423,17 @@ function LotteryAppContent() {
               © 2026 EarnFlow.In Protocol. All drawings are provably fair, verifiable on the public blockchain, and executed autonomously with guaranteed 24-hour USDT withdrawal SLA.
             </div>
 
-            <div className="flex items-center gap-4 font-semibold text-xs shrink-0">
+            <div className="flex items-center gap-4 font-semibold text-xs shrink-0 flex-wrap justify-center sm:justify-end">
+              <button
+                onClick={() => {
+                  setActiveTab('contact');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="hover:text-[#ffd700] transition-colors cursor-pointer text-[#ffd700]"
+              >
+                Contact Support
+              </button>
+              <span>•</span>
               <button
                 onClick={() => {
                   setActiveTab('terms');
