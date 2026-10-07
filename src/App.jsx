@@ -90,6 +90,14 @@ function LotteryAppContent() {
 
     window.addEventListener('hashchange', handleHashChange);
     window.addEventListener('popstate', handleHashChange);
+
+    // Clean OAuth access token fragment from the address bar
+    if (window.location.hash && (window.location.hash.includes('access_token=') || window.location.hash.includes('refresh_token='))) {
+      setTimeout(() => {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }, 50);
+    }
+
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
       window.removeEventListener('popstate', handleHashChange);

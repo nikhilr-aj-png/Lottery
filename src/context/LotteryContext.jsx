@@ -583,10 +583,17 @@ export function LotteryProvider({ children }) {
 
   // Listen to Supabase Auth state changes
   useEffect(() => {
+    const cleanAuthHash = () => {
+      if (window.location.hash && (window.location.hash.includes('access_token=') || window.location.hash.includes('refresh_token='))) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+        cleanAuthHash();
       }
     });
 
@@ -594,6 +601,7 @@ export function LotteryProvider({ children }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+        cleanAuthHash();
       } else {
         setProfile(null);
       }

@@ -11,7 +11,8 @@ import {
   Wallet,
   Save,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Lock
 } from 'lucide-react';
 
 export default function ProfileModal({ isOpen, onClose }) {
