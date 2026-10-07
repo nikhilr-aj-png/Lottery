@@ -124,9 +124,15 @@ export default function WalletView() {
     setIsCheckingStatus(true);
     try {
       const res = await checkDepositStatus(activeInvoice.depositId);
-      if (res && res.status) {
-        setInvoiceStatusText(res.status);
-        showToast(`Invoice status: ${res.status.toUpperCase()}`, 'info');
+      const depStatus = res?.deposit?.status || res?.status;
+      if (depStatus) {
+        setInvoiceStatusText(depStatus);
+        if (depStatus === 'finished' || depStatus === 'confirmed') {
+          showToast('Deposit confirmed! USDT credited to your wallet.', 'success');
+          setActiveInvoice(null);
+        } else {
+          showToast(`Invoice status: ${depStatus.toUpperCase()}`, 'info');
+        }
       } else {
         showToast('Status check: Waiting for on-chain broadcast', 'info');
       }
@@ -134,6 +140,29 @@ export default function WalletView() {
       setIsCheckingStatus(false);
     }
   };
+
+  // Auto-poll active invoice status every 6 seconds
+  useEffect(() => {
+    if (!activeInvoice?.depositId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await checkDepositStatus(activeInvoice.depositId);
+        const depStatus = res?.deposit?.status || res?.status;
+        if (depStatus) {
+          setInvoiceStatusText(depStatus);
+          if (depStatus === 'finished' || depStatus === 'confirmed') {
+            showToast('Deposit confirmed! USDT credited to your wallet.', 'success');
+            setActiveInvoice(null);
+          }
+        }
+      } catch (err) {
+        // silent poll catch
+      }
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [activeInvoice?.depositId]);
 
   // Calculate live SLA remaining for processing withdrawals
   const [now, setNow] = useState(Date.now());

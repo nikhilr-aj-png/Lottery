@@ -99,7 +99,8 @@ Deno.serve(async (req: Request) => {
 
         const nowpaymentsApiKey = Deno.env.get('NOWPAYMENTS_API_KEY') ?? ''
         const frontendUrl = Deno.env.get('FRONTEND_URL') ?? 'https://earnflow.in'
-        const apiUrl = Deno.env.get('API_URL') ?? 'https://earnflow.in'
+        const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? 'https://pkloymdzdjykpsutpyqk.supabase.co'
+        const apiUrl = Deno.env.get('API_URL') || supabaseUrl
 
         if (!nowpaymentsApiKey) {
           return jsonResponse({ success: false, error: 'NOWPayments API key is not configured' }, 500)

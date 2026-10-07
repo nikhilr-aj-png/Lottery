@@ -303,6 +303,9 @@ export function LotteryProvider({ children }) {
 
         // Deposit confirmation event
         if (payload.new && (payload.new.status === 'finished' || payload.new.status === 'confirmed')) {
+          if (payload.old?.status === 'finished' || payload.old?.status === 'confirmed') {
+            return;
+          }
           const credited = Number(payload.new.amount || 0);
           showToast(`Deposit confirmed! +${credited} USDT credited to your wallet!`, 'success');
           confetti({
@@ -311,7 +314,18 @@ export function LotteryProvider({ children }) {
             origin: { y: 0.6 },
             colors: ['#05d5aa', '#ffd700', '#00f2fe', '#ffffff']
           });
-          // Refresh wallet balance from database
+
+          // Instantly credit local wallet state and persist
+          setWallet(prev => {
+            const nextBalance = parseFloat((Number(prev.balance || 0) + credited).toFixed(2));
+            const updated = { ...prev, balance: nextBalance };
+            try {
+              localStorage.setItem('lotto_wallet', JSON.stringify(updated));
+            } catch (e) {}
+            return updated;
+          });
+
+          // Also sync with database record
           if (wallet.address) {
             supabase
               .from('lottery_wallets')
@@ -319,10 +333,10 @@ export function LotteryProvider({ children }) {
               .eq('address', wallet.address)
               .single()
               .then(({ data }) => {
-                if (data) {
+                if (data && typeof data.balance === 'number') {
                   setWallet(prev => ({
                     ...prev,
-                    balance: Number(data.balance || prev.balance),
+                    balance: Number(data.balance),
                     lifetimeWon: Number(data.lifetime_won || prev.lifetimeWon)
                   }));
                 }
