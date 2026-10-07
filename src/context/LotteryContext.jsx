@@ -295,6 +295,12 @@ export function LotteryProvider({ children }) {
           return;
         }
 
+        // If it's a platform settings update
+        if (payload.new?.id === 'cfg_platform_settings') {
+          fetchPlatformSettings();
+          return;
+        }
+
         // Deposit confirmation event
         if (payload.new && (payload.new.status === 'finished' || payload.new.status === 'confirmed')) {
           const credited = Number(payload.new.amount || 0);
@@ -467,6 +473,91 @@ export function LotteryProvider({ children }) {
       }
     } catch (err) {
       console.error('fetchSupportTickets error:', err);
+    }
+  };
+
+  // Platform Governance Settings State
+  const DEFAULT_PLATFORM_SETTINGS = {
+    minWithdrawal: 5.0,
+    maxWithdrawal: 10000.0,
+    houseFeePercent: 5,
+    defaultWinnerSharePercent: 90,
+    treasuryTrc20: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m',
+    supportEmail: 'support@earnflow.in'
+  };
+
+  const [platformSettings, setPlatformSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lotto_platform_settings');
+      return saved ? { ...DEFAULT_PLATFORM_SETTINGS, ...JSON.parse(saved) } : DEFAULT_PLATFORM_SETTINGS;
+    } catch {
+      return DEFAULT_PLATFORM_SETTINGS;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('lotto_platform_settings', JSON.stringify(platformSettings));
+    } catch (e) {}
+  }, [platformSettings]);
+
+  // Fetch platform settings from Supabase database
+  const fetchPlatformSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('lottery_deposits')
+        .select('*')
+        .eq('id', 'cfg_platform_settings')
+        .single();
+
+      if (!error && data && data.invoice_url) {
+        try {
+          const parsed = JSON.parse(data.invoice_url);
+          setPlatformSettings(prev => ({ ...prev, ...parsed }));
+        } catch (e) {}
+      }
+    } catch (err) {
+      console.error('fetchPlatformSettings error:', err);
+    }
+  };
+
+  // Update platform settings from Admin Console
+  const adminUpdatePlatformSettings = async (newSettings) => {
+    try {
+      const updated = {
+        ...platformSettings,
+        ...newSettings,
+        minWithdrawal: parseFloat(newSettings.minWithdrawal || platformSettings.minWithdrawal),
+        maxWithdrawal: parseFloat(newSettings.maxWithdrawal || platformSettings.maxWithdrawal),
+        houseFeePercent: parseFloat(newSettings.houseFeePercent || platformSettings.houseFeePercent),
+        defaultWinnerSharePercent: parseFloat(newSettings.defaultWinnerSharePercent || platformSettings.defaultWinnerSharePercent),
+        treasuryTrc20: (newSettings.treasuryTrc20 || platformSettings.treasuryTrc20).trim(),
+        supportEmail: (newSettings.supportEmail || platformSettings.supportEmail).trim()
+      };
+
+      // Optimistic update
+      setPlatformSettings(updated);
+      localStorage.setItem('lotto_platform_settings', JSON.stringify(updated));
+
+      // Persist to Supabase database
+      const { error } = await supabase.from('lottery_deposits').upsert({
+        id: 'cfg_platform_settings',
+        amount: 0,
+        currency: 'PLATFORM_SETTINGS',
+        invoice_url: JSON.stringify(updated),
+        updated_at: new Date().toISOString()
+      });
+
+      if (error) {
+        console.warn('Supabase settings upsert error:', error.message);
+      }
+
+      showToast('Platform governance settings updated and synced across all user portals!', 'success');
+      return { success: true, settings: updated };
+    } catch (err) {
+      console.error('adminUpdatePlatformSettings error:', err);
+      showToast('Failed to update settings: ' + err.message, 'error');
+      return { success: false, error: err.message };
     }
   };
 
@@ -749,6 +840,9 @@ export function LotteryProvider({ children }) {
         // 5. Fetch support tickets
         await fetchSupportTickets();
 
+        // 6. Fetch platform governance settings
+        await fetchPlatformSettings();
+
         setIsSupabaseSynced(true);
       } catch (err) {
         console.error('Supabase sync error (using local storage fallback):', err);
@@ -1006,8 +1100,16 @@ export function LotteryProvider({ children }) {
       return false;
     }
 
-    if (val < 10) {
-      showToast('Minimum withdrawal is 10 USDT', 'error');
+    const minLimit = typeof platformSettings?.minWithdrawal === 'number' ? platformSettings.minWithdrawal : 5;
+    const maxLimit = typeof platformSettings?.maxWithdrawal === 'number' ? platformSettings.maxWithdrawal : 10000;
+
+    if (val < minLimit) {
+      showToast(`Minimum withdrawal is ${minLimit} USDT`, 'error');
+      return false;
+    }
+
+    if (val > maxLimit) {
+      showToast(`Maximum withdrawal is ${maxLimit} USDT`, 'error');
       return false;
     }
 
@@ -1659,6 +1761,9 @@ export function LotteryProvider({ children }) {
         submitSupportTicket,
         adminUpdateTicketStatus,
         adminDeleteTicket,
+        platformSettings,
+        adminUpdatePlatformSettings,
+        fetchPlatformSettings,
         isTicketNumberSold,
         getUnsoldRandomNumber
       }}

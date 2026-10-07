@@ -1,7 +1,10 @@
 import React from 'react';
 import { ArrowLeft, ShieldCheck, Lock, Eye, Database, Globe, Server, CheckCircle } from 'lucide-react';
+import { useLottery } from '../context/LotteryContext';
 
 export default function PrivacyPolicyPage({ onBackToHome }) {
+  const { platformSettings } = useLottery();
+  const supportEmail = platformSettings?.supportEmail || 'support@earnflow.in';
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-in fade-in duration-200">
       {/* Top Breadcrumb / Back button */}
@@ -102,7 +105,7 @@ export default function PrivacyPolicyPage({ onBackToHome }) {
             <span className="text-[#05d5aa]">6.</span> Contact & Inquiries
           </div>
           <p>
-            If you have questions regarding our privacy practices or wish to review your account data, you can reach out via our support channel: <code className="text-[#05d5aa]">support@earnflow.in</code>.
+            If you have questions regarding our privacy practices or wish to review your account data, you can reach out via our support channel: <a href={`mailto:${supportEmail}`} className="text-[#05d5aa] hover:underline font-mono-numbers">{supportEmail}</a>.
           </p>
         </div>
 

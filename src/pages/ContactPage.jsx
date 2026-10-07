@@ -18,7 +18,8 @@ import {
 } from 'lucide-react';
 
 export default function ContactPage({ onBackToHome }) {
-  const { user, profile, submitSupportTicket, showToast } = useLottery();
+  const { user, profile, submitSupportTicket, showToast, platformSettings } = useLottery();
+  const supportEmail = platformSettings?.supportEmail || 'support@earnflow.in';
 
   // Form states
   const [name, setName] = useState('');
@@ -364,10 +365,10 @@ export default function ContactPage({ onBackToHome }) {
             </p>
 
             <a
-              href="mailto:support@earnflow.in"
+              href={`mailto:${supportEmail}`}
               className="block p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] hover:border-[#ffd700] font-mono-numbers text-xs text-center text-[#05d5aa] font-bold transition-colors"
             >
-              support@earnflow.in
+              {supportEmail}
             </a>
           </div>
 

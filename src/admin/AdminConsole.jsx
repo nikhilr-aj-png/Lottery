@@ -111,6 +111,8 @@ export default function AdminConsole({ onLogout }) {
     fetchSupportTickets,
     adminUpdateTicketStatus,
     adminDeleteTicket,
+    platformSettings,
+    adminUpdatePlatformSettings,
     showToast
   } = useLottery();
 
@@ -186,13 +188,27 @@ export default function AdminConsole({ onLogout }) {
 
   const selectedEvent = events.find(e => e.id === selectedEventId);
 
-  // Platform Settings state
-  const [minWithdrawal, setMinWithdrawal] = useState('5.00');
-  const [maxWithdrawal, setMaxWithdrawal] = useState('10000.00');
-  const [houseFeePercent, setHouseFeePercent] = useState('5');
-  const [defaultWinnerSharePercent, setDefaultWinnerSharePercent] = useState('90');
-  const [treasuryTrc20, setTreasuryTrc20] = useState('TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9mTRC');
-  const [supportEmail, setSupportEmail] = useState('support@earnflow.in');
+  // Platform Settings state initialized from global platformSettings
+  const [minWithdrawal, setMinWithdrawal] = useState(() => String(platformSettings?.minWithdrawal ?? '5.00'));
+  const [maxWithdrawal, setMaxWithdrawal] = useState(() => String(platformSettings?.maxWithdrawal ?? '10000.00'));
+  const [houseFeePercent, setHouseFeePercent] = useState(() => String(platformSettings?.houseFeePercent ?? '5'));
+  const [defaultWinnerSharePercent, setDefaultWinnerSharePercent] = useState(() => String(platformSettings?.defaultWinnerSharePercent ?? '90'));
+  const [treasuryTrc20, setTreasuryTrc20] = useState(() => platformSettings?.treasuryTrc20 || 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m');
+  const [supportEmail, setSupportEmail] = useState(() => platformSettings?.supportEmail || 'support@earnflow.in');
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [lastSavedTime, setLastSavedTime] = useState(null);
+
+  // Sync inputs whenever platformSettings updates from database or another session
+  useEffect(() => {
+    if (platformSettings) {
+      setMinWithdrawal(String(platformSettings.minWithdrawal ?? '5.00'));
+      setMaxWithdrawal(String(platformSettings.maxWithdrawal ?? '10000.00'));
+      setHouseFeePercent(String(platformSettings.houseFeePercent ?? '5'));
+      setDefaultWinnerSharePercent(String(platformSettings.defaultWinnerSharePercent ?? '90'));
+      setTreasuryTrc20(platformSettings.treasuryTrc20 || 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m');
+      setSupportEmail(platformSettings.supportEmail || 'support@earnflow.in');
+    }
+  }, [platformSettings]);
 
   const [copiedId, setCopiedId] = useState(null);
 
@@ -295,9 +311,24 @@ export default function AdminConsole({ onLogout }) {
     }
   };
 
-  const handleSaveSettings = (e) => {
+  const handleSaveSettings = async (e) => {
     e.preventDefault();
-    showToast('Platform governance settings updated successfully!', 'success');
+    setIsSavingSettings(true);
+    try {
+      const res = await adminUpdatePlatformSettings({
+        minWithdrawal,
+        maxWithdrawal,
+        houseFeePercent,
+        defaultWinnerSharePercent,
+        treasuryTrc20,
+        supportEmail
+      });
+      if (res?.success) {
+        setLastSavedTime(new Date().toLocaleTimeString());
+      }
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   // Filtered users list
@@ -732,7 +763,7 @@ export default function AdminConsole({ onLogout }) {
 
                     <div>
                       <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                        Duration (कम से कम 1 मिनट / 60 sec)
+                        Duration (Minimum 1 min / 60 sec)
                       </label>
                       <div className="grid grid-cols-2 gap-2">
                         <input
@@ -749,9 +780,9 @@ export default function AdminConsole({ onLogout }) {
                           onChange={(e) => setDurationUnit(e.target.value)}
                           className="bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-2 py-2 text-xs text-white outline-none cursor-pointer"
                         >
-                          <option value="minutes">Minutes (मिनट)</option>
-                          <option value="hours">Hours (घंटे)</option>
-                          <option value="days">Days (दिन)</option>
+                          <option value="minutes">Minutes</option>
+                          <option value="hours">Hours</option>
+                          <option value="days">Days</option>
                         </select>
                       </div>
                       <p className="text-[10px] text-[#9b8f7c] mt-1">
@@ -764,7 +795,7 @@ export default function AdminConsole({ onLogout }) {
                   <div className="p-3 rounded-xl bg-[#07090d] border border-[#272a31] space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-xs text-[#8b92a2] font-semibold">
-                        Prize Structure / इनाम प्रकार
+                        Prize Distribution Structure
                       </label>
                       <div className="flex items-center gap-1 bg-[#141924] p-1 rounded-lg border border-[#272a31]">
                         <button
@@ -793,7 +824,7 @@ export default function AdminConsole({ onLogout }) {
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-[11px] text-[#8b92a2] font-semibold mb-1">
-                              Min Prize (USDT) - कम से कम
+                              Minimum Prize (Floor USDT)
                             </label>
                             <input
                               type="number"
@@ -807,7 +838,7 @@ export default function AdminConsole({ onLogout }) {
                           </div>
                           <div>
                             <label className="block text-[11px] text-[#8b92a2] font-semibold mb-1">
-                              Max Prize (USDT) - ज्यादा से ज्यादा
+                              Maximum Prize (Cap USDT)
                             </label>
                             <input
                               type="number"
@@ -821,7 +852,7 @@ export default function AdminConsole({ onLogout }) {
                           </div>
                         </div>
                         <p className="text-[10px] text-amber-400 mt-1.5 font-medium">
-                          🎯 Winner ko <span className="font-bold underline">{minPrize} USDT se {maxPrize} USDT</span> ke beech dynamic reward milega!
+                          🎯 Lucky winner receives a dynamic prize between <span className="font-bold underline">{minPrize} USDT and {maxPrize} USDT</span>!
                         </p>
                       </div>
                     ) : (
@@ -931,7 +962,7 @@ export default function AdminConsole({ onLogout }) {
                     {eventBannerImage && (
                       <div className="space-y-2 mt-2">
                         <div className="flex items-center justify-between text-[11px] text-[#8b92a2]">
-                          <span className="font-semibold text-amber-400">Live User Card Preview (कार्ड कैसा दिखेगा):</span>
+                          <span className="font-semibold text-amber-400">Live User Card Preview:</span>
                           <span className="text-[10px] text-emerald-400 font-bold">Theme: {SEASONAL_PRESETS[eventTheme]?.name || eventTheme}</span>
                         </div>
                         
@@ -966,7 +997,7 @@ export default function AdminConsole({ onLogout }) {
                             {/* Prize display */}
                             <div className="p-2 rounded-xl bg-black/50 border border-amber-500/30 flex items-center justify-between">
                               <span className="text-[10px] text-[#8b92a2] font-semibold">
-                                {prizeType === 'range' ? 'PRIZE RANGE (इनाम):' : 'JACKPOT POT:'}
+                                {prizeType === 'range' ? 'PRIZE RANGE:' : 'JACKPOT POT:'}
                               </span>
                               <span className="font-mono-numbers font-black text-xs text-amber-300">
                                 {prizeType === 'range' 
@@ -1876,7 +1907,7 @@ export default function AdminConsole({ onLogout }) {
                       <label className="block text-xs text-[#8b92a2] font-semibold">
                         Minimum Withdrawal (USDT)
                       </label>
-                      <span className="text-[10px] text-amber-400 font-bold">कम से कम निकासी</span>
+                      <span className="text-[10px] text-amber-400 font-bold">Minimum Threshold</span>
                     </div>
                     <input
                       type="number"
@@ -1887,7 +1918,7 @@ export default function AdminConsole({ onLogout }) {
                       required
                     />
                     <p className="text-[10px] text-[#9b8f7c] mt-1.5 leading-relaxed">
-                      💡 User ke pass kam se kam itna balance hona chahiye withdrawal lagane ke liye.
+                      💡 Users must maintain at least this balance to initiate an on-chain withdrawal.
                     </p>
                   </div>
 
@@ -1896,7 +1927,7 @@ export default function AdminConsole({ onLogout }) {
                       <label className="block text-xs text-[#8b92a2] font-semibold">
                         Maximum Single Withdrawal (USDT)
                       </label>
-                      <span className="text-[10px] text-cyan-400 font-bold">अधिकतम निकासी</span>
+                      <span className="text-[10px] text-cyan-400 font-bold">Maximum Cap</span>
                     </div>
                     <input
                       type="number"
@@ -1907,7 +1938,7 @@ export default function AdminConsole({ onLogout }) {
                       required
                     />
                     <p className="text-[10px] text-[#9b8f7c] mt-1.5 leading-relaxed">
-                      🛡️ Security limit: Ek baar me user isse zyada USDT withdraw nahi kar sakta.
+                      🛡️ Security limit: Maximum allowable USDT disbursed per single withdrawal transaction.
                     </p>
                   </div>
                 </div>
@@ -1918,7 +1949,7 @@ export default function AdminConsole({ onLogout }) {
                       <label className="block text-xs text-[#8b92a2] font-semibold">
                         Platform House Charge / Fee (%)
                       </label>
-                      <span className="text-[10px] text-emerald-400 font-bold">प्लेटफ़ॉर्म शुल्क</span>
+                      <span className="text-[10px] text-emerald-400 font-bold">Protocol Maintenance</span>
                     </div>
                     <input
                       type="number"
@@ -1930,7 +1961,7 @@ export default function AdminConsole({ onLogout }) {
                       required
                     />
                     <p className="text-[10px] text-[#05d5aa] mt-1.5 leading-relaxed">
-                      📌 <span className="font-bold">कब लगता है:</span> Jab user withdrawal request karta hai ya draw settle hota hai tab ye platform maintenance fee deduct hoti hai.
+                      📌 Deducted automatically during settlement to fund oracle and operational infrastructure.
                     </p>
                   </div>
 
@@ -1939,7 +1970,7 @@ export default function AdminConsole({ onLogout }) {
                       <label className="block text-xs text-[#8b92a2] font-semibold">
                         Default Winner Pool Share (%)
                       </label>
-                      <span className="text-[10px] text-amber-400 font-bold">विजेता हिस्सा</span>
+                      <span className="text-[10px] text-amber-400 font-bold">Winner Allocation</span>
                     </div>
                     <input
                       type="number"
@@ -1951,14 +1982,14 @@ export default function AdminConsole({ onLogout }) {
                       required
                     />
                     <p className="text-[10px] text-[#9b8f7c] mt-1.5 leading-relaxed">
-                      🏆 <span className="font-bold">90% Winner Share:</span> Pool collection ka 90% winner ko milta hai, baki 10% platform reserve me bachta hai.
+                      🏆 Percentage of total ticket pool disbursed to the verified winning combination.
                     </p>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                    Official Support Email
+                    Official Support Email (Displayed across User Portals)
                   </label>
                   <input
                     type="email"
@@ -1967,6 +1998,9 @@ export default function AdminConsole({ onLogout }) {
                     className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white outline-none"
                     required
                   />
+                  <p className="text-[10px] text-[#64748b] mt-1">
+                    This email is dynamically loaded in Contact Us, Terms & Conditions, and Privacy Policy across the user platform.
+                  </p>
                 </div>
 
                 <div>
@@ -1985,13 +2019,32 @@ export default function AdminConsole({ onLogout }) {
                   </p>
                 </div>
 
-                <button
-                  type="submit"
-                  className="py-2.5 px-6 rounded-xl btn-gold text-xs font-bold flex items-center gap-2 cursor-pointer shadow-md"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Save Platform Configuration</span>
-                </button>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={isSavingSettings}
+                    className="py-3 px-8 rounded-xl btn-gold text-xs font-bold flex items-center gap-2 cursor-pointer shadow-lg shadow-[#f5c451]/20 disabled:opacity-50"
+                  >
+                    {isSavingSettings ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin text-black" />
+                        <span>Syncing Across All User Panels...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 text-black" />
+                        <span>Save Platform Configuration</span>
+                      </>
+                    )}
+                  </button>
+
+                  {lastSavedTime && (
+                    <span className="text-[11px] font-mono-numbers text-emerald-400 font-semibold flex items-center gap-1.5 bg-emerald-500/10 px-3 py-2 rounded-xl border border-emerald-500/30 animate-in fade-in">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Live Synced Across User Portals at {lastSavedTime}</span>
+                    </span>
+                  )}
+                </div>
               </form>
             </div>
           </div>

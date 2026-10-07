@@ -36,8 +36,13 @@ export default function WalletView() {
     requestWithdrawal, 
     showToast,
     createNowPaymentsInvoice,
-    checkDepositStatus 
+    checkDepositStatus,
+    platformSettings
   } = useLottery();
+
+  const minWithdrawalLimit = typeof platformSettings?.minWithdrawal === 'number' ? platformSettings.minWithdrawal : 5;
+  const maxWithdrawalLimit = typeof platformSettings?.maxWithdrawal === 'number' ? platformSettings.maxWithdrawal : 10000;
+  const treasuryAddress = platformSettings?.treasuryTrc20 || wallet.depositAddress;
 
   // Tabs for Deposit vs Withdraw
   const [activeTab, setActiveTab] = useState('withdraw'); // 'deposit' | 'withdraw'
@@ -61,7 +66,7 @@ export default function WalletView() {
 
   // Copy address to clipboard
   const handleCopy = () => {
-    navigator.clipboard.writeText(wallet.depositAddress);
+    navigator.clipboard.writeText(treasuryAddress);
     setCopied(true);
     showToast('Deposit address copied to clipboard!');
     setTimeout(() => setCopied(false), 2000);
@@ -489,7 +494,7 @@ export default function WalletView() {
 
                   <div className="flex items-center gap-2 bg-[#121721] p-3 rounded-xl border border-[#272a31]">
                     <code className="flex-1 font-mono-numbers text-xs text-white truncate text-left">
-                      {wallet.depositAddress}
+                      {treasuryAddress}
                     </code>
                     <button
                       type="button"
@@ -566,20 +571,26 @@ export default function WalletView() {
               <div>
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <label className="text-[#9b8f7c] font-semibold">Withdrawal Amount (USDT):</label>
-                  <span className="font-mono-numbers text-xs text-[#05d5aa]">
-                    Available: {wallet.balance.toFixed(2)} USDT
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono-numbers text-[11px] text-[#f5c451]">
+                      Min: {minWithdrawalLimit} USDT
+                    </span>
+                    <span className="text-[#3b4150]">|</span>
+                    <span className="font-mono-numbers text-xs text-[#05d5aa]">
+                      Available: {wallet.balance.toFixed(2)} USDT
+                    </span>
+                  </div>
                 </div>
                 <div className="relative">
                   <input
                     type="number"
                     step="0.01"
-                    min="10"
-                    max={wallet.balance}
+                    min={minWithdrawalLimit}
+                    max={Math.min(maxWithdrawalLimit, wallet.balance)}
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
                     className="w-full bg-[#0b0e14] border border-[#32353c] focus:border-[#ffd700] rounded-xl px-4 py-3.5 text-white font-mono-numbers font-bold text-lg outline-none"
-                    placeholder="e.g. 500.00"
+                    placeholder={`e.g. ${minWithdrawalLimit}`}
                     required
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[#ffd700]">

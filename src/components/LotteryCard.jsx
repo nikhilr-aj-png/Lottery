@@ -100,8 +100,8 @@ export default function LotteryCard({ event, onSelect }) {
             <span className="text-amber-400 font-extrabold">
               {event.minPrize && event.maxPrize ? 'PRIZE RANGE' : 'WIN UP TO'}
             </span>
-            <span className="text-[10px] text-[#9b8f7c] lowercase font-normal">
-              {event.minPrize && event.maxPrize ? '(इनाम सीमा)' : '(अधिकतम तक)'}
+            <span className="text-[10px] text-[#9b8f7c] font-normal">
+              {event.minPrize && event.maxPrize ? '(Guaranteed Range)' : '(Jackpot Cap)'}
             </span>
           </span>
           <span className="text-[10px] text-[#05d5aa] font-semibold bg-[#05d5aa]/10 px-2 py-0.5 rounded border border-[#05d5aa]/20">
