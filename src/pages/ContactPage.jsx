@@ -118,7 +118,7 @@ export default function ContactPage({ onBackToHome }) {
                 <span className="w-2 h-2 rounded-full bg-[#05d5aa] animate-pulse" />
               </div>
               <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-white">
-                Contact <span className="text-gold-gradient">EarnFlow Protocol</span>
+                Contact <span className="text-gold-gradient">EarnFlow Support</span>
               </h1>
             </div>
           </div>
@@ -381,7 +381,7 @@ export default function ContactPage({ onBackToHome }) {
               </h4>
             </div>
             <p className="text-xs text-[#9b8f7c] leading-relaxed">
-              All winner claims and USDT withdrawals are processed within 24 hours under multi-sig cryptographic safety protocols. If your withdrawal exceeds 24 hours, include your Order ID above for urgent priority.
+              All winner claims and USDT withdrawals are processed within 24 hours under multi-sig cryptographic security standards. If your withdrawal exceeds 24 hours, include your Order ID above for urgent priority.
             </p>
           </div>
 

@@ -21,7 +21,7 @@ export default function TermsPage({ onBackToHome }) {
           </div>
           <div>
             <span className="text-[11px] font-mono-numbers text-[#f5c451] uppercase font-bold tracking-wider">
-              Legal & Protocol Governance
+              Legal & Platform Governance
             </span>
             <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-white">
               Terms & Conditions
@@ -29,7 +29,7 @@ export default function TermsPage({ onBackToHome }) {
           </div>
         </div>
         <p className="text-xs sm:text-sm text-[#9b8f7c] leading-relaxed">
-          Effective Date: October 2026 · EarnFlow.In Sovereign Autonomous Protocol
+          Effective Date: October 2026 · EarnFlow.In Crypto Lottery Platform
         </p>
       </div>
 
@@ -62,7 +62,7 @@ export default function TermsPage({ onBackToHome }) {
           <ul className="list-disc pl-5 space-y-1.5 text-[#9b8f7c]">
             <li>Ticket prices and prize distributions are denominated strictly in USDT.</li>
             <li>Users are solely responsible for ensuring that deposits and withdrawal addresses correspond to valid TRC-20 addresses starting with the letter <code className="text-[#ffd700]">T</code>.</li>
-            <li>Sending assets on unsupported networks (e.g. non-TRC-20 chains) may result in irreversible loss for which the protocol bears no liability.</li>
+            <li>Sending assets on unsupported networks (e.g. non-TRC-20 chains) may result in irreversible loss for which the platform bears no liability.</li>
           </ul>
         </div>
 
@@ -72,19 +72,19 @@ export default function TermsPage({ onBackToHome }) {
             <span className="text-[#ffd700]">3.</span> 4-Digit Number Selection & Game Rules
           </div>
           <p>
-            Participants enter draws by selecting 4 digits ranging from <code className="text-[#05d5aa] font-bold">0000</code> to <code className="text-[#05d5aa] font-bold">9999</code> or utilizing the autonomous Quick Pick cryptographic randomizer.
+            Participants enter draws by selecting 4 digits ranging from <code className="text-[#05d5aa] font-bold">0000</code> to <code className="text-[#05d5aa] font-bold">9999</code> or utilizing the Quick Pick randomizer.
           </p>
           <p>
-            Draw outcomes operate on a strictly enforced <strong>Single Winner Exact Match</strong> protocol:
+            Draw outcomes operate under provably fair lucky draw rules:
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <div className="p-3.5 rounded-xl bg-[#0b0e14] border border-amber-500/30">
-              <span className="text-[#ffd700] font-bold block text-xs">Exact 4/4 Match (Single Winner)</span>
-              <span className="text-white text-xs">100% of the Winner Jackpot Pot (Up to Event Cap)</span>
+              <span className="text-[#ffd700] font-bold block text-xs">Lucky Winners Equal Share</span>
+              <span className="text-white text-xs">Configured number of lucky winners share the prize pool equally based on luck</span>
             </div>
             <div className="p-3.5 rounded-xl bg-[#0b0e14] border border-red-500/30">
-              <span className="text-red-400 font-bold block text-xs">Non-Matching Combinations</span>
-              <span className="text-white text-xs">Direct lose (No partial match tiers)</span>
+              <span className="text-red-400 font-bold block text-xs">Non-Winning Combinations</span>
+              <span className="text-white text-xs">Direct lose (No payout)</span>
             </div>
           </div>
         </div>
@@ -109,7 +109,7 @@ export default function TermsPage({ onBackToHome }) {
           </p>
           <ul className="list-disc pl-5 space-y-1.5 text-[#9b8f7c]">
             <li>Withdrawal requests are processed and broadcast to the TRON blockchain within a guaranteed <strong>24-Hour Service Level Agreement (SLA)</strong>.</li>
-            <li>A flat network disbursal protocol fee of <strong>1.00 USDT</strong> applies per withdrawal to cover on-chain TRON energy and bandwidth costs.</li>
+            <li>A flat network disbursal fee of <strong>1.00 USDT</strong> applies per withdrawal to cover on-chain TRON energy and bandwidth costs.</li>
             <li>Every disbursed withdrawal receives a publicly verifiable Transaction Hash (TxHash).</li>
           </ul>
         </div>
@@ -122,7 +122,7 @@ export default function TermsPage({ onBackToHome }) {
           <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/30 text-amber-200/90 text-xs flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
             <span>
-              Lottery gaming involves financial risk. Do not play with funds you cannot afford to lose. The protocol operates autonomously, and ticket purchases cannot be revoked or refunded once entered into an active pool contract.
+              Lottery gaming involves financial risk. Do not play with funds you cannot afford to lose. Ticket purchases cannot be revoked or refunded once entered into an active lottery pool.
             </span>
           </div>
         </div>

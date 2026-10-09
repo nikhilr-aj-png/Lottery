@@ -196,6 +196,14 @@ function LotteryAppContent() {
                 setSelectedEventForModal(evt || activeEvents[0]);
               }}
               onRulesClick={() => setIsRulesModalOpen(true)}
+              onShowResultClick={(evt) => {
+                if (!user) {
+                  showToast('Please log in to view draw results & past winners!', 'info');
+                  setIsAuthModalOpen(true);
+                  return;
+                }
+                setActiveTab('results');
+              }}
             />
 
             {/* Active Pools Section */}
@@ -205,7 +213,7 @@ function LotteryAppContent() {
                   <div className="flex items-center gap-2 mb-1">
                     <Flame className="w-4 h-4 text-[#ffd700]" />
                     <span className="text-xs font-mono-numbers text-[#f5c451] uppercase font-bold tracking-wider">
-                      HIGH-STAKES AUTONOMOUS CONTRACTS
+                      HIGH-STAKES LOTTERY POOLS
                     </span>
                   </div>
                   <h2 className="font-display font-extrabold text-2xl sm:text-4xl text-white">
@@ -254,7 +262,7 @@ function LotteryAppContent() {
                     No Active Pools Right Now
                   </h3>
                   <p className="text-xs text-[#9b8f7c] max-w-md mx-auto leading-relaxed">
-                    All previous lottery pools have concluded or been settled. New autonomous smart contracts will be launched shortly by the administration.
+                    All previous lottery pools have concluded or been settled. New lottery pools will be launched shortly by the administration.
                   </p>
                 </div>
               ) : (
@@ -264,6 +272,16 @@ function LotteryAppContent() {
                       key={event.id}
                       event={event}
                       onSelect={(evt) => {
+                        const isTimedOut = evt.status === 'completed' || (evt.drawTime && evt.drawTime <= Date.now());
+                        if (isTimedOut) {
+                          if (!user) {
+                            showToast('Please log in to view draw results & past winners!', 'info');
+                            setIsAuthModalOpen(true);
+                            return;
+                          }
+                          setActiveTab('results');
+                          return;
+                        }
                         if (!user) {
                           showToast('Please log in to enter the event and purchase tickets!', 'info');
                           setIsAuthModalOpen(true);
@@ -408,7 +426,7 @@ function LotteryAppContent() {
                   EarnFlow<span className="text-[#f5c451]">.In</span> <span className="text-[#ffd700]">USDT</span>
                 </span>
                 <p className="text-xs text-[#9b8f7c]">
-                  Sovereign Autonomous Crypto Lottery Protocol · TRON (TRC-20)
+                  Provably Fair Crypto Lottery Platform · TRON (TRC-20)
                 </p>
               </div>
             </div>
@@ -432,7 +450,7 @@ function LotteryAppContent() {
           {/* Legal Navigation Links */}
           <div className="mt-8 pt-6 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#9b8f7c]">
             <div className="text-center sm:text-left">
-              © 2026 EarnFlow.In Protocol. All drawings are provably fair, verifiable on the public blockchain, and executed autonomously with guaranteed 24-hour USDT withdrawal SLA.
+              © 2026 EarnFlow.In Platform. All drawings are provably fair, verifiable on the public blockchain, with guaranteed 24-hour USDT withdrawal SLA.
             </div>
 
             <div className="flex items-center gap-4 font-semibold text-xs shrink-0 flex-wrap justify-center sm:justify-end">

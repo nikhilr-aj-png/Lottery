@@ -91,7 +91,7 @@ export default function Navbar({ onOpenProfile }) {
                   </span>
                 </div>
                 <span className="text-[10px] text-[#9b8f7c] font-medium hidden lg:block leading-tight mt-0.5">
-                  Sovereign Crypto Lottery Protocol
+                  USDT Crypto Lottery Platform
                 </span>
               </div>
             </div>

@@ -268,7 +268,7 @@ export default function AuthModal() {
                     : 'Create VIP Account'}
               </h3>
               <p className="text-[11px] text-[#9b8f7c]">
-                {signupStep === 2 ? 'Step 2 of 2: OTP Verification' : 'USDT Sovereign Lottery Protocol'}
+                {signupStep === 2 ? 'Step 2 of 2: OTP Verification' : 'USDT Secure Lottery Platform'}
               </p>
             </div>
           </div>

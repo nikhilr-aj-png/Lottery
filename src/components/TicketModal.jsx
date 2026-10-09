@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLottery } from '../context/LotteryContext';
-import { X, ArrowLeft, Dices, RotateCcw, Plus, Trash2, ShieldCheck, Check, Sparkles, AlertCircle, LogIn, Lock, Wallet } from 'lucide-react';
+import { X, ArrowLeft, Dices, RotateCcw, Plus, Trash2, ShieldCheck, Check, Sparkles, AlertCircle, LogIn, Lock, Wallet, Clock, Trophy } from 'lucide-react';
 
 export default function TicketModal({ event, onClose }) {
   const { user, wallet, buyTickets, isTicketNumberSold, getUnsoldRandomNumber, showToast, setIsAuthModalOpen } = useLottery();
@@ -94,8 +94,13 @@ export default function TicketModal({ event, onClose }) {
   // Total cost
   const totalCost = stagedTickets.length * event.ticketPrice;
   const hasEnoughBalance = wallet.balance >= totalCost && totalCost > 0;
+  const isTimedOut = event.status === 'completed' || (event.drawTime && event.drawTime <= Date.now());
 
   const handleCheckout = () => {
+    if (isTimedOut) {
+      showToast('This lottery draw has timed out and is closed for purchases!', 'error');
+      return;
+    }
     if (!user) {
       showToast('Authentication required: Please log in to purchase tickets!', 'error');
       setIsAuthModalOpen(true);
@@ -133,7 +138,7 @@ export default function TicketModal({ event, onClose }) {
               </span>
             </div>
             <h1 className="font-display font-extrabold text-sm sm:text-lg text-white truncate max-w-[200px] sm:max-w-md">
-              {event.title} <span className="text-[#ffd700]">Terminal</span>
+              {event.title} <span className="text-[#ffd700]">Tickets</span>
             </h1>
           </div>
         </div>
@@ -149,7 +154,7 @@ export default function TicketModal({ event, onClose }) {
           )}
           <button
             onClick={onClose}
-            title="Close Terminal"
+            title="Close"
             className="w-9 h-9 rounded-xl bg-[#1a2232] text-[#9b8f7c] hover:text-white hover:bg-[#272a31] flex items-center justify-center transition-colors cursor-pointer shrink-0"
           >
             <X className="w-5 h-5" />
@@ -296,25 +301,29 @@ export default function TicketModal({ event, onClose }) {
               </div>
             </div>
 
-            {/* Single Winner & Unique Tickets Protocol */}
+            {/* Provably Fair & Lucky Winners Rules */}
             <div className="bg-[#0b0e14]/60 p-3.5 rounded-xl border border-[#272a31] text-xs space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-[#ffd700] flex items-center gap-1.5 font-display text-xs">
                   <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  Single Winner & Unique Combination Protocol:
+                  Provably Fair & Lucky Winners Rules:
                 </span>
                 <span className="text-[10px] font-mono-numbers text-[#05d5aa] font-bold bg-[#05d5aa]/10 px-2 py-0.5 rounded border border-[#05d5aa]/20">
-                  Exact Match Only
+                  {event.winnerCount > 1 ? `${event.winnerCount} Lucky Winners` : 'Lucky Winner Draw'}
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                 <div className="bg-[#121721] p-2.5 rounded-lg border border-[#272a31]">
-                  <strong className="text-white block font-display">🎯 Exact 4-Digit Match</strong>
-                  <span className="text-[#05d5aa]">Single exact match takes full jackpot pot!</span>
+                  <strong className="text-white block font-display">🎯 Provably Fair Luck</strong>
+                  <span className="text-[#05d5aa]">
+                    {event.winnerCount > 1 
+                      ? `${event.winnerCount} lucky winners share the pool equally based on luck!` 
+                      : 'Lucky combination wins the full jackpot pot!'}
+                  </span>
                 </div>
                 <div className="bg-[#121721] p-2.5 rounded-lg border border-[#272a31]">
-                  <strong className="text-white block font-display">🔒 Unique Tickets (No Duplicates)</strong>
-                  <span className="text-[#9b8f7c]">Once a 4-digit number is sold, nobody else can buy it.</span>
+                  <strong className="text-white block font-display">🔒 Unique Combinations</strong>
+                  <span className="text-[#9b8f7c]">Once a 4-digit number is purchased, it is locked to you.</span>
                 </div>
               </div>
             </div>
@@ -427,7 +436,22 @@ export default function TicketModal({ event, onClose }) {
                 </span>
               </div>
 
-              {!user ? (
+              {isTimedOut ? (
+                <div className="space-y-3 pt-1">
+                  <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
+                    <Clock className="w-4 h-4 shrink-0 text-amber-400" />
+                    <span><strong>Draw Closed:</strong> The countdown timer has expired. Ticket purchases are no longer accepted for this round.</span>
+                  </div>
+
+                  <button
+                    onClick={onClose}
+                    className="w-full py-4 rounded-xl font-display font-extrabold text-base flex items-center justify-center gap-2 transition-all cursor-pointer bg-gradient-to-r from-amber-500 via-amber-400 to-[#05d5aa] text-black shadow-lg"
+                  >
+                    <Trophy className="w-5 h-5 text-black" />
+                    Show Result & Past Winners
+                  </button>
+                </div>
+              ) : !user ? (
                 <div className="space-y-3 pt-1">
                   <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />

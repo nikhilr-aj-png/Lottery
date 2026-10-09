@@ -32,7 +32,7 @@ export default function PrivacyPolicyPage({ onBackToHome }) {
           </div>
         </div>
         <p className="text-xs sm:text-sm text-[#9b8f7c] leading-relaxed">
-          Effective Date: October 2026 · EarnFlow.In Sovereign Crypto Lottery Protocol
+          Effective Date: October 2026 · EarnFlow.In Sovereign Crypto Lottery Platform
         </p>
       </div>
 

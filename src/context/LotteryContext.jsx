@@ -16,6 +16,7 @@ const INITIAL_EVENTS = [
     maxPrize: 50,
     poolPrize: 50,
     winnerSharePercent: 90,
+    winnerCount: 5,
     drawTime: Date.now() + 60 * 60 * 1000,
     status: 'active',
     winningDigits: null,
@@ -227,6 +228,7 @@ export function LotteryProvider({ children }) {
       minPrize: meta.min_prize !== undefined && meta.min_prize !== null ? Number(meta.min_prize) : null,
       maxPrize: meta.max_prize !== undefined && meta.max_prize !== null ? Number(meta.max_prize) : null,
       winnerSharePercent: Number(meta.winner_share_percent || 90),
+      winnerCount: Number(meta.winner_count || meta.winnerCount || row.winner_count || 1),
       drawTime: Number(row.draw_time || Date.now() + 86400000),
       status: row.status || 'active',
       winningDigits: row.winning_digits || null,
@@ -1032,6 +1034,12 @@ export function LotteryProvider({ children }) {
     return tickets.some(t => t.eventId === eventId && String(t.ticketNumber).padStart(4, '0') === formatted);
   };
 
+  // Helper: Get all tickets sold for a specific event
+  const getSoldTicketsForEvent = (eventId) => {
+    if (!eventId) return [];
+    return tickets.filter(t => t.eventId === eventId);
+  };
+
   // Helper: Generate an unsold random 4-digit number for an event
   const getUnsoldRandomNumber = (eventId) => {
     const soldSet = new Set(
@@ -1073,6 +1081,12 @@ export function LotteryProvider({ children }) {
       return false;
     }
 
+    // Strict Timeout Check: Tickets cannot be purchased after lottery draw time expires!
+    if (event.status !== 'active' || (event.drawTime && event.drawTime <= Date.now())) {
+      showToast('This lottery has timed out and is closed! Tickets cannot be purchased.', 'error');
+      return false;
+    }
+
     // Check if any requested ticket number is already sold in this event!
     const activeTicketsForEvent = tickets.filter(t => t.eventId === eventId);
     const soldSet = new Set(activeTicketsForEvent.map(t => String(t.ticketNumber).padStart(4, '0')));
@@ -1108,6 +1122,7 @@ export function LotteryProvider({ children }) {
 
     // Create tickets
     const nowMs = Date.now();
+    const userDisplayName = profile?.username ? `@${profile.username}` : (user?.email?.split('@')[0] || 'LuckyPlayer');
     const newTickets = ticketNumbers.map((num, i) => ({
       id: `tkt-${nowMs}-${Math.floor(1000 + Math.random() * 9000)}-${i}`,
       eventId: event.id,
@@ -1118,7 +1133,9 @@ export function LotteryProvider({ children }) {
       status: 'active',
       matchTier: null,
       wonAmount: 0,
-      claimed: false
+      claimed: false,
+      username: userDisplayName,
+      userAddress: wallet.address
     }));
 
     setTickets(prev => [...newTickets, ...prev]);
@@ -1285,46 +1302,66 @@ export function LotteryProvider({ children }) {
     return true;
   };
 
-  // Draw Logic: Provably Fair 4-Digit Match & Automated Payout
-  const executeDraw = async (eventId, specifiedWinningDigits = null) => {
+  // Draw Logic: Provably Fair Multi/Single Lucky Winner Match & Automated Payout
+  const executeDraw = async (eventId, specifiedWinningDigits = null, customWinnerCount = null) => {
     const event = events.find(e => e.id === eventId);
     if (!event) return;
+
+    // How many lucky winners should win? (e.g. 1, 5, 10, 12 etc.)
+    const configuredWinnerCount = Math.max(1, parseInt(customWinnerCount || event.winnerCount || 1, 10));
 
     // Generate 4-digit winning sequence (e.g. '7429') if not specified
     const winDigits = specifiedWinningDigits 
       ? String(specifiedWinningDigits).padStart(4, '0')
       : String(Math.floor(Math.random() * 10000)).padStart(4, '0');
 
-    let totalWonByUser = 0;
-    let winningTicketsFound = [];
-
-    // Single Winner Logic: Exact 4-digit match only!
+    // Active tickets for this event
     const activeTicketsForEvent = tickets.filter(t => t.eventId === eventId && t.status === 'active');
-    const exactWinners = activeTicketsForEvent.filter(t => t.ticketNumber === winDigits);
 
-    // Calculate pool collection & winner share %
+    // Selection of lucky winners (Pure Luck-based distribution, not rank-based):
+    // 1. Any ticket matching the target winning sequence gets selected
+    // 2. Remaining winner slots up to configuredWinnerCount are randomly sampled from active tickets
+    const selectedWinnerTicketIds = new Set();
+    const exactMatches = activeTicketsForEvent.filter(t => t.ticketNumber === winDigits);
+    exactMatches.forEach(t => selectedWinnerTicketIds.add(t.id));
+
+    if (selectedWinnerTicketIds.size < configuredWinnerCount && activeTicketsForEvent.length > 0) {
+      const remainingCandidates = activeTicketsForEvent.filter(t => !selectedWinnerTicketIds.has(t.id));
+      const shuffled = [...remainingCandidates].sort(() => Math.random() - 0.5);
+      for (let i = 0; i < shuffled.length && selectedWinnerTicketIds.size < configuredWinnerCount; i++) {
+        selectedWinnerTicketIds.add(shuffled[i].id);
+      }
+    }
+
+    const winningTickets = activeTicketsForEvent.filter(t => selectedWinnerTicketIds.has(t.id));
+    const finalWinnerCount = Math.max(1, winningTickets.length || configuredWinnerCount);
+
+    // Calculate pool collection & equal winner share % (Distributed equally based on luck!)
     const totalPoolCollected = event.ticketsSold > 0 
       ? (event.ticketsSold * event.ticketPrice) 
       : event.poolPrize;
     const winnerSharePct = event.winnerSharePercent || 90;
     const totalWinnerPool = parseFloat(((totalPoolCollected * winnerSharePct) / 100).toFixed(2));
-    const perWinnerCalculated = exactWinners.length > 0 
-      ? parseFloat((totalWinnerPool / exactWinners.length).toFixed(2))
-      : totalWinnerPool;
+    const perWinnerCalculated = parseFloat((totalWinnerPool / finalWinnerCount).toFixed(2));
+
+    let totalWonByUser = 0;
+    let winningTicketsFound = [];
 
     // Process tickets for this event
     const updatedTickets = tickets.map(tkt => {
       if (tkt.eventId === eventId && tkt.status === 'active') {
-        const num = tkt.ticketNumber;
-        const isExactWinner = (num === winDigits);
+        const isWinner = selectedWinnerTicketIds.has(tkt.id);
 
-        if (isExactWinner) {
+        if (isWinner) {
           totalWonByUser += perWinnerCalculated;
-          winningTicketsFound.push({ ...tkt, matchTier: 'EXACT 4/4 MATCH (SINGLE WINNER)', wonAmount: perWinnerCalculated });
+          const tierName = configuredWinnerCount > 1 
+            ? `LUCKY WINNER (${finalWinnerCount} WINNERS EQUAL SHARE)` 
+            : 'EXACT 4/4 MATCH (JACKPOT WINNER)';
+          winningTicketsFound.push({ ...tkt, matchTier: tierName, wonAmount: perWinnerCalculated });
           return {
             ...tkt,
             status: 'won',
-            matchTier: 'EXACT 4/4 MATCH (SINGLE WINNER)',
+            matchTier: tierName,
             wonAmount: perWinnerCalculated,
             claimed: true
           };
@@ -1343,6 +1380,11 @@ export function LotteryProvider({ children }) {
 
     setTickets(updatedTickets);
 
+    // Winning digits displayed
+    const winningDigitsDisplay = winningTickets.length > 0
+      ? Array.from(new Set(winningTickets.map(w => w.ticketNumber))).join(', ')
+      : winDigits;
+
     // Update event status
     const nowMs = Date.now();
     setEvents(prev => prev.map(e => {
@@ -1350,23 +1392,24 @@ export function LotteryProvider({ children }) {
         return {
           ...e,
           status: 'completed',
-          winningDigits: winDigits,
-          drawTime: nowMs
+          winningDigits: winningDigitsDisplay,
+          drawTime: nowMs,
+          winnerCount: finalWinnerCount
         };
       }
       return e;
     }));
 
-    // Queue Winner Payout into Admin Approval Suite ("Winner Add USDT")
-    if (exactWinners.length > 0) {
-      const newPayouts = exactWinners.map((wTkt, idx) => ({
+    // Queue Winner Payouts into Admin Approval Suite ("Winner Add USDT")
+    if (winningTickets.length > 0) {
+      const newPayouts = winningTickets.map((wTkt, idx) => ({
         id: `WP-${Date.now()}-${idx}`,
         eventId: event.id,
         eventTitle: event.title,
         ticketId: wTkt.id,
-        winnerAddress: wallet.address,
-        winnerUsername: profile?.username || user?.email?.split('@')[0] || 'LuckyWinner',
-        winningDigits: winDigits,
+        winnerAddress: wTkt.userAddress || wallet.address,
+        winnerUsername: wTkt.username || profile?.username || user?.email?.split('@')[0] || `LuckyWinner_${idx + 1}`,
+        winningDigits: wTkt.ticketNumber,
         ticketsSold: event.ticketsSold,
         ticketPrice: event.ticketPrice,
         totalPoolCollected: totalPoolCollected,
@@ -1673,6 +1716,7 @@ export function LotteryProvider({ children }) {
         min_prize: minPrize,
         max_prize: maxPrize,
         winner_share_percent: parseFloat(eventData.winnerSharePercent || 90),
+        winner_count: parseInt(eventData.winnerCount || 1, 10),
         target_winning_digits: eventData.targetWinningDigits || '7429'
       });
 
@@ -1868,6 +1912,7 @@ export function LotteryProvider({ children }) {
         adminUpdatePlatformSettings,
         fetchPlatformSettings,
         isTicketNumberSold,
+        getSoldTicketsForEvent,
         getUnsoldRandomNumber,
         needsUsernameSetup,
         setNeedsUsernameSetup,

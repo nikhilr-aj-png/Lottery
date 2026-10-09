@@ -263,7 +263,7 @@ export default function WalletView() {
         <div className="glass-panel p-6 rounded-2xl border-l-4 border-l-[#00f2fe] relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
-              Settlement Protocol
+              Settlement Network
             </span>
             <div className="w-8 h-8 rounded-lg bg-[#00f2fe]/15 flex items-center justify-center text-[#00f2fe]">
               <ShieldCheck className="w-4 h-4" />
@@ -671,7 +671,7 @@ export default function WalletView() {
                   <span className="font-mono-numbers text-white font-bold">{parseFloat(withdrawAmount || 0).toFixed(2)} USDT</span>
                 </div>
                 <div className="flex justify-between text-[#9b8f7c]">
-                  <span>Network Protocol Fee:</span>
+                  <span>Network Fee:</span>
                   <span className="font-mono-numbers text-white font-bold">1.00 USDT ({selectedNetwork})</span>
                 </div>
                 <div className="flex justify-between text-sm pt-2 border-t border-[#1f2737]">
@@ -686,7 +686,7 @@ export default function WalletView() {
               <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/30 flex items-start gap-3">
                 <Clock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-[11px] text-amber-200/90 leading-relaxed">
-                  <strong>24-Hour SLA Guarantee:</strong> All withdrawal requests are processed within 24 hours via multi-sig protocol security. Average disbursement takes 2–4 hours.
+                  <strong>24-Hour SLA Guarantee:</strong> All withdrawal requests are processed within 24 hours via multi-sig security. Average disbursement takes 2–4 hours.
                 </p>
               </div>
 

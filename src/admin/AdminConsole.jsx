@@ -46,8 +46,8 @@ import {
 const SEASONAL_PRESETS = {
   cyberpunk: {
     id: 'cyberpunk',
-    name: '⚡ Cyberpunk VIP Protocol',
-    badge: 'VIP PROTOCOL',
+    name: '⚡ Cyberpunk VIP Draw',
+    badge: 'VIP DRAW',
     banner: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80'
   },
   diwali: {
@@ -152,6 +152,7 @@ export default function AdminConsole({ onLogout }) {
   const [eventTheme, setEventTheme] = useState('diwali');
   const [eventBannerImage, setEventBannerImage] = useState(SEASONAL_PRESETS.diwali.banner);
   const [eventWinnerSharePercent, setEventWinnerSharePercent] = useState('90');
+  const [eventWinnerCount, setEventWinnerCount] = useState('1');
 
   // Handle seasonal theme change
   const handleThemeChange = (themeKey) => {
@@ -177,12 +178,16 @@ export default function AdminConsole({ onLogout }) {
   // Trigger draw custom digit or auto
   const [selectedEventId, setSelectedEventId] = useState(events.find(e => e.status === 'active')?.id || '');
   const [customDigits, setCustomDigits] = useState('7429');
+  const [drawWinnerCount, setDrawWinnerCount] = useState('1');
 
-  // Sync customDigits when selectedEventId changes
+  // Sync customDigits & drawWinnerCount when selectedEventId changes
   useEffect(() => {
     const target = events.find(e => e.id === selectedEventId);
     if (target?.targetWinningDigits || target?.winningDigits) {
       setCustomDigits(target.targetWinningDigits || target.winningDigits);
+    }
+    if (target?.winnerCount) {
+      setDrawWinnerCount(String(target.winnerCount));
     }
   }, [selectedEventId, events]);
 
@@ -253,7 +258,8 @@ export default function AdminConsole({ onLogout }) {
       theme: eventTheme,
       badge: SEASONAL_PRESETS[eventTheme]?.badge || 'SPECIAL EVENT',
       bannerImage: eventBannerImage,
-      winnerSharePercent: eventWinnerSharePercent
+      winnerSharePercent: eventWinnerSharePercent,
+      winnerCount: parseInt(eventWinnerCount || 1, 10)
     });
     setEventTitle('');
   };
@@ -280,7 +286,7 @@ export default function AdminConsole({ onLogout }) {
       showToast('Please select an active lottery event to draw', 'error');
       return;
     }
-    executeDraw(selectedEventId, customDigits);
+    executeDraw(selectedEventId, customDigits, parseInt(drawWinnerCount || 1, 10));
   };
 
   const handleToggleStatus = async (targetUser) => {
@@ -1035,6 +1041,24 @@ export default function AdminConsole({ onLogout }) {
                     </p>
                   </div>
 
+                  <div>
+                    <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
+                      Number of Lucky Winners (Luck-Based):
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={eventWinnerCount}
+                      onChange={(e) => setEventWinnerCount(e.target.value)}
+                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
+                      required
+                    />
+                    <p className="text-[10px] text-[#9b8f7c] mt-1">
+                      Prize pool will be divided equally among this many lucky winners based on luck (e.g. 1, 5, 10, 12).
+                    </p>
+                  </div>
+
                   <button
                     type="submit"
                     className="w-full py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
@@ -1054,7 +1078,7 @@ export default function AdminConsole({ onLogout }) {
                       Cryptographic Draw Oracle
                     </h3>
                     <p className="text-xs text-[#9b8f7c]">
-                      Single Winner Exact 4-Digit Draw (Takes Full Pot)
+                      Provably Fair Lucky Winners Settlement (Equal USDT Share)
                     </p>
                   </div>
                 </div>
@@ -1074,11 +1098,29 @@ export default function AdminConsole({ onLogout }) {
                       ) : (
                         activeEvents.map(e => (
                           <option key={e.id} value={e.id}>
-                            {e.title} (Pot: Up to {e.poolPrize.toLocaleString()} USDT · {e.ticketsSold} Sold)
+                            {e.title} (Pot: Up to {e.poolPrize.toLocaleString()} USDT · {e.ticketsSold} Sold · {e.winnerCount || 1} Winners)
                           </option>
                         ))
                       )}
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
+                      Number of Lucky Winners to Draw:
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={drawWinnerCount}
+                      onChange={(e) => setDrawWinnerCount(e.target.value)}
+                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
+                      required
+                    />
+                    <p className="text-[10px] text-[#9b8f7c] mt-1">
+                      Total pool will be divided equally among all lucky winners based on provably fair luck (not rank-based).
+                    </p>
                   </div>
 
                   <div>
@@ -1107,24 +1149,22 @@ export default function AdminConsole({ onLogout }) {
                     </div>
                   </div>
 
-                  {/* Single Winner Protocol Banner */}
+                  {/* Lucky Winners Allocation Banner */}
                   <div className="p-3.5 bg-[#07090d] rounded-xl border border-amber-500/40 space-y-2">
                     <div className="flex items-center justify-between text-amber-400 font-bold text-xs">
                       <span className="flex items-center gap-1.5 font-display">
                         <Trophy className="w-4 h-4 text-amber-400" />
-                        Single Winner Rule (Exact 4/4 Match):
+                        Lucky Winners Allocation ({drawWinnerCount} {parseInt(drawWinnerCount, 10) > 1 ? 'Winners' : 'Winner'}):
                       </span>
                       <span className="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded text-[10px] font-mono-numbers border border-amber-500/30 font-bold">
-                        100% JACKPOT POT
+                        EQUAL LUCK-BASED SHARE
                       </span>
                     </div>
                     <p className="text-[11px] text-[#d2c5b0] leading-relaxed">
-                      Only ticket holders with <strong className="text-white font-mono-numbers font-bold">exact 4-digit match ({customDigits || '----'})</strong> win the full jackpot pot (Up to {selectedEvent ? selectedEvent.poolPrize.toLocaleString() : '---'} USDT).
+                      {parseInt(drawWinnerCount, 10) > 1 
+                        ? `The total prize pool will be divided equally among ${drawWinnerCount} lucky winning tickets. Each winner gets an equal USDT share credited to their balance and queued for disbursal.`
+                        : `Only ticket holders with lucky 4-digit combination (${customDigits || '----'}) win the full jackpot pot (Up to ${selectedEvent ? selectedEvent.poolPrize.toLocaleString() : '---'} USDT).`}
                     </p>
-                    <div className="text-[10px] text-red-400/90 flex items-center gap-1.5 font-medium pt-1.5 border-t border-[#1f2737]">
-                      <XCircle className="w-3.5 h-3.5 shrink-0 text-red-400" />
-                      <span>No partial match tiers (no 3/4, 2/4, 1/4 matches). All other combinations directly lose.</span>
-                    </div>
                   </div>
 
                   <button
@@ -1133,7 +1173,7 @@ export default function AdminConsole({ onLogout }) {
                     className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-[#05d5aa] text-black font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg disabled:opacity-50"
                   >
                     <Dices className="w-4 h-4" />
-                    <span>Execute Draw & Disburse Payouts</span>
+                    <span>Execute Draw & Distribute Winnings</span>
                   </button>
                 </form>
               </div>
@@ -1153,6 +1193,7 @@ export default function AdminConsole({ onLogout }) {
                       <th className="py-3 px-3">Price</th>
                       <th className="py-3 px-3">Max Jackpot (Up to)</th>
                       <th className="py-3 px-3">Sold</th>
+                      <th className="py-3 px-3">Winners</th>
                       <th className="py-3 px-3">Winning Seed</th>
                       <th className="py-3 px-3">Status</th>
                       <th className="py-3 px-3 text-right">Actions</th>
@@ -1172,6 +1213,9 @@ export default function AdminConsole({ onLogout }) {
                         </td>
                         <td className="py-3 px-3 font-mono-numbers text-white">
                           {evt.ticketsSold}
+                        </td>
+                        <td className="py-3 px-3 font-mono-numbers text-emerald-400 font-bold">
+                          {evt.winnerCount || 1}
                         </td>
                         <td className="py-3 px-3 font-mono-numbers font-bold tracking-widest text-amber-300">
                           {evt.winningDigits || evt.targetWinningDigits || '—'}
@@ -1949,7 +1993,7 @@ export default function AdminConsole({ onLogout }) {
                       <label className="block text-xs text-[#8b92a2] font-semibold">
                         Platform House Charge / Fee (%)
                       </label>
-                      <span className="text-[10px] text-emerald-400 font-bold">Protocol Maintenance</span>
+                      <span className="text-[10px] text-emerald-400 font-bold">Platform Maintenance</span>
                     </div>
                     <input
                       type="number"

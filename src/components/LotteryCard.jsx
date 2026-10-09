@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Users, Ticket, ArrowRight, ShieldCheck, Flame } from 'lucide-react';
+import { Clock, Users, Ticket, ArrowRight, ShieldCheck, Flame, Trophy } from 'lucide-react';
 
 export default function LotteryCard({ event, onSelect }) {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -20,6 +20,7 @@ export default function LotteryCard({ event, onSelect }) {
   }, [event.drawTime]);
 
   const isCompleted = event.status === 'completed';
+  const isTimedOut = isCompleted || (event.drawTime && event.drawTime <= Date.now());
 
   const getThemeStyling = () => {
     switch (event.theme) {
@@ -105,7 +106,7 @@ export default function LotteryCard({ event, onSelect }) {
             </span>
           </span>
           <span className="text-[10px] text-[#05d5aa] font-semibold bg-[#05d5aa]/10 px-2 py-0.5 rounded border border-[#05d5aa]/20">
-            Single Winner Pot
+            {event.winnerCount > 1 ? `${event.winnerCount} Lucky Winners` : 'Lucky Winner Pot'}
           </span>
         </div>
         <div className="flex items-baseline gap-2">
@@ -119,8 +120,10 @@ export default function LotteryCard({ event, onSelect }) {
           </span>
         </div>
         <div className="mt-2.5 pt-2 border-t border-[#272a31]/60 flex items-center justify-between text-[11px] text-[#9b8f7c]">
-          <span className="text-white/90 font-medium">Exact 4-Digit Match Wins Full Pot</span>
-          <span className="text-red-400/80 font-medium text-[10px]">Other Numbers Lose</span>
+          <span className="text-white/90 font-medium">
+            {event.winnerCount > 1 ? `${event.winnerCount} Lucky Winners Share Pot` : 'Lucky 4-Digit Match Wins Full Pot'}
+          </span>
+          <span className="text-[#05d5aa] font-medium text-[10px]">Provably Fair</span>
         </div>
       </div>
 
@@ -164,6 +167,16 @@ export default function LotteryCard({ event, onSelect }) {
             )) : null}
           </div>
         </div>
+      ) : isTimedOut ? (
+        <div className="mb-5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300">
+          <span className="flex items-center gap-1.5 font-bold">
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            Draw Time Expired
+          </span>
+          <span className="font-mono-numbers text-[11px] text-amber-400 font-semibold uppercase">
+            Closed for Tickets
+          </span>
+        </div>
       ) : (
         <div className="mb-5">
           <div className="flex items-center justify-between text-xs text-[#9b8f7c] mb-1.5 font-medium">
@@ -183,18 +196,20 @@ export default function LotteryCard({ event, onSelect }) {
         </div>
       )}
 
-      {/* CTA Button */}
-      {isCompleted ? (
+      {/* CTA Button: Show Result if timed out, else Buy 4-Digit Ticket */}
+      {isTimedOut ? (
         <button
           onClick={() => onSelect(event)}
-          className="w-full py-3 rounded-xl bg-[#191c22] hover:bg-[#272a31] text-[#e1e2eb] border border-[#32353c] text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-[#191c22] to-emerald-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 text-amber-300 border border-amber-500/40 text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md"
         >
-          View Draw Proof & Winners
+          <Trophy className="w-4 h-4 text-[#ffd700]" />
+          <span>Show Result</span>
+          <ArrowRight className="w-4 h-4 ml-1 text-[#ffd700]" />
         </button>
       ) : (
         <button
           onClick={() => onSelect(event)}
-          className="btn-gold w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 cursor-pointer"
+          className="btn-gold w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
         >
           <Flame className="w-4 h-4" />
           Buy 4-Digit Ticket ({event.ticketPrice} USDT)

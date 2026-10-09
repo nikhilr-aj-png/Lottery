@@ -42,35 +42,35 @@ export default function RulesModal({ isOpen, onClose }) {
             </p>
           </div>
 
-          {/* Section 2: Single Winner Jackpot Protocol */}
+          {/* Section 2: Jackpot & Lucky Winners Rules */}
           <div>
             <h4 className="font-display font-bold text-base text-[#ffd700] mb-3 flex items-center gap-2">
-              <Trophy className="w-4 h-4" /> 2. Single Winner Jackpot Protocol (Exact 4/4 Match)
+              <Trophy className="w-4 h-4" /> 2. Jackpot & Lucky Winners Rules
             </h4>
             
             <div className="space-y-2.5">
               <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/15 via-[#121721] to-[#121721] border border-amber-500/40 flex items-center justify-between">
                 <div>
-                  <strong className="text-white block font-display text-sm">🏆 Single Winner Takes All (Full Pot)</strong>
-                  <span className="text-xs text-[#05d5aa]">Match the exact 4-digit winning seed (e.g. 7-4-2-9)</span>
+                  <strong className="text-white block font-display text-sm">🏆 Lucky Winners Equal Prize Share</strong>
+                  <span className="text-xs text-[#05d5aa]">Draws select 1 or multiple lucky winners (e.g. 1, 10, or 12) who share the pool equally</span>
                 </div>
                 <span className="font-mono-numbers font-black text-sm text-[#ffd700]">
-                  100% of Winner Pot
+                  Equal Share
                 </span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-[#121721] border border-red-500/30 flex items-center justify-between">
                 <div>
-                  <strong className="text-red-400 block font-display text-xs">❌ Non-Matching Combinations (Lose)</strong>
-                  <span className="text-xs text-[#9b8f7c]">No partial match tiers (no 3/4, 2/4, 1/4 matches)</span>
+                  <strong className="text-red-400 block font-display text-xs">❌ Non-Winning Combinations (Lose)</strong>
+                  <span className="text-xs text-[#9b8f7c]">Tickets that are not chosen in the lucky draw do not receive a payout</span>
                 </div>
                 <span className="font-mono-numbers font-bold text-xs text-red-400">
-                  0 USDT (Direct Lose)
+                  0 USDT
                 </span>
               </div>
 
               <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] text-[11px] text-[#d2c5b0] leading-relaxed">
-                💡 <strong>Win Up To Rule:</strong> The winner receives up to the maximum jackpot pool limit announced for the event. Winnings are automatically deposited into your wallet instantly upon draw settlement.
+                💡 <strong>Luck-Based Allocation:</strong> The prize pool is divided equally among the configured number of lucky winners based on provably fair luck. All winnings are automatically credited to your USDT wallet balance instantly upon draw settlement.
               </div>
             </div>
           </div>

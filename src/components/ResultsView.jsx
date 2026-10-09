@@ -76,8 +76,8 @@ export default function ResultsView() {
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-[#272a31] text-xs text-[#9b8f7c] flex flex-col sm:flex-row items-center justify-center gap-2">
-                  <span className="text-[#ffd700] font-bold">🎯 Single Winner Protocol:</span>
-                  <span>Exact 4-digit match wins up to {event.poolPrize.toLocaleString()} USDT (Full Pot). All non-exact tickets lose.</span>
+                  <span className="text-[#ffd700] font-bold">🎯 Lucky Winners Draw:</span>
+                  <span>{event.winnerCount > 1 ? `${event.winnerCount} lucky winners share the jackpot pot equally!` : `Lucky 4-digit combination wins up to ${event.poolPrize.toLocaleString()} USDT!`} Winnings credited directly to wallet.</span>
                 </div>
               </div>
 
