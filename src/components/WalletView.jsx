@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLottery } from '../context/LotteryContext';
+import WithdrawalProofModal from './WithdrawalProofModal';
 import { 
   Wallet, 
   ArrowDownLeft, 
@@ -15,7 +16,8 @@ import {
   CreditCard,
   RefreshCw,
   Coins,
-  CheckCircle2
+  CheckCircle2,
+  FileCheck
 } from 'lucide-react';
 
 const PAYMENT_CURRENCIES = [
@@ -70,6 +72,7 @@ export default function WalletView() {
   const [withdrawAmount, setWithdrawAmount] = useState('500');
   const [destinationAddress, setDestinationAddress] = useState('TYv889XaKLQpNm4xW9jRtZbCuYxK9m');
   const [copied, setCopied] = useState(false);
+  const [selectedProofOrder, setSelectedProofOrder] = useState(null);
 
   // Copy address to clipboard
   const handleCopy = () => {
@@ -788,19 +791,18 @@ export default function WalletView() {
                         )}
                       </td>
                       <td className="py-4 px-3 text-right">
-                        {order.txHash ? (
-                          <a
-                            href={`https://tronscan.org/#/transaction/${order.txHash}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[#00f2fe] hover:underline font-mono-numbers"
-                          >
-                            <span>{order.txHash.slice(0, 8)}...</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        ) : (
-                          <span className="text-[#9b8f7c] font-mono-numbers">Pending Broadcast</span>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProofOrder(order)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-mono-numbers transition-all cursor-pointer ${
+                            isCompleted 
+                              ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-[#05d5aa] border border-[#05d5aa]/30 shadow-[0_0_15px_rgba(5,213,170,0.15)]'
+                              : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30'
+                          }`}
+                        >
+                          <FileCheck className="w-3.5 h-3.5" />
+                          <span>{isCompleted ? 'Show Proof' : 'Audit Trail'}</span>
+                        </button>
                       </td>
                     </tr>
                   );
@@ -810,6 +812,14 @@ export default function WalletView() {
           </table>
         </div>
       </div>
+
+      {/* Cryptographic Withdrawal Proof Modal */}
+      {selectedProofOrder && (
+        <WithdrawalProofModal 
+          order={selectedProofOrder} 
+          onClose={() => setSelectedProofOrder(null)} 
+        />
+      )}
 
     </div>
   );

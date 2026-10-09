@@ -307,13 +307,19 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
                   </h3>
                 </div>
                 
-                <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
-                  {grandEvent.ticketsSold} SOLD
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-md bg-[#141924] text-amber-400 border border-amber-500/30 font-bold flex items-center gap-1">
+                    <span>ROUND</span>
+                    <span className="text-white">#{grandEvent.id.replace('evt-', '').toUpperCase()}</span>
+                  </span>
+                  <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                    {grandEvent.ticketsSold} SOLD
+                  </span>
+                </div>
               </div>
 
               <div className="flex items-center justify-between text-xs text-[#9b8f7c] mb-3 px-1">
-                <span>Recent Buyers in This Pool</span>
+                <span>Recent Buyers · Round #{grandEvent.id.replace('evt-', '').toUpperCase()}</span>
                 <span className="font-mono-numbers text-white font-medium">
                   Pool: {(grandEvent.ticketsSold * grandEvent.ticketPrice).toLocaleString()} USDT
                 </span>
@@ -337,9 +343,14 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
                     >
                       {/* Ticket Number & Buyer User */}
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="font-mono-numbers font-black text-xs text-amber-300 bg-black/60 px-2.5 py-1 rounded-lg border border-amber-500/30 shrink-0">
-                          #{item.num}
-                        </span>
+                        <div className="flex flex-col items-center gap-1 shrink-0">
+                          <span className="font-mono-numbers font-black text-xs text-amber-300 bg-black/70 px-2.5 py-1 rounded-lg border border-amber-500/40 shrink-0 shadow-sm">
+                            #{item.num}
+                          </span>
+                          <span className="font-mono-numbers font-bold text-[8px] text-[#05d5aa] bg-[#05d5aa]/10 px-1 py-0.2 rounded border border-[#05d5aa]/20 tracking-wider">
+                            R#{grandEvent.id.replace('evt-', '').toUpperCase()}
+                          </span>
+                        </div>
                         
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
@@ -352,9 +363,15 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-[#9b8f7c]">
-                            {item.amount} {item.amount > 1 ? 'Tickets' : 'Ticket'} · {grandEvent.ticketPrice * item.amount} USDT
-                          </span>
+                          <div className="flex items-center gap-1.5 text-[10px] text-[#9b8f7c] truncate">
+                            <span className="text-amber-400/90 font-medium font-mono-numbers">
+                              Round #{grandEvent.id.replace('evt-', '').toUpperCase()}
+                            </span>
+                            <span>•</span>
+                            <span>{item.amount} {item.amount > 1 ? 'Tickets' : 'Ticket'}</span>
+                            <span>•</span>
+                            <span className="text-[#05d5aa] font-medium">{grandEvent.ticketPrice * item.amount} USDT</span>
+                          </div>
                         </div>
                       </div>
 
