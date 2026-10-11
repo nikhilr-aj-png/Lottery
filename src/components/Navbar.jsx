@@ -13,8 +13,10 @@ import {
   User,
   LogIn,
   Lock,
-  Headphones
+  Headphones,
+  Download
 } from 'lucide-react';
+import { usePwa } from '../context/PwaContext';
 
 export default function Navbar({ onOpenProfile }) {
   const {
@@ -28,6 +30,8 @@ export default function Navbar({ onOpenProfile }) {
     setIsAuthModalOpen,
     showToast
   } = useLottery();
+
+  const { isInstalled, triggerInstall } = usePwa();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -124,6 +128,18 @@ export default function Navbar({ onOpenProfile }) {
 
             {/* Right Action: Wallet Balance & Login / Profile */}
             <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2.5">
+              {/* Desktop Install App Button */}
+              {!isInstalled && (
+                <button
+                  onClick={triggerInstall}
+                  title="Install EarnFlow App (Chrome / PWA)"
+                  className="hidden md:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[rgba(245,196,81,0.12)] hover:bg-[rgba(245,196,81,0.22)] text-[#ffd700] border border-[#f5c451]/35 text-xs font-bold transition-all cursor-pointer shadow-sm shrink-0"
+                >
+                  <Download className="w-3.5 h-3.5 text-[#ffd700]" />
+                  <span>Install App</span>
+                </button>
+              )}
+
               {isLoggedIn ? (
                 <>
                   {/* Balance Pill */}
@@ -249,6 +265,25 @@ export default function Navbar({ onOpenProfile }) {
                   Withdraw 24h
                 </button>
               </div>
+            )}
+
+            {/* PWA Install Button in Mobile Drawer */}
+            {!isInstalled && (
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  triggerInstall();
+                }}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[rgba(245,196,81,0.18)] to-[rgba(5,213,170,0.18)] border border-[rgba(245,196,81,0.4)] flex items-center justify-between px-3 text-xs text-white font-bold cursor-pointer transition-all hover:brightness-110"
+              >
+                <div className="flex items-center gap-2">
+                  <Download className="w-4 h-4 text-[#ffd700]" />
+                  <span>Install EarnFlow App / Add to Screen</span>
+                </div>
+                <span className="text-[10px] bg-[#f5c451] text-black font-extrabold px-1.5 py-0.5 rounded shadow-sm">
+                  PWA
+                </span>
+              </button>
             )}
 
             {/* Profile trigger in mobile drawer */}

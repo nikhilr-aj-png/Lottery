@@ -18,6 +18,9 @@ import TermsPage from './pages/TermsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import ContactPage from './pages/ContactPage';
 import AdminPortal from './admin/AdminPortal';
+import { PwaProvider, usePwa } from './context/PwaContext';
+import PwaInstallBanner from './components/PwaInstallBanner';
+import PwaInstallModal from './components/PwaInstallModal';
 import { ShieldCheck, Flame, Trophy, Sparkles, ShieldAlert, Lock, LogIn } from 'lucide-react';
 
 function AuthRequiredPrompt({ title, onLogin, onHome }) {
@@ -68,6 +71,8 @@ function LotteryAppContent() {
     setIsAuthModalOpen,
     showToast
   } = useLottery();
+
+  const { triggerInstall, isInstalled } = usePwa();
 
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -410,6 +415,10 @@ function LotteryAppContent() {
         onClose={() => setIsRulesModalOpen(false)} 
       />
       <Toast />
+      
+      {/* PWA Add to Screen Prompt & Modal */}
+      <PwaInstallBanner />
+      <PwaInstallModal />
 
       {/* Platform Public Footer */}
       <footer className="mt-auto border-t border-[rgba(245,196,81,0.15)] bg-[#07090d] py-8 sm:py-10 pb-24 md:pb-10">
@@ -483,6 +492,17 @@ function LotteryAppContent() {
               >
                 Privacy Policy
               </button>
+              {!isInstalled && (
+                <>
+                  <span>•</span>
+                  <button
+                    onClick={triggerInstall}
+                    className="hover:text-[#ffd700] transition-colors cursor-pointer text-[#ffd700] flex items-center gap-1 font-bold"
+                  >
+                    <span>📲 Install App</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -493,8 +513,10 @@ function LotteryAppContent() {
 
 export default function App() {
   return (
-    <LotteryProvider>
-      <LotteryAppContent />
-    </LotteryProvider>
+    <PwaProvider>
+      <LotteryProvider>
+        <LotteryAppContent />
+      </LotteryProvider>
+    </PwaProvider>
   );
 }
