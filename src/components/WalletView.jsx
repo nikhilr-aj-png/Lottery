@@ -724,15 +724,15 @@ export default function WalletView() {
         </div>
 
         <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
-          <table className="w-full min-w-[580px] text-left text-xs">
+          <table className="w-full min-w-[620px] text-left text-xs">
             <thead>
               <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
-                <th className="pb-3 px-2 xs:px-3">Order ID</th>
-                <th className="pb-3 px-2 xs:px-3">Amount (USDT)</th>
-                <th className="pb-3 px-2 xs:px-3">Network</th>
-                <th className="pb-3 px-2 xs:px-3">Destination Address</th>
-                <th className="pb-3 px-2 xs:px-3">Status / SLA Timer</th>
-                <th className="pb-3 px-2 xs:px-3 text-right">Proof / TxHash</th>
+                <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Order ID</th>
+                <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
+                <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Network</th>
+                <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Destination Address</th>
+                <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status / SLA Timer</th>
+                <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Proof / TxHash</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1f2737]">
@@ -749,52 +749,52 @@ export default function WalletView() {
 
                   return (
                     <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-4 px-3 font-mono-numbers font-bold text-white">
+                      <td className="py-4 px-2 xs:px-3 font-mono-numbers font-bold text-white whitespace-nowrap">
                         #{order.id}
                       </td>
-                      <td className="py-4 px-3 font-mono-numbers font-black text-sm text-[#ffd700]">
+                      <td className="py-4 px-2 xs:px-3 font-mono-numbers font-black text-sm text-[#ffd700] whitespace-nowrap">
                         {order.amount.toFixed(2)} USDT
                         <span className="block text-[10px] text-[#9b8f7c] font-normal">
                           Net: {order.netDisbursal.toFixed(2)} USDT
                         </span>
                       </td>
-                      <td className="py-4 px-3">
-                        <span className="px-2 py-0.5 rounded bg-[#10131a] text-[#05d5aa] border border-[#05d5aa]/30 font-mono-numbers font-bold text-[10px]">
+                      <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
+                        <span className="px-2.5 py-0.5 rounded bg-[#10131a] text-[#05d5aa] border border-[#05d5aa]/30 font-mono-numbers font-bold text-[10px] whitespace-nowrap inline-flex items-center tracking-normal">
                           {order.network}
                         </span>
                       </td>
-                      <td className="py-4 px-3 font-mono-numbers text-white/80">
+                      <td className="py-4 px-2 xs:px-3 font-mono-numbers text-white/80 whitespace-nowrap">
                         {order.address.slice(0, 6)}...{order.address.slice(-6)}
                       </td>
-                      <td className="py-4 px-3">
+                      <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
                         {isProcessing ? (
                           <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
                             <div>
-                              <span className="text-amber-400 font-bold block">
+                              <span className="text-amber-400 font-bold block whitespace-nowrap">
                                 In Progress (24h SLA)
                               </span>
-                              <span className="text-[10px] font-mono-numbers text-amber-200/80">
+                              <span className="text-[10px] font-mono-numbers text-amber-200/80 whitespace-nowrap">
                                 {formatSLATime(order.slaTargetMs)}
                               </span>
                             </div>
                           </div>
                         ) : isCompleted ? (
-                          <span className="px-2.5 py-1 rounded-md bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold flex items-center gap-1.5 w-max">
+                          <span className="px-2.5 py-1 rounded-md bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold flex items-center gap-1.5 w-max whitespace-nowrap">
                             <Check className="w-3.5 h-3.5" />
                             Completed (Disbursed)
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-md bg-red-950/40 text-red-400 border border-red-500/30 font-bold">
+                          <span className="px-2.5 py-1 rounded-md bg-red-950/40 text-red-400 border border-red-500/30 font-bold whitespace-nowrap">
                             Flagged / Refunded
                           </span>
                         )}
                       </td>
-                      <td className="py-4 px-3 text-right">
+                      <td className="py-4 px-2 xs:px-3 text-right whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => setSelectedProofOrder(order)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-mono-numbers transition-all cursor-pointer ${
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-mono-numbers transition-all cursor-pointer whitespace-nowrap ${
                             isCompleted 
                               ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-[#05d5aa] border border-[#05d5aa]/30 shadow-[0_0_15px_rgba(5,213,170,0.15)]'
                               : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30'
