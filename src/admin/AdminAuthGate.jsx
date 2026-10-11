@@ -66,21 +66,21 @@ export default function AdminAuthGate({ onAuthenticated }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#07090d] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#07090d] flex items-center justify-center p-3 xs:p-4">
       {/* Ambient background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-500/5 blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="w-full max-w-md bg-[#0d1117] border border-amber-500/30 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(245,196,81,0.1)] relative z-10">
+      <div className="w-full max-w-md bg-[#0d1117] border border-amber-500/30 rounded-2xl xs:rounded-3xl p-4.5 xs:p-6 sm:p-8 shadow-[0_0_50px_rgba(245,196,81,0.1)] relative z-10">
         
         {/* Shield Icon Header */}
-        <div className="text-center mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-3 text-[#ffd700] shadow-inner">
-            <Lock className="w-7 h-7" />
+        <div className="text-center mb-5 sm:mb-6">
+          <div className="w-12 h-12 xs:w-14 xs:h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto mb-2.5 sm:mb-3 text-[#ffd700] shadow-inner">
+            <Lock className="w-6 h-6 xs:w-7 xs:h-7" />
           </div>
-          <span className="text-[10px] font-mono-numbers px-2.5 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 uppercase font-bold tracking-wider">
+          <span className="text-[9px] xs:text-[10px] font-mono-numbers px-2 py-0.5 xs:px-2.5 xs:py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 uppercase font-bold tracking-wider">
             Super Admin Access Only
           </span>
-          <h1 className="font-display font-black text-xl sm:text-2xl text-white mt-2">
+          <h1 className="font-display font-black text-lg xs:text-xl sm:text-2xl text-white mt-2">
             EarnFlow.In Back-End
           </h1>
           <p className="text-xs text-[#9b8f7c] mt-1">

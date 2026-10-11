@@ -392,29 +392,29 @@ export default function AdminConsole({ onLogout }) {
   return (
     <div className="min-h-screen bg-[#07090d] text-[#e1e2eb] flex flex-col font-sans">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-[#0d1117]/95 backdrop-blur-xl border-b border-amber-500/25 px-4 sm:px-8 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-[0_0_15px_rgba(245,196,81,0.3)] shrink-0">
+      <header className="sticky top-0 z-40 bg-[#0d1117]/95 backdrop-blur-xl border-b border-amber-500/25 px-2.5 xs:px-4 sm:px-8 py-2.5 sm:py-3.5 flex items-center justify-between">
+        <div className="flex items-center gap-2 xs:gap-3 shrink-0">
+          <div className="w-8 h-8 xs:w-9 xs:h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-[0_0_15px_rgba(245,196,81,0.3)] shrink-0">
             <img src="/logo.png" alt="EarnFlow Admin" className="w-full h-full rounded-full object-cover" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="font-display font-extrabold text-base text-white">
+            <div className="flex items-center gap-1.5 xs:gap-2">
+              <span className="font-display font-extrabold text-sm xs:text-base text-white">
                 EarnFlow<span className="text-amber-400">.In</span>
               </span>
-              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold uppercase tracking-wider">
-                SUPER ADMIN SUITE
+              <span className="hidden xs:inline-block text-[9px] xs:text-[10px] font-mono-numbers px-1.5 xs:px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold uppercase tracking-wider whitespace-nowrap">
+                SUPER ADMIN
               </span>
             </div>
-            <p className="text-[10px] text-[#9b8f7c]">
+            <p className="text-[9px] xs:text-[10px] text-[#9b8f7c] hidden sm:block">
               Sovereign Decentralized Cryptographic Governance
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 shrink-0">
           {user && (
-            <div className="hidden sm:flex items-center gap-2 bg-[#141924] px-3 py-1.5 rounded-xl border border-[#272a31]">
+            <div className="hidden md:flex items-center gap-2 bg-[#141924] px-3 py-1.5 rounded-xl border border-[#272a31]">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
               <span className="text-xs font-mono-numbers text-white font-bold">
                 @{profile?.username || user?.email?.split('@')[0]}
@@ -429,30 +429,30 @@ export default function AdminConsole({ onLogout }) {
             onClick={() => {
               window.location.hash = '';
             }}
-            className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-2 xs:px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0"
             title="Open Live Public User Platform"
           >
             <ExternalLink className="w-3.5 h-3.5" />
-            <span>User Lobby</span>
+            <span className="hidden xs:inline">User Lobby</span>
           </a>
           <button
             onClick={onLogout}
-            className="px-3.5 py-1.5 rounded-xl bg-red-950/30 hover:bg-red-950/60 text-xs font-bold text-red-400 border border-red-500/30 flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-2 xs:px-3 sm:px-3.5 py-1.5 rounded-xl bg-red-950/30 hover:bg-red-950/60 text-xs font-bold text-red-400 border border-red-500/30 flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Lock & Sign Out</span>
+            <span className="hidden xs:inline">Lock & Sign Out</span>
           </button>
         </div>
       </header>
 
       {/* Main Admin Container with Tabbed Navigation */}
-      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
+      <div className="flex-1 max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto px-2 xs:px-3 sm:px-6 lg:px-8 py-4 sm:py-6 w-full space-y-4 sm:space-y-6">
         
         {/* Navigation Bar Tabs */}
-        <div className="flex items-center gap-2 p-1.5 bg-[#0d1117] border border-[#272a31] rounded-2xl overflow-x-auto no-scrollbar shadow-inner">
+        <div className="flex items-center gap-1.5 xs:gap-2 p-1.5 bg-[#0d1117] border border-[#272a31] rounded-2xl overflow-x-auto no-scrollbar shadow-inner">
           <button
             onClick={() => setActiveAdminTab('overview')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-3 xs:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
               activeAdminTab === 'overview'
                 ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
                 : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
@@ -562,7 +562,7 @@ export default function AdminConsole({ onLogout }) {
         {activeAdminTab === 'overview' && (
           <div className="space-y-6 animate-in fade-in duration-150">
             {/* KPI Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="bg-[#0d1117] border border-[#272a31] p-5 rounded-2xl relative overflow-hidden shadow-lg">
                 <div className="flex items-center justify-between text-[#8b92a2] mb-2">
                   <span className="text-xs font-semibold uppercase tracking-wider">Active Jackpot Pots</span>
@@ -672,7 +672,7 @@ export default function AdminConsole({ onLogout }) {
               </div>
 
               <div className="overflow-x-auto no-scrollbar">
-                <table className="w-full text-left text-xs">
+                <table className="w-full min-w-[580px] text-left text-xs">
                   <thead className="bg-[#07090d] text-[#8b92a2] uppercase text-[10px] tracking-wider border-b border-[#1f2737]">
                     <tr>
                       <th className="py-2.5 px-3">Event Title</th>
@@ -799,7 +799,7 @@ export default function AdminConsole({ onLogout }) {
 
                   {/* Prize Distribution Structure */}
                   <div className="p-3 rounded-xl bg-[#07090d] border border-[#272a31] space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                       <label className="text-xs text-[#8b92a2] font-semibold">
                         Prize Distribution Structure
                       </label>
@@ -1186,7 +1186,7 @@ export default function AdminConsole({ onLogout }) {
                 All Configured Lottery Events
               </h3>
               <div className="overflow-x-auto no-scrollbar">
-                <table className="w-full text-left text-xs">
+                <table className="w-full min-w-[760px] text-left text-xs">
                   <thead className="bg-[#07090d] text-[#8b92a2] uppercase text-[10px] tracking-wider border-b border-[#1f2737]">
                     <tr>
                       <th className="py-3 px-3">Title</th>
@@ -1298,7 +1298,7 @@ export default function AdminConsole({ onLogout }) {
             {/* Withdrawals Table */}
             <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl overflow-hidden shadow-lg">
               <div className="overflow-x-auto no-scrollbar">
-                <table className="w-full text-left text-xs">
+                <table className="w-full min-w-[720px] text-left text-xs">
                   <thead className="bg-[#07090d] text-[#8b92a2] uppercase text-[10px] tracking-wider border-b border-[#1f2737]">
                     <tr>
                       <th className="py-3.5 px-4">Order ID</th>
@@ -1450,7 +1450,7 @@ export default function AdminConsole({ onLogout }) {
             {/* Users Table */}
             <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl overflow-hidden shadow-lg">
               <div className="overflow-x-auto no-scrollbar">
-                <table className="w-full text-left text-xs">
+                <table className="w-full min-w-[720px] text-left text-xs">
                   <thead className="bg-[#07090d] text-[#8b92a2] uppercase text-[10px] tracking-wider border-b border-[#1f2737]">
                     <tr>
                       <th className="py-3.5 px-4">User ID / Username</th>
@@ -1754,7 +1754,7 @@ export default function AdminConsole({ onLogout }) {
               </div>
 
               <div className="overflow-x-auto no-scrollbar">
-                <table className="w-full text-left text-xs">
+                <table className="w-full min-w-[760px] text-left text-xs">
                   <thead className="bg-[#07090d] text-[#8b92a2] uppercase text-[10px] tracking-wider border-b border-[#1f2737]">
                     <tr>
                       <th className="py-3.5 px-4">Payout ID & Event</th>
