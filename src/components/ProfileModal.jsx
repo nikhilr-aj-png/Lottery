@@ -102,9 +102,9 @@ export default function ProfileModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 xs:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="w-full max-w-md bg-[#0f131c] border border-[rgba(245,196,81,0.3)] rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 no-scrollbar"
+        className="w-full max-w-md bg-[#0f131c] border border-[rgba(245,196,81,0.3)] rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 no-scrollbar max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

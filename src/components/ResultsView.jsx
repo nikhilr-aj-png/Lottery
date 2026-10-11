@@ -80,81 +80,81 @@ function ResultCard({ event, isExpanded, onToggleExpand }) {
   ];
 
   return (
-    <div className="glass-panel rounded-2xl p-5 border border-amber-500/30 flex flex-col justify-between relative overflow-hidden shadow-md hover:border-amber-400/50 transition-all">
+    <div className="glass-panel rounded-2xl p-3.5 xs:p-4.5 sm:p-5 border border-amber-500/30 flex flex-col justify-between relative overflow-hidden shadow-md hover:border-amber-400/50 transition-all">
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#ffd700] to-transparent" />
 
       <div>
         {/* Card Header: Round ID, Badge, Concluded Date, Jackpot */}
-        <div className="flex items-start justify-between gap-3 pb-3 mb-3 border-b border-[#1f2737]">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="font-mono-numbers font-extrabold text-[11px] text-amber-300 bg-black/60 px-2 py-0.5 rounded border border-amber-500/40">
+        <div className="flex items-start justify-between gap-2.5 xs:gap-3 pb-2.5 xs:pb-3 mb-2.5 xs:mb-3 border-b border-[#1f2737]">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5 xs:gap-2 mb-1">
+              <span className="font-mono-numbers font-extrabold text-[10px] xs:text-[11px] text-amber-300 bg-black/60 px-1.5 xs:px-2 py-0.5 rounded border border-amber-500/40">
                 ROUND #{event.id.replace('evt-', '').toUpperCase()}
               </span>
-              <span className="badge-gold px-2 py-0.2 rounded text-[10px] font-bold font-mono-numbers">
+              <span className="badge-gold px-1.5 xs:px-2 py-0.2 rounded text-[9px] xs:text-[10px] font-bold font-mono-numbers">
                 {event.badge || 'CONCLUDED'}
               </span>
-              <span className="text-[11px] text-[#9b8f7c] font-mono-numbers flex items-center gap-1">
+              <span className="text-[10px] xs:text-[11px] text-[#9b8f7c] font-mono-numbers flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
                 {new Date(event.drawTime).toLocaleDateString()}
               </span>
             </div>
 
-            <h3 className="font-display font-black text-lg text-white">
+            <h3 className="font-display font-black text-base xs:text-lg text-white truncate">
               {event.title}
             </h3>
           </div>
 
-          <div className="text-right shrink-0 bg-[#07090e] px-3 py-1.5 rounded-xl border border-[#272a31]">
-            <span className="text-[9px] uppercase font-bold text-[#9b8f7c] block">Jackpot</span>
-            <span className="font-display font-black text-base text-[#ffd700] font-mono-numbers">
+          <div className="text-right shrink-0 bg-[#07090e] px-2.5 xs:px-3 py-1 xs:py-1.5 rounded-xl border border-[#272a31]">
+            <span className="text-[8px] xs:text-[9px] uppercase font-bold text-[#9b8f7c] block">Jackpot</span>
+            <span className="font-display font-black text-sm xs:text-base text-[#ffd700] font-mono-numbers">
               {event.poolPrize.toLocaleString()} USDT
             </span>
           </div>
         </div>
 
         {/* Winning Combination / Numbers Section */}
-        <div className="bg-[#07090e] p-3.5 rounded-xl border border-[#272a31] mb-3">
-          <div className="flex items-center justify-between text-[11px] text-[#9b8f7c] mb-2 font-mono-numbers">
+        <div className="bg-[#07090e] p-2.5 xs:p-3.5 rounded-xl border border-[#272a31] mb-3">
+          <div className="flex items-center justify-between text-[10px] xs:text-[11px] text-[#9b8f7c] mb-1.5 xs:mb-2 font-mono-numbers">
             <span className="text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
-              <Trophy className="w-3.5 h-3.5 text-emerald-400" />
+              <Trophy className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-emerald-400" />
               {winnerCount > 1 ? `Winning Drawn Tickets (${winnerCount} Lucky Winners)` : 'Official Winning Combination'}
             </span>
-            <span className="text-[10px] text-amber-400 font-semibold">
+            <span className="text-[9px] xs:text-[10px] text-amber-400 font-semibold">
               {winnerCount > 1 ? `${winnerCount} Distinct Winners` : '1 Grand Winner'}
             </span>
           </div>
 
           {/* Multi-Winner Different Numbers OR Single 4-Digit Balls */}
           {winnerCount > 1 ? (
-            <div className="flex flex-wrap items-center gap-2 py-1">
+            <div className="flex flex-wrap items-center gap-1.5 xs:gap-2 py-1">
               {winnersList.map((w, idx) => (
                 <div 
                   key={idx}
-                  className="bg-[#10141f] border border-amber-500/40 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm"
+                  className="bg-[#10141f] border border-amber-500/40 px-2 xs:px-2.5 py-0.5 xs:py-1 rounded-lg flex items-center gap-1.5 shadow-sm"
                 >
-                  <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[9px] flex items-center justify-center">
+                  <span className="w-3.5 xs:w-4 h-3.5 xs:h-4 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[8px] xs:text-[9px] flex items-center justify-center">
                     #{idx + 1}
                   </span>
-                  <span className="font-mono-numbers font-black text-sm text-[#05d5aa] tracking-wider">
+                  <span className="font-mono-numbers font-black text-xs xs:text-sm text-[#05d5aa] tracking-wider">
                     {w.ticket}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="flex items-center gap-2 py-1">
+            <div className="flex items-center gap-1.5 xs:gap-2 py-1">
               {event.winningDigits ? event.winningDigits.split('').map((char, idx) => (
                 <div
                   key={idx}
-                  className="w-10 h-10 rounded-xl bg-gradient-to-b from-[#192233] to-[#0c0f17] border border-[#05d5aa] flex items-center justify-center font-display font-black text-xl text-[#05d5aa] shadow-[0_0_12px_rgba(5,213,170,0.2)]"
+                  className="w-8 xs:w-9 sm:w-10 h-8 xs:h-9 sm:h-10 rounded-xl bg-gradient-to-b from-[#192233] to-[#0c0f17] border border-[#05d5aa] flex items-center justify-center font-display font-black text-base xs:text-lg sm:text-xl text-[#05d5aa] shadow-[0_0_12px_rgba(5,213,170,0.2)]"
                 >
                   {char}
                 </div>
               )) : (
                 <span className="text-white text-xs font-mono-numbers">Pending Draw</span>
               )}
-              <div className="ml-2 pl-3 border-l border-[#272a31] text-[11px] text-[#9b8f7c]">
+              <div className="ml-1.5 xs:ml-2 pl-2 xs:pl-3 border-l border-[#272a31] text-[10px] xs:text-[11px] text-[#9b8f7c]">
                 <span className="text-white font-semibold block">{winnersList[0]?.user || 'Winner'}</span>
                 <span className="text-emerald-400 font-mono-numbers font-bold">{winnersList[0]?.prize || `${event.poolPrize} USDT`} Disbursed</span>
               </div>
@@ -273,25 +273,25 @@ export default function ResultsView() {
   }, [filteredResults]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="font-display font-extrabold text-2xl sm:text-3xl text-white">
+          <h2 className="font-display font-extrabold text-xl xs:text-2xl sm:text-3xl text-white">
             Lottery <span className="text-[#ffd700]">Results</span>
           </h2>
-          <p className="text-xs sm:text-sm text-[#9b8f7c] mt-0.5">
+          <p className="text-[11px] xs:text-xs sm:text-sm text-[#9b8f7c] mt-0.5">
             Verified winning tickets and prize distributions for concluded rounds
           </p>
         </div>
 
         {/* View Mode Switcher (Compact Cards vs Compact Table) */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           <div className="flex items-center bg-[#0b0e14] border border-[#272a31] rounded-xl p-1">
             <button
               onClick={() => setViewMode('grid')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-2.5 xs:px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'grid'
                   ? 'bg-amber-500 text-black shadow-sm font-extrabold'
                   : 'text-[#9b8f7c] hover:text-white'
@@ -406,7 +406,7 @@ export default function ResultsView() {
         /* 2. COMPACT TABLE LEDGER VIEW */
         <div className="glass-panel rounded-2xl overflow-hidden border border-[#272a31]">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono-numbers">
+            <table className="w-full min-w-[620px] text-left text-xs font-mono-numbers">
               <thead className="bg-[#0b0e14] text-[#9b8f7c] uppercase text-[10px] border-b border-[#272a31]">
                 <tr>
                   <th className="py-3 px-4">Round ID</th>

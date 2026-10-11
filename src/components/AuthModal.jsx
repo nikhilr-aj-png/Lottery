@@ -248,26 +248,26 @@ export default function AuthModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 xs:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="w-full max-w-[550px] bg-[#0f131c] border border-[rgba(245,196,81,0.3)] rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 no-scrollbar flex flex-col"
+        className="w-full max-w-[550px] bg-[#0f131c] border border-[rgba(245,196,81,0.3)] rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 no-scrollbar flex flex-col max-h-[94vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="px-6 py-3.5 border-b border-[#1e232f] flex items-center justify-between bg-gradient-to-b from-[#141924] to-[#0f131c]">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full p-0.5 shadow-md shrink-0">
+        <div className="px-4 xs:px-6 py-3 xs:py-3.5 border-b border-[#1e232f] flex items-center justify-between bg-gradient-to-b from-[#141924] to-[#0f131c]">
+          <div className="flex items-center gap-2.5 xs:gap-3">
+            <div className="w-8 xs:w-9 h-8 xs:h-9 rounded-full p-0.5 shadow-md shrink-0">
               <img src="/logo.png" alt="EarnFlow.In" className="w-full h-full rounded-full object-cover border border-[#ffd700]/40" />
             </div>
             <div>
-              <h3 className="font-display font-bold text-base text-white">
+              <h3 className="font-display font-bold text-sm xs:text-base text-white">
                 {authMode === 'login' 
                   ? 'Sign In to EarnFlow.In' 
                   : signupStep === 2 
                     ? 'Verify Your Email OTP' 
                     : 'Create VIP Account'}
               </h3>
-              <p className="text-[11px] text-[#9b8f7c]">
+              <p className="text-[10px] xs:text-[11px] text-[#9b8f7c]">
                 {signupStep === 2 ? 'Step 2 of 2: OTP Verification' : 'USDT Secure Lottery Platform'}
               </p>
             </div>
@@ -282,7 +282,7 @@ export default function AuthModal() {
 
         {/* Tab switchers (only visible on step 1) */}
         {signupStep === 1 && (
-          <div className="grid grid-cols-2 p-1 bg-[#0b0e14] mx-6 mt-3 rounded-xl border border-[#1e232f]">
+          <div className="grid grid-cols-2 p-1 bg-[#0b0e14] mx-3.5 xs:mx-6 mt-3 rounded-xl border border-[#1e232f]">
             <button
               onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
               className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${

@@ -65,15 +65,15 @@ export default function Navbar({ onOpenProfile }) {
     <>
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 bg-[#0b0e14]/95 backdrop-blur-xl border-b border-[rgba(245,196,81,0.18)]">
-        <div className="max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-18">
+        <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto px-2 xs:px-3 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-14 xs:h-16 sm:h-18">
             
             {/* Brand Logo & Name */}
             <div 
               onClick={() => handleNavClick('lotteries')}
-              className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0"
+              className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 cursor-pointer group shrink-0"
             >
-              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full p-0.5 shadow-[0_0_16px_rgba(245,196,81,0.35)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 xs:w-9 xs:h-9 sm:w-11 sm:h-11 rounded-full p-0.5 shadow-[0_0_16px_rgba(245,196,81,0.35)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
                 <img 
                   src="/logo.png" 
                   alt="EarnFlow.In USDT" 
@@ -82,11 +82,11 @@ export default function Navbar({ onOpenProfile }) {
               </div>
               
               <div className="flex flex-col">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="font-display font-extrabold text-base sm:text-xl tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-none">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <span className="font-display font-extrabold text-sm xs:text-base sm:text-xl tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-none">
                     EarnFlow<span className="text-[#f5c451]">.In</span>
                   </span>
-                  <span className="text-[9px] sm:text-[10px] font-mono-numbers px-1.5 py-0.5 rounded bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/30 font-bold tracking-wide">
+                  <span className="hidden xs:inline-block text-[9px] sm:text-[10px] font-mono-numbers px-1.5 py-0.5 rounded bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/30 font-bold tracking-wide">
                     USDT
                   </span>
                 </div>
@@ -123,20 +123,20 @@ export default function Navbar({ onOpenProfile }) {
             </nav>
 
             {/* Right Action: Wallet Balance & Login / Profile */}
-            <div className="flex items-center gap-1.5 sm:gap-2.5">
+            <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2.5">
               {isLoggedIn ? (
                 <>
                   {/* Balance Pill */}
                   <div 
                     onClick={() => handleNavClick('wallet')}
                     title="Click to view Wallet & 24h Payouts"
-                    className="cursor-pointer bg-[#10131a] hover:bg-[#161b26] border border-[rgba(245,196,81,0.25)] hover:border-[#f5c451] rounded-xl px-2.5 sm:px-3.5 py-1.5 flex items-center gap-1.5 sm:gap-2 transition-all shadow-inner"
+                    className="cursor-pointer bg-[#10131a] hover:bg-[#161b26] border border-[rgba(245,196,81,0.25)] hover:border-[#f5c451] rounded-xl px-2 xs:px-2.5 sm:px-3.5 py-1 sm:py-1.5 flex items-center gap-1 sm:gap-2 transition-all shadow-inner"
                   >
-                    <span className="w-2 h-2 rounded-full bg-[#05d5aa] animate-pulse shrink-0"></span>
-                    <span className="font-mono-numbers font-bold text-xs sm:text-sm text-[#ffd700] whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#05d5aa] animate-pulse shrink-0"></span>
+                    <span className="font-mono-numbers font-bold text-[11px] xs:text-xs sm:text-sm text-[#ffd700] whitespace-nowrap">
                       {wallet.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
-                    <span className="text-[10px] sm:text-xs text-[#05d5aa] font-bold font-mono-numbers">
+                    <span className="text-[9px] sm:text-xs text-[#05d5aa] font-bold font-mono-numbers">
                       USDT
                     </span>
                   </div>
@@ -156,34 +156,34 @@ export default function Navbar({ onOpenProfile }) {
                   {/* Profile Button */}
                   <button
                     onClick={onOpenProfile}
-                    className="flex items-center gap-1.5 text-xs font-mono-numbers px-2.5 py-1.5 rounded-xl bg-[#161c28] text-[#e1e2eb] border border-[#2d3545] hover:border-[#f5c451]/50 transition-all cursor-pointer"
+                    className="flex items-center gap-1 xs:gap-1.5 text-xs font-mono-numbers px-1.5 xs:px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl bg-[#161c28] text-[#e1e2eb] border border-[#2d3545] hover:border-[#f5c451]/50 transition-all cursor-pointer"
                     title="Open User Profile"
                   >
-                    <div className="w-4 h-4 rounded-full bg-[#05d5aa]/20 text-[#05d5aa] flex items-center justify-center">
+                    <div className="w-4 h-4 rounded-full bg-[#05d5aa]/20 text-[#05d5aa] flex items-center justify-center shrink-0">
                       <User className="w-3 h-3" />
                     </div>
-                    <span className="truncate max-w-[80px] sm:max-w-[110px] font-bold text-white">
+                    <span className="truncate max-w-[50px] xs:max-w-[75px] sm:max-w-[110px] font-bold text-white text-[11px] sm:text-xs">
                       {profile?.username ? `@${profile.username}` : (user?.user_metadata?.username ? `@${user.user_metadata.username}` : (user?.email ? user.email.split('@')[0] : 'Profile'))}
                     </span>
-                    <ChevronDown className="w-3 h-3 text-[#9b8f7c]" />
+                    <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#9b8f7c] hidden xs:inline" />
                   </button>
 
                   {/* Mobile Drawer Toggle (visible < 1024px) */}
                   <button
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                     aria-label="Toggle Navigation Menu"
-                    className="lg:hidden w-8 h-8 rounded-lg bg-[#161c28] border border-[#2d3545] text-[#d2c5b0] hover:text-[#ffd700] flex items-center justify-center cursor-pointer shrink-0 ml-1"
+                    className="lg:hidden w-7 h-7 xs:w-8 xs:h-8 rounded-lg bg-[#161c28] border border-[#2d3545] text-[#d2c5b0] hover:text-[#ffd700] flex items-center justify-center cursor-pointer shrink-0 ml-0.5"
                   >
-                    {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                    {isMobileMenuOpen ? <X className="w-3.5 h-3.5 xs:w-4 xs:h-4" /> : <Menu className="w-3.5 h-3.5 xs:w-4 xs:h-4" />}
                   </button>
                 </>
               ) : (
                 /* Login Button when not signed in */
                 <button
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="btn-gold px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-md cursor-pointer whitespace-nowrap"
+                  className="btn-gold px-2.5 xs:px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 sm:gap-1.5 shadow-md cursor-pointer whitespace-nowrap"
                 >
-                  <LogIn className="w-4 h-4" />
+                  <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Login</span>
                 </button>
               )}

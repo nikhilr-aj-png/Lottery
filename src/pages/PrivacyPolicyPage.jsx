@@ -6,18 +6,18 @@ export default function PrivacyPolicyPage({ onBackToHome }) {
   const { platformSettings } = useLottery();
   const supportEmail = platformSettings?.supportEmail || 'support@earnflow.in';
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-in fade-in duration-200">
+    <div className="max-w-4xl 2xl:max-w-5xl mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-in fade-in duration-200">
       {/* Top Breadcrumb / Back button */}
       <button
         onClick={onBackToHome}
-        className="mb-8 px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1f2738] text-xs font-bold text-[#05d5aa] border border-[#05d5aa]/30 flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+        className="mb-6 sm:mb-8 px-3.5 xs:px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1f2738] text-xs font-bold text-[#05d5aa] border border-[#05d5aa]/30 flex items-center gap-2 transition-all cursor-pointer shadow-sm"
       >
         <ArrowLeft className="w-4 h-4" />
         <span>Return to Lottery Lobby</span>
       </button>
 
       {/* Header Banner */}
-      <div className="glass-panel rounded-2xl p-6 sm:p-8 mb-8 border border-[rgba(5,213,170,0.3)] bg-gradient-to-br from-[#10141e] via-[#0b0e14] to-[#121c22]">
+      <div className="glass-panel rounded-2xl p-4 xs:p-6 sm:p-8 mb-6 sm:mb-8 border border-[rgba(5,213,170,0.3)] bg-gradient-to-br from-[#10141e] via-[#0b0e14] to-[#121c22]">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-xl bg-[rgba(5,213,170,0.15)] flex items-center justify-center text-[#05d5aa] border border-[#05d5aa]/30">
             <Lock className="w-5 h-5" />

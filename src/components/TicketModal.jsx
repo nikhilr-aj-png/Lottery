@@ -117,86 +117,88 @@ export default function TicketModal({ event, onClose }) {
     <div className="fixed inset-0 z-50 bg-[#07090e] flex flex-col overflow-y-auto w-full min-h-screen animate-in fade-in duration-200">
       
       {/* Top Full-Screen Navigation Bar */}
-      <div className="sticky top-0 z-30 bg-[#0b0e14]/95 backdrop-blur-xl border-b border-[rgba(245,196,81,0.25)] px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-lg">
-        <div className="flex items-center gap-3 sm:gap-4">
-          <button
-            onClick={onClose}
-            className="px-3.5 py-2 rounded-xl bg-[#141924] hover:bg-[#1f2738] text-xs font-bold text-[#f5c451] border border-[rgba(245,196,81,0.25)] flex items-center gap-2 transition-all cursor-pointer shadow-sm shrink-0"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Return to Lobby</span>
-          </button>
-          
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className="badge-provably-fair px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#05d5aa] animate-ping" />
-                ROUND #{event.id.replace('evt-', '').toUpperCase()}
-              </span>
-              <span className="text-xs font-mono-numbers text-[#9b8f7c]">
-                Stake: <strong className="text-white">{event.ticketPrice} USDT</strong>
-              </span>
+      <div className="sticky top-0 z-30 bg-[#0b0e14]/95 backdrop-blur-xl border-b border-[rgba(245,196,81,0.25)] px-3 xs:px-4 sm:px-8 py-2.5 xs:py-3.5 shadow-lg">
+        <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto flex items-center justify-between w-full">
+          <div className="flex items-center gap-2 xs:gap-3 sm:gap-4 min-w-0">
+            <button
+              onClick={onClose}
+              className="px-2.5 xs:px-3.5 py-1.5 xs:py-2 rounded-xl bg-[#141924] hover:bg-[#1f2738] text-xs font-bold text-[#f5c451] border border-[rgba(245,196,81,0.25)] flex items-center gap-1.5 xs:gap-2 transition-all cursor-pointer shadow-sm shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Return to Lobby</span>
+            </button>
+            
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 xs:gap-2 mb-0.5">
+                <span className="badge-provably-fair px-1.5 xs:px-2 py-0.5 rounded text-[9px] xs:text-[10px] font-bold flex items-center gap-1 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#05d5aa] animate-ping" />
+                  ROUND #{event.id.replace('evt-', '').toUpperCase()}
+                </span>
+                <span className="text-[11px] xs:text-xs font-mono-numbers text-[#9b8f7c] truncate">
+                  Stake: <strong className="text-white">{event.ticketPrice} USDT</strong>
+                </span>
+              </div>
+              <h1 className="font-display font-extrabold text-xs xs:text-sm sm:text-lg text-white truncate max-w-[160px] xs:max-w-[200px] sm:max-w-md">
+                {event.title} <span className="text-[#ffd700]">Tickets</span>
+              </h1>
             </div>
-            <h1 className="font-display font-extrabold text-sm sm:text-lg text-white truncate max-w-[200px] sm:max-w-md">
-              {event.title} <span className="text-[#ffd700]">Tickets</span>
-            </h1>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          {user && (
-            <div className="hidden sm:flex items-center gap-2 bg-[#121721] px-3.5 py-1.5 rounded-xl border border-[#272a31]">
-              <span className="text-xs text-[#9b8f7c]">Available:</span>
-              <span className="font-mono-numbers font-bold text-xs text-[#ffd700]">
-                {wallet.balance.toFixed(2)} USDT
-              </span>
-            </div>
-          )}
-          <button
-            onClick={onClose}
-            title="Close"
-            className="w-9 h-9 rounded-xl bg-[#1a2232] text-[#9b8f7c] hover:text-white hover:bg-[#272a31] flex items-center justify-center transition-colors cursor-pointer shrink-0"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2 xs:gap-3 shrink-0">
+            {user && (
+              <div className="hidden sm:flex items-center gap-2 bg-[#121721] px-3.5 py-1.5 rounded-xl border border-[#272a31]">
+                <span className="text-xs text-[#9b8f7c]">Available:</span>
+                <span className="font-mono-numbers font-bold text-xs text-[#ffd700]">
+                  {wallet.balance.toFixed(2)} USDT
+                </span>
+              </div>
+            )}
+            <button
+              onClick={onClose}
+              title="Close"
+              className="w-8 xs:w-9 h-8 xs:h-9 rounded-xl bg-[#1a2232] text-[#9b8f7c] hover:text-white hover:bg-[#272a31] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            >
+              <X className="w-4 xs:w-5 h-4 xs:h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Full-Screen Workspace Body: 2 Columns */}
-      <div className="max-w-7xl mx-auto w-full p-4 sm:p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+      <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto w-full p-2.5 xs:p-4 sm:p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8">
           
           {/* LEFT COLUMN: 4-Digit Dial & Keypad (7 Cols) */}
-          <div className="lg:col-span-7 flex flex-col gap-4 sm:gap-5">
+          <div className="lg:col-span-7 flex flex-col gap-3.5 sm:gap-5">
             
             {/* 4 Dials Display */}
-            <div className="bg-[#0b0e14] p-3 sm:p-5 rounded-2xl border border-[rgba(245,196,81,0.2)]">
-              <div className="flex items-center justify-between mb-2 sm:mb-3 text-[11px] sm:text-xs">
+            <div className="bg-[#0b0e14] p-2.5 xs:p-3 sm:p-5 rounded-2xl border border-[rgba(245,196,81,0.2)]">
+              <div className="flex items-center justify-between mb-2 sm:mb-3 text-[10px] xs:text-[11px] sm:text-xs">
                 <span className="text-[#9b8f7c] font-bold uppercase tracking-wider">
                   Pick Your 4 Digits (0000 - 9999)
                 </span>
-                <span className="text-[#05d5aa] font-mono-numbers text-[10px] sm:text-[11px]">
+                <span className="text-[#05d5aa] font-mono-numbers text-[9px] xs:text-[10px] sm:text-[11px]">
                   Slot {activeSlot + 1} of 4 Active
                 </span>
               </div>
 
               {/* Dials */}
-              <div className="grid grid-cols-4 gap-1.5 sm:gap-3 my-2">
+              <div className="grid grid-cols-4 gap-1.5 xs:gap-2 sm:gap-3 my-2">
                 {digits.map((digit, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveSlot(idx)}
-                    className={`digit-dial h-16 sm:h-24 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${
+                    className={`digit-dial h-14 xs:h-18 sm:h-24 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${
                       activeSlot === idx ? 'active scale-105' : 'hover:border-[#f5c451]/50'
                     }`}
                   >
-                    <span className="text-[9px] sm:text-[10px] text-[#9b8f7c] font-mono-numbers mb-0.5 sm:mb-1 font-semibold uppercase">
+                    <span className="text-[8px] xs:text-[9px] sm:text-[10px] text-[#9b8f7c] font-mono-numbers mb-0.5 sm:mb-1 font-semibold uppercase">
                       Digit {['I', 'II', 'III', 'IV'][idx]}
                     </span>
-                    <span className="font-display font-black text-2xl sm:text-4xl text-[#ffd700]">
+                    <span className="font-display font-black text-xl xs:text-2xl sm:text-4xl text-[#ffd700]">
                       {digit}
                     </span>
                     {activeSlot === idx && (
-                      <span className="w-5 sm:w-6 h-1 rounded-full bg-[#05d5aa] mt-0.5 sm:mt-1 animate-pulse" />
+                      <span className="w-4 sm:w-6 h-0.5 sm:h-1 rounded-full bg-[#05d5aa] mt-0.5 sm:mt-1 animate-pulse" />
                     )}
                   </button>
                 ))}
@@ -261,39 +263,39 @@ export default function TicketModal({ event, onClose }) {
             </div>
 
             {/* Tactile Keypad */}
-            <div className="bg-[#10131a] p-4 rounded-2xl border border-[#272a31]">
-              <span className="text-[11px] text-[#9b8f7c] block mb-2 font-semibold">
+            <div className="bg-[#10131a] p-3 xs:p-4 rounded-2xl border border-[#272a31]">
+              <span className="text-[10px] xs:text-[11px] text-[#9b8f7c] block mb-2 font-semibold">
                 TACTILE NUMERIC KEYPAD
               </span>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-5 gap-1.5 xs:gap-2">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((num) => (
                   <button
                     key={num}
                     onClick={() => handleKeypadPress(num)}
-                    className="h-11 rounded-xl bg-[#191c22] hover:bg-[#272a31] active:bg-[#f5c451] active:text-[#0b0e14] border border-[#32353c] hover:border-[#ffd700]/50 font-display font-bold text-lg text-white transition-all cursor-pointer"
+                    className="h-9 xs:h-11 rounded-xl bg-[#191c22] hover:bg-[#272a31] active:bg-[#f5c451] active:text-[#0b0e14] border border-[#32353c] hover:border-[#ffd700]/50 font-display font-bold text-base xs:text-lg text-white transition-all cursor-pointer"
                   >
                     {num}
                   </button>
                 ))}
               </div>
 
-              <div className="flex items-center justify-between gap-2 mt-2 pt-2">
+              <div className="flex items-center justify-between gap-1.5 xs:gap-2 mt-2 pt-2">
                 <button
                   onClick={handleBackspace}
-                  className="px-3 py-1.5 rounded-lg bg-[#191c22] hover:bg-[#272a31] text-xs font-mono-numbers text-[#9b8f7c] hover:text-white border border-[#32353c]"
+                  className="px-2 xs:px-3 py-1 xs:py-1.5 rounded-lg bg-[#191c22] hover:bg-[#272a31] text-[11px] xs:text-xs font-mono-numbers text-[#9b8f7c] hover:text-white border border-[#32353c]"
                 >
                   ← Backspace
                 </button>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5 xs:gap-2">
                   <button
                     onClick={() => handleBulkAdd(5)}
-                    className="px-2.5 py-1.5 rounded-lg bg-[rgba(5,213,170,0.1)] hover:bg-[rgba(5,213,170,0.2)] text-[11px] font-bold text-[#05d5aa] border border-[#05d5aa]/30 cursor-pointer"
+                    className="px-2 xs:px-2.5 py-1 xs:py-1.5 rounded-lg bg-[rgba(5,213,170,0.1)] hover:bg-[rgba(5,213,170,0.2)] text-[10px] xs:text-[11px] font-bold text-[#05d5aa] border border-[#05d5aa]/30 cursor-pointer"
                   >
                     +5 Quick Picks
                   </button>
                   <button
                     onClick={() => handleBulkAdd(10)}
-                    className="px-2.5 py-1.5 rounded-lg bg-[rgba(245,196,81,0.1)] hover:bg-[rgba(245,196,81,0.2)] text-[11px] font-bold text-[#ffd700] border border-[#f5c451]/30 cursor-pointer"
+                    className="px-2 xs:px-2.5 py-1 xs:py-1.5 rounded-lg bg-[rgba(245,196,81,0.1)] hover:bg-[rgba(245,196,81,0.2)] text-[10px] xs:text-[11px] font-bold text-[#ffd700] border border-[#f5c451]/30 cursor-pointer"
                   >
                     +10 Quick Picks
                   </button>

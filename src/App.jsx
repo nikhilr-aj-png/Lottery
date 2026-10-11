@@ -207,24 +207,24 @@ function LotteryAppContent() {
             />
 
             {/* Active Pools Section */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Flame className="w-4 h-4 text-[#ffd700]" />
-                    <span className="text-xs font-mono-numbers text-[#f5c451] uppercase font-bold tracking-wider">
+                  <div className="flex items-center gap-1.5 xs:gap-2 mb-1">
+                    <Flame className="w-3.5 xs:w-4 h-3.5 xs:h-4 text-[#ffd700]" />
+                    <span className="text-[10px] xs:text-xs font-mono-numbers text-[#f5c451] uppercase font-bold tracking-wider">
                       HIGH-STAKES LOTTERY POOLS
                     </span>
                   </div>
-                  <h2 className="font-display font-extrabold text-2xl sm:text-4xl text-white">
+                  <h2 className="font-display font-extrabold text-xl xs:text-2xl sm:text-4xl text-white">
                     Active <span className="text-gold-gradient">Lottery Pools</span>
                   </h2>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => setIsRulesModalOpen(true)}
-                    className="btn-ghost-gold px-4 py-2 rounded-xl text-xs font-bold cursor-pointer"
+                    className="btn-ghost-gold px-3 xs:px-4 py-1.5 xs:py-2 rounded-xl text-xs font-bold cursor-pointer"
                   >
                     Prize Allocation Guide
                   </button>
@@ -237,7 +237,7 @@ function LotteryAppContent() {
                       }
                       setActiveTab('results');
                     }}
-                    className="px-4 py-2 rounded-xl bg-[#191c22] hover:bg-[#272a31] text-xs font-bold text-white border border-[#32353c] cursor-pointer flex items-center gap-1.5"
+                    className="px-3 xs:px-4 py-1.5 xs:py-2 rounded-xl bg-[#191c22] hover:bg-[#272a31] text-xs font-bold text-white border border-[#32353c] cursor-pointer flex items-center gap-1.5"
                   >
                     <span>Past Draws</span>
                     {!user && <Lock className="w-3 h-3 text-[#9b8f7c]" />}
@@ -266,7 +266,7 @@ function LotteryAppContent() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-3 4k:grid-cols-4 gap-4 sm:gap-6">
                   {activeEvents.map((event) => (
                     <LotteryCard
                       key={event.id}
@@ -295,12 +295,12 @@ function LotteryAppContent() {
               )}
 
               {/* How it works feature banners */}
-              <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="glass-panel p-6 rounded-2xl border border-[rgba(245,196,81,0.2)] space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700]">
-                    <Sparkles className="w-5 h-5" />
+              <div className="mt-10 sm:mt-16 grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-6">
+                <div className="glass-panel p-4 xs:p-5 sm:p-6 rounded-2xl border border-[rgba(245,196,81,0.2)] space-y-2.5 sm:space-y-3">
+                  <div className="w-9 xs:w-10 h-9 xs:h-10 rounded-xl bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700]">
+                    <Sparkles className="w-4 xs:w-5 h-4 xs:h-5" />
                   </div>
-                  <h3 className="font-display font-bold text-base text-white">
+                  <h3 className="font-display font-bold text-sm xs:text-base text-white">
                     1. Pick 4 Lucky Digits
                   </h3>
                   <p className="text-xs text-[#9b8f7c] leading-relaxed">
@@ -308,11 +308,11 @@ function LotteryAppContent() {
                   </p>
                 </div>
 
-                <div className="glass-panel p-6 rounded-2xl border border-[rgba(5,213,170,0.2)] space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-[rgba(5,213,170,0.15)] flex items-center justify-center text-[#05d5aa]">
-                    <ShieldCheck className="w-5 h-5" />
+                <div className="glass-panel p-4 xs:p-5 sm:p-6 rounded-2xl border border-[rgba(5,213,170,0.2)] space-y-2.5 sm:space-y-3">
+                  <div className="w-9 xs:w-10 h-9 xs:h-10 rounded-xl bg-[rgba(5,213,170,0.15)] flex items-center justify-center text-[#05d5aa]">
+                    <ShieldCheck className="w-4 xs:w-5 h-4 xs:h-5" />
                   </div>
-                  <h3 className="font-display font-bold text-base text-white">
+                  <h3 className="font-display font-bold text-sm xs:text-base text-white">
                     2. 100% Provably Fair
                   </h3>
                   <p className="text-xs text-[#9b8f7c] leading-relaxed">
@@ -320,11 +320,11 @@ function LotteryAppContent() {
                   </p>
                 </div>
 
-                <div className="glass-panel p-6 rounded-2xl border border-[rgba(0,242,254,0.2)] space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-[rgba(0,242,254,0.15)] flex items-center justify-center text-[#00f2fe]">
-                    <Trophy className="w-5 h-5" />
+                <div className="glass-panel p-4 xs:p-5 sm:p-6 rounded-2xl border border-[rgba(0,242,254,0.2)] space-y-2.5 sm:space-y-3">
+                  <div className="w-9 xs:w-10 h-9 xs:h-10 rounded-xl bg-[rgba(0,242,254,0.15)] flex items-center justify-center text-[#00f2fe]">
+                    <Trophy className="w-4 xs:w-5 h-4 xs:h-5" />
                   </div>
-                  <h3 className="font-display font-bold text-base text-white">
+                  <h3 className="font-display font-bold text-sm xs:text-base text-white">
                     3. Auto-Credit & 24h Payouts
                   </h3>
                   <p className="text-xs text-[#9b8f7c] leading-relaxed">
@@ -412,28 +412,28 @@ function LotteryAppContent() {
       <Toast />
 
       {/* Platform Public Footer */}
-      <footer className="mt-auto border-t border-[rgba(245,196,81,0.15)] bg-[#07090d] py-10 pb-24 md:pb-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
+      <footer className="mt-auto border-t border-[rgba(245,196,81,0.15)] bg-[#07090d] py-8 sm:py-10 pb-24 md:pb-10">
+        <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
+            <div className="flex items-center gap-2.5 xs:gap-3 text-center sm:text-left">
               <img 
                 src="/logo.png" 
                 alt="EarnFlow.In USDT" 
-                className="w-10 h-10 rounded-full border border-[#ffd700]/40 object-cover shadow-md" 
+                className="w-8 xs:w-10 h-8 xs:h-10 rounded-full border border-[#ffd700]/40 object-cover shadow-md shrink-0" 
               />
               <div>
-                <span className="font-display font-black text-lg text-white">
+                <span className="font-display font-black text-base xs:text-lg text-white">
                   EarnFlow<span className="text-[#f5c451]">.In</span> <span className="text-[#ffd700]">USDT</span>
                 </span>
-                <p className="text-xs text-[#9b8f7c]">
+                <p className="text-[11px] xs:text-xs text-[#9b8f7c]">
                   Provably Fair Crypto Lottery Platform · TRON (TRC-20)
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 text-xs text-[#9b8f7c] flex-wrap justify-center">
+            <div className="flex items-center gap-2.5 xs:gap-4 text-[11px] xs:text-xs text-[#9b8f7c] flex-wrap justify-center">
               <span className="flex items-center gap-1 text-[#05d5aa]">
-                <ShieldCheck className="w-3.5 h-3.5" />
+                <ShieldCheck className="w-3 xs:w-3.5 h-3 xs:h-3.5" />
                 CertiK Audited
               </span>
               <span>•</span>
@@ -448,12 +448,12 @@ function LotteryAppContent() {
           </div>
           
           {/* Legal Navigation Links */}
-          <div className="mt-8 pt-6 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#9b8f7c]">
-            <div className="text-center sm:text-left">
+          <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-[11px] xs:text-xs text-[#9b8f7c]">
+            <div className="text-center sm:text-left leading-relaxed">
               © 2026 EarnFlow.In Platform. All drawings are provably fair, verifiable on the public blockchain, with guaranteed 24-hour USDT withdrawal SLA.
             </div>
 
-            <div className="flex items-center gap-4 font-semibold text-xs shrink-0 flex-wrap justify-center sm:justify-end">
+            <div className="flex items-center gap-3 xs:gap-4 font-semibold text-[11px] xs:text-xs shrink-0 flex-wrap justify-center sm:justify-end">
               <button
                 onClick={() => {
                   setActiveTab('contact');

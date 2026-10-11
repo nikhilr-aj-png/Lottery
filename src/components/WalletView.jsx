@@ -194,88 +194,88 @@ export default function WalletView() {
     .reduce((sum, w) => sum + w.amount, 0);
 
   return (
-    <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
+    <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-8">
       
       {/* Portfolio Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         
         {/* Card 1: Available Balance */}
-        <div className="glass-panel p-4 sm:p-6 rounded-2xl border-l-4 border-l-[#ffd700] relative overflow-hidden">
+        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-6 rounded-2xl border-l-4 border-l-[#ffd700] relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
+            <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
               Available USDT Balance
             </span>
-            <div className="w-8 h-8 rounded-lg bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700]">
-              <Wallet className="w-4 h-4" />
+            <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700]">
+              <Wallet className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="font-display font-black text-3xl sm:text-4xl text-gold-gradient">
+          <div className="flex items-baseline gap-1.5 xs:gap-2">
+            <span className="font-display font-black text-2xl xs:text-3xl sm:text-4xl text-gold-gradient">
               {wallet.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
             <span className="text-xs text-[#05d5aa] font-bold font-mono-numbers">USDT</span>
           </div>
-          <span className="text-[11px] text-[#9b8f7c] mt-1 block">
+          <span className="text-[10px] xs:text-[11px] text-[#9b8f7c] mt-1 block">
             ≈ ${wallet.balance.toFixed(2)} USD • Ready for Instant Draw Entry
           </span>
         </div>
 
         {/* Card 2: Total Won Prizes */}
-        <div className="glass-panel p-6 rounded-2xl border-l-4 border-l-[#05d5aa] relative overflow-hidden">
+        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-6 rounded-2xl border-l-4 border-l-[#05d5aa] relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
+            <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
               Total Won Prizes
             </span>
-            <div className="w-8 h-8 rounded-lg bg-[rgba(5,213,170,0.15)] flex items-center justify-center text-[#05d5aa]">
-              <DollarSign className="w-4 h-4" />
+            <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[rgba(5,213,170,0.15)] flex items-center justify-center text-[#05d5aa]">
+              <DollarSign className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="font-display font-black text-3xl sm:text-4xl text-white">
+          <div className="flex items-baseline gap-1.5 xs:gap-2">
+            <span className="font-display font-black text-2xl xs:text-3xl sm:text-4xl text-white">
               {wallet.lifetimeWon.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
             <span className="text-xs text-[#05d5aa] font-bold font-mono-numbers">USDT</span>
           </div>
-          <span className="text-[11px] text-[#05d5aa] mt-1 block font-semibold">
+          <span className="text-[10px] xs:text-[11px] text-[#05d5aa] mt-1 block font-semibold">
             Auto-credited directly to balance ✅
           </span>
         </div>
 
         {/* Card 3: Pending 24h Withdrawals */}
-        <div className="glass-panel p-6 rounded-2xl border-l-4 border-l-amber-500 relative overflow-hidden">
+        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-6 rounded-2xl border-l-4 border-l-amber-500 relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
+            <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
               Pending 24h Withdrawals
             </span>
-            <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400">
-              <Clock className="w-4 h-4" />
+            <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400">
+              <Clock className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="font-display font-black text-3xl sm:text-4xl text-amber-400">
+          <div className="flex items-baseline gap-1.5 xs:gap-2">
+            <span className="font-display font-black text-2xl xs:text-3xl sm:text-4xl text-amber-400">
               {pendingWithdrawalsSum.toFixed(2)}
             </span>
             <span className="text-xs text-amber-400 font-bold font-mono-numbers">USDT</span>
           </div>
-          <span className="text-[11px] text-amber-400/80 mt-1 block font-mono-numbers">
+          <span className="text-[10px] xs:text-[11px] text-amber-400/80 mt-1 block font-mono-numbers">
             SLA Guaranteed: Disbursed &lt; 24h
           </span>
         </div>
 
         {/* Card 4: Connected Wallet Status */}
-        <div className="glass-panel p-6 rounded-2xl border-l-4 border-l-[#00f2fe] relative overflow-hidden">
+        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-6 rounded-2xl border-l-4 border-l-[#00f2fe] relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
+            <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
               Settlement Network
             </span>
-            <div className="w-8 h-8 rounded-lg bg-[#00f2fe]/15 flex items-center justify-center text-[#00f2fe]">
-              <ShieldCheck className="w-4 h-4" />
+            <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[#00f2fe]/15 flex items-center justify-center text-[#00f2fe]">
+              <ShieldCheck className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
             </div>
           </div>
-          <div className="font-mono-numbers font-bold text-lg text-white truncate">
+          <div className="font-mono-numbers font-bold text-base xs:text-lg text-white truncate">
             {wallet.address.slice(0, 8)}...{wallet.address.slice(-6)}
           </div>
-          <span className="text-[11px] text-[#05d5aa] mt-1 block font-mono-numbers flex items-center gap-1">
+          <span className="text-[10px] xs:text-[11px] text-[#05d5aa] mt-1 block font-mono-numbers flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-[#05d5aa] animate-ping" />
             Active Non-Custodial Vault
           </span>
@@ -708,31 +708,31 @@ export default function WalletView() {
       </div>
 
       {/* 24-Hour Withdrawal Orders & SLA Tracking Table */}
-      <div className="glass-panel rounded-2xl p-6 sm:p-8">
-        <div className="flex items-center justify-between mb-6">
+      <div className="glass-panel rounded-2xl p-3.5 xs:p-5 sm:p-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
           <div>
-            <h3 className="font-display font-extrabold text-xl text-white">
+            <h3 className="font-display font-extrabold text-lg xs:text-xl text-white">
               Withdrawal Orders & 24h SLA Ledger
             </h3>
-            <p className="text-xs text-[#9b8f7c]">
+            <p className="text-[11px] xs:text-xs text-[#9b8f7c]">
               Real-time audit trail and transaction proof
             </p>
           </div>
-          <span className="badge-provably-fair px-3 py-1 rounded-full text-xs font-bold">
+          <span className="badge-provably-fair px-2.5 xs:px-3 py-1 rounded-full text-[11px] xs:text-xs font-bold">
             Live SLA Monitor
           </span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
+          <table className="w-full min-w-[580px] text-left text-xs">
             <thead>
-              <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider">
-                <th className="pb-3 px-3">Order ID</th>
-                <th className="pb-3 px-3">Amount (USDT)</th>
-                <th className="pb-3 px-3">Network</th>
-                <th className="pb-3 px-3">Destination Address</th>
-                <th className="pb-3 px-3">Status / SLA Timer</th>
-                <th className="pb-3 px-3 text-right">Proof / TxHash</th>
+              <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
+                <th className="pb-3 px-2 xs:px-3">Order ID</th>
+                <th className="pb-3 px-2 xs:px-3">Amount (USDT)</th>
+                <th className="pb-3 px-2 xs:px-3">Network</th>
+                <th className="pb-3 px-2 xs:px-3">Destination Address</th>
+                <th className="pb-3 px-2 xs:px-3">Status / SLA Timer</th>
+                <th className="pb-3 px-2 xs:px-3 text-right">Proof / TxHash</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1f2737]">

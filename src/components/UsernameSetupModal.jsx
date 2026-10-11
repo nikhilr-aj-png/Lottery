@@ -61,8 +61,8 @@ export default function UsernameSetupModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-lg animate-in fade-in duration-200">
-      <div className="glass-modal w-full max-w-md rounded-3xl p-6 sm:p-8 border border-[rgba(245,196,81,0.35)] shadow-[0_20px_60px_rgba(0,0,0,0.85)] relative flex flex-col text-left">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 xs:p-4 bg-black/90 backdrop-blur-lg animate-in fade-in duration-200">
+      <div className="glass-modal w-full max-w-md rounded-2xl xs:rounded-3xl p-4 xs:p-6 sm:p-8 border border-[rgba(245,196,81,0.35)] shadow-[0_20px_60px_rgba(0,0,0,0.85)] relative flex flex-col text-left">
         
         {/* Glow Header Icon */}
         <div className="flex items-center gap-3 mb-4">

@@ -5,19 +5,19 @@ export default function RulesModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-      <div className="glass-modal max-w-2xl w-full rounded-2xl p-6 sm:p-8 border border-[#ffd700]/40 relative max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 xs:p-4 bg-black/85 backdrop-blur-md">
+      <div className="glass-modal max-w-2xl w-full rounded-2xl p-4 xs:p-6 sm:p-8 border border-[#ffd700]/40 relative max-h-[90vh] overflow-y-auto">
         
-        <div className="flex items-center justify-between pb-4 border-b border-[#272a31] mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700] border border-[#f5c451]/30">
-              <Trophy className="w-5 h-5" />
+        <div className="flex items-center justify-between pb-3 xs:pb-4 border-b border-[#272a31] mb-4 xs:mb-6">
+          <div className="flex items-center gap-2.5 xs:gap-3">
+            <div className="w-8 xs:w-10 h-8 xs:h-10 rounded-xl bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700] border border-[#f5c451]/30 shrink-0">
+              <Trophy className="w-4 xs:w-5 h-4 xs:h-5" />
             </div>
             <div>
-              <h3 className="font-display font-extrabold text-xl text-white">
+              <h3 className="font-display font-extrabold text-base xs:text-xl text-white">
                 4-Digit Lottery Rules & Matching System
               </h3>
-              <p className="text-xs text-[#9b8f7c]">
+              <p className="text-[10px] xs:text-xs text-[#9b8f7c]">
                 Provably fair mathematical payout allocation
               </p>
             </div>

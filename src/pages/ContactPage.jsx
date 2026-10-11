@@ -92,19 +92,19 @@ export default function ContactPage({ onBackToHome }) {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-in fade-in duration-200">
+    <div className="max-w-5xl 2xl:max-w-6xl mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-in fade-in duration-200">
       
       {/* Top Breadcrumb / Back button */}
       <button
         onClick={onBackToHome}
-        className="mb-8 px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1f2738] text-xs font-bold text-[#f5c451] border border-[rgba(245,196,81,0.25)] flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+        className="mb-6 sm:mb-8 px-3.5 xs:px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1f2738] text-xs font-bold text-[#f5c451] border border-[rgba(245,196,81,0.25)] flex items-center gap-2 transition-all cursor-pointer shadow-sm"
       >
         <ArrowLeft className="w-4 h-4" />
         <span>Return to Lottery Lobby</span>
       </button>
 
       {/* Header Banner */}
-      <div className="glass-panel rounded-2xl p-6 sm:p-8 mb-8 border border-[rgba(245,196,81,0.3)] bg-gradient-to-br from-[#10141e] via-[#0b0e14] to-[#121826]">
+      <div className="glass-panel rounded-2xl p-4 xs:p-6 sm:p-8 mb-6 sm:mb-8 border border-[rgba(245,196,81,0.3)] bg-gradient-to-br from-[#10141e] via-[#0b0e14] to-[#121826]">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700] border border-[#f5c451]/30">

@@ -42,22 +42,22 @@ export default function WithdrawalProofModal({ order, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2.5 xs:p-4 animate-in fade-in duration-200">
       
       {/* Modal Container */}
-      <div className="w-full max-w-lg bg-[#0d1117] border border-amber-500/40 rounded-3xl overflow-hidden shadow-[0_0_60px_rgba(245,196,81,0.2)] flex flex-col relative">
+      <div className="w-full max-w-lg bg-[#0d1117] border border-amber-500/40 rounded-2xl xs:rounded-3xl overflow-hidden shadow-[0_0_60px_rgba(245,196,81,0.2)] flex flex-col relative max-h-[92vh]">
         
         {/* Top Gold Accent Bar */}
         <div className="h-1.5 bg-gradient-to-r from-amber-500 via-[#ffd700] to-emerald-400" />
 
         {/* Modal Header */}
-        <div className="p-6 pb-4 border-b border-[#1f2737] flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-md shrink-0">
-              <Receipt className="w-6 h-6" />
+        <div className="p-3.5 xs:p-6 pb-3 xs:pb-4 border-b border-[#1f2737] flex items-start justify-between">
+          <div className="flex items-center gap-2.5 xs:gap-3">
+            <div className="w-10 xs:w-12 h-10 xs:h-12 rounded-xl xs:rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-md shrink-0">
+              <Receipt className="w-5 xs:w-6 h-5 xs:h-6" />
             </div>
             <div>
-              <div className="flex items-center gap-2 mb-0.5">
+              <div className="flex items-center gap-1.5 xs:gap-2 mb-0.5">
                 <span className="badge-gold px-2 py-0.5 rounded text-[10px] font-mono-numbers font-bold">
                   OFFICIAL PROOF
                 </span>
