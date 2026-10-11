@@ -53,9 +53,14 @@ export default function LotteryCard({ event, onSelect }) {
           
           {/* Overlaid Badges */}
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-            <span className="text-[11px] font-mono-numbers px-2.5 py-1 rounded-md font-bold tracking-wider bg-black/70 backdrop-blur-md text-[#ffd700] border border-[#f5c451]/40 shadow-lg flex items-center gap-1">
-              {event.badge || 'FESTIVE SPECIAL'}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-mono-numbers px-2.5 py-1 rounded-md font-bold tracking-wider bg-black/70 backdrop-blur-md text-[#ffd700] border border-[#f5c451]/40 shadow-lg flex items-center gap-1">
+                {event.badge || 'FESTIVE SPECIAL'}
+              </span>
+              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-black/80 text-amber-300 border border-amber-500/40 font-bold">
+                ROUND #{event.id.replace('evt-', '').toUpperCase()}
+              </span>
+            </div>
             <span className="flex items-center gap-1.5 text-xs text-[#05d5aa] font-mono-numbers font-semibold bg-black/70 backdrop-blur-md px-2 py-0.5 rounded border border-[#05d5aa]/30">
               <ShieldCheck className="w-3.5 h-3.5" />
               SHA-256
@@ -73,13 +78,18 @@ export default function LotteryCard({ event, onSelect }) {
         <>
           {/* Default Top Banner Accent */}
           <div className="flex items-center justify-between gap-2 mb-4">
-            <span className={`text-[11px] font-mono-numbers px-3 py-1 rounded-md font-bold tracking-wider ${
-              isCompleted 
-                ? 'bg-slate-800 text-slate-400 border border-slate-700'
-                : 'bg-[rgba(245,196,81,0.12)] text-[#ffd700] border border-[#f5c451]/30'
-            }`}>
-              {event.badge || 'LOTTERY POOL'}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className={`text-[11px] font-mono-numbers px-3 py-1 rounded-md font-bold tracking-wider ${
+                isCompleted 
+                  ? 'bg-slate-800 text-slate-400 border border-slate-700'
+                  : 'bg-[rgba(245,196,81,0.12)] text-[#ffd700] border border-[#f5c451]/30'
+              }`}>
+                {event.badge || 'LOTTERY POOL'}
+              </span>
+              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-[#141924] text-amber-300 border border-amber-500/40 font-bold">
+                ROUND #{event.id.replace('evt-', '').toUpperCase()}
+              </span>
+            </div>
 
             <span className="flex items-center gap-1.5 text-xs text-[#05d5aa] font-mono-numbers font-semibold">
               <ShieldCheck className="w-3.5 h-3.5" />

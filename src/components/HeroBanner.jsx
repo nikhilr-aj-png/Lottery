@@ -140,15 +140,21 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
 
             <div>
               {/* Status and Title */}
-              <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                 <span className="text-[11px] font-mono-numbers text-amber-400 font-extrabold tracking-wider uppercase flex items-center gap-1.5">
                   <span className={`w-2 h-2 rounded-full ${isTimedOut ? 'bg-red-400' : 'bg-[#05d5aa] animate-ping'}`} />
                   {isTimedOut ? 'DRAW CLOSED · TIME EXPIRED' : 'TRENDING ACTIVE LOTTERY'}
                 </span>
 
-                <span className="text-[10px] text-[#05d5aa] font-semibold bg-[#05d5aa]/10 px-2.5 py-0.5 rounded-full border border-[#05d5aa]/20">
-                  {winnerCount > 1 ? `${winnerCount} Lucky Winners` : 'Lucky Winner Pot'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono-numbers text-[11px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/40 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="text-[#9b8f7c] font-normal text-[10px]">ROUND:</span>
+                    <span>#{grandEvent.id.replace('evt-', '').toUpperCase()}</span>
+                  </span>
+                  <span className="text-[10px] text-[#05d5aa] font-semibold bg-[#05d5aa]/10 px-2.5 py-0.5 rounded-full border border-[#05d5aa]/20">
+                    {winnerCount > 1 ? `${winnerCount} Lucky Winners` : 'Lucky Winner Pot'}
+                  </span>
+                </div>
               </div>
 
               <h2 className="font-display font-extrabold text-2xl sm:text-3xl text-white tracking-tight mb-4">
@@ -319,8 +325,8 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
               </div>
 
               <div className="flex items-center justify-between text-xs text-[#9b8f7c] mb-3 px-1">
-                <span>Recent Buyers · Round #{grandEvent.id.replace('evt-', '').toUpperCase()}</span>
-                <span className="font-mono-numbers text-white font-medium">
+                <span className="truncate pr-2">Live Entries for <strong className="text-white font-medium">{grandEvent.title}</strong></span>
+                <span className="font-mono-numbers text-white font-medium shrink-0">
                   Pool: {(grandEvent.ticketsSold * grandEvent.ticketPrice).toLocaleString()} USDT
                 </span>
               </div>
@@ -343,14 +349,9 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
                     >
                       {/* Ticket Number & Buyer User */}
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="flex flex-col items-center gap-1 shrink-0">
-                          <span className="font-mono-numbers font-black text-xs text-amber-300 bg-black/70 px-2.5 py-1 rounded-lg border border-amber-500/40 shrink-0 shadow-sm">
-                            #{item.num}
-                          </span>
-                          <span className="font-mono-numbers font-bold text-[8px] text-[#05d5aa] bg-[#05d5aa]/10 px-1 py-0.2 rounded border border-[#05d5aa]/20 tracking-wider">
-                            R#{grandEvent.id.replace('evt-', '').toUpperCase()}
-                          </span>
-                        </div>
+                        <span className="font-mono-numbers font-black text-xs text-amber-300 bg-black/60 px-2.5 py-1 rounded-lg border border-amber-500/30 shrink-0">
+                          #{item.num}
+                        </span>
                         
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
@@ -363,15 +364,9 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-1.5 text-[10px] text-[#9b8f7c] truncate">
-                            <span className="text-amber-400/90 font-medium font-mono-numbers">
-                              Round #{grandEvent.id.replace('evt-', '').toUpperCase()}
-                            </span>
-                            <span>•</span>
-                            <span>{item.amount} {item.amount > 1 ? 'Tickets' : 'Ticket'}</span>
-                            <span>•</span>
-                            <span className="text-[#05d5aa] font-medium">{grandEvent.ticketPrice * item.amount} USDT</span>
-                          </div>
+                          <span className="text-[10px] text-[#9b8f7c]">
+                            {item.amount} {item.amount > 1 ? 'Tickets' : 'Ticket'} · {grandEvent.ticketPrice * item.amount} USDT
+                          </span>
                         </div>
                       </div>
 
