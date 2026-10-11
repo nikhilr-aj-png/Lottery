@@ -493,7 +493,7 @@ export default function TicketModal({ event, onClose }) {
 
               <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#9b8f7c] text-center pt-1 font-mono-numbers">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#05d5aa]" />
-                <span>SHA-256 Pre-Seed Committed: {event.sha256Seed.slice(0, 16)}...</span>
+                <span>Verified Draw Reference: #{event.id.replace('evt-', '').toUpperCase()}</span>
               </div>
             </div>
 

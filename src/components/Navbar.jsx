@@ -41,7 +41,7 @@ export default function Navbar({ onOpenProfile }) {
       setIsAuthModalOpen(true);
       const tabNames = {
         tickets: 'My Tickets',
-        results: 'Draw Results & Past Winners',
+        results: 'Lottery Results & Past Winners',
         wallet: 'USDT Wallet'
       };
       showToast(`Please log in to access ${tabNames[tabId] || 'this section'}!`, 'info');

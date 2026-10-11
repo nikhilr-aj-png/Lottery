@@ -313,10 +313,10 @@ function LotteryAppContent() {
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <h3 className="font-display font-bold text-base text-white">
-                    2. Provably Fair SHA-256
+                    2. 100% Provably Fair
                   </h3>
                   <p className="text-xs text-[#9b8f7c] leading-relaxed">
-                    Pre-committed cryptographic hashes ensure completely tamper-proof draws executed automatically.
+                    Automated decentralized randomness guarantees completely transparent draws executed automatically.
                   </p>
                 </div>
 

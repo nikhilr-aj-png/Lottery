@@ -88,7 +88,7 @@ export default function RulesModal({ isOpen, onClose }) {
           {/* Section 4: Provably Fair */}
           <div className="flex items-center gap-2 text-xs text-[#9b8f7c] pt-2 font-mono-numbers">
             <ShieldCheck className="w-4 h-4 text-[#00f2fe]" />
-            <span>SHA-256 pre-committed cryptographic seeds guarantee zero operator tampering.</span>
+            <span>Automated decentralized seeds guarantee 100% fair results with zero operator tampering.</span>
           </div>
         </div>
 

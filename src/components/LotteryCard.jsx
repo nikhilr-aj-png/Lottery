@@ -61,10 +61,6 @@ export default function LotteryCard({ event, onSelect }) {
                 ROUND #{event.id.replace('evt-', '').toUpperCase()}
               </span>
             </div>
-            <span className="flex items-center gap-1.5 text-xs text-[#05d5aa] font-mono-numbers font-semibold bg-black/70 backdrop-blur-md px-2 py-0.5 rounded border border-[#05d5aa]/30">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              SHA-256
-            </span>
           </div>
 
           {/* Overlaid Title on Banner */}
@@ -90,11 +86,6 @@ export default function LotteryCard({ event, onSelect }) {
                 ROUND #{event.id.replace('evt-', '').toUpperCase()}
               </span>
             </div>
-
-            <span className="flex items-center gap-1.5 text-xs text-[#05d5aa] font-mono-numbers font-semibold">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              SHA-256
-            </span>
           </div>
 
           {/* Title */}

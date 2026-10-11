@@ -63,7 +63,7 @@ export default function WithdrawalProofModal({ order, onClose }) {
                 </span>
                 <span className="text-[10px] font-mono-numbers text-emerald-400 flex items-center gap-1 font-bold">
                   <ShieldCheck className="w-3 h-3" />
-                  SHA-256 AUDITED
+                  BLOCKCHAIN AUDITED
                 </span>
               </div>
               <h2 className="font-display font-extrabold text-lg text-white">

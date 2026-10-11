@@ -119,7 +119,7 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
             </div>
             <div className="badge-provably-fair px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-[#05d5aa]" />
-              SHA-256 PROVABLY FAIR
+              100% VERIFIED FAIR
             </div>
           </div>
 
