@@ -40,6 +40,7 @@ export default function AuthModal() {
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [honeypot, setHoneypot] = useState('');
 
   // Sign up multi-step state: 1 = Form, 2 = Email OTP Verification
   const [signupStep, setSignupStep] = useState(1);
@@ -158,13 +159,42 @@ export default function AuthModal() {
     e.preventDefault();
     setErrorMsg('');
 
+    // 1. Invisible Honeypot Defense: Silent discard if automated bot filled hidden trap
+    if (honeypot) {
+      console.warn('Bot submission blocked via honeypot');
+      setLoading(true);
+      setTimeout(() => {
+        setLoading(false);
+        setErrorMsg('Verification failed. Please try again.');
+      }, 1000);
+      return;
+    }
+
     if (usernameStatus !== 'valid') {
       setErrorMsg('Please enter a valid and available User ID.');
       return;
     }
 
-    if (!email) {
-      setErrorMsg('Please enter a valid email address.');
+    // 2. Strict RFC email regex & domain validation to prevent fake/undeliverable addresses
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+      setErrorMsg('Please enter a valid email address (e.g. name@gmail.com).');
+      return;
+    }
+
+    const domainPart = cleanEmail.split('@')[1];
+    if (!domainPart || !domainPart.includes('.') || domainPart.split('.').pop().length < 2) {
+      setErrorMsg('Please enter a valid email domain name.');
+      return;
+    }
+
+    // 3. Client-side Rate Limiting (Prevents rapid automated submissions)
+    const lastAttempt = Number(sessionStorage.getItem('ef_signup_cooldown') || 0);
+    const now = Date.now();
+    if (now - lastAttempt < 30000) {
+      const wait = Math.ceil((30000 - (now - lastAttempt)) / 1000);
+      setErrorMsg(`Please wait ${wait} seconds before requesting another verification code.`);
       return;
     }
 
@@ -173,9 +203,11 @@ export default function AuthModal() {
       return;
     }
 
+    sessionStorage.setItem('ef_signup_cooldown', now.toString());
+
     setLoading(true);
     try {
-      const res = await signupWithEmail(email, password, username);
+      const res = await signupWithEmail(cleanEmail, password, username);
       if (res.error) throw res.error;
 
       // Check if user is already registered (Supabase prevents enumeration by returning empty identities)
@@ -436,6 +468,18 @@ export default function AuthModal() {
               </div>
 
               <form onSubmit={handleSignupStep1} className="space-y-2.5">
+                {/* Invisible Bot Honeypot Input */}
+                <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', height: 0, width: 0, overflow: 'hidden' }} aria-hidden="true">
+                  <input
+                    type="text"
+                    name="contact_verification_security"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
+                </div>
+
                 {/* 1. Full-width Long Email Address Input */}
                 <div>
                   <label className="block text-[11px] font-semibold text-[#8b92a2] mb-1">
