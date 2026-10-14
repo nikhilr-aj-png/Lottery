@@ -237,7 +237,9 @@ export function LotteryProvider({ children }) {
       ticketsSold: Number(row.tickets_sold || 0),
       sha256Seed: row.sha256_seed || '',
       blockTarget: meta.block || row.block_target || '#19,400,000',
-      createdAt: row.created_at
+      createdAt: row.created_at,
+      winners: meta.winners || [],
+      winnerSummary: meta.winner_summary || ''
     };
   };
 
@@ -286,11 +288,84 @@ export function LotteryProvider({ children }) {
     };
   }, []);
 
+  // Deposits State & History with Auto-Timeout
+  const [deposits, setDeposits] = useState([]);
+  const [loadingDeposits, setLoadingDeposits] = useState(false);
+
+  // Fetch deposits and automatically cancel/expire unpaid invoices older than 15 minutes
+  const fetchDeposits = async () => {
+    try {
+      setLoadingDeposits(true);
+      const { data, error } = await supabase
+        .from('lottery_deposits')
+        .select('*')
+        .neq('id', 'cfg_platform_settings')
+        .order('created_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        const now = Date.now();
+        const timeoutMs = 15 * 60 * 1000; // 15 minutes strict auto-cancellation
+
+        const updated = data.map(dep => {
+          if (dep.status === 'waiting') {
+            const createdAtMs = new Date(dep.created_at).getTime();
+            if (now - createdAtMs > timeoutMs) {
+              return { ...dep, status: 'expired' };
+            }
+          }
+          return dep;
+        });
+
+        // Sync expired status to Supabase in background
+        data.forEach(dep => {
+          if (dep.status === 'waiting') {
+            const createdAtMs = new Date(dep.created_at).getTime();
+            if (now - createdAtMs > timeoutMs) {
+              supabase
+                .from('lottery_deposits')
+                .update({ status: 'expired', updated_at: new Date().toISOString() })
+                .eq('id', dep.id)
+                .then(() => {});
+            }
+          }
+        });
+
+        setDeposits(updated);
+      }
+    } catch (err) {
+      console.error('fetchDeposits error:', err);
+    } finally {
+      setLoadingDeposits(false);
+    }
+  };
+
+  // User manual deposit cancellation
+  const cancelDeposit = async (depositId) => {
+    try {
+      setDeposits(prev => prev.map(d => d.id === depositId ? { ...d, status: 'cancelled' } : d));
+      await supabase
+        .from('lottery_deposits')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', depositId);
+      showToast('Deposit order cancelled successfully.', 'info');
+    } catch (err) {
+      console.error('cancelDeposit error:', err);
+      showToast('Failed to cancel deposit: ' + err.message, 'error');
+    }
+  };
+
+  useEffect(() => {
+    fetchDeposits();
+  }, [wallet.address]);
+
   // NOWPayments & Support Tickets Realtime Listener
   useEffect(() => {
     const depositChannel = supabase
       .channel('realtime:lottery_deposits')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_deposits' }, (payload) => {
+        // Refresh deposit history ledger whenever any record changes
+        fetchDeposits();
+
         // If it's a support ticket insert or status change
         if (payload.new?.currency === 'SUPPORT_TICKET' || payload.old?.currency === 'SUPPORT_TICKET') {
           fetchSupportTickets();
@@ -356,9 +431,9 @@ export function LotteryProvider({ children }) {
   // NOWPayments: Create Crypto Deposit Invoice via Supabase Edge Function
   const createNowPaymentsInvoice = async (amount, payCurrency = 'usdttrc20') => {
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      showToast('Please enter a valid deposit amount', 'error');
-      return { success: false, error: 'Invalid amount' };
+    if (isNaN(numAmount) || numAmount < 20 || numAmount > 500) {
+      showToast('Deposit amount must be between 20 USDT and 500 USDT (Min: 20 USDT, Max: 500 USDT)', 'error');
+      return { success: false, error: 'Deposit amount must be between 20 USDT and 500 USDT' };
     }
 
     try {
@@ -386,6 +461,7 @@ export function LotteryProvider({ children }) {
       }
 
       showToast('NOWPayments invoice ready! Redirecting to checkout...', 'success');
+      fetchDeposits();
       return {
         success: true,
         depositId: data.deposit_id,
@@ -815,6 +891,49 @@ export function LotteryProvider({ children }) {
     return res;
   };
 
+  // Password Reset: Request 6-digit OTP code to registered email
+  const requestPasswordReset = async (email) => {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
+      if (error) throw error;
+      return { success: true, data };
+    } catch (err) {
+      console.error('requestPasswordReset error:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  // Password Reset: Verify 6-digit OTP code and set new password
+  const verifyPasswordResetOtp = async (email, token, newPassword) => {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: cleanEmail,
+        token: token.trim(),
+        type: 'recovery'
+      });
+
+      if (error) throw error;
+
+      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateError) throw updateError;
+
+      if (data?.user) {
+        setUser(data.user);
+        await fetchProfile(data.user.id);
+      }
+
+      return { success: true, data: updateData };
+    } catch (err) {
+      console.error('verifyPasswordResetOtp error:', err);
+      return { success: false, error: err };
+    }
+  };
+
   const loginWithGoogle = async () => {
     const res = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -1003,7 +1122,10 @@ export function LotteryProvider({ children }) {
   // Deposit USDT
   const depositUSDT = async (amount) => {
     const val = parseFloat(amount);
-    if (isNaN(val) || val <= 0) return false;
+    if (isNaN(val) || val < 20 || val > 500) {
+      showToast('Deposit amount must be between 20 USDT and 500 USDT (Min: 20 USDT, Max: 500 USDT)', 'error');
+      return false;
+    }
 
     const newBalance = parseFloat((wallet.balance + val).toFixed(2));
     setWallet(prev => ({
@@ -1888,6 +2010,10 @@ export function LotteryProvider({ children }) {
         depositUSDT,
         createNowPaymentsInvoice,
         checkDepositStatus,
+        deposits,
+        loadingDeposits,
+        fetchDeposits,
+        cancelDeposit,
         buyTickets,
         requestWithdrawal,
         executeDraw,
@@ -1917,7 +2043,9 @@ export function LotteryProvider({ children }) {
         needsUsernameSetup,
         setNeedsUsernameSetup,
         setPermanentUsername,
-        checkUsernameAvailability
+        checkUsernameAvailability,
+        requestPasswordReset,
+        verifyPasswordResetOtp
       }}
     >
       {children}

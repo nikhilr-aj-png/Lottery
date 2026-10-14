@@ -125,15 +125,11 @@ function LotteryAppContent() {
 
   const activeEvents = events.filter(e => e.status === 'active');
 
-  // 1. STRICT DATABASE ROLE CHECK:
-  // If user has database role 'super_admin', they ONLY see and access the Admin Panel!
-  if (profile?.role === 'super_admin') {
-    return <AdminPortal />;
-  }
-
-  // 2. If Admin Route is accessed (/#admin or /admin):
-  if (isAdminRoute) {
-    // If logged in as normal user (not super_admin), strictly block access
+  // 1. DATABASE ROLE & ROUTE CHECK:
+  // If user has role 'super_admin' and is on /admin or hasn't selected User Lobby mode:
+  const isViewingUserLobby = sessionStorage.getItem('earnflow_view_mode_user') === 'true';
+  if ((profile?.role === 'super_admin' && !isViewingUserLobby) || isAdminRoute) {
+    // If logged in as normal user (not super_admin), strictly block access to admin route
     if (user && profile && profile.role !== 'super_admin') {
       return (
         <div className="min-h-screen bg-[#07090d] flex items-center justify-center p-4">

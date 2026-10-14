@@ -17,7 +17,9 @@ import {
   RefreshCw,
   Coins,
   CheckCircle2,
-  FileCheck
+  FileCheck,
+  XCircle,
+  X
 } from 'lucide-react';
 
 const PAYMENT_CURRENCIES = [
@@ -40,7 +42,11 @@ export default function WalletView() {
     createNowPaymentsInvoice,
     checkDepositStatus,
     platformSettings,
-    walletModalTab
+    walletModalTab,
+    deposits = [],
+    loadingDeposits,
+    fetchDeposits,
+    cancelDeposit
   } = useLottery();
 
   const minWithdrawalLimit = typeof platformSettings?.minWithdrawal === 'number' ? platformSettings.minWithdrawal : 5;
@@ -49,10 +55,20 @@ export default function WalletView() {
 
   // Tabs for Deposit vs Withdraw (defaults to deposit, syncs with requested tab)
   const [activeTab, setActiveTab] = useState(() => walletModalTab || 'deposit');
+  const [ledgerTab, setLedgerTab] = useState('deposits');
+
+  // Live timer for countdown updates
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (walletModalTab) {
       setActiveTab(walletModalTab);
+      if (walletModalTab === 'deposit') setLedgerTab('deposits');
+      if (walletModalTab === 'withdraw') setLedgerTab('withdrawals');
     }
   }, [walletModalTab]);
   const [selectedNetwork, setSelectedNetwork] = useState('TRC-20');
@@ -65,7 +81,7 @@ export default function WalletView() {
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [invoiceStatusText, setInvoiceStatusText] = useState('waiting');
 
-  // Deposit amount
+  // Deposit amount (Min 20 USDT, Max 500 USDT)
   const [depositAmount, setDepositAmount] = useState('50');
 
   // Withdrawal form
@@ -98,12 +114,12 @@ export default function WalletView() {
     depositUSDT(depositAmount);
   };
 
-  // NOWPayments invoice generation handler
+  // NOWPayments invoice generation handler (Min: 20 USDT, Max: 500 USDT)
   const handleNowPaymentsSubmit = async (e) => {
     e.preventDefault();
     const amt = parseFloat(depositAmount);
-    if (isNaN(amt) || amt <= 0) {
-      showToast('Please enter a valid deposit amount', 'error');
+    if (isNaN(amt) || amt < 20 || amt > 500) {
+      showToast('Deposit amount must be between 20 USDT and 500 USDT (Min: 20 USDT, Max: 500 USDT)', 'error');
       return;
     }
     setIsGeneratingInvoice(true);
@@ -119,6 +135,7 @@ export default function WalletView() {
           createdAt: Date.now()
         });
         setInvoiceStatusText('waiting');
+        setLedgerTab('deposits');
         if (res.invoiceUrl) {
           window.open(res.invoiceUrl, '_blank', 'noopener,noreferrer');
         }
@@ -140,6 +157,9 @@ export default function WalletView() {
         if (depStatus === 'finished' || depStatus === 'confirmed') {
           showToast('Deposit confirmed! USDT credited to your wallet.', 'success');
           setActiveInvoice(null);
+        } else if (depStatus === 'expired' || depStatus === 'failed') {
+          showToast('Payment invoice has expired or was cancelled.', 'info');
+          setActiveInvoice(null);
         } else {
           showToast(`Invoice status: ${depStatus.toUpperCase()}`, 'info');
         }
@@ -151,11 +171,25 @@ export default function WalletView() {
     }
   };
 
-  // Auto-poll active invoice status every 6 seconds
+  // Auto-poll active invoice status every 6 seconds and check 15m timeout
   useEffect(() => {
     if (!activeInvoice?.depositId) return;
 
+    // Strict 15-minute invoice timeout check
+    if (activeInvoice.createdAt && Date.now() - activeInvoice.createdAt > 15 * 60 * 1000) {
+      setActiveInvoice(null);
+      showToast('Payment invoice expired after 15 minutes without payment.', 'info');
+      return;
+    }
+
     const interval = setInterval(async () => {
+      // Check timeout
+      if (activeInvoice.createdAt && Date.now() - activeInvoice.createdAt > 15 * 60 * 1000) {
+        setActiveInvoice(null);
+        showToast('Payment invoice expired after 15 minutes without payment.', 'info');
+        return;
+      }
+
       try {
         const res = await checkDepositStatus(activeInvoice.depositId);
         const depStatus = res?.deposit?.status || res?.status;
@@ -163,6 +197,8 @@ export default function WalletView() {
           setInvoiceStatusText(depStatus);
           if (depStatus === 'finished' || depStatus === 'confirmed') {
             showToast('Deposit confirmed! USDT credited to your wallet.', 'success');
+            setActiveInvoice(null);
+          } else if (depStatus === 'expired' || depStatus === 'failed') {
             setActiveInvoice(null);
           }
         }
@@ -172,14 +208,7 @@ export default function WalletView() {
     }, 6000);
 
     return () => clearInterval(interval);
-  }, [activeInvoice?.depositId]);
-
-  // Calculate live SLA remaining for processing withdrawals
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  }, [activeInvoice]);
 
   const formatSLATime = (targetMs) => {
     const diff = Math.max(0, targetMs - now);
@@ -343,20 +372,35 @@ export default function WalletView() {
                 {/* Active Invoice Card if one exists */}
                 {activeInvoice ? (
                   <div className="bg-[#0b0e14] rounded-2xl p-5 border border-[#f5c451]/40 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-[#9b8f7c] font-semibold">
-                        Active Deposit Invoice
-                      </span>
-                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-mono-numbers font-bold flex items-center gap-1.5 ${
-                        invoiceStatusText === 'finished' || invoiceStatusText === 'confirmed'
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : invoiceStatusText === 'confirming'
-                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                          : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                      }`}>
-                        <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
-                        {invoiceStatusText.toUpperCase()}
-                      </span>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-[#9b8f7c] font-semibold">
+                          Active Deposit Invoice
+                        </span>
+                        {activeInvoice.createdAt && (
+                          <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 font-mono-numbers text-[10px] font-bold border border-amber-500/30 flex items-center gap-1">
+                            <Clock className="w-3 h-3 animate-spin" />
+                            {(() => {
+                              const rem = Math.max(0, 15 * 60 * 1000 - (now - activeInvoice.createdAt));
+                              const m = Math.floor(rem / 60000);
+                              const s = Math.floor((rem % 60000) / 1000);
+                              return `Expires in ${m}m ${s < 10 ? '0' : ''}${s}s`;
+                            })()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-mono-numbers font-bold flex items-center gap-1.5 ${
+                          invoiceStatusText === 'finished' || invoiceStatusText === 'confirmed'
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : invoiceStatusText === 'confirming'
+                            ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                            : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                        }`}>
+                          <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
+                          {invoiceStatusText.toUpperCase()}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="bg-[#121721] p-4 rounded-xl border border-[#272a31] space-y-2">
@@ -404,13 +448,19 @@ export default function WalletView() {
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t border-[#1e2638] text-[11px] text-[#9b8f7c]">
-                      <span>Webhook updates balance automatically upon confirmation</span>
+                      <span>Auto-cancelled after 15 mins if unpaid · Instant webhook confirmation</span>
                       <button
                         type="button"
-                        onClick={() => setActiveInvoice(null)}
-                        className="text-[#f5c451] hover:underline cursor-pointer"
+                        onClick={async () => {
+                          if (activeInvoice.depositId) {
+                            await cancelDeposit(activeInvoice.depositId);
+                          }
+                          setActiveInvoice(null);
+                        }}
+                        className="text-rose-400 hover:text-rose-300 hover:underline cursor-pointer flex items-center gap-1 font-semibold"
                       >
-                        New Deposit
+                        <X className="w-3 h-3" />
+                        Cancel Order
                       </button>
                     </div>
                   </div>
@@ -438,13 +488,14 @@ export default function WalletView() {
                     <div>
                       <div className="flex items-center justify-between text-xs mb-1.5">
                         <label className="text-[#9b8f7c] font-semibold">Deposit Amount (USDT equivalent):</label>
-                        <span className="font-mono-numbers text-[11px] text-[#05d5aa]">Min: 5 USDT</span>
+                        <span className="font-mono-numbers text-[11px] text-[#05d5aa] font-bold">Min: 20 USDT · Max: 500 USDT</span>
                       </div>
                       <div className="relative">
                         <input
                           type="number"
                           step="1"
-                          min="5"
+                          min="20"
+                          max="500"
                           value={depositAmount}
                           onChange={(e) => setDepositAmount(e.target.value)}
                           className="w-full bg-[#0b0e14] border border-[#32353c] focus:border-[#ffd700] rounded-xl px-4 py-3.5 text-white font-mono-numbers font-bold text-lg outline-none"
@@ -458,7 +509,7 @@ export default function WalletView() {
 
                       {/* Quick Chips */}
                       <div className="flex gap-2 mt-2">
-                        {[10, 25, 50, 100, 250, 500].map((amt) => (
+                        {[20, 50, 100, 250, 500].map((amt) => (
                           <button
                             key={amt}
                             type="button"
@@ -497,7 +548,7 @@ export default function WalletView() {
                     <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] flex items-start gap-2.5 text-xs text-[#9b8f7c]">
                       <ShieldCheck className="w-4 h-4 text-[#05d5aa] shrink-0 mt-0.5" />
                       <p className="text-[11px] leading-relaxed">
-                        Hosted on NOWPayments official infrastructure. Supports auto-detection of network deposits with real-time webhook confirmation.
+                        Hosted on NOWPayments official infrastructure. Supports auto-detection of network deposits with real-time webhook confirmation. Unpaid deposits auto-cancel after 15 minutes.
                       </p>
                     </div>
                   </form>
@@ -549,7 +600,7 @@ export default function WalletView() {
                 <div className="space-y-1.5 text-xs text-[#9b8f7c] mb-5">
                   <div className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#05d5aa]" />
-                    <span>Minimum Deposit: <strong>5.00 USDT</strong></span>
+                    <span>Minimum Deposit: <strong>20.00 USDT</strong> | Maximum: <strong>500.00 USDT</strong></span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#05d5aa]" />
@@ -566,7 +617,7 @@ export default function WalletView() {
               QUICK TEST DEPOSIT (INSTANT ON-CHAIN SIMULATION):
             </span>
             <div className="flex gap-2">
-              {[50, 100, 500].map((amt) => (
+              {[20, 50, 100, 500].map((amt) => (
                 <button
                   key={amt}
                   type="button"
@@ -707,110 +758,262 @@ export default function WalletView() {
 
       </div>
 
-      {/* 24-Hour Withdrawal Orders & SLA Tracking Table */}
+      {/* Financial Audit & Transaction Ledger (Deposits & Withdrawals) */}
       <div className="glass-panel rounded-2xl p-3.5 xs:p-5 sm:p-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
           <div>
             <h3 className="font-display font-extrabold text-lg xs:text-xl text-white">
-              Withdrawal Orders & 24h SLA Ledger
+              Financial Audit & Transaction Ledger
             </h3>
             <p className="text-[11px] xs:text-xs text-[#9b8f7c]">
-              Real-time audit trail and transaction proof
+              Real-time audit trail, instant deposit webhook confirmation & 24h SLA disbursals
             </p>
           </div>
-          <span className="badge-provably-fair px-2.5 xs:px-3 py-1 rounded-full text-[11px] xs:text-xs font-bold">
-            Live SLA Monitor
-          </span>
+
+          {/* Ledger Switcher Tabs */}
+          <div className="flex items-center gap-1.5 bg-[#0b0e14] p-1 rounded-xl border border-[#272a31]">
+            <button
+              type="button"
+              onClick={() => setLedgerTab('deposits')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                ledgerTab === 'deposits'
+                  ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-sm font-extrabold'
+                  : 'text-[#9b8f7c] hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <ArrowDownLeft className="w-3.5 h-3.5" />
+              <span>Deposit Orders ({deposits.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLedgerTab('withdrawals')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                ledgerTab === 'withdrawals'
+                  ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-sm font-extrabold'
+                  : 'text-[#9b8f7c] hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <ArrowUpRight className="w-3.5 h-3.5" />
+              <span>Withdrawal Orders ({withdrawals.length})</span>
+            </button>
+          </div>
         </div>
 
-        <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
-          <table className="w-full min-w-[620px] text-left text-xs">
-            <thead>
-              <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
-                <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Order ID</th>
-                <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
-                <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Network</th>
-                <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Destination Address</th>
-                <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status / SLA Timer</th>
-                <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Proof / TxHash</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#1f2737]">
-              {withdrawals.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="py-6 text-center text-[#9b8f7c]">
-                    No withdrawals yet.
-                  </td>
+        {ledgerTab === 'deposits' ? (
+          /* DEPOSIT ORDERS LEDGER */
+          <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
+            <table className="w-full min-w-[620px] text-left text-xs">
+              <thead>
+                <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
+                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Invoice / Order ID</th>
+                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
+                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Payment Asset</th>
+                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Initiated At</th>
+                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status / 15m Expiry</th>
+                  <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Action</th>
                 </tr>
-              ) : (
-                withdrawals.map((order) => {
-                  const isProcessing = order.status === 'processing';
-                  const isCompleted = order.status === 'completed';
+              </thead>
+              <tbody className="divide-y divide-[#1f2737]">
+                {deposits.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="py-8 text-center text-[#9b8f7c]">
+                      No deposit orders yet. Minimum deposit starts at 20 USDT.
+                    </td>
+                  </tr>
+                ) : (
+                  deposits.map((order) => {
+                    const isFinished = order.status === 'finished' || order.status === 'confirmed';
+                    const isCancelled = order.status === 'cancelled';
+                    const isExplicitExpired = order.status === 'expired' || order.status === 'failed';
+                    const isWaiting = order.status === 'waiting';
 
-                  return (
-                    <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-4 px-2 xs:px-3 font-mono-numbers font-bold text-white whitespace-nowrap">
-                        #{order.id}
-                      </td>
-                      <td className="py-4 px-2 xs:px-3 font-mono-numbers font-black text-sm text-[#ffd700] whitespace-nowrap">
-                        {order.amount.toFixed(2)} USDT
-                        <span className="block text-[10px] text-[#9b8f7c] font-normal">
-                          Net: {order.netDisbursal.toFixed(2)} USDT
-                        </span>
-                      </td>
-                      <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
-                        <span className="px-2.5 py-0.5 rounded bg-[#10131a] text-[#05d5aa] border border-[#05d5aa]/30 font-mono-numbers font-bold text-[10px] whitespace-nowrap inline-flex items-center tracking-normal">
-                          {order.network}
-                        </span>
-                      </td>
-                      <td className="py-4 px-2 xs:px-3 font-mono-numbers text-white/80 whitespace-nowrap">
-                        {order.address.slice(0, 6)}...{order.address.slice(-6)}
-                      </td>
-                      <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
-                        {isProcessing ? (
-                          <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
-                            <div>
-                              <span className="text-amber-400 font-bold block whitespace-nowrap">
-                                In Progress (24h SLA)
-                              </span>
-                              <span className="text-[10px] font-mono-numbers text-amber-200/80 whitespace-nowrap">
-                                {formatSLATime(order.slaTargetMs)}
-                              </span>
+                    const createdAtMs = order.created_at ? new Date(order.created_at).getTime() : now;
+                    const ageMs = now - createdAtMs;
+                    const timeoutMs = 15 * 60 * 1000;
+                    const isTimedOut = isWaiting && ageMs > timeoutMs;
+                    const remainingMs = Math.max(0, timeoutMs - ageMs);
+                    const remMin = Math.floor(remainingMs / 60000);
+                    const remSec = Math.floor((remainingMs % 60000) / 1000);
+
+                    return (
+                      <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="py-4 px-2 xs:px-3 font-mono-numbers font-bold text-white whitespace-nowrap">
+                          <span title={order.id}>
+                            #{order.invoice_id || (order.id ? order.id.slice(0, 14) : 'DEP')}
+                          </span>
+                        </td>
+                        <td className="py-4 px-2 xs:px-3 font-mono-numbers font-black text-sm text-[#05d5aa] whitespace-nowrap">
+                          +{Number(order.amount || 0).toFixed(2)} USDT
+                        </td>
+                        <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
+                          <span className="px-2.5 py-0.5 rounded bg-[#10131a] text-[#ffd700] border border-[#f5c451]/30 font-mono-numbers font-bold text-[10px] whitespace-nowrap inline-flex items-center tracking-normal">
+                            {(order.pay_currency || 'usdttrc20').toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="py-4 px-2 xs:px-3 font-mono-numbers text-white/80 whitespace-nowrap text-[11px]">
+                          {order.created_at ? new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Just now'}
+                        </td>
+                        <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
+                          {isFinished ? (
+                            <span className="px-2.5 py-1 rounded-md bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold flex items-center gap-1.5 w-max whitespace-nowrap">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Completed (+{order.amount} USDT)
+                            </span>
+                          ) : isCancelled ? (
+                            <span className="px-2.5 py-1 rounded-md bg-slate-800 text-slate-400 border border-slate-700 font-bold flex items-center gap-1 w-max whitespace-nowrap text-[11px]">
+                              <XCircle className="w-3.5 h-3.5 text-slate-400" />
+                              Cancelled by User
+                            </span>
+                          ) : (isExplicitExpired || isTimedOut) ? (
+                            <span className="px-2.5 py-1 rounded-md bg-rose-950/40 text-rose-400 border border-rose-500/30 font-bold flex items-center gap-1.5 w-max whitespace-nowrap text-[11px]">
+                              <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                              Expired (15m Timeout)
+                            </span>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+                              <div>
+                                <span className="text-amber-400 font-bold block whitespace-nowrap text-xs">
+                                  Awaiting Payment
+                                </span>
+                                <span className="text-[10px] font-mono-numbers text-amber-200/80 whitespace-nowrap">
+                                  Expires in {remMin}m {remSec < 10 ? '0' : ''}{remSec}s
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        ) : isCompleted ? (
-                          <span className="px-2.5 py-1 rounded-md bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold flex items-center gap-1.5 w-max whitespace-nowrap">
-                            <Check className="w-3.5 h-3.5" />
-                            Completed (Disbursed)
+                          )}
+                        </td>
+                        <td className="py-4 px-2 xs:px-3 text-right whitespace-nowrap">
+                          {isWaiting && !isTimedOut ? (
+                            <div className="flex items-center justify-end gap-2">
+                              {order.invoice_url && (
+                                <a
+                                  href={order.invoice_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-2.5 py-1 rounded-lg bg-[rgba(245,196,81,0.15)] hover:bg-[#f5c451] text-[#ffd700] hover:text-[#0b0e14] text-[11px] font-bold border border-[#f5c451]/30 transition-all inline-flex items-center gap-1 cursor-pointer"
+                                >
+                                  <span>Pay Now</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => cancelDeposit(order.id)}
+                                className="px-2.5 py-1 rounded-lg bg-rose-950/40 hover:bg-rose-600 text-rose-300 hover:text-white text-[11px] font-bold border border-rose-500/30 transition-all cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : isFinished ? (
+                            <span className="text-[11px] text-[#05d5aa] font-mono-numbers font-bold flex items-center justify-end gap-1">
+                              <Check className="w-3.5 h-3.5" />
+                              Credited
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-[#6b7280] font-mono-numbers">
+                              Closed
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          /* WITHDRAWAL ORDERS LEDGER */
+          <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
+            <table className="w-full min-w-[620px] text-left text-xs">
+              <thead>
+                <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
+                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Order ID</th>
+                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
+                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Network</th>
+                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Destination Address</th>
+                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status / SLA Timer</th>
+                  <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Proof / TxHash</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1f2737]">
+                {withdrawals.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="py-6 text-center text-[#9b8f7c]">
+                      No withdrawals yet.
+                    </td>
+                  </tr>
+                ) : (
+                  withdrawals.map((order) => {
+                    const isProcessing = order.status === 'processing';
+                    const isCompleted = order.status === 'completed';
+
+                    return (
+                      <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="py-4 px-2 xs:px-3 font-mono-numbers font-bold text-white whitespace-nowrap">
+                          #{order.id}
+                        </td>
+                        <td className="py-4 px-2 xs:px-3 font-mono-numbers font-black text-sm text-[#ffd700] whitespace-nowrap">
+                          {order.amount.toFixed(2)} USDT
+                          <span className="block text-[10px] text-[#9b8f7c] font-normal">
+                            Net: {order.netDisbursal.toFixed(2)} USDT
                           </span>
-                        ) : (
-                          <span className="px-2.5 py-1 rounded-md bg-red-950/40 text-red-400 border border-red-500/30 font-bold whitespace-nowrap">
-                            Flagged / Refunded
+                        </td>
+                        <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
+                          <span className="px-2.5 py-0.5 rounded bg-[#10131a] text-[#05d5aa] border border-[#05d5aa]/30 font-mono-numbers font-bold text-[10px] whitespace-nowrap inline-flex items-center tracking-normal">
+                            {order.network}
                           </span>
-                        )}
-                      </td>
-                      <td className="py-4 px-2 xs:px-3 text-right whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedProofOrder(order)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-mono-numbers transition-all cursor-pointer whitespace-nowrap ${
-                            isCompleted 
-                              ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-[#05d5aa] border border-[#05d5aa]/30 shadow-[0_0_15px_rgba(5,213,170,0.15)]'
-                              : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30'
-                          }`}
-                        >
-                          <FileCheck className="w-3.5 h-3.5" />
-                          <span>{isCompleted ? 'Show Proof' : 'Audit Trail'}</span>
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                        </td>
+                        <td className="py-4 px-2 xs:px-3 font-mono-numbers text-white/80 whitespace-nowrap">
+                          {order.address.slice(0, 6)}...{order.address.slice(-6)}
+                        </td>
+                        <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
+                          {isProcessing ? (
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+                              <div>
+                                <span className="text-amber-400 font-bold block whitespace-nowrap">
+                                  In Progress (24h SLA)
+                                </span>
+                                <span className="text-[10px] font-mono-numbers text-amber-200/80 whitespace-nowrap">
+                                  {formatSLATime(order.slaTargetMs)}
+                                </span>
+                              </div>
+                            </div>
+                          ) : isCompleted ? (
+                            <span className="px-2.5 py-1 rounded-md bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold flex items-center gap-1.5 w-max whitespace-nowrap">
+                              <Check className="w-3.5 h-3.5" />
+                              Completed (Disbursed)
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-md bg-red-950/40 text-red-400 border border-red-500/30 font-bold whitespace-nowrap">
+                              Flagged / Refunded
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-4 px-2 xs:px-3 text-right whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedProofOrder(order)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-mono-numbers transition-all cursor-pointer whitespace-nowrap ${
+                              isCompleted 
+                                ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-[#05d5aa] border border-[#05d5aa]/30 shadow-[0_0_15px_rgba(5,213,170,0.15)]'
+                                : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30'
+                            }`}
+                          >
+                            <FileCheck className="w-3.5 h-3.5" />
+                            <span>{isCompleted ? 'Show Proof' : 'Audit Trail'}</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Cryptographic Withdrawal Proof Modal */}

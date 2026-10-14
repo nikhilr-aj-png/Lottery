@@ -424,17 +424,19 @@ export default function AdminConsole({ onLogout }) {
               </span>
             </div>
           )}
-          <a
-            href="/"
+          <button
+            type="button"
             onClick={() => {
+              sessionStorage.setItem('earnflow_view_mode_user', 'true');
               window.location.hash = '';
+              window.location.href = '/';
             }}
             className="px-2 xs:px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0"
             title="Open Live Public User Platform"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             <span className="hidden xs:inline">User Lobby</span>
-          </a>
+          </button>
           <button
             onClick={onLogout}
             className="px-2 xs:px-3 sm:px-3.5 py-1.5 rounded-xl bg-red-950/30 hover:bg-red-950/60 text-xs font-bold text-red-400 border border-red-500/30 flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0"
