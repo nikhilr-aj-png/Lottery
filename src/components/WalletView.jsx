@@ -53,9 +53,9 @@ export default function WalletView() {
   const maxWithdrawalLimit = typeof platformSettings?.maxWithdrawal === 'number' ? platformSettings.maxWithdrawal : 10000;
   const treasuryAddress = platformSettings?.treasuryTrc20 || wallet.depositAddress;
 
-  // Tabs for Deposit vs Withdraw (defaults to deposit, syncs with requested tab)
   const [activeTab, setActiveTab] = useState(() => walletModalTab || 'deposit');
   const [ledgerTab, setLedgerTab] = useState('deposits');
+  const [depositFilter, setDepositFilter] = useState('all');
 
   // Live timer for countdown updates
   const [now, setNow] = useState(Date.now());
@@ -498,11 +498,11 @@ export default function WalletView() {
                           max="500"
                           value={depositAmount}
                           onChange={(e) => setDepositAmount(e.target.value)}
-                          className="w-full bg-[#0b0e14] border border-[#32353c] focus:border-[#ffd700] rounded-xl px-4 py-3.5 text-white font-mono-numbers font-bold text-lg outline-none"
+                          className="w-full bg-[#0b0e14] border border-[#32353c] focus:border-[#ffd700] rounded-xl pl-4 pr-24 py-3.5 text-white font-mono-numbers font-bold text-lg outline-none"
                           placeholder="e.g. 50"
                           required
                         />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[#ffd700]">
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-[#141924] border border-[#272a31] text-xs font-bold text-[#ffd700] select-none pointer-events-none">
                           USDT
                         </span>
                       </div>
@@ -679,11 +679,11 @@ export default function WalletView() {
                     max={Math.min(maxWithdrawalLimit, wallet.balance)}
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
-                    className="w-full bg-[#0b0e14] border border-[#32353c] focus:border-[#ffd700] rounded-xl px-4 py-3.5 text-white font-mono-numbers font-bold text-lg outline-none"
+                    className="w-full bg-[#0b0e14] border border-[#32353c] focus:border-[#ffd700] rounded-xl pl-4 pr-24 py-3.5 text-white font-mono-numbers font-bold text-lg outline-none"
                     placeholder={`e.g. ${minWithdrawalLimit}`}
                     required
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[#ffd700]">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-[#141924] border border-[#272a31] text-xs font-bold text-[#ffd700] select-none pointer-events-none">
                     USDT
                   </span>
                 </div>
@@ -801,88 +801,132 @@ export default function WalletView() {
 
         {ledgerTab === 'deposits' ? (
           /* DEPOSIT ORDERS LEDGER */
-          <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
-            <table className="w-full min-w-[620px] text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Invoice / Order ID</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Payment Asset</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Initiated At</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status / 15m Expiry</th>
-                  <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1f2737]">
-                {deposits.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="py-8 text-center text-[#9b8f7c]">
-                      No deposit orders yet. Minimum deposit starts at 20 USDT.
-                    </td>
+          <div className="space-y-3">
+            {/* Filter Pills for Deposit Ledger */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 pb-1">
+              {[
+                { id: 'all', label: `All (${deposits.length})` },
+                { id: 'completed', label: `Successful (${deposits.filter(d => d.status === 'finished' || d.status === 'confirmed').length})` },
+                { id: 'waiting', label: `Awaiting (${deposits.filter(d => d.status === 'waiting' && (now - new Date(d.created_at || now).getTime() <= 15 * 60 * 1000)).length})` },
+                { id: 'expired', label: `Unpaid/Expired (${deposits.filter(d => d.status === 'expired' || d.status === 'cancelled' || d.status === 'failed' || (d.status === 'waiting' && now - new Date(d.created_at || now).getTime() > 15 * 60 * 1000)).length})` }
+              ].map(f => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setDepositFilter(f.id)}
+                  className={`px-3 py-1 rounded-lg text-xs font-mono-numbers font-bold transition-all cursor-pointer ${
+                    depositFilter === f.id
+                      ? 'bg-amber-500 text-black shadow-sm font-extrabold'
+                      : 'bg-[#10141f] text-[#9b8f7c] hover:text-white border border-[#272a31]'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
+              <table className="w-full min-w-[620px] text-left text-xs">
+                <thead>
+                  <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
+                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Invoice / Order ID</th>
+                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
+                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Payment Asset</th>
+                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Initiated At</th>
+                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status</th>
+                    <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Action</th>
                   </tr>
-                ) : (
-                  deposits.map((order) => {
-                    const isFinished = order.status === 'finished' || order.status === 'confirmed';
-                    const isCancelled = order.status === 'cancelled';
-                    const isExplicitExpired = order.status === 'expired' || order.status === 'failed';
-                    const isWaiting = order.status === 'waiting';
+                </thead>
+                <tbody className="divide-y divide-[#1f2737]">
+                  {deposits.filter(d => {
+                    if (depositFilter === 'all') return true;
+                    const isFin = d.status === 'finished' || d.status === 'confirmed';
+                    if (depositFilter === 'completed') return isFin;
+                    const createdAt = d.created_at ? new Date(d.created_at).getTime() : now;
+                    const isWait = d.status === 'waiting' && (now - createdAt <= 15 * 60 * 1000);
+                    if (depositFilter === 'waiting') return isWait;
+                    if (depositFilter === 'expired') return !isFin && !isWait;
+                    return true;
+                  }).length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="py-8 text-center text-[#9b8f7c]">
+                        No deposit orders matching filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    deposits
+                      .filter(d => {
+                        if (depositFilter === 'all') return true;
+                        const isFin = d.status === 'finished' || d.status === 'confirmed';
+                        if (depositFilter === 'completed') return isFin;
+                        const createdAt = d.created_at ? new Date(d.created_at).getTime() : now;
+                        const isWait = d.status === 'waiting' && (now - createdAt <= 15 * 60 * 1000);
+                        if (depositFilter === 'waiting') return isWait;
+                        if (depositFilter === 'expired') return !isFin && !isWait;
+                        return true;
+                      })
+                      .map((order) => {
+                        const isFinished = order.status === 'finished' || order.status === 'confirmed';
+                        const isCancelled = order.status === 'cancelled';
+                        const isExplicitExpired = order.status === 'expired' || order.status === 'failed';
+                        const isWaiting = order.status === 'waiting';
 
-                    const createdAtMs = order.created_at ? new Date(order.created_at).getTime() : now;
-                    const ageMs = now - createdAtMs;
-                    const timeoutMs = 15 * 60 * 1000;
-                    const isTimedOut = isWaiting && ageMs > timeoutMs;
-                    const remainingMs = Math.max(0, timeoutMs - ageMs);
-                    const remMin = Math.floor(remainingMs / 60000);
-                    const remSec = Math.floor((remainingMs % 60000) / 1000);
+                        const createdAtMs = order.created_at ? new Date(order.created_at).getTime() : now;
+                        const ageMs = now - createdAtMs;
+                        const timeoutMs = 15 * 60 * 1000;
+                        const isTimedOut = isWaiting && ageMs > timeoutMs;
+                        const remainingMs = Math.max(0, timeoutMs - ageMs);
+                        const remMin = Math.floor(remainingMs / 60000);
+                        const remSec = Math.floor((remainingMs % 60000) / 1000);
 
-                    return (
-                      <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-4 px-2 xs:px-3 font-mono-numbers font-bold text-white whitespace-nowrap">
-                          <span title={order.id}>
-                            #{order.invoice_id || (order.id ? order.id.slice(0, 14) : 'DEP')}
-                          </span>
-                        </td>
-                        <td className="py-4 px-2 xs:px-3 font-mono-numbers font-black text-sm text-[#05d5aa] whitespace-nowrap">
-                          +{Number(order.amount || 0).toFixed(2)} USDT
-                        </td>
-                        <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
-                          <span className="px-2.5 py-0.5 rounded bg-[#10131a] text-[#ffd700] border border-[#f5c451]/30 font-mono-numbers font-bold text-[10px] whitespace-nowrap inline-flex items-center tracking-normal">
-                            {(order.pay_currency || 'usdttrc20').toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="py-4 px-2 xs:px-3 font-mono-numbers text-white/80 whitespace-nowrap text-[11px]">
-                          {order.created_at ? new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Just now'}
-                        </td>
-                        <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
-                          {isFinished ? (
-                            <span className="px-2.5 py-1 rounded-md bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold flex items-center gap-1.5 w-max whitespace-nowrap">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              Completed (+{order.amount} USDT)
-                            </span>
-                          ) : isCancelled ? (
-                            <span className="px-2.5 py-1 rounded-md bg-slate-800 text-slate-400 border border-slate-700 font-bold flex items-center gap-1 w-max whitespace-nowrap text-[11px]">
-                              <XCircle className="w-3.5 h-3.5 text-slate-400" />
-                              Cancelled by User
-                            </span>
-                          ) : (isExplicitExpired || isTimedOut) ? (
-                            <span className="px-2.5 py-1 rounded-md bg-rose-950/40 text-rose-400 border border-rose-500/30 font-bold flex items-center gap-1.5 w-max whitespace-nowrap text-[11px]">
-                              <XCircle className="w-3.5 h-3.5 text-rose-400" />
-                              Expired (15m Timeout)
-                            </span>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
-                              <div>
-                                <span className="text-amber-400 font-bold block whitespace-nowrap text-xs">
-                                  Awaiting Payment
+                        return (
+                          <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="py-4 px-2 xs:px-3 font-mono-numbers font-bold text-white whitespace-nowrap">
+                              <span title={order.id}>
+                                #{order.invoice_id || (order.id ? order.id.slice(0, 14) : 'DEP')}
+                              </span>
+                            </td>
+                            <td className="py-4 px-2 xs:px-3 font-mono-numbers font-black text-sm text-[#05d5aa] whitespace-nowrap">
+                              +{Number(order.amount || 0).toFixed(2)} USDT
+                            </td>
+                            <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
+                              <span className="px-2.5 py-0.5 rounded bg-[#10131a] text-[#ffd700] border border-[#f5c451]/30 font-mono-numbers font-bold text-[10px] whitespace-nowrap inline-flex items-center tracking-normal">
+                                {(order.pay_currency || 'usdttrc20').toUpperCase()}
+                              </span>
+                            </td>
+                            <td className="py-4 px-2 xs:px-3 font-mono-numbers text-white/80 whitespace-nowrap text-[11px]">
+                              {order.created_at ? new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Just now'}
+                            </td>
+                            <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
+                              {isFinished ? (
+                                <span className="px-2.5 py-1 rounded-md bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold flex items-center gap-1.5 w-max whitespace-nowrap">
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  Success (+{order.amount} USDT)
                                 </span>
-                                <span className="text-[10px] font-mono-numbers text-amber-200/80 whitespace-nowrap">
-                                  Expires in {remMin}m {remSec < 10 ? '0' : ''}{remSec}s
+                              ) : isCancelled ? (
+                                <span className="px-2.5 py-1 rounded-md bg-slate-800 text-slate-400 border border-slate-700 font-bold flex items-center gap-1 w-max whitespace-nowrap text-[11px]">
+                                  <XCircle className="w-3.5 h-3.5 text-slate-400" />
+                                  Cancelled
                                 </span>
-                              </div>
-                            </div>
-                          )}
-                        </td>
+                              ) : (isExplicitExpired || isTimedOut) ? (
+                                <span className="px-2.5 py-1 rounded-md bg-[#161a23] text-[#9b8f7c] border border-[#272a31] font-bold flex items-center gap-1.5 w-max whitespace-nowrap text-[11px]">
+                                  <Clock className="w-3.5 h-3.5 text-[#9b8f7c]" />
+                                  Unpaid (Expired 15m)
+                                </span>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+                                  <div>
+                                    <span className="text-amber-400 font-bold block whitespace-nowrap text-xs">
+                                      Awaiting Payment
+                                    </span>
+                                    <span className="text-[10px] font-mono-numbers text-amber-200/80 whitespace-nowrap">
+                                      Expires in {remMin}m {remSec < 10 ? '0' : ''}{remSec}s
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </td>
                         <td className="py-4 px-2 xs:px-3 text-right whitespace-nowrap">
                           {isWaiting && !isTimedOut ? (
                             <div className="flex items-center justify-end gap-2">
@@ -923,6 +967,7 @@ export default function WalletView() {
               </tbody>
             </table>
           </div>
+        </div>
         ) : (
           /* WITHDRAWAL ORDERS LEDGER */
           <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
@@ -934,7 +979,7 @@ export default function WalletView() {
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Network</th>
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Destination Address</th>
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status / SLA Timer</th>
-                  <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Proof / TxHash</th>
+                  <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Receipt / Tracking</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1f2737]">
@@ -1003,7 +1048,7 @@ export default function WalletView() {
                             }`}
                           >
                             <FileCheck className="w-3.5 h-3.5" />
-                            <span>{isCompleted ? 'Show Proof' : 'Audit Trail'}</span>
+                            <span>{isCompleted ? 'View Receipt' : 'Track Order'}</span>
                           </button>
                         </td>
                       </tr>

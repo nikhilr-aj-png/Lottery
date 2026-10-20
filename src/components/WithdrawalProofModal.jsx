@@ -96,7 +96,7 @@ export default function WithdrawalProofModal({ order, onClose }) {
                 </div>
               ) : (
                 <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400">
-                  <Clock className="w-5 h-5 animate-spin" />
+                  <Clock className="w-5 h-5" />
                 </div>
               )}
               <div>
@@ -219,33 +219,35 @@ export default function WithdrawalProofModal({ order, onClose }) {
         </div>
 
         {/* Modal Footer CTAs */}
-        <div className="p-5 border-t border-[#1f2737] bg-[#090c12] flex flex-col sm:flex-row items-center gap-3">
+        <div className="p-5 border-t border-[#1f2737] bg-[#090c12]">
           {txHash ? (
-            <a
-              href={`https://tronscan.org/#/transaction/${txHash}`}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-gold flex-1 w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span>Verify on TronScan Explorer</span>
-            </a>
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <a
+                href={`https://tronscan.org/#/transaction/${txHash}`}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-gold flex-1 w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span>Verify on TronScan Explorer</span>
+              </a>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-[#9b8f7c] hover:text-white border border-[#272a31] transition-colors cursor-pointer"
+              >
+                Close Receipt
+              </button>
+            </div>
           ) : (
             <button
+              type="button"
               onClick={onClose}
-              className="btn-gold flex-1 w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              className="btn-gold w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
             >
-              <Clock className="w-4 h-4" />
-              <span>Close & Track Order</span>
+              <span>Close Order Details</span>
             </button>
           )}
-
-          <button
-            onClick={onClose}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-[#9b8f7c] hover:text-white border border-[#272a31] transition-colors cursor-pointer"
-          >
-            Close Receipt
-          </button>
         </div>
 
       </div>
