@@ -4,202 +4,23 @@ import { supabase } from '../lib/supabase';
 
 const LotteryContext = createContext();
 
-const INITIAL_EVENTS = [
-  {
-    id: 'evt-diwali-bumper-10',
-    title: '🪔 Diwali Special Mega Bumper Pot',
-    badge: '🪔 DIWALI BUMPER',
-    theme: 'diwali',
-    bannerImage: 'https://images.unsplash.com/photo-1605371924599-2d0365da1ae0?w=1200&q=80',
-    ticketPrice: 10,
-    minPrize: 10,
-    maxPrize: 50,
-    poolPrize: 50,
-    winnerSharePercent: 90,
-    winnerCount: 5,
-    drawTime: Date.now() + 60 * 60 * 1000,
-    status: 'active',
-    winningDigits: null,
-    targetWinningDigits: '7429',
-    participantsCount: 42,
-    ticketsSold: 42,
-    sha256Seed: '0x3f98a2b91c88e1bc74d021f980145ca7e3b0c44298fc1c149afbf4c8996fb924',
-    blockTarget: '#19,402,118'
-  },
-  {
-    id: 'evt-daily-10',
-    title: 'Daily Mega 10 USDT Pool',
-    badge: 'DAILY MEGA',
-    theme: 'cyberpunk',
-    bannerImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80',
-    ticketPrice: 10,
-    poolPrize: 15420,
-    winnerSharePercent: 90,
-    drawTime: Date.now() + 18 * 3600 * 1000 + 42 * 60 * 1000,
-    status: 'active',
-    winningDigits: null,
-    targetWinningDigits: '7429',
-    participantsCount: 1542,
-    ticketsSold: 1542,
-    sha256Seed: '0x3f98a2b91c88e1bc74d021f980145ca7e3b0c44298fc1c149afbf4c8996fb924',
-    blockTarget: '#19,402,118'
-  },
-  {
-    id: 'evt-weekly-50',
-    title: 'Weekly High Roller 50 USDT',
-    badge: '🪔 DIWALI BUMPER',
-    theme: 'diwali',
-    bannerImage: 'https://images.unsplash.com/photo-1605371924599-2d0365da1ae0?w=1200&q=80',
-    ticketPrice: 50,
-    poolPrize: 64800,
-    winnerSharePercent: 90,
-    drawTime: Date.now() + 4 * 24 * 3600 * 1000 + 12 * 3600 * 1000,
-    status: 'active',
-    winningDigits: null,
-    targetWinningDigits: '5521',
-    participantsCount: 1296,
-    ticketsSold: 1296,
-    sha256Seed: '0x88f21cb47ae91b0177dfc021f981145ca7e3b0c44298fc1c149afbf4c8994781',
-    blockTarget: '#19,418,900'
-  },
-  {
-    id: 'evt-monthly-100',
-    title: 'Monthly Super Grand Jackpot',
-    badge: '🌺 DURGA UTSAV',
-    theme: 'durga_puja',
-    bannerImage: 'https://images.unsplash.com/photo-1603555501671-8f96b3fce8b5?w=1200&q=80',
-    ticketPrice: 100,
-    poolPrize: 250000,
-    winnerSharePercent: 90,
-    drawTime: Date.now() + 22 * 24 * 3600 * 1000,
-    status: 'active',
-    winningDigits: null,
-    targetWinningDigits: '9102',
-    participantsCount: 2500,
-    ticketsSold: 2500,
-    sha256Seed: '0x44cd918aa8fc1c149afbf4c8996fb9247ae3b0c44298fc1c149afbf4c89955bc',
-    blockTarget: '#19,492,000'
-  }
-];
-
-const INITIAL_PAST_EVENTS = [
-  {
-    id: 'evt-past-2840',
-    title: 'Weekly High Roller Draw #2840',
-    badge: 'COMPLETED DRAW',
-    theme: 'cyberpunk',
-    bannerImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80',
-    ticketPrice: 50,
-    poolPrize: 58000,
-    winnerSharePercent: 90,
-    drawTime: Date.now() - 36 * 3600 * 1000,
-    status: 'completed',
-    winningDigits: '1429',
-    targetWinningDigits: '1429',
-    participantsCount: 1160,
-    ticketsSold: 1160,
-    sha256Seed: '0x17b3a99fc1c149afbf4c8996fb9247ae3b0c44298fc1c149afbf4c8991209a',
-    blockTarget: '#19,380,410'
-  }
-];
-
-const INITIAL_WINNER_PAYOUTS = [
-  {
-    id: 'WP-8841',
-    eventId: 'evt-past-2840',
-    eventTitle: 'Weekly High Roller Draw #2840',
-    winnerUserId: 'usr-vip-102',
-    winnerUsername: 'LuckyPlayer77',
-    winnerAddress: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m',
-    winningDigits: '1429',
-    ticketsSold: 1160,
-    ticketPrice: 50,
-    totalPoolCollected: 58000,
-    winnerSharePercent: 90,
-    calculatedAmount: 52200,
-    payoutAmount: 52200,
-    status: 'completed',
-    approvedAt: Date.now() - 35 * 3600 * 1000,
-    txHash: '0x88f21cb47ae91b0177dfc021f981145ca7'
-  }
-];
-
-const INITIAL_TICKETS = [
-  {
-    id: 'tkt-101',
-    eventId: 'evt-daily-10',
-    eventTitle: 'Daily Mega 10 USDT Pool',
-    ticketNumber: '7429',
-    price: 10,
-    purchaseTime: Date.now() - 2 * 3600 * 1000,
-    status: 'active',
-    matchTier: null,
-    wonAmount: 0,
-    claimed: false
-  },
-  {
-    id: 'tkt-102',
-    eventId: 'evt-past-2840',
-    eventTitle: 'Weekly High Roller Draw #2840',
-    ticketNumber: '1429',
-    price: 50,
-    purchaseTime: Date.now() - 40 * 3600 * 1000,
-    status: 'won',
-    matchTier: 'EXACT 4/4 MATCH (SINGLE WINNER)',
-    wonAmount: 58000,
-    claimed: true
-  },
-  {
-    id: 'tkt-103',
-    eventId: 'evt-past-2840',
-    eventTitle: 'Weekly High Roller Draw #2840',
-    ticketNumber: '8429',
-    price: 50,
-    purchaseTime: Date.now() - 40 * 3600 * 1000,
-    status: 'lost',
-    matchTier: 'NO MATCH',
-    wonAmount: 0,
-    claimed: false
-  }
-];
-
-const INITIAL_WITHDRAWALS = [
-  {
-    id: 'W-8942',
-    amount: 500.0,
-    netDisbursal: 499.0,
-    networkFee: 1.0,
-    network: 'TRC-20',
-    address: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m',
-    requestedAt: Date.now() - 2 * 3600 * 1000,
-    slaTargetMs: Date.now() - 2 * 3600 * 1000 + 24 * 3600 * 1000,
-    status: 'processing',
-    txHash: null
-  },
-  {
-    id: 'W-8109',
-    amount: 1200.0,
-    netDisbursal: 1199.0,
-    networkFee: 1.0,
-    network: 'TRC-20',
-    address: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m',
-    requestedAt: Date.now() - 28 * 3600 * 1000,
-    slaTargetMs: Date.now() - 4 * 3600 * 1000,
-    status: 'completed',
-    txHash: '0x882a9f14309c690f01ba32c10b4297801a'
-  }
-];
-
+// All events, tickets, withdrawals, and wallet states are 100% dynamic and database-driven via Supabase
 export function LotteryProvider({ children }) {
-  // Wallet State
+  // Wallet State - Loaded dynamically from Supabase lottery_wallets
   const [wallet, setWallet] = useState(() => {
     const saved = localStorage.getItem('lotto_wallet');
-    return saved ? JSON.parse(saved) : {
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.address) return parsed;
+      } catch (e) {}
+    }
+    return {
       address: '0x71A9f24E68B8910d54F30C8B38194aE02919B42',
       connected: true,
-      balance: 1840.50,
+      balance: 0,
       network: 'TRC-20',
-      lifetimeWon: 37884.0,
+      lifetimeWon: 0,
       depositAddress: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m'
     };
   });
@@ -496,27 +317,14 @@ export function LotteryProvider({ children }) {
     }
   };
 
-  // User Tickets State
-  const [tickets, setTickets] = useState(() => {
-    const saved = localStorage.getItem('lotto_tickets');
-    return saved ? JSON.parse(saved) : INITIAL_TICKETS;
-  });
+  // User Tickets State - Purely Dynamic from Supabase lottery_tickets
+  const [tickets, setTickets] = useState([]);
 
-  // Withdrawals State
-  const [withdrawals, setWithdrawals] = useState(() => {
-    const saved = localStorage.getItem('lotto_withdrawals');
-    return saved ? JSON.parse(saved) : INITIAL_WITHDRAWALS;
-  });
+  // Withdrawals State - Purely Dynamic from Supabase lottery_withdrawals
+  const [withdrawals, setWithdrawals] = useState([]);
 
-  // Winner Payouts Queue State (Admin approval required)
-  const [winnerPayouts, setWinnerPayouts] = useState(() => {
-    const saved = localStorage.getItem('lotto_winner_payouts');
-    return saved ? JSON.parse(saved) : INITIAL_WINNER_PAYOUTS;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('lotto_winner_payouts', JSON.stringify(winnerPayouts));
-  }, [winnerPayouts]);
+  // Winner Payouts Queue State - Purely Dynamic from database
+  const [winnerPayouts, setWinnerPayouts] = useState([]);
 
   // Support Tickets State
   const [supportTickets, setSupportTickets] = useState(() => {
@@ -986,112 +794,210 @@ export function LotteryProvider({ children }) {
   const [toastMessage, setToastMessage] = useState(null);
   const [isSupabaseSynced, setIsSupabaseSynced] = useState(false);
 
+  // Clear any legacy mock data from localStorage on initialization
+  useEffect(() => {
+    try {
+      localStorage.removeItem('lotto_events');
+      const savedTkts = localStorage.getItem('lotto_tickets');
+      if (savedTkts && savedTkts.includes('tkt-101')) {
+        localStorage.removeItem('lotto_tickets');
+      }
+      const savedWds = localStorage.getItem('lotto_withdrawals');
+      if (savedWds && savedWds.includes('W-8942')) {
+        localStorage.removeItem('lotto_withdrawals');
+      }
+      const savedPayouts = localStorage.getItem('lotto_winner_payouts');
+      if (savedPayouts && savedPayouts.includes('WP-8841')) {
+        localStorage.removeItem('lotto_winner_payouts');
+      }
+    } catch (e) {}
+  }, []);
+
+  // Fetch tickets directly from Supabase
+  const fetchTickets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('lottery_tickets')
+        .select('*')
+        .order('purchase_time', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        const mappedTickets = data.map(t => ({
+          id: t.id,
+          eventId: t.event_id,
+          eventTitle: t.event_title,
+          ticketNumber: t.ticket_number,
+          price: parseFloat(t.price || 0),
+          purchaseTime: Number(t.purchase_time || Date.now()),
+          status: t.status,
+          matchTier: t.match_tier,
+          wonAmount: parseFloat(t.won_amount || 0),
+          claimed: Boolean(t.claimed),
+          userAddress: t.user_address,
+          username: t.username || `@${(t.user_address || '').slice(0, 6) || 'player'}`
+        }));
+        setTickets(mappedTickets);
+
+        // Derive/sync winner payouts from winning tickets in database
+        const winningTkts = mappedTickets.filter(t => t.status === 'won');
+        const derivedPayouts = winningTkts.map((wt, idx) => ({
+          id: `WP-${wt.id}`,
+          eventId: wt.eventId,
+          eventTitle: wt.eventTitle,
+          ticketId: wt.id,
+          winnerAddress: wt.userAddress || wallet.address,
+          winnerUsername: wt.username,
+          winningDigits: wt.ticketNumber,
+          ticketsSold: 0,
+          ticketPrice: wt.price,
+          totalPoolCollected: wt.wonAmount,
+          winnerSharePercent: 90,
+          calculatedAmount: wt.wonAmount,
+          payoutAmount: wt.wonAmount,
+          status: wt.claimed ? 'completed' : 'pending_approval',
+          createdAt: wt.purchaseTime
+        }));
+        setWinnerPayouts(derivedPayouts);
+      }
+    } catch (err) {
+      console.error('fetchTickets error:', err);
+    }
+  };
+
+  // Fetch withdrawals directly from Supabase
+  const fetchWithdrawals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('lottery_withdrawals')
+        .select('*')
+        .order('requested_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        const mappedW = data.map(w => ({
+          id: w.id,
+          userAddress: w.user_address,
+          amount: parseFloat(w.amount || 0),
+          netDisbursal: parseFloat(w.net_disbursal || 0),
+          networkFee: parseFloat(w.network_fee || 0),
+          network: w.network || 'TRC-20',
+          address: w.destination_address,
+          requestedAt: Number(w.requested_at || Date.now()),
+          slaTargetMs: Number(w.sla_target_ms || (Date.now() + 86400000)),
+          status: w.status,
+          txHash: w.tx_hash
+        }));
+        setWithdrawals(mappedW);
+      }
+    } catch (err) {
+      console.error('fetchWithdrawals error:', err);
+    }
+  };
+
+  // Fetch wallet balance directly from Supabase lottery_wallets
+  const fetchWallet = async (addressToFetch) => {
+    const addr = addressToFetch || wallet.address;
+    if (!addr) return;
+    try {
+      const { data, error } = await supabase
+        .from('lottery_wallets')
+        .select('*')
+        .eq('address', addr)
+        .maybeSingle();
+
+      if (!error && data) {
+        setWallet(prev => ({
+          ...prev,
+          address: addr,
+          connected: true,
+          balance: parseFloat(data.balance || 0),
+          lifetimeWon: parseFloat(data.lifetime_won || 0),
+          network: data.network || prev.network || 'TRC-20'
+        }));
+      } else if (!data) {
+        await supabase.from('lottery_wallets').upsert({
+          address: addr,
+          balance: 0,
+          lifetime_won: 0,
+          network: 'TRC-20'
+        });
+        setWallet(prev => ({
+          ...prev,
+          address: addr,
+          connected: true,
+          balance: 0,
+          lifetimeWon: 0,
+          network: 'TRC-20'
+        }));
+      }
+    } catch (err) {
+      console.error('fetchWallet error:', err);
+    }
+  };
+
+  // Sync wallet on address change
+  useEffect(() => {
+    if (wallet.address) {
+      fetchWallet(wallet.address);
+    }
+  }, [wallet.address]);
+
   // Initial fetch from Supabase
   useEffect(() => {
     async function loadSupabaseData() {
       try {
-        // 1. Fetch events using unified formatter
         await refreshEvents();
-
-        // 2. Fetch tickets
-        const { data: dbTickets, error: errTickets } = await supabase
-          .from('lottery_tickets')
-          .select('*')
-          .order('purchase_time', { ascending: false });
-
-        if (!errTickets && dbTickets && dbTickets.length > 0) {
-          const mappedTickets = dbTickets.map(t => ({
-            id: t.id,
-            eventId: t.event_id,
-            eventTitle: t.event_title,
-            ticketNumber: t.ticket_number,
-            price: parseFloat(t.price),
-            purchaseTime: Number(t.purchase_time),
-            status: t.status,
-            matchTier: t.match_tier,
-            wonAmount: parseFloat(t.won_amount || 0),
-            claimed: t.claimed
-          }));
-          setTickets(mappedTickets);
+        await fetchTickets();
+        await fetchWithdrawals();
+        if (wallet.address) {
+          await fetchWallet(wallet.address);
         }
-
-        // 3. Fetch withdrawals
-        const { data: dbWithdrawals, error: errWithdrawals } = await supabase
-          .from('lottery_withdrawals')
-          .select('*')
-          .order('requested_at', { ascending: false });
-
-        if (!errWithdrawals && dbWithdrawals && dbWithdrawals.length > 0) {
-          const mappedW = dbWithdrawals.map(w => ({
-            id: w.id,
-            amount: parseFloat(w.amount),
-            netDisbursal: parseFloat(w.net_disbursal),
-            networkFee: parseFloat(w.network_fee),
-            network: w.network,
-            address: w.destination_address,
-            requestedAt: Number(w.requested_at),
-            slaTargetMs: Number(w.sla_target_ms),
-            status: w.status,
-            txHash: w.tx_hash
-          }));
-          setWithdrawals(mappedW);
-        }
-
-        // 4. Fetch wallet
-        const { data: dbWallet, error: errWallet } = await supabase
-          .from('lottery_wallets')
-          .select('*')
-          .eq('address', wallet.address)
-          .single();
-
-        if (!errWallet && dbWallet) {
-          setWallet(prev => ({
-            ...prev,
-            balance: parseFloat(dbWallet.balance),
-            lifetimeWon: parseFloat(dbWallet.lifetime_won),
-            network: dbWallet.network || prev.network
-          }));
-        } else {
-          // Initialize wallet record in Supabase
-          await supabase.from('lottery_wallets').upsert({
-            address: wallet.address,
-            balance: wallet.balance,
-            lifetime_won: wallet.lifetimeWon,
-            network: wallet.network
-          });
-        }
-
-        // 5. Fetch support tickets
         await fetchSupportTickets();
-
-        // 6. Fetch platform governance settings
         await fetchPlatformSettings();
-
         setIsSupabaseSynced(true);
       } catch (err) {
-        console.error('Supabase sync error (using local storage fallback):', err);
+        console.error('Supabase load data error:', err);
       }
     }
 
     loadSupabaseData();
   }, []);
 
-  // Sync to LocalStorage as instant local cache
+  // Realtime Supabase Channels for Tickets, Withdrawals & Wallets
   useEffect(() => {
-    localStorage.setItem('lotto_wallet', JSON.stringify(wallet));
-  }, [wallet]);
+    const tChannel = supabase
+      .channel('realtime:lottery_tickets')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_tickets' }, () => {
+        fetchTickets();
+      })
+      .subscribe();
 
-  useEffect(() => {
-    localStorage.setItem('lotto_events', JSON.stringify(events));
-  }, [events]);
+    const wChannel = supabase
+      .channel('realtime:lottery_withdrawals')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_withdrawals' }, () => {
+        fetchWithdrawals();
+      })
+      .subscribe();
 
-  useEffect(() => {
-    localStorage.setItem('lotto_tickets', JSON.stringify(tickets));
-  }, [tickets]);
+    const walChannel = supabase
+      .channel('realtime:lottery_wallets')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_wallets' }, (payload) => {
+        if (payload.new && payload.new.address === wallet.address) {
+          setWallet(prev => ({
+            ...prev,
+            balance: parseFloat(payload.new.balance || 0),
+            lifetimeWon: parseFloat(payload.new.lifetime_won || 0),
+            network: payload.new.network || prev.network
+          }));
+        }
+      })
+      .subscribe();
 
-  useEffect(() => {
-    localStorage.setItem('lotto_withdrawals', JSON.stringify(withdrawals));
-  }, [withdrawals]);
+    return () => {
+      supabase.removeChannel(tChannel);
+      supabase.removeChannel(wChannel);
+      supabase.removeChannel(walChannel);
+    };
+  }, [wallet.address]);
 
   const showToast = (message, type = 'success') => {
     setToastMessage({ message, type, id: Date.now() });
@@ -1598,39 +1504,73 @@ export function LotteryProvider({ children }) {
       ? parseFloat(editedAmount)
       : payout.payoutAmount;
 
-    // Credit to user wallet balance
-    const newBal = parseFloat((wallet.balance + finalAmount).toFixed(2));
-    const newWon = parseFloat((wallet.lifetimeWon + finalAmount).toFixed(2));
-
-    setWallet(prev => ({
-      ...prev,
-      balance: newBal,
-      lifetimeWon: newWon
-    }));
-
-    // Update winnerPayout status
-    setWinnerPayouts(prev => prev.map(p => {
-      if (p.id === payoutId) {
-        return {
-          ...p,
-          payoutAmount: finalAmount,
-          status: 'completed',
-          approvedAt: Date.now(),
-          txHash: `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`
-        };
+    try {
+      // 1. Mark ticket as claimed in Supabase
+      if (payout.ticketId && payout.ticketId !== 'MANUAL') {
+        await supabase
+          .from('lottery_tickets')
+          .update({ claimed: true, won_amount: finalAmount })
+          .eq('id', payout.ticketId);
       }
-      return p;
-    }));
 
-    confetti({
-      particleCount: 160,
-      spread: 90,
-      origin: { y: 0.6 },
-      colors: ['#05d5aa', '#ffd700', '#00f2fe', '#ffffff']
-    });
+      // 2. Fetch current wallet of winner from DB and credit finalAmount
+      const winnerAddr = payout.winnerAddress || wallet.address;
+      const { data: dbWal } = await supabase
+        .from('lottery_wallets')
+        .select('*')
+        .eq('address', winnerAddr)
+        .maybeSingle();
 
-    showToast(`Approved! Added ${finalAmount.toFixed(2)} USDT directly to winner's wallet ✅`, 'success');
-    return { success: true };
+      const currentBal = Number(dbWal?.balance || 0);
+      const currentWon = Number(dbWal?.lifetime_won || 0);
+      const newBal = parseFloat((currentBal + finalAmount).toFixed(2));
+      const newWon = parseFloat((currentWon + finalAmount).toFixed(2));
+
+      await supabase.from('lottery_wallets').upsert({
+        address: winnerAddr,
+        balance: newBal,
+        lifetime_won: newWon,
+        network: 'TRC-20'
+      });
+
+      // Update local winnerPayouts state
+      const mockTx = `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+      setWinnerPayouts(prev => prev.map(p => {
+        if (p.id === payoutId) {
+          return {
+            ...p,
+            payoutAmount: finalAmount,
+            status: 'completed',
+            approvedAt: Date.now(),
+            txHash: mockTx
+          };
+        }
+        return p;
+      }));
+
+      // If active wallet is this winner, update local state
+      if (wallet.address === winnerAddr) {
+        setWallet(prev => ({
+          ...prev,
+          balance: newBal,
+          lifetimeWon: newWon
+        }));
+      }
+
+      confetti({
+        particleCount: 160,
+        spread: 90,
+        origin: { y: 0.6 },
+        colors: ['#05d5aa', '#ffd700', '#00f2fe', '#ffffff']
+      });
+
+      showToast(`Approved! Added ${finalAmount.toFixed(2)} USDT directly to winner's wallet in Supabase ✅`, 'success');
+      return { success: true };
+    } catch (err) {
+      console.error('adminApproveWinnerPayout error:', err);
+      showToast('Error approving winner payout: ' + err.message, 'error');
+      return { success: false, error: err.message };
+    }
   };
 
   const adminRejectWinnerPayout = (payoutId) => {

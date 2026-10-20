@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+  <!-- Homepage / Main Lobby -->
+  <url>
+    <loc>https://earnflow.in/</loc>
+    <lastmod>2026-10-20T09:50:00+05:30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.00</priority>
+  </url>
+
+  <!-- Active Lottery Pools -->
+  <url>
+    <loc>https://earnflow.in/?tab=lotteries</loc>
+    <lastmod>2026-10-20T09:50:00+05:30</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <!-- Past Concluded Draw Results & Ledger -->
+  <url>
+    <loc>https://earnflow.in/?tab=results</loc>
+    <lastmod>2026-10-20T09:50:00+05:30</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <!-- USDT TRC-20 Wallet & Withdrawals -->
+  <url>
+    <loc>https://earnflow.in/?tab=wallet</loc>
+    <lastmod>2026-10-20T09:50:00+05:30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- Provably Fair Verification & SHA-256 Engine -->
+  <url>
+    <loc>https://earnflow.in/?tab=provably-fair</loc>
+    <lastmod>2026-10-20T09:50:00+05:30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- Platform Terms of Service -->
+  <url>
+    <loc>https://earnflow.in/?tab=terms</loc>
+    <lastmod>2026-10-20T09:50:00+05:30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.50</priority>
+  </url>
+
+  <!-- Privacy Policy -->
+  <url>
+    <loc>https://earnflow.in/?tab=privacy</loc>
+    <lastmod>2026-10-20T09:50:00+05:30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.50</priority>
+  </url>
+
+  <!-- Support & Helpdesk -->
+  <url>
+    <loc>https://earnflow.in/?tab=contact</loc>
+    <lastmod>2026-10-20T09:50:00+05:30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.60</priority>
+  </url>
+
+</urlset>

@@ -14,64 +14,7 @@ import {
   ChevronUp 
 } from 'lucide-react';
 
-const DEMO_PAST_RESULTS = [
-  {
-    id: 'evt-diwali-bumper-10',
-    title: 'Diwali Special Bumper Pot 10 USDT',
-    badge: 'FESTIVE SPECIAL',
-    ticketPrice: 10,
-    poolPrize: 50,
-    minPrize: 10,
-    maxPrize: 50,
-    winnerCount: 1,
-    winningDigits: '8492',
-    drawTime: Date.now() - 3 * 3600 * 1000,
-    status: 'completed',
-    ticketsSold: 1296,
-    winnerSummary: '1 Lucky Winner matched 4 lucky digits #8492',
-    winners: [
-      { rank: 1, user: '@VIP_Player', ticket: '#8492', prize: '50.00 USDT', status: 'Disbursed' }
-    ]
-  },
-  {
-    id: 'evt-past-2840',
-    title: 'Weekly High Roller Pot 50 USDT',
-    badge: 'HIGH ROLLER POT',
-    ticketPrice: 50,
-    poolPrize: 58000,
-    winnerCount: 5,
-    winningDigits: '1429, 1578, 6320, 8194, 3042',
-    drawTime: Date.now() - 28 * 3600 * 1000,
-    status: 'completed',
-    ticketsSold: 1160,
-    winnerSummary: '5 Lucky Winners each held a different drawn ticket (11,600 USDT each)',
-    winners: [
-      { rank: 1, user: '@LuckyWinner77', ticket: '#1429', prize: '11,600.00 USDT', status: 'Disbursed' },
-      { rank: 2, user: '@crypto_king', ticket: '#1578', prize: '11,600.00 USDT', status: 'Disbursed' },
-      { rank: 3, user: '@satoshi_vip', ticket: '#6320', prize: '11,600.00 USDT', status: 'Disbursed' },
-      { rank: 4, user: '@priya_invest', ticket: '#8194', prize: '11,600.00 USDT', status: 'Disbursed' },
-      { rank: 5, user: '@web3_whale', ticket: '#3042', prize: '11,600.00 USDT', status: 'Disbursed' }
-    ]
-  },
-  {
-    id: 'evt-daily-10',
-    title: 'Daily Mega 10 USDT Pool',
-    badge: 'DAILY JACKPOT',
-    ticketPrice: 10,
-    poolPrize: 1000,
-    minPrize: 500,
-    maxPrize: 1000,
-    winnerCount: 1,
-    winningDigits: '5521',
-    drawTime: Date.now() - 52 * 3600 * 1000,
-    status: 'completed',
-    ticketsSold: 890,
-    winnerSummary: '1 Lucky Winner matched lucky ticket #5521',
-    winners: [
-      { rank: 1, user: '@alpha_trader', ticket: '#5521', prize: '900.00 USDT', status: 'Disbursed' }
-    ]
-  }
-];
+// All completed lottery results are dynamically fetched from Supabase lottery_events table
 
 function ResultCard({ event, isExpanded, onToggleExpand }) {
   const winnerCount = event.winnerCount || 1;
@@ -245,16 +188,8 @@ export default function ResultsView() {
     return events.filter(e => e.status === 'completed');
   }, [events]);
 
-  // Combine real completed events with demo past results
-  const allResults = useMemo(() => {
-    const combined = [...completedEvents];
-    for (const demo of DEMO_PAST_RESULTS) {
-      if (!combined.some(e => e.id === demo.id)) {
-        combined.push(demo);
-      }
-    }
-    return combined;
-  }, [completedEvents]);
+  // Results loaded directly from database completed events
+  const allResults = completedEvents;
 
   const filteredResults = useMemo(() => {
     if (selectedRoundFilter === 'all') return allResults;
