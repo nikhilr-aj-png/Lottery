@@ -200,6 +200,7 @@ export default function AdminConsole({ onLogout }) {
   const [defaultWinnerSharePercent, setDefaultWinnerSharePercent] = useState(() => String(platformSettings?.defaultWinnerSharePercent ?? '90'));
   const [treasuryTrc20, setTreasuryTrc20] = useState(() => platformSettings?.treasuryTrc20 || 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m');
   const [supportEmail, setSupportEmail] = useState(() => platformSettings?.supportEmail || 'support@earnflow.in');
+  const [usernameChangeFee, setUsernameChangeFee] = useState(() => String(platformSettings?.usernameChangeFee ?? '5.00'));
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState(null);
 
@@ -212,6 +213,7 @@ export default function AdminConsole({ onLogout }) {
       setDefaultWinnerSharePercent(String(platformSettings.defaultWinnerSharePercent ?? '90'));
       setTreasuryTrc20(platformSettings.treasuryTrc20 || 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m');
       setSupportEmail(platformSettings.supportEmail || 'support@earnflow.in');
+      setUsernameChangeFee(String(platformSettings.usernameChangeFee ?? '5.00'));
     }
   }, [platformSettings]);
 
@@ -327,7 +329,8 @@ export default function AdminConsole({ onLogout }) {
         houseFeePercent,
         defaultWinnerSharePercent,
         treasuryTrc20,
-        supportEmail
+        supportEmail,
+        usernameChangeFee
       });
       if (res?.success) {
         setLastSavedTime(new Date().toLocaleTimeString());
@@ -2033,20 +2036,43 @@ export default function AdminConsole({ onLogout }) {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                    Official Support Email (Displayed across User Portals)
-                  </label>
-                  <input
-                    type="email"
-                    value={supportEmail}
-                    onChange={(e) => setSupportEmail(e.target.value)}
-                    className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white outline-none"
-                    required
-                  />
-                  <p className="text-[10px] text-[#64748b] mt-1">
-                    This email is dynamically loaded in Contact Us, Terms & Conditions, and Privacy Policy across the user platform.
-                  </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-[#07090d] p-3 rounded-xl border border-[#1f2737]">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs text-[#8b92a2] font-semibold">
+                        Username Change Fee (USDT)
+                      </label>
+                      <span className="text-[10px] text-purple-400 font-bold">1st Edit Free Lifetime</span>
+                    </div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={usernameChangeFee}
+                      onChange={(e) => setUsernameChangeFee(e.target.value)}
+                      className="w-full bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
+                      required
+                    />
+                    <p className="text-[10px] text-[#a78bfa] mt-1.5 leading-relaxed">
+                      ⚡ 1st edit is 100% Free Lifetime. Subsequent modifications automatically deduct this USDT fee from user's wallet in the database.
+                    </p>
+                  </div>
+
+                  <div className="bg-[#07090d] p-3 rounded-xl border border-[#1f2737]">
+                    <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
+                      Official Support Email (Displayed across User Portals)
+                    </label>
+                    <input
+                      type="email"
+                      value={supportEmail}
+                      onChange={(e) => setSupportEmail(e.target.value)}
+                      className="w-full bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white outline-none"
+                      required
+                    />
+                    <p className="text-[10px] text-[#64748b] mt-1.5 leading-relaxed">
+                      Dynamically loaded in Contact Us, Terms & Conditions, and Privacy Policy across portals.
+                    </p>
+                  </div>
                 </div>
 
                 <div>

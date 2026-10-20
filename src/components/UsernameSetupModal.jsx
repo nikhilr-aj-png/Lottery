@@ -4,7 +4,7 @@ import { User, ShieldCheck, CheckCircle2, AlertCircle, Loader2, Sparkles, Lock }
 import confetti from 'canvas-confetti';
 
 export default function UsernameSetupModal() {
-  const { user, profile, needsUsernameSetup, setPermanentUsername, checkUsernameAvailability } = useLottery();
+  const { user, profile, needsUsernameSetup, setPermanentUsername, checkUsernameAvailability, platformSettings } = useLottery();
 
   const [username, setUsername] = useState('');
   const [checking, setChecking] = useState(false);
@@ -71,24 +71,24 @@ export default function UsernameSetupModal() {
           </div>
           <div>
             <div className="flex items-center gap-1.5 text-[10px] font-mono-numbers text-[#f5c451] uppercase font-bold tracking-wider">
-              <Sparkles className="w-3 h-3 text-[#ffd700]" />
-              <span>One-Time Setup · Permanent ID</span>
+              <Sparkles className="w-3 h-3 text-emerald-400" />
+              <span>1st Setup 100% Free Lifetime</span>
             </div>
             <h2 className="font-display font-black text-xl text-white">
-              Choose Player Username
+              Choose Player User ID
             </h2>
           </div>
         </div>
 
         <p className="text-xs text-[#9b8f7c] leading-relaxed mb-5">
-          Welcome to EarnFlow.In! Please choose your permanent player username. This ID will appear on your draw tickets, leaderboards, and prize announcements.
+          Welcome to EarnFlow.In! Please choose your official player User ID. This handle will appear on your draw tickets, leaderboards, and verified prize disbursals.
         </p>
 
         {/* Setup Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-white mb-1.5">
-              Player Username / User ID:
+              Player User ID / Username:
             </label>
             
             <div className="relative">
@@ -127,11 +127,11 @@ export default function UsernameSetupModal() {
             </div>
           </div>
 
-          {/* Permanent Warning Box */}
+          {/* Policy Box */}
           <div className="p-3.5 rounded-xl bg-amber-950/25 border border-amber-500/35 flex items-start gap-2.5">
-            <Lock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
             <p className="text-[11px] text-amber-200/90 leading-relaxed">
-              <strong>Permanent Selection:</strong> Once confirmed, your username is cryptographically locked and <strong>cannot be changed</strong>.
+              <strong>Lifetime Policy:</strong> Your 1st User ID setup is <strong>100% FREE Lifetime</strong>. Any future username edits will incur a platform fee of {platformSettings?.usernameChangeFee ?? '5.00'} USDT.
             </p>
           </div>
 
@@ -144,12 +144,12 @@ export default function UsernameSetupModal() {
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Locking Permanent Username...</span>
+                <span>Saving User ID...</span>
               </>
             ) : (
               <>
                 <ShieldCheck className="w-4 h-4" />
-                <span>Confirm & Lock Username</span>
+                <span>Confirm & Save User ID</span>
               </>
             )}
           </button>

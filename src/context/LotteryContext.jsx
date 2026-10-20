@@ -121,6 +121,8 @@ export function LotteryProvider({ children }) {
         .from('lottery_deposits')
         .select('*')
         .neq('id', 'cfg_platform_settings')
+        .neq('currency', 'SUPPORT_TICKET')
+        .neq('currency', 'USERNAME_CHANGE')
         .order('created_at', { ascending: false });
 
       if (!error && Array.isArray(data)) {
@@ -196,6 +198,14 @@ export function LotteryProvider({ children }) {
         // If it's a platform settings update
         if (payload.new?.id === 'cfg_platform_settings') {
           fetchPlatformSettings();
+          return;
+        }
+
+        // If it's a username change log
+        if (payload.new?.currency === 'USERNAME_CHANGE' || payload.old?.currency === 'USERNAME_CHANGE') {
+          if (user?.id) {
+            getUsernameChangeCount(user.id).then(cnt => setUsernameChangeCount(cnt));
+          }
           return;
         }
 
@@ -383,7 +393,8 @@ export function LotteryProvider({ children }) {
     houseFeePercent: 5,
     defaultWinnerSharePercent: 90,
     treasuryTrc20: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m',
-    supportEmail: 'support@earnflow.in'
+    supportEmail: 'support@earnflow.in',
+    usernameChangeFee: 5.0
   };
 
   const [platformSettings, setPlatformSettings] = useState(() => {
@@ -432,7 +443,8 @@ export function LotteryProvider({ children }) {
         houseFeePercent: parseFloat(newSettings.houseFeePercent || platformSettings.houseFeePercent),
         defaultWinnerSharePercent: parseFloat(newSettings.defaultWinnerSharePercent || platformSettings.defaultWinnerSharePercent),
         treasuryTrc20: (newSettings.treasuryTrc20 || platformSettings.treasuryTrc20).trim(),
-        supportEmail: (newSettings.supportEmail || platformSettings.supportEmail).trim()
+        supportEmail: (newSettings.supportEmail || platformSettings.supportEmail).trim(),
+        usernameChangeFee: parseFloat(newSettings.usernameChangeFee !== undefined ? newSettings.usernameChangeFee : (platformSettings.usernameChangeFee ?? 5.0))
       };
 
       // Optimistic update
@@ -548,56 +560,146 @@ export function LotteryProvider({ children }) {
     }
   };
 
-  // One-time Permanent Username setup for Google/OAuth users
-  const setPermanentUsername = async (chosenUsername) => {
-    if (!user) return { success: false, error: 'Authentication required' };
+  // Username Change Count - Tracked 100% in database
+  const [usernameChangeCount, setUsernameChangeCount] = useState(0);
+
+  // Query number of lifetime username changes directly from Supabase database
+  const getUsernameChangeCount = async (userId) => {
+    const uid = userId || user?.id;
+    if (!uid) return 0;
+    try {
+      const { count, error } = await supabase
+        .from('lottery_deposits')
+        .select('id', { count: 'exact', head: true })
+        .eq('currency', 'USERNAME_CHANGE')
+        .eq('user_id', uid);
+      return !error && typeof count === 'number' ? count : 0;
+    } catch {
+      return 0;
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      getUsernameChangeCount(user.id).then(cnt => setUsernameChangeCount(cnt));
+    } else {
+      setUsernameChangeCount(0);
+    }
+  }, [user?.id]);
+
+  // Secure User ID / Username update (1st time Free, subsequent edits charge USDT fee from wallet)
+  const updateUsername = async (chosenUsername) => {
+    if (!user) return { success: false, error: 'Authentication required. Please log in.' };
     const clean = (chosenUsername || '').trim();
 
+    const currentName = profile?.username || user?.user_metadata?.username;
+    if (currentName && clean.toLowerCase() === currentName.toLowerCase()) {
+      return { success: false, error: 'New User ID cannot be the same as your current User ID.' };
+    }
+
+    // 1. Validate format & uniqueness against Supabase
     const check = await checkUsernameAvailability(clean);
     if (!check.valid) {
       return { success: false, error: check.message };
     }
 
+    // 2. Query exact change count directly from database to prevent client manipulation/hacks!
+    const changeCount = await getUsernameChangeCount(user.id);
+    const fee = (platformSettings?.usernameChangeFee !== undefined && !isNaN(platformSettings.usernameChangeFee))
+      ? Number(platformSettings.usernameChangeFee)
+      : 5.0;
+
+    const isFirstTime = changeCount === 0;
+    const requiredFee = isFirstTime ? 0 : fee;
+
     try {
-      // 1. Upsert profile in Supabase database
+      // 3. If paid change, verify balance directly from Supabase lottery_wallets
+      if (requiredFee > 0) {
+        const { data: dbWal, error: walErr } = await supabase
+          .from('lottery_wallets')
+          .select('*')
+          .eq('address', wallet.address)
+          .maybeSingle();
+
+        const currentBal = Number(dbWal?.balance ?? wallet.balance ?? 0);
+        if (currentBal < requiredFee) {
+          return { 
+            success: false, 
+            error: `Insufficient USDT balance. Changing your User ID costs ${requiredFee} USDT (Available: ${currentBal.toFixed(2)} USDT). Please deposit funds in your wallet.` 
+          };
+        }
+
+        // Deduct fee from lottery_wallets in Supabase
+        const newBal = parseFloat((currentBal - requiredFee).toFixed(2));
+        await supabase
+          .from('lottery_wallets')
+          .update({ balance: newBal, updated_at: new Date().toISOString() })
+          .eq('address', wallet.address);
+
+        setWallet(prev => ({ ...prev, balance: newBal }));
+      }
+
+      // 4. Update profiles table in Supabase
       const { error: profileError } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
+        .update({
           username: clean,
           full_name: clean,
-          email: user.email || '',
           username_chosen: true,
           updated_at: new Date().toISOString()
-        });
+        })
+        .eq('id', user.id);
 
       if (profileError) throw profileError;
 
-      // 2. Update auth user metadata
+      // 5. Update auth user metadata
       await supabase.auth.updateUser({
         data: {
           username: clean,
-          username_chosen: true
+          username_chosen: true,
+          username_change_count: changeCount + 1
         }
       });
 
-      // 3. Update local states
+      // 6. Record audit log row in lottery_deposits table
+      await supabase.from('lottery_deposits').insert({
+        id: `unc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        user_id: user.id,
+        user_address: wallet.address,
+        amount: requiredFee,
+        currency: 'USERNAME_CHANGE',
+        pay_currency: 'USDT',
+        payment_id: isFirstTime ? 'FREE_LIFETIME_EDIT' : 'PAID_EDIT_FEE',
+        invoice_id: clean,
+        status: 'completed'
+      });
+
+      // 7. Update local state
       setProfile(prev => ({
         ...(prev || {}),
-        id: user.id,
         username: clean,
         full_name: clean,
         username_chosen: true
       }));
-
+      setUsernameChangeCount(changeCount + 1);
       setNeedsUsernameSetup(false);
-      showToast(`Success! @${clean} is locked as your official permanent Player ID.`, 'success');
-      return { success: true };
+
+      if (requiredFee > 0) {
+        showToast(`User ID updated to @${clean}! ${requiredFee} USDT fee deducted from wallet.`, 'success');
+      } else {
+        showToast(`User ID updated to @${clean}! (1st Lifetime Free Edit used)`, 'success');
+      }
+
+      return { success: true, newUsername: clean };
     } catch (err) {
-      console.error('setPermanentUsername error:', err);
+      console.error('updateUsername error:', err);
       return { success: false, error: err.message };
     }
   };
+
+  // Backwards-compatibility alias for initial setup modal
+  const setPermanentUsername = updateUsername;
+
 
   const checkUsernameAvailability = async (rawUsername) => {
     const username = (rawUsername || '').trim();
@@ -1983,6 +2085,9 @@ export function LotteryProvider({ children }) {
         needsUsernameSetup,
         setNeedsUsernameSetup,
         setPermanentUsername,
+        updateUsername,
+        usernameChangeCount,
+        getUsernameChangeCount,
         checkUsernameAvailability,
         requestPasswordReset,
         verifyPasswordResetOtp

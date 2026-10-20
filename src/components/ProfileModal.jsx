@@ -12,7 +12,11 @@ import {
   Save,
   CheckCircle2,
   AlertCircle,
-  Lock
+  Lock,
+  Edit3,
+  Sparkles,
+  Loader2,
+  User
 } from 'lucide-react';
 
 export default function ProfileModal({ isOpen, onClose }) {
@@ -25,6 +29,10 @@ export default function ProfileModal({ isOpen, onClose }) {
     setIsWalletModalOpen, 
     setWalletModalTab,
     setActiveTab,
+    updateUsername,
+    usernameChangeCount = 0,
+    checkUsernameAvailability,
+    platformSettings,
     showToast
   } = useLottery();
 
@@ -32,6 +40,71 @@ export default function ProfileModal({ isOpen, onClose }) {
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
+
+  // User ID / Username editing state
+  const currentUsername = profile?.username || user?.user_metadata?.username || (user?.email ? user.email.split('@')[0] : 'VIP_User');
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [newUsernameInput, setNewUsernameInput] = useState('');
+  const [usernameAvailability, setUsernameAvailability] = useState({ valid: false, message: '' });
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [isSavingUsername, setIsSavingUsername] = useState(false);
+
+  // Debounced availability check
+  useEffect(() => {
+    if (!isEditingUsername) return;
+    const clean = newUsernameInput.trim().replace(/^@/, '');
+    if (!clean) {
+      setUsernameAvailability({ valid: false, message: 'Please enter a User ID' });
+      return;
+    }
+    if (clean.toLowerCase() === currentUsername.toLowerCase()) {
+      setUsernameAvailability({ valid: false, message: 'Current User ID' });
+      return;
+    }
+
+    setIsCheckingUsername(true);
+    const timer = setTimeout(async () => {
+      const res = await checkUsernameAvailability(clean);
+      setUsernameAvailability(res);
+      setIsCheckingUsername(false);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [newUsernameInput, isEditingUsername, currentUsername]);
+
+  const handleSaveUsername = async (e) => {
+    e.preventDefault();
+    if (isSavingUsername) return;
+    const clean = newUsernameInput.trim().replace(/^@/, '');
+
+    if (clean.toLowerCase() === currentUsername.toLowerCase()) {
+      setIsEditingUsername(false);
+      return;
+    }
+
+    if (!usernameAvailability.valid) {
+      showToast(usernameAvailability.message || 'Please enter a valid User ID', 'error');
+      return;
+    }
+
+    const fee = parseFloat(platformSettings?.usernameChangeFee ?? 5.0);
+    if (usernameChangeCount > 0 && wallet.balance < fee) {
+      showToast(`Insufficient USDT balance (${wallet.balance.toFixed(2)} USDT). Changing User ID costs ${fee} USDT.`, 'error');
+      return;
+    }
+
+    setIsSavingUsername(true);
+    try {
+      const res = await updateUsername(clean);
+      if (res.success) {
+        setIsEditingUsername(false);
+      } else {
+        showToast(res.error || 'Failed to update User ID', 'error');
+      }
+    } finally {
+      setIsSavingUsername(false);
+    }
+  };
 
   useEffect(() => {
     if (wallet.address) {
@@ -120,7 +193,7 @@ export default function ProfileModal({ isOpen, onClose }) {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="font-display font-bold text-sm sm:text-base text-white truncate">
-                  @{profile?.username || user?.user_metadata?.username || (user?.email ? user.email.split('@')[0] : 'VIP_User')}
+                  @{currentUsername}
                 </span>
                 <span className="text-[9px] font-mono-numbers px-1.5 py-0.2 rounded bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/30 font-bold shrink-0">
                   VIP
@@ -131,10 +204,17 @@ export default function ProfileModal({ isOpen, onClose }) {
                   {user?.email || 'Connected Account'}
                 </p>
                 <span className="text-[#3b4150]">•</span>
-                <span className="text-[10px] text-[#f5c451] flex items-center gap-0.5 font-mono-numbers font-medium">
-                  <Lock className="w-2.5 h-2.5" />
-                  Permanent ID
-                </span>
+                {usernameChangeCount === 0 ? (
+                  <span className="text-[10px] text-emerald-400 flex items-center gap-0.5 font-mono-numbers font-medium">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    1 Free Edit Left
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-[#f5c451] flex items-center gap-0.5 font-mono-numbers font-medium">
+                    <ShieldCheck className="w-2.5 h-2.5 text-emerald-400" />
+                    Verified Player ID
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -148,6 +228,162 @@ export default function ProfileModal({ isOpen, onClose }) {
 
         {/* Content with stable fixed structure */}
         <div className="p-5 space-y-4 no-scrollbar">
+
+          {/* Player User ID / Handle Card */}
+          <div className="bg-[#141924] border border-[#232938] rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-[#ffd700]" />
+                <span className="text-xs font-bold text-white uppercase tracking-wider">
+                  Player User ID
+                </span>
+              </div>
+              {usernameChangeCount === 0 ? (
+                <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-emerald-400" />
+                  1st Edit Free Lifetime
+                </span>
+              ) : (
+                <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold">
+                  Fee: {platformSettings?.usernameChangeFee ?? '5.00'} USDT
+                </span>
+              )}
+            </div>
+
+            {!isEditingUsername ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between bg-[#0b0e14] px-3.5 py-2.5 rounded-xl border border-[#1b2230]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-mono-numbers font-bold text-sm text-[#ffd700] truncate">
+                      @{currentUsername}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewUsernameInput(currentUsername);
+                      setIsEditingUsername(true);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-[#1a2130] hover:bg-[#252f45] border border-[#2d3a54] text-xs font-bold text-[#ffd700] flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit User ID</span>
+                  </button>
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-[#8b92a2] px-1">
+                  <span>
+                    {usernameChangeCount === 0 
+                      ? '🎁 You have 1 free lifetime User ID change available.' 
+                      : `⚡ Edited ${usernameChangeCount} time(s). Next edit: ${platformSettings?.usernameChangeFee ?? '5.00'} USDT.`}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveUsername} className="space-y-3">
+                <div>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono-numbers font-bold text-sm text-[#ffd700]">
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      value={newUsernameInput}
+                      onChange={(e) => setNewUsernameInput(e.target.value.replace(/[^a-zA-Z0-9_@]/g, ''))}
+                      placeholder="Enter new User ID..."
+                      maxLength={20}
+                      autoFocus
+                      className="w-full bg-[#0b0e14] border border-[#232938] focus:border-[#ffd700] rounded-xl pl-8 pr-9 py-2 text-xs text-white font-mono-numbers outline-none transition-colors"
+                      required
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {isCheckingUsername ? (
+                        <Loader2 className="w-3.5 h-3.5 text-[#8b92a2] animate-spin" />
+                      ) : usernameAvailability.valid ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#05d5aa]" />
+                      ) : newUsernameInput.trim().length >= 3 ? (
+                        <AlertCircle className="w-3.5 h-3.5 text-red-400" />
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {/* Status / Notice */}
+                  <div className="mt-1.5 flex items-center justify-between text-[11px]">
+                    <span className={usernameAvailability.valid ? 'text-[#05d5aa] font-medium' : 'text-amber-400 font-medium'}>
+                      {usernameAvailability.message || '3-20 chars: letters, numbers, _ only'}
+                    </span>
+                    <span className="text-[10px] text-[#6b7280] font-mono-numbers">
+                      {newUsernameInput.length}/20
+                    </span>
+                  </div>
+                </div>
+
+                {/* Fee notice box */}
+                <div className={`p-2.5 rounded-xl border text-[11px] leading-relaxed ${
+                  usernameChangeCount === 0
+                    ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
+                    : wallet.balance < parseFloat(platformSettings?.usernameChangeFee ?? 5.0)
+                    ? 'bg-red-950/20 border-red-500/30 text-red-300'
+                    : 'bg-amber-950/20 border-amber-500/30 text-amber-300'
+                }`}>
+                  {usernameChangeCount === 0 ? (
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span><strong>1st Edit Free:</strong> No USDT will be deducted from your wallet.</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center justify-between font-semibold mb-0.5">
+                        <span>Fee: {platformSettings?.usernameChangeFee ?? '5.00'} USDT</span>
+                        <span className="font-mono-numbers">Wallet: {wallet.balance.toFixed(2)} USDT</span>
+                      </div>
+                      <p className="text-[10px] opacity-85">
+                        {wallet.balance < parseFloat(platformSettings?.usernameChangeFee ?? 5.0)
+                          ? '⚠️ Insufficient balance! Please deposit USDT in your wallet to edit.'
+                          : 'Amount will be deducted automatically from your on-chain wallet balance.'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Save and Cancel buttons */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="submit"
+                    disabled={
+                      !usernameAvailability.valid || 
+                      isCheckingUsername || 
+                      isSavingUsername || 
+                      (usernameChangeCount > 0 && wallet.balance < parseFloat(platformSettings?.usernameChangeFee ?? 5.0))
+                    }
+                    className="flex-1 py-1.5 rounded-xl btn-gold text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {isSavingUsername ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Updating Database...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Confirm & Save</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingUsername(false);
+                      setNewUsernameInput('');
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-[#141924] hover:bg-[#1e232f] border border-[#2d3545] text-xs text-[#8b92a2] hover:text-white cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
           
           {/* TRC-20 Wallet Management Card - Fixed Height Container */}
           <div className="bg-[#141924] border border-[#232938] rounded-xl p-4 min-h-[160px] flex flex-col justify-between">
