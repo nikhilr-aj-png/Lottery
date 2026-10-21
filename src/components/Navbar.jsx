@@ -153,22 +153,6 @@ export default function Navbar({ onOpenProfile }) {
                     Deposit
                   </button>
 
-                  {/* Super Admin Switcher */}
-                  {profile?.role === 'super_admin' && (
-                    <button
-                      onClick={() => {
-                        sessionStorage.removeItem('earnflow_view_mode_user');
-                        window.location.hash = '#admin';
-                        window.location.reload();
-                      }}
-                      className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
-                      title="Switch to Super Admin Console"
-                    >
-                      <Lock className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Admin</span>
-                    </button>
-                  )}
-
                   {/* Profile Button */}
                   <button
                     onClick={onOpenProfile}

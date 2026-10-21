@@ -84,17 +84,49 @@ function LotteryAppContent() {
            window.location.search.includes('admin=true');
   });
 
+  const [isViewingUserLobby, setIsViewingUserLobby] = useState(() => {
+    if (window.location.pathname === '/admin' || window.location.hash === '#admin' || window.location.search.includes('admin=true')) {
+      return false;
+    }
+    return sessionStorage.getItem('earnflow_view_mode_user') === 'true';
+  });
+
+  const switchToUserLobby = () => {
+    sessionStorage.setItem('earnflow_view_mode_user', 'true');
+    setIsViewingUserLobby(true);
+    setIsAdminRoute(false);
+    try {
+      window.history.pushState(null, 'EarnFlow.In USDT', '/');
+    } catch (e) {}
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const switchToAdminConsole = () => {
+    sessionStorage.removeItem('earnflow_view_mode_user');
+    setIsViewingUserLobby(false);
+    setIsAdminRoute(true);
+    try {
+      window.history.pushState(null, 'Admin Console · EarnFlow.In', '/admin');
+    } catch (e) {}
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   useEffect(() => {
-    const handleHashChange = () => {
-      setIsAdminRoute(
-        window.location.pathname === '/admin' || 
-        window.location.hash === '#admin' || 
-        window.location.search.includes('admin=true')
-      );
+    const handleLocationChange = () => {
+      const onAdmin = window.location.pathname === '/admin' || 
+                      window.location.hash === '#admin' || 
+                      window.location.search.includes('admin=true');
+      setIsAdminRoute(onAdmin);
+      if (onAdmin) {
+        setIsViewingUserLobby(false);
+      } else {
+        const userMode = sessionStorage.getItem('earnflow_view_mode_user') === 'true';
+        setIsViewingUserLobby(userMode);
+      }
     };
 
-    window.addEventListener('hashchange', handleHashChange);
-    window.addEventListener('popstate', handleHashChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', handleLocationChange);
 
     // Clean OAuth access token fragment from the address bar
     if (window.location.hash && (window.location.hash.includes('access_token=') || window.location.hash.includes('refresh_token='))) {
@@ -104,8 +136,8 @@ function LotteryAppContent() {
     }
 
     return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-      window.removeEventListener('popstate', handleHashChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('popstate', handleLocationChange);
     };
   }, []);
 
@@ -127,7 +159,6 @@ function LotteryAppContent() {
 
   // 1. DATABASE ROLE & ROUTE CHECK:
   // If user has role 'super_admin' and is on /admin or hasn't selected User Lobby mode:
-  const isViewingUserLobby = sessionStorage.getItem('earnflow_view_mode_user') === 'true';
   if ((profile?.role === 'super_admin' && !isViewingUserLobby) || isAdminRoute) {
     // If logged in as normal user (not super_admin), strictly block access to admin route
     if (user && profile && profile.role !== 'super_admin') {
@@ -151,11 +182,7 @@ function LotteryAppContent() {
             </p>
             <div className="mt-6 flex flex-col gap-2">
               <button
-                onClick={() => {
-                  window.location.hash = '';
-                  window.history.pushState(null, '', '/');
-                  setIsAdminRoute(false);
-                }}
+                onClick={switchToUserLobby}
                 className="w-full py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
               >
                 Return to User Panel
@@ -172,7 +199,7 @@ function LotteryAppContent() {
       );
     }
 
-    return <AdminPortal />;
+    return <AdminPortal onSwitchToUserLobby={switchToUserLobby} />;
   }
 
   // Otherwise: Pure Public User Platform
@@ -396,6 +423,7 @@ function LotteryAppContent() {
       <ProfileModal 
         isOpen={isProfileOpen} 
         onClose={() => setIsProfileOpen(false)}
+        onSwitchToAdmin={switchToAdminConsole}
       />
 
       {/* Auth Modal for Email/Password & Google Login */}

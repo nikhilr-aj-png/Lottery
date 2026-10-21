@@ -3,7 +3,7 @@ import { useLottery } from '../context/LotteryContext';
 import { supabase } from '../lib/supabase';
 import { ShieldAlert, KeyRound, Lock, AlertCircle, ArrowRight, Mail, Loader2, Sparkles } from 'lucide-react';
 
-export default function AdminAuthGate({ onAuthenticated }) {
+export default function AdminAuthGate({ onAuthenticated, onCancel }) {
   const { loginWithEmail, logout } = useLottery();
   const [authMethod, setAuthMethod] = useState('account'); // 'account' | 'key'
   const [email, setEmail] = useState('');
@@ -217,7 +217,13 @@ export default function AdminAuthGate({ onAuthenticated }) {
         <div className="mt-6 pt-4 border-t border-[#1f2737] text-center">
           <a
             href="/"
-            className="text-xs text-[#9b8f7c] hover:text-white transition-colors"
+            onClick={(e) => {
+              if (onCancel) {
+                e.preventDefault();
+                onCancel();
+              }
+            }}
+            className="text-xs text-[#9b8f7c] hover:text-white transition-colors cursor-pointer"
           >
             ← Return to Public User Lobby
           </a>

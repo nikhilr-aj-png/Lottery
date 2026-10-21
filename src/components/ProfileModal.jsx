@@ -19,7 +19,7 @@ import {
   User
 } from 'lucide-react';
 
-export default function ProfileModal({ isOpen, onClose }) {
+export default function ProfileModal({ isOpen, onClose, onSwitchToAdmin }) {
   const { 
     user,
     profile,
@@ -195,9 +195,15 @@ export default function ProfileModal({ isOpen, onClose }) {
                 <span className="font-display font-bold text-sm sm:text-base text-white truncate">
                   @{currentUsername}
                 </span>
-                <span className="text-[9px] font-mono-numbers px-1.5 py-0.2 rounded bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/30 font-bold shrink-0">
-                  VIP
-                </span>
+                {profile?.role === 'super_admin' ? (
+                  <span className="text-[9px] font-mono-numbers px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold shrink-0">
+                    SUPER ADMIN
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-mono-numbers px-1.5 py-0.2 rounded bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/30 font-bold shrink-0">
+                    VIP
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-[11px] text-[#9b8f7c] font-mono-numbers truncate">
@@ -228,6 +234,42 @@ export default function ProfileModal({ isOpen, onClose }) {
 
         {/* Content with stable fixed structure */}
         <div className="p-5 space-y-4 no-scrollbar">
+
+          {/* Super Admin Console Access (Only shown for super_admin) */}
+          {profile?.role === 'super_admin' && (
+            <div className="bg-gradient-to-r from-amber-500/15 via-[#1a2130] to-[#141924] border border-amber-500/40 rounded-xl p-3.5 space-y-2.5 shadow-lg shadow-amber-500/5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 shrink-0">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">Super Admin Console</span>
+                      <span className="text-[9px] font-mono-numbers px-1.5 py-0.2 rounded bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40">VIP</span>
+                    </div>
+                    <p className="text-[10px] text-[#9b8f7c]">Manage pools, draws, users & 24h payout queues</p>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  if (onSwitchToAdmin) {
+                    onSwitchToAdmin();
+                  } else {
+                    sessionStorage.removeItem('earnflow_view_mode_user');
+                    window.location.hash = '#admin';
+                  }
+                }}
+                className="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-[#ffd700] to-[#f5c451] hover:from-[#f5c451] hover:to-[#ffd700] text-[#0b0e14] font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-500/20 cursor-pointer"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Open Admin Console</span>
+              </button>
+            </div>
+          )}
 
           {/* Player User ID / Handle Card */}
           <div className="bg-[#141924] border border-[#232938] rounded-xl p-4">

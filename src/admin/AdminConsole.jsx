@@ -88,7 +88,7 @@ const SEASONAL_PRESETS = {
   }
 };
 
-export default function AdminConsole({ onLogout }) {
+export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
   const { 
     user,
     profile,
@@ -430,9 +430,13 @@ export default function AdminConsole({ onLogout }) {
           <button
             type="button"
             onClick={() => {
-              sessionStorage.setItem('earnflow_view_mode_user', 'true');
-              window.location.hash = '';
-              window.location.href = '/';
+              if (onSwitchToUserLobby) {
+                onSwitchToUserLobby();
+              } else {
+                sessionStorage.setItem('earnflow_view_mode_user', 'true');
+                window.location.hash = '';
+                window.location.href = '/';
+              }
             }}
             className="px-2 xs:px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0"
             title="Open Live Public User Platform"
