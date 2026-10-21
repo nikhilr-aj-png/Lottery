@@ -921,6 +921,7 @@ export function LotteryProvider({ children }) {
   const [selectedEventForModal, setSelectedEventForModal] = useState(null);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [walletModalTab, setWalletModalTab] = useState('deposit');
+  const [winCelebration, setWinCelebration] = useState(null);
 
   // Route & URL sync: detects direct URLs like /privacy-policy and /terms-and-conditions
   const resolveTabFromUrl = () => {
