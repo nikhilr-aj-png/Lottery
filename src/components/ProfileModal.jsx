@@ -52,7 +52,7 @@ export default function ProfileModal({ isOpen, onClose }) {
   // Debounced availability check
   useEffect(() => {
     if (!isEditingUsername) return;
-    const clean = newUsernameInput.trim().replace(/^@/, '');
+    const clean = newUsernameInput.trim().replace(/^@\s*/, '').trim();
     if (!clean) {
       setUsernameAvailability({ valid: false, message: 'Please enter a User ID' });
       return;
@@ -75,7 +75,7 @@ export default function ProfileModal({ isOpen, onClose }) {
   const handleSaveUsername = async (e) => {
     e.preventDefault();
     if (isSavingUsername) return;
-    const clean = newUsernameInput.trim().replace(/^@/, '');
+    const clean = newUsernameInput.trim().replace(/^@\s*/, '').trim();
 
     if (clean.toLowerCase() === currentUsername.toLowerCase()) {
       setIsEditingUsername(false);
@@ -288,7 +288,7 @@ export default function ProfileModal({ isOpen, onClose }) {
                     <input
                       type="text"
                       value={newUsernameInput}
-                      onChange={(e) => setNewUsernameInput(e.target.value.replace(/[^a-zA-Z0-9_@]/g, ''))}
+                      onChange={(e) => setNewUsernameInput(e.target.value.replace(/^@\s*/, '').replace(/[^a-zA-Z0-9_]/g, ''))}
                       placeholder="Enter new User ID..."
                       maxLength={20}
                       autoFocus

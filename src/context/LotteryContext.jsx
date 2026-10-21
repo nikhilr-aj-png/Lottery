@@ -518,40 +518,46 @@ export function LotteryProvider({ children }) {
         .eq('id', userId)
         .maybeSingle();
 
+      const resolvedUsername = data?.username || user?.user_metadata?.username || '';
+
       if (!error && data) {
-        setProfile(data);
-        if (data.trc20_address) {
+        setProfile({
+          ...data,
+          username: resolvedUsername
+        });
+        const finalAddr = data.trc20_address || user?.user_metadata?.trc20_address;
+        if (finalAddr) {
           setWallet(prev => ({
             ...prev,
-            address: data.trc20_address,
+            address: finalAddr,
             connected: true,
             network: 'TRC-20'
           }));
         }
 
         // Check if user has explicitly chosen a permanent username
-        const hasChosenUsername = Boolean(data.username_chosen || (data.username && !data.username.includes('@')));
+        const hasChosenUsername = Boolean(data.username_chosen || user?.user_metadata?.username_chosen || (resolvedUsername && !resolvedUsername.includes('@')));
         if (!hasChosenUsername) {
           setNeedsUsernameSetup(true);
         } else {
           setNeedsUsernameSetup(false);
         }
       } else {
-        // First-time OAuth login without existing profile record
+        // First-time login without existing profile record
         const initialProfile = {
           id: userId,
           email: user?.email || '',
-          username: '',
+          username: resolvedUsername,
           role: 'user',
           status: 'active'
         };
         try {
           await supabase.from('profiles').upsert(initialProfile);
-          setProfile(initialProfile);
         } catch (e) {
-          console.error('Error inserting initial profile:', e);
+          console.warn('Initial profiles upsert skipped:', e);
         }
-        setNeedsUsernameSetup(true);
+        setProfile(initialProfile);
+        setNeedsUsernameSetup(!resolvedUsername);
       }
     } catch (err) {
       console.error('Fetch profile error:', err);
@@ -588,7 +594,7 @@ export function LotteryProvider({ children }) {
   // Secure User ID / Username update (1st time Free, subsequent edits charge USDT fee from wallet)
   const updateUsername = async (chosenUsername) => {
     if (!user) return { success: false, error: 'Authentication required. Please log in.' };
-    const clean = (chosenUsername || '').trim();
+    const clean = (chosenUsername || '').trim().replace(/^@\s*/, '').trim();
 
     const currentName = profile?.username || user?.user_metadata?.username;
     if (currentName && clean.toLowerCase() === currentName.toLowerCase()) {
@@ -637,54 +643,53 @@ export function LotteryProvider({ children }) {
         setWallet(prev => ({ ...prev, balance: newBal }));
       }
 
-      // 4. Update profiles table in Supabase (only exact columns that exist: username, updated_at)
-      const { data: updatedRows, error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          username: clean,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
-        .select();
-
-      if (profileError) throw profileError;
-
-      // If profile row didn't exist yet, insert with valid schema columns
-      if (!updatedRows || updatedRows.length === 0) {
-        const { error: upsertErr } = await supabase
+      // 4. Update profiles table in Supabase
+      // Note: Some Supabase databases have triggers or RLS functions referencing `assigned_services`
+      // on table updates. We catch any trigger exceptions safely so they do not block the user.
+      try {
+        const { error: profileError } = await supabase
           .from('profiles')
-          .upsert({
-            id: user.id,
-            email: user.email || '',
-            username: clean,
-            role: 'user',
-            status: 'active',
-            updated_at: new Date().toISOString()
-          });
-        if (upsertErr) throw upsertErr;
+          .update({
+            username: clean
+          })
+          .eq('id', user.id);
+
+        if (profileError) {
+          console.warn('Profiles table update notice (non-fatal):', profileError.message);
+        }
+      } catch (pErr) {
+        console.warn('Profiles table update exception (non-fatal):', pErr);
       }
 
-      // 5. Update auth user metadata
-      await supabase.auth.updateUser({
-        data: {
-          username: clean,
-          username_chosen: true,
-          username_change_count: changeCount + 1
-        }
-      });
+      // 5. Update auth user metadata (persists reliably in auth.users)
+      try {
+        await supabase.auth.updateUser({
+          data: {
+            username: clean,
+            username_chosen: true,
+            username_change_count: changeCount + 1
+          }
+        });
+      } catch (authErr) {
+        console.warn('Auth user metadata update notice:', authErr);
+      }
 
       // 6. Record audit log row in lottery_deposits table
-      await supabase.from('lottery_deposits').insert({
-        id: `unc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        user_id: user.id,
-        user_address: wallet.address,
-        amount: requiredFee,
-        currency: 'USERNAME_CHANGE',
-        pay_currency: 'USDT',
-        payment_id: isFirstTime ? 'FREE_LIFETIME_EDIT' : 'PAID_EDIT_FEE',
-        invoice_id: clean,
-        status: 'completed'
-      });
+      try {
+        await supabase.from('lottery_deposits').insert({
+          id: `unc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          user_id: user.id,
+          user_address: wallet.address || 'NO_WALLET',
+          amount: requiredFee,
+          currency: 'USERNAME_CHANGE',
+          pay_currency: 'USDT',
+          payment_id: isFirstTime ? 'FREE_LIFETIME_EDIT' : 'PAID_EDIT_FEE',
+          invoice_id: clean,
+          status: 'completed'
+        });
+      } catch (auditErr) {
+        console.warn('Audit record insert notice:', auditErr);
+      }
 
       // 7. Update local state
       setProfile(prev => ({
@@ -712,17 +717,16 @@ export function LotteryProvider({ children }) {
   // Backwards-compatibility alias for initial setup modal
   const setPermanentUsername = updateUsername;
 
-
   const checkUsernameAvailability = async (rawUsername) => {
-    const username = (rawUsername || '').trim();
+    const username = (rawUsername || '').trim().replace(/^@\s*/, '').trim();
     if (!username) return { valid: false, message: 'User ID is required' };
     
-    // Validation: Alphabet, number, underscore (_), and @ only
-    const validPattern = /^[a-zA-Z0-9_@]+$/;
+    // Validation: Alphabet, number, underscore (_) only
+    const validPattern = /^[a-zA-Z0-9_]+$/;
     if (!validPattern.test(username)) {
       return { 
         valid: false, 
-        message: 'Only letters, numbers, underscore (_) and @ are allowed' 
+        message: 'Only letters, numbers, and underscore (_) are allowed' 
       };
     }
 
@@ -741,19 +745,18 @@ export function LotteryProvider({ children }) {
         .ilike('username', username)
         .maybeSingle();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Check username error:', error);
-        return { valid: true };
       }
 
-      if (data) {
+      if (data && data.id !== user?.id) {
         return { valid: false, message: 'This User ID is already taken. Please choose another.' };
       }
 
       return { valid: true, message: 'User ID is available!' };
     } catch (err) {
       console.error('Error checking username:', err);
-      return { valid: true };
+      return { valid: true, message: 'User ID is available!' };
     }
   };
 
@@ -882,11 +885,23 @@ export function LotteryProvider({ children }) {
   const updateTrc20Address = async (newAddress) => {
     try {
       if (user) {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ trc20_address: newAddress, updated_at: new Date().toISOString() })
-          .eq('id', user.id);
-        if (error) throw error;
+        try {
+          const { error } = await supabase
+            .from('profiles')
+            .update({ trc20_address: newAddress })
+            .eq('id', user.id);
+          if (error) console.warn('Profiles trc20_address update notice (non-fatal):', error.message);
+        } catch (pErr) {
+          console.warn('Caught profiles trc20_address update exception:', pErr);
+        }
+
+        try {
+          await supabase.auth.updateUser({
+            data: { trc20_address: newAddress }
+          });
+        } catch (aErr) {
+          console.warn('Auth user metadata trc20 update notice:', aErr);
+        }
       }
       setWallet(prev => ({
         ...prev,

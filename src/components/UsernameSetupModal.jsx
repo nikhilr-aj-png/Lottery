@@ -46,7 +46,8 @@ export default function UsernameSetupModal() {
 
     setIsSubmitting(true);
     try {
-      const res = await setPermanentUsername(username);
+      const clean = username.trim().replace(/^@\s*/, '').trim();
+      const res = await setPermanentUsername(clean);
       if (res.success) {
         confetti({
           particleCount: 120,
@@ -98,7 +99,7 @@ export default function UsernameSetupModal() {
               <input
                 type="text"
                 value={username}
-                onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_@]/g, ''))}
+                onChange={(e) => setUsername(e.target.value.replace(/^@\s*/, '').replace(/[^a-zA-Z0-9_]/g, ''))}
                 placeholder="lucky_winner"
                 maxLength={20}
                 required
