@@ -459,35 +459,41 @@ function LotteryAppContent() {
             </div>
 
             <div className="flex items-center gap-3 xs:gap-4 font-semibold text-[11px] xs:text-xs shrink-0 flex-wrap justify-center sm:justify-end">
-              <button
-                onClick={() => {
+              <a
+                href="/contact"
+                onClick={(e) => {
+                  e.preventDefault();
                   setActiveTab('contact');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="hover:text-[#ffd700] transition-colors cursor-pointer text-[#ffd700]"
               >
                 Contact Support
-              </button>
+              </a>
               <span>•</span>
-              <button
-                onClick={() => {
+              <a
+                href="/terms-and-conditions"
+                onClick={(e) => {
+                  e.preventDefault();
                   setActiveTab('terms');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="hover:text-[#ffd700] transition-colors cursor-pointer"
               >
                 Terms & Conditions
-              </button>
+              </a>
               <span>•</span>
-              <button
-                onClick={() => {
+              <a
+                href="/privacy-policy"
+                onClick={(e) => {
+                  e.preventDefault();
                   setActiveTab('privacy');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="hover:text-[#05d5aa] transition-colors cursor-pointer"
               >
                 Privacy Policy
-              </button>
+              </a>
               {!isInstalled && (
                 <>
                   <span>•</span>

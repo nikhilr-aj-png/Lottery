@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>EarnFlow.In | Redirecting...</title>
+    <script type="text/javascript">
+      // GitHub Pages SPA single page app redirect script
+      // Preserves path, search, and hash so that direct URLs like /privacy-policy and /terms-and-conditions load smoothly
+      var pathSegmentsToKeep = 0;
+      var l = window.location;
+      var path = l.pathname.slice(1);
+      
+      // If path is a known static route, redirect to that folder
+      if (path === 'privacy-policy' || path === 'privacy-policy/') {
+        l.replace('/privacy-policy/index.html' + l.search + l.hash);
+      } else if (path === 'terms-and-conditions' || path === 'terms-and-conditions/') {
+        l.replace('/terms-and-conditions/index.html' + l.search + l.hash);
+      } else if (path === 'contact' || path === 'contact/') {
+        l.replace('/contact/index.html' + l.search + l.hash);
+      } else {
+        // Fallback to root SPA with query param
+        l.replace(
+          l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+          '/?p=' + encodeURIComponent(l.pathname.slice(1)) +
+          (l.search ? '&q=' + encodeURIComponent(l.search.slice(1)) : '') +
+          l.hash
+        );
+      }
+    </script>
+  </head>
+  <body style="background:#07090d; color:#ffd700; font-family:sans-serif; text-align:center; padding-top:20vh;">
+    <p>Redirecting to EarnFlow.In...</p>
+  </body>
+</html>

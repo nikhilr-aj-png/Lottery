@@ -1,7 +1,10 @@
 import React from 'react';
-import { ArrowLeft, Shield, FileText, CheckCircle2, AlertTriangle, Scale, Lock, DollarSign } from 'lucide-react';
+import { ArrowLeft, Shield, FileText, CheckCircle2, AlertTriangle, Scale, Lock, DollarSign, Mail } from 'lucide-react';
+import { useLottery } from '../context/LotteryContext';
 
 export default function TermsPage({ onBackToHome }) {
+  const { platformSettings } = useLottery();
+  const supportEmail = platformSettings?.supportEmail || 'support@earnflow.in';
   return (
     <div className="max-w-4xl 2xl:max-w-5xl mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-in fade-in duration-200">
       {/* Top Breadcrumb / Back button */}
@@ -125,6 +128,16 @@ export default function TermsPage({ onBackToHome }) {
               Lottery gaming involves financial risk. Do not play with funds you cannot afford to lose. Ticket purchases cannot be revoked or refunded once entered into an active lottery pool.
             </span>
           </div>
+        </div>
+
+        {/* Section 7 */}
+        <div className="glass-panel p-6 rounded-2xl border border-[#232938] space-y-3">
+          <div className="flex items-center gap-2 text-white font-bold font-display text-base">
+            <span className="text-[#ffd700]">7.</span> Contact & Platform Inquiries
+          </div>
+          <p>
+            For legal inquiries, dispute resolution, or compliance reviews, please reach out to our administrative team at: <a href={`mailto:${supportEmail}`} className="text-[#ffd700] hover:underline font-mono-numbers">{supportEmail}</a>.
+          </p>
         </div>
 
       </div>

@@ -906,8 +906,92 @@ export function LotteryProvider({ children }) {
   const [selectedEventForModal, setSelectedEventForModal] = useState(null);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [walletModalTab, setWalletModalTab] = useState('deposit');
-  const [activeTab, setActiveTab] = useState('lotteries');
-  const [winCelebration, setWinCelebration] = useState(null);
+
+  // Route & URL sync: detects direct URLs like /privacy-policy and /terms-and-conditions
+  const resolveTabFromUrl = () => {
+    if (typeof window === 'undefined') return 'lotteries';
+    const path = (window.location.pathname || '').toLowerCase().replace(/\/+$/, '');
+    const hash = (window.location.hash || '').toLowerCase().replace(/^#\/?/, '');
+    const search = new URLSearchParams(window.location.search || '');
+    const tabParam = search.get('tab')?.toLowerCase();
+
+    // Check for SPA redirected path from 404.html (e.g. ?p=privacy-policy)
+    const pParam = search.get('p')?.toLowerCase().replace(/\/+$/, '');
+    const effectivePath = pParam ? '/' + pParam : path;
+
+    if (effectivePath === '/privacy-policy' || effectivePath === '/privacy' || hash === 'privacy-policy' || hash === 'privacy' || tabParam === 'privacy') {
+      return 'privacy';
+    }
+    if (effectivePath === '/terms-and-conditions' || effectivePath === '/terms' || hash === 'terms-and-conditions' || hash === 'terms' || tabParam === 'terms') {
+      return 'terms';
+    }
+    if (effectivePath === '/contact' || effectivePath === '/contact-us' || hash === 'contact' || hash === 'contact-us' || tabParam === 'contact') {
+      return 'contact';
+    }
+    if (effectivePath === '/results' || hash === 'results' || tabParam === 'results') return 'results';
+    if (effectivePath === '/tickets' || hash === 'tickets' || tabParam === 'tickets') return 'tickets';
+    if (effectivePath === '/wallet' || hash === 'wallet' || tabParam === 'wallet') return 'wallet';
+
+    return 'lotteries';
+  };
+
+  const [activeTab, setActiveTabState] = useState(() => resolveTabFromUrl());
+
+  const setActiveTab = (tabName, shouldPushHistory = true) => {
+    setActiveTabState(tabName);
+
+    if (typeof window === 'undefined') return;
+
+    let targetPath = '/';
+    let pageTitle = 'EarnFlow.In USDT | Provably Fair VIP Crypto Lottery Platform';
+
+    if (tabName === 'privacy') {
+      targetPath = '/privacy-policy';
+      pageTitle = 'Privacy Policy · EarnFlow.In Sovereign Crypto Lottery Platform';
+    } else if (tabName === 'terms') {
+      targetPath = '/terms-and-conditions';
+      pageTitle = 'Terms & Conditions · EarnFlow.In Crypto Lottery Platform';
+    } else if (tabName === 'contact') {
+      targetPath = '/contact';
+      pageTitle = 'Contact Support Desk · EarnFlow.In Sovereign Lottery';
+    } else if (tabName === 'results') {
+      targetPath = '/?tab=results';
+      pageTitle = 'Draw Results & Verified Winners · EarnFlow.In';
+    } else if (tabName === 'tickets') {
+      targetPath = '/?tab=tickets';
+      pageTitle = 'My Active Tickets · EarnFlow.In';
+    } else if (tabName === 'wallet') {
+      targetPath = '/?tab=wallet';
+      pageTitle = 'USDT Wallet & 24h Payouts · EarnFlow.In';
+    }
+
+    if (shouldPushHistory) {
+      const currentLoc = window.location.pathname + window.location.search;
+      if (currentLoc !== targetPath) {
+        try {
+          window.history.pushState({ tab: tabName }, pageTitle, targetPath);
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+    document.title = pageTitle;
+  };
+
+  // Sync with browser Back and Forward navigation (popstate) & hashchange
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const tab = resolveTabFromUrl();
+      setActiveTabState(tab);
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+    };
+  }, []);
   const [toastMessage, setToastMessage] = useState(null);
   const [isSupabaseSynced, setIsSupabaseSynced] = useState(false);
 
