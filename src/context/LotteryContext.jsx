@@ -542,10 +542,8 @@ export function LotteryProvider({ children }) {
           id: userId,
           email: user?.email || '',
           username: '',
-          full_name: user?.user_metadata?.full_name || '',
           role: 'user',
-          status: 'active',
-          username_chosen: false
+          status: 'active'
         };
         try {
           await supabase.from('profiles').upsert(initialProfile);
@@ -639,18 +637,32 @@ export function LotteryProvider({ children }) {
         setWallet(prev => ({ ...prev, balance: newBal }));
       }
 
-      // 4. Update profiles table in Supabase
-      const { error: profileError } = await supabase
+      // 4. Update profiles table in Supabase (only exact columns that exist: username, updated_at)
+      const { data: updatedRows, error: profileError } = await supabase
         .from('profiles')
         .update({
           username: clean,
-          full_name: clean,
-          username_chosen: true,
           updated_at: new Date().toISOString()
         })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select();
 
       if (profileError) throw profileError;
+
+      // If profile row didn't exist yet, insert with valid schema columns
+      if (!updatedRows || updatedRows.length === 0) {
+        const { error: upsertErr } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            email: user.email || '',
+            username: clean,
+            role: 'user',
+            status: 'active',
+            updated_at: new Date().toISOString()
+          });
+        if (upsertErr) throw upsertErr;
+      }
 
       // 5. Update auth user metadata
       await supabase.auth.updateUser({
@@ -677,9 +689,9 @@ export function LotteryProvider({ children }) {
       // 7. Update local state
       setProfile(prev => ({
         ...(prev || {}),
-        username: clean,
-        full_name: clean,
-        username_chosen: true
+        id: user.id,
+        email: user.email || prev?.email || '',
+        username: clean
       }));
       setUsernameChangeCount(changeCount + 1);
       setNeedsUsernameSetup(false);
@@ -784,7 +796,10 @@ export function LotteryProvider({ children }) {
       if (username) {
         await supabase
           .from('profiles')
-          .update({ username: username.trim(), full_name: username.trim() })
+          .update({ 
+            username: username.trim(), 
+            updated_at: new Date().toISOString() 
+          })
           .eq('id', res.data.user.id);
       }
       await fetchProfile(res.data.user.id);
