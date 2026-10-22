@@ -1,5 +1,12 @@
-import 'dotenv/config';
-const token = process.env.SUPABASE_ACCESS_TOKEN || '';
+import fs from 'fs';
+import path from 'path';
+
+let token = process.env.SUPABASE_ACCESS_TOKEN || '';
+if (!token && fs.existsSync('.env')) {
+  const envContent = fs.readFileSync('.env', 'utf8');
+  const match = envContent.match(/SUPABASE_ACCESS_TOKEN=([^\r\n]+)/);
+  if (match) token = match[1].trim();
+}
 const projectRef = 'pkloymdzdjykpsutpyqk';
 
 export async function runSql(sql) {
