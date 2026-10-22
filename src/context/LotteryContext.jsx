@@ -12,12 +12,20 @@ export function LotteryProvider({ children }) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.address) return parsed;
+        if (parsed && parsed.address && parsed.address !== '0x71A9f24E68B8910d54F30C8B38194aE02919B42') {
+          return parsed;
+        }
       } catch (e) {}
     }
+    let guestAddr = localStorage.getItem('lotto_guest_addr');
+    if (!guestAddr) {
+      const randHex = Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      guestAddr = '0x' + randHex;
+      try { localStorage.setItem('lotto_guest_addr', guestAddr); } catch (e) {}
+    }
     return {
-      address: '0x71A9f24E68B8910d54F30C8B38194aE02919B42',
-      connected: true,
+      address: guestAddr,
+      connected: false,
       balance: 0,
       network: 'TRC-20',
       lifetimeWon: 0,
@@ -181,33 +189,13 @@ export function LotteryProvider({ children }) {
     fetchDeposits();
   }, [wallet.address]);
 
-  // NOWPayments & Support Tickets Realtime Listener
+  // NOWPayments Realtime Listener
   useEffect(() => {
     const depositChannel = supabase
       .channel('realtime:lottery_deposits')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_deposits' }, (payload) => {
         // Refresh deposit history ledger whenever any record changes
         fetchDeposits();
-
-        // If it's a support ticket insert or status change
-        if (payload.new?.currency === 'SUPPORT_TICKET' || payload.old?.currency === 'SUPPORT_TICKET') {
-          fetchSupportTickets();
-          return;
-        }
-
-        // If it's a platform settings update
-        if (payload.new?.id === 'cfg_platform_settings') {
-          fetchPlatformSettings();
-          return;
-        }
-
-        // If it's a username change log
-        if (payload.new?.currency === 'USERNAME_CHANGE' || payload.old?.currency === 'USERNAME_CHANGE') {
-          if (user?.id) {
-            getUsernameChangeCount(user.id).then(cnt => setUsernameChangeCount(cnt));
-          }
-          return;
-        }
 
         // Deposit confirmation event
         if (payload.new && (payload.new.status === 'finished' || payload.new.status === 'confirmed')) {
@@ -333,8 +321,43 @@ export function LotteryProvider({ children }) {
   // Withdrawals State - Purely Dynamic from Supabase lottery_withdrawals
   const [withdrawals, setWithdrawals] = useState([]);
 
-  // Winner Payouts Queue State - Purely Dynamic from database
+  // Winner Payouts Queue State - 100% Dynamic from Supabase winner_payouts table
   const [winnerPayouts, setWinnerPayouts] = useState([]);
+
+  // Fetch verified winner payouts directly from Supabase
+  const fetchWinnerPayouts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('winner_payouts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        const mapped = data.map(row => ({
+          id: row.id,
+          eventId: row.event_id,
+          eventTitle: row.event_title,
+          ticketId: row.ticket_id,
+          winnerAddress: row.winner_address,
+          winnerUsername: row.winner_username,
+          winningDigits: row.winning_digits,
+          ticketsSold: Number(row.tickets_sold || 0),
+          ticketPrice: Number(row.ticket_price || 0),
+          totalPoolCollected: Number(row.total_pool_collected || 0),
+          winnerSharePercent: Number(row.winner_share_percent || 90),
+          calculatedAmount: Number(row.calculated_amount || 0),
+          payoutAmount: Number(row.payout_amount || row.calculated_amount || 0),
+          status: row.status || 'pending_approval',
+          txHash: row.tx_hash,
+          approvedAt: row.approved_at,
+          createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now()
+        }));
+        setWinnerPayouts(mapped);
+      }
+    } catch (err) {
+      console.error('fetchWinnerPayouts error:', err);
+    }
+  };
 
   // Support Tickets State
   const [supportTickets, setSupportTickets] = useState(() => {
@@ -352,33 +375,27 @@ export function LotteryProvider({ children }) {
     } catch (e) {}
   }, [supportTickets]);
 
-  // Fetch support tickets from Supabase database
+  // Fetch support tickets from dedicated Supabase support_tickets table
   const fetchSupportTickets = async () => {
     try {
       const { data, error } = await supabase
-        .from('lottery_deposits')
+        .from('support_tickets')
         .select('*')
-        .eq('currency', 'SUPPORT_TICKET')
         .order('created_at', { ascending: false });
 
       if (!error && Array.isArray(data)) {
-        const mapped = data.map(row => {
-          let userMeta = {};
-          if (row.user_address && typeof row.user_address === 'string' && row.user_address.startsWith('{')) {
-            try { userMeta = JSON.parse(row.user_address); } catch (e) {}
-          }
-          return {
-            id: row.id,
-            name: userMeta.name || 'Anonymous User',
-            username: userMeta.username || '',
-            userId: userMeta.userId || row.user_id || '',
-            email: row.pay_currency || '',
-            subject: row.payment_id || 'General Support Inquiry',
-            message: row.invoice_url || '',
-            status: row.status || 'pending', // 'pending' | 'replied' | 'resolved'
-            createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now()
-          };
-        });
+        const mapped = data.map(row => ({
+          id: row.id,
+          name: row.name || 'User',
+          username: row.username || '',
+          userId: row.user_id || '',
+          email: row.email || '',
+          subject: row.subject || 'General Support Inquiry',
+          message: row.message || '',
+          status: row.status || 'pending',
+          adminReply: row.admin_reply || '',
+          createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now()
+        }));
         setSupportTickets(mapped);
       }
     } catch (err) {
@@ -412,20 +429,17 @@ export function LotteryProvider({ children }) {
     } catch (e) {}
   }, [platformSettings]);
 
-  // Fetch platform settings from Supabase database
+  // Fetch platform settings from dedicated platform_settings table in Supabase
   const fetchPlatformSettings = async () => {
     try {
       const { data, error } = await supabase
-        .from('lottery_deposits')
-        .select('*')
-        .eq('id', 'cfg_platform_settings')
-        .single();
+        .from('platform_settings')
+        .select('value')
+        .eq('key', 'global')
+        .maybeSingle();
 
-      if (!error && data && data.invoice_url) {
-        try {
-          const parsed = JSON.parse(data.invoice_url);
-          setPlatformSettings(prev => ({ ...prev, ...parsed }));
-        } catch (e) {}
+      if (!error && data && data.value) {
+        setPlatformSettings(prev => ({ ...prev, ...data.value }));
       }
     } catch (err) {
       console.error('fetchPlatformSettings error:', err);
@@ -451,14 +465,14 @@ export function LotteryProvider({ children }) {
       setPlatformSettings(updated);
       localStorage.setItem('lotto_platform_settings', JSON.stringify(updated));
 
-      // Persist to Supabase database
-      const { error } = await supabase.from('lottery_deposits').upsert({
-        id: 'cfg_platform_settings',
-        amount: 0,
-        currency: 'PLATFORM_SETTINGS',
-        invoice_url: JSON.stringify(updated),
-        updated_at: new Date().toISOString()
-      });
+      // Persist to dedicated Supabase platform_settings table
+      const { error } = await supabase
+        .from('platform_settings')
+        .upsert({
+          key: 'global',
+          value: updated,
+          updated_at: new Date().toISOString()
+        });
 
       if (error) {
         console.warn('Supabase settings upsert error:', error.message);
@@ -573,9 +587,8 @@ export function LotteryProvider({ children }) {
     if (!uid) return 0;
     try {
       const { count, error } = await supabase
-        .from('lottery_deposits')
+        .from('username_changes')
         .select('id', { count: 'exact', head: true })
-        .eq('currency', 'USERNAME_CHANGE')
         .eq('user_id', uid);
       return !error && typeof count === 'number' ? count : 0;
     } catch {
@@ -619,7 +632,7 @@ export function LotteryProvider({ children }) {
     try {
       // 3. If paid change, verify balance directly from Supabase lottery_wallets
       if (requiredFee > 0) {
-        const { data: dbWal, error: walErr } = await supabase
+        const { data: dbWal } = await supabase
           .from('lottery_wallets')
           .select('*')
           .eq('address', wallet.address)
@@ -644,21 +657,22 @@ export function LotteryProvider({ children }) {
       }
 
       // 4. Update profiles table in Supabase
-      // Note: Some Supabase databases have triggers or RLS functions referencing `assigned_services`
-      // on table updates. We catch any trigger exceptions safely so they do not block the user.
       try {
         const { error: profileError } = await supabase
           .from('profiles')
           .update({
-            username: clean
+            username: clean,
+            username_chosen: true,
+            username_change_count: changeCount + 1,
+            updated_at: new Date().toISOString()
           })
           .eq('id', user.id);
 
         if (profileError) {
-          console.warn('Profiles table update notice (non-fatal):', profileError.message);
+          console.warn('Profiles table update notice:', profileError.message);
         }
       } catch (pErr) {
-        console.warn('Profiles table update exception (non-fatal):', pErr);
+        console.warn('Profiles table update exception:', pErr);
       }
 
       // 5. Update auth user metadata (persists reliably in auth.users)
@@ -674,21 +688,19 @@ export function LotteryProvider({ children }) {
         console.warn('Auth user metadata update notice:', authErr);
       }
 
-      // 6. Record audit log row in lottery_deposits table
+      // 6. Record audit log row in dedicated username_changes table
       try {
-        await supabase.from('lottery_deposits').insert({
+        await supabase.from('username_changes').insert({
           id: `unc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
           user_id: user.id,
-          user_address: wallet.address || 'NO_WALLET',
-          amount: requiredFee,
-          currency: 'USERNAME_CHANGE',
-          pay_currency: 'USDT',
-          payment_id: isFirstTime ? 'FREE_LIFETIME_EDIT' : 'PAID_EDIT_FEE',
-          invoice_id: clean,
-          status: 'completed'
+          user_address: wallet.address || null,
+          old_username: currentName || '',
+          new_username: clean,
+          fee_paid: requiredFee,
+          payment_type: isFirstTime ? 'FREE_LIFETIME_EDIT' : 'PAID_EDIT_FEE'
         });
       } catch (auditErr) {
-        console.warn('Audit record insert notice:', auditErr);
+        console.warn('Username changes audit insert notice:', auditErr);
       }
 
       // 7. Update local state
@@ -1112,34 +1124,39 @@ export function LotteryProvider({ children }) {
 
   // Fetch wallet balance directly from Supabase lottery_wallets
   const fetchWallet = async (addressToFetch) => {
-    const addr = addressToFetch || wallet.address;
-    if (!addr) return;
     try {
-      const { data, error } = await supabase
-        .from('lottery_wallets')
-        .select('*')
-        .eq('address', addr)
-        .maybeSingle();
+      let query = supabase.from('lottery_wallets').select('*');
+      if (user?.id) {
+        query = query.or(`user_id.eq.${user.id},address.eq.${addressToFetch || wallet.address}`);
+      } else if (addressToFetch || wallet.address) {
+        query = query.eq('address', addressToFetch || wallet.address);
+      } else {
+        return;
+      }
+
+      const { data, error } = await query.order('updated_at', { ascending: false }).limit(1).maybeSingle();
 
       if (!error && data) {
         setWallet(prev => ({
           ...prev,
-          address: addr,
+          address: data.address || addressToFetch || prev.address,
           connected: true,
           balance: parseFloat(data.balance || 0),
           lifetimeWon: parseFloat(data.lifetime_won || 0),
           network: data.network || prev.network || 'TRC-20'
         }));
-      } else if (!data) {
+      } else if (!data && (addressToFetch || wallet.address)) {
+        const addrToUse = addressToFetch || wallet.address;
         await supabase.from('lottery_wallets').upsert({
-          address: addr,
+          address: addrToUse,
+          user_id: user?.id || null,
           balance: 0,
           lifetime_won: 0,
           network: 'TRC-20'
         });
         setWallet(prev => ({
           ...prev,
-          address: addr,
+          address: addrToUse,
           connected: true,
           balance: 0,
           lifetimeWon: 0,
@@ -1151,12 +1168,12 @@ export function LotteryProvider({ children }) {
     }
   };
 
-  // Sync wallet on address change
+  // Sync wallet on address change or user login
   useEffect(() => {
-    if (wallet.address) {
+    if (wallet.address || user?.id) {
       fetchWallet(wallet.address);
     }
-  }, [wallet.address]);
+  }, [wallet.address, user?.id]);
 
   // Initial fetch from Supabase
   useEffect(() => {
@@ -1165,7 +1182,8 @@ export function LotteryProvider({ children }) {
         await refreshEvents();
         await fetchTickets();
         await fetchWithdrawals();
-        if (wallet.address) {
+        await fetchWinnerPayouts();
+        if (wallet.address || user?.id) {
           await fetchWallet(wallet.address);
         }
         await fetchSupportTickets();
@@ -1179,7 +1197,7 @@ export function LotteryProvider({ children }) {
     loadSupabaseData();
   }, []);
 
-  // Realtime Supabase Channels for Tickets, Withdrawals & Wallets
+  // Realtime Supabase Channels for Tickets, Withdrawals, Wallets, Winner Payouts, Support & Settings
   useEffect(() => {
     const tChannel = supabase
       .channel('realtime:lottery_tickets')
@@ -1195,10 +1213,31 @@ export function LotteryProvider({ children }) {
       })
       .subscribe();
 
+    const wpChannel = supabase
+      .channel('realtime:winner_payouts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'winner_payouts' }, () => {
+        fetchWinnerPayouts();
+      })
+      .subscribe();
+
+    const supChannel = supabase
+      .channel('realtime:support_tickets')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
+        fetchSupportTickets();
+      })
+      .subscribe();
+
+    const setChannel = supabase
+      .channel('realtime:platform_settings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'platform_settings' }, () => {
+        fetchPlatformSettings();
+      })
+      .subscribe();
+
     const walChannel = supabase
       .channel('realtime:lottery_wallets')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_wallets' }, (payload) => {
-        if (payload.new && payload.new.address === wallet.address) {
+        if (payload.new && (payload.new.address === wallet.address || (user?.id && payload.new.user_id === user.id))) {
           setWallet(prev => ({
             ...prev,
             balance: parseFloat(payload.new.balance || 0),
@@ -1212,9 +1251,12 @@ export function LotteryProvider({ children }) {
     return () => {
       supabase.removeChannel(tChannel);
       supabase.removeChannel(wChannel);
+      supabase.removeChannel(wpChannel);
+      supabase.removeChannel(supChannel);
+      supabase.removeChannel(setChannel);
       supabase.removeChannel(walChannel);
     };
-  }, [wallet.address]);
+  }, [wallet.address, user?.id]);
 
   const showToast = (message, type = 'success') => {
     setToastMessage({ message, type, id: Date.now() });
@@ -1425,7 +1467,9 @@ export function LotteryProvider({ children }) {
       // 2. Insert tickets
       const dbTickets = newTickets.map(t => ({
         id: t.id,
+        user_id: user?.id || null,
         user_address: wallet.address,
+        username: userDisplayName,
         event_id: t.eventId,
         event_title: t.eventTitle,
         ticket_number: t.ticketNumber,
@@ -1522,6 +1566,7 @@ export function LotteryProvider({ children }) {
     try {
       await supabase.from('lottery_wallets').upsert({
         address: wallet.address,
+        user_id: user?.id || null,
         balance: newBalance,
         lifetime_won: wallet.lifetimeWon,
         network: wallet.network
@@ -1529,6 +1574,7 @@ export function LotteryProvider({ children }) {
 
       await supabase.from('lottery_withdrawals').insert({
         id: newOrder.id,
+        user_id: user?.id || null,
         user_address: wallet.address,
         amount: newOrder.amount,
         net_disbursal: newOrder.netDisbursal,
@@ -1666,6 +1712,26 @@ export function LotteryProvider({ children }) {
       }));
 
       setWinnerPayouts(prev => [...newPayouts, ...prev]);
+
+      // Persist to Supabase winner_payouts table
+      for (const p of newPayouts) {
+        supabase.from('winner_payouts').insert({
+          id: p.id,
+          event_id: p.eventId,
+          event_title: p.eventTitle,
+          ticket_id: p.ticketId,
+          winner_address: p.winnerAddress,
+          winner_username: p.winnerUsername,
+          winning_digits: p.winningDigits,
+          tickets_sold: p.ticketsSold,
+          ticket_price: p.ticketPrice,
+          total_pool_collected: p.totalPoolCollected,
+          winner_share_percent: p.winnerSharePercent,
+          calculated_amount: p.calculatedAmount,
+          payout_amount: p.payoutAmount,
+          status: 'pending_approval'
+        }).then(() => {});
+      }
     }
 
     if (totalWonByUser > 0) {
@@ -1722,7 +1788,20 @@ export function LotteryProvider({ children }) {
       : payout.payoutAmount;
 
     try {
-      // 1. Mark ticket as claimed in Supabase
+      const mockTx = `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+
+      // 1. Update in Supabase winner_payouts table
+      await supabase
+        .from('winner_payouts')
+        .update({
+          status: 'completed',
+          payout_amount: finalAmount,
+          tx_hash: mockTx,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', payoutId);
+
+      // 2. Mark ticket as claimed in Supabase
       if (payout.ticketId && payout.ticketId !== 'MANUAL') {
         await supabase
           .from('lottery_tickets')
@@ -1730,7 +1809,7 @@ export function LotteryProvider({ children }) {
           .eq('id', payout.ticketId);
       }
 
-      // 2. Fetch current wallet of winner from DB and credit finalAmount
+      // 3. Fetch current wallet of winner from DB and credit finalAmount
       const winnerAddr = payout.winnerAddress || wallet.address;
       const { data: dbWal } = await supabase
         .from('lottery_wallets')
@@ -1751,7 +1830,6 @@ export function LotteryProvider({ children }) {
       });
 
       // Update local winnerPayouts state
-      const mockTx = `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
       setWinnerPayouts(prev => prev.map(p => {
         if (p.id === payoutId) {
           return {
@@ -1790,15 +1868,21 @@ export function LotteryProvider({ children }) {
     }
   };
 
-  const adminRejectWinnerPayout = (payoutId) => {
-    setWinnerPayouts(prev => prev.map(p => {
-      if (p.id === payoutId) {
-        return { ...p, status: 'rejected' };
-      }
-      return p;
-    }));
-    showToast('Winner payout rejected / on hold', 'info');
-    return { success: true };
+  const adminRejectWinnerPayout = async (payoutId) => {
+    try {
+      setWinnerPayouts(prev => prev.map(p => {
+        if (p.id === payoutId) {
+          return { ...p, status: 'rejected' };
+        }
+        return p;
+      }));
+      await supabase.from('winner_payouts').update({ status: 'rejected' }).eq('id', payoutId);
+      showToast('Winner payout rejected / on hold', 'info');
+      return { success: true };
+    } catch (err) {
+      console.error('adminRejectWinnerPayout error:', err);
+      return { success: false, error: err.message };
+    }
   };
 
   const adminAddManualWinnerCredit = async (targetUsernameOrAddress, amount, note = 'Special Seasonal Reward') => {
@@ -1808,6 +1892,7 @@ export function LotteryProvider({ children }) {
       return { success: false };
     }
 
+    const mockTx = `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
     const newPayout = {
       id: `WP-MANUAL-${Date.now()}`,
       eventId: 'manual-reward',
@@ -1824,21 +1909,61 @@ export function LotteryProvider({ children }) {
       payoutAmount: cleanAmount,
       status: 'completed',
       approvedAt: Date.now(),
-      txHash: `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`
+      txHash: mockTx
     };
 
     setWinnerPayouts(prev => [newPayout, ...prev]);
 
-    const newBal = parseFloat((wallet.balance + cleanAmount).toFixed(2));
-    const newWon = parseFloat((wallet.lifetimeWon + cleanAmount).toFixed(2));
-    setWallet(prev => ({
-      ...prev,
-      balance: newBal,
-      lifetimeWon: newWon
-    }));
+    try {
+      await supabase.from('winner_payouts').insert({
+        id: newPayout.id,
+        event_id: newPayout.eventId,
+        event_title: newPayout.eventTitle,
+        ticket_id: newPayout.ticketId,
+        winner_address: newPayout.winnerAddress,
+        winner_username: newPayout.winnerUsername,
+        winning_digits: newPayout.winningDigits,
+        tickets_sold: 0,
+        ticket_price: 0,
+        total_pool_collected: cleanAmount,
+        winner_share_percent: 100,
+        calculated_amount: cleanAmount,
+        payout_amount: cleanAmount,
+        status: 'completed',
+        tx_hash: mockTx,
+        approved_at: new Date().toISOString()
+      });
 
-    showToast(`Successfully added ${cleanAmount.toFixed(2)} USDT to player wallet!`, 'success');
-    return { success: true };
+      const targetAddr = newPayout.winnerAddress;
+      const { data: dbWal } = await supabase
+        .from('lottery_wallets')
+        .select('*')
+        .eq('address', targetAddr)
+        .maybeSingle();
+
+      const curBal = Number(dbWal?.balance || 0);
+      const curWon = Number(dbWal?.lifetime_won || 0);
+      const newBal = parseFloat((curBal + cleanAmount).toFixed(2));
+      const newWon = parseFloat((curWon + cleanAmount).toFixed(2));
+
+      await supabase.from('lottery_wallets').upsert({
+        address: targetAddr,
+        balance: newBal,
+        lifetime_won: newWon,
+        network: 'TRC-20'
+      });
+
+      if (wallet.address === targetAddr) {
+        setWallet(prev => ({ ...prev, balance: newBal, lifetimeWon: newWon }));
+      }
+
+      showToast(`Successfully added ${cleanAmount.toFixed(2)} USDT to player wallet!`, 'success');
+      return { success: true };
+    } catch (err) {
+      console.error('adminAddManualWinnerCredit error:', err);
+      showToast('Error crediting winner: ' + err.message, 'error');
+      return { success: false, error: err.message };
+    }
   };
 
 
@@ -2070,15 +2195,15 @@ export function LotteryProvider({ children }) {
     setSupportTickets(prev => [newTicket, ...prev.filter(t => t.id !== ticketId)]);
 
     try {
-      const { error } = await supabase.from('lottery_deposits').insert({
+      const { error } = await supabase.from('support_tickets').insert({
         id: ticketId,
-        user_address: JSON.stringify(userMeta),
         user_id: user?.id || null,
-        amount: 0,
-        currency: 'SUPPORT_TICKET',
-        pay_currency: newTicket.email,
-        payment_id: newTicket.subject,
-        invoice_url: newTicket.message,
+        user_address: wallet.address || null,
+        name: userMeta.name,
+        username: userMeta.username,
+        email: newTicket.email,
+        subject: newTicket.subject,
+        message: newTicket.message,
         status: 'pending'
       });
 
@@ -2095,12 +2220,16 @@ export function LotteryProvider({ children }) {
   };
 
   // Admin update ticket status ('pending' | 'replied' | 'resolved')
-  const adminUpdateTicketStatus = async (ticketId, nextStatus) => {
+  const adminUpdateTicketStatus = async (ticketId, nextStatus, replyMessage = null) => {
     try {
-      setSupportTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: nextStatus } : t));
+      setSupportTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status: nextStatus, adminReply: replyMessage || t.adminReply } : t));
+      const updatePayload = { status: nextStatus, updated_at: new Date().toISOString() };
+      if (replyMessage) {
+        updatePayload.admin_reply = replyMessage;
+      }
       const { error } = await supabase
-        .from('lottery_deposits')
-        .update({ status: nextStatus, updated_at: new Date().toISOString() })
+        .from('support_tickets')
+        .update(updatePayload)
         .eq('id', ticketId);
       if (error) {
         console.warn('Update ticket status note:', error.message);
@@ -2117,7 +2246,7 @@ export function LotteryProvider({ children }) {
   const adminDeleteTicket = async (ticketId) => {
     try {
       setSupportTickets(prev => prev.filter(t => t.id !== ticketId));
-      await supabase.from('lottery_deposits').delete().eq('id', ticketId);
+      await supabase.from('support_tickets').delete().eq('id', ticketId);
       showToast('Support ticket deleted', 'info');
       return { success: true };
     } catch (err) {

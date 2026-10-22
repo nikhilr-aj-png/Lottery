@@ -1,20 +1,15 @@
 # Robots.txt for EarnFlow.In
-# Full Directives for Search Engines, AI Agents, and LLM Crawlers
-
 User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /api/
 Disallow: /auth/v1/
 
-# Search Engine Web Crawlers
+# Search Engine Crawlers
 User-agent: Googlebot
 Allow: /
 
 User-agent: Googlebot-Image
-Allow: /
-
-User-agent: Googlebot-News
 Allow: /
 
 User-agent: Bingbot
@@ -32,78 +27,9 @@ Allow: /
 User-agent: YandexBot
 Allow: /
 
-User-agent: Sogou web spider
-Allow: /
-
-# OpenAI / ChatGPT Crawlers
-User-agent: GPTBot
-Allow: /
-
-User-agent: ChatGPT-User
-Allow: /
-
-# Anthropic Claude Crawlers
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-User-agent: Claude-Web
-Allow: /
-
-# Google AI & Gemini Training / Search
-User-agent: Google-Extended
-Allow: /
-
-# Perplexity AI Crawler
-User-agent: PerplexityBot
-Allow: /
-
-# Apple Intelligence
 User-agent: Applebot
 Allow: /
 
-User-agent: Applebot-Extended
-Allow: /
-
-# ByteDance / TikTok AI
-User-agent: Bytespider
-Allow: /
-
-# Cohere AI
-User-agent: cohere-ai
-Allow: /
-
-# Meta / Llama AI
-User-agent: FacebookBot
-Allow: /
-
-User-agent: Meta-ExternalAgent
-Allow: /
-
-# Common Crawl Foundation Crawler
-User-agent: CCBot
-Allow: /
-
-# Diffbot Knowledge Graph
-User-agent: Diffbot
-Allow: /
-
-# GLM (General Language Model / ChatGLM / Zhipu AI) Crawlers
-User-agent: GLM-Bot
-Allow: /
-
-User-agent: ChatGLM
-Allow: /
-
-User-agent: ZhipuAI
-Allow: /
-
-User-agent: GLM-Crawler
-Allow: /
-
-# Crawl Delay & Sitemap
 Crawl-delay: 1
 Host: https://earnflow.in
 Sitemap: https://earnflow.in/sitemap.xml

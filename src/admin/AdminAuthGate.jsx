@@ -55,7 +55,7 @@ export default function AdminAuthGate({ onAuthenticated, onCancel }) {
     setLoading(true);
 
     setTimeout(() => {
-      if (passcode.trim() === MASTER_ADMIN_KEY || passcode.trim() === 'admin123') {
+      if (passcode.trim() === MASTER_ADMIN_KEY) {
         sessionStorage.setItem('earnflow_admin_auth', 'true');
         onAuthenticated();
       } else {
