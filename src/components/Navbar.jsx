@@ -42,7 +42,8 @@ export default function Navbar({ onOpenProfile }) {
       const tabNames = {
         tickets: 'My Tickets',
         results: 'Lottery Results & Past Winners',
-        wallet: 'USDT Wallet'
+        wallet: 'USDT Wallet',
+        profile: 'User Profile'
       };
       showToast(`Please log in to access ${tabNames[tabId] || 'this section'}!`, 'info');
       return;
@@ -155,17 +156,27 @@ export default function Navbar({ onOpenProfile }) {
 
                   {/* Profile Button */}
                   <button
-                    onClick={onOpenProfile}
-                    className="flex items-center gap-1 xs:gap-1.5 text-xs font-mono-numbers px-1.5 xs:px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl bg-[#161c28] text-[#e1e2eb] border border-[#2d3545] hover:border-[#f5c451]/50 transition-all cursor-pointer"
+                    onClick={() => handleNavClick('profile')}
+                    className={`flex items-center gap-1 xs:gap-1.5 text-xs font-mono-numbers px-1.5 xs:px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl border transition-all cursor-pointer ${
+                      activeTab === 'profile'
+                        ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] border-[#fff2a3] font-bold shadow-sm'
+                        : 'bg-[#161c28] text-[#e1e2eb] border-[#2d3545] hover:border-[#f5c451]/50'
+                    }`}
                     title="Open User Profile"
                   >
-                    <div className="w-4 h-4 rounded-full bg-[#05d5aa]/20 text-[#05d5aa] flex items-center justify-center shrink-0">
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
+                      activeTab === 'profile' ? 'bg-[#0b0e14]/20 text-[#0b0e14]' : 'bg-[#05d5aa]/20 text-[#05d5aa]'
+                    }`}>
                       <User className="w-3 h-3" />
                     </div>
-                    <span className="truncate max-w-[50px] xs:max-w-[75px] sm:max-w-[110px] font-bold text-white text-[11px] sm:text-xs">
+                    <span className={`truncate max-w-[50px] xs:max-w-[75px] sm:max-w-[110px] font-bold text-[11px] sm:text-xs ${
+                      activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-white'
+                    }`}>
                       {profile?.username ? `@${profile.username}` : (user?.user_metadata?.username ? `@${user.user_metadata.username}` : (user?.email ? user.email.split('@')[0] : 'Profile'))}
                     </span>
-                    <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#9b8f7c] hidden xs:inline" />
+                    <ChevronDown className={`w-2.5 h-2.5 sm:w-3 sm:h-3 hidden xs:inline ${
+                      activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-[#9b8f7c]'
+                    }`} />
                   </button>
 
                   {/* Mobile Drawer Toggle (visible < 1024px) */}
@@ -255,16 +266,19 @@ export default function Navbar({ onOpenProfile }) {
             {isLoggedIn ? (
               <button
                 onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  onOpenProfile();
+                  handleNavClick('profile');
                 }}
-                className="w-full py-2.5 rounded-xl bg-[#141924] border border-[#272a31] flex items-center justify-between px-3 text-xs text-white font-medium"
+                className={`w-full py-2.5 rounded-xl border flex items-center justify-between px-3 text-xs font-medium cursor-pointer transition-all ${
+                  activeTab === 'profile'
+                    ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] border-[#fff2a3] font-bold shadow-sm'
+                    : 'bg-[#141924] text-white border-[#272a31] hover:border-[#ffd700]/30'
+                }`}
               >
                 <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-[#ffd700]" />
+                  <User className={`w-4 h-4 ${activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-[#ffd700]'}`} />
                   <span>View Player Profile (TRC-20)</span>
                 </div>
-                <span className="text-[10px] text-[#05d5aa] font-mono-numbers">
+                <span className={`text-[10px] font-mono-numbers ${activeTab === 'profile' ? 'text-[#0b0e14] font-bold' : 'text-[#05d5aa]'}`}>
                   {profile?.username ? `@${profile.username}` : user?.email}
                 </span>
               </button>
@@ -347,13 +361,15 @@ export default function Navbar({ onOpenProfile }) {
 
         {isLoggedIn ? (
           <button
-            onClick={onOpenProfile}
-            className="flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-150 cursor-pointer text-[#8b92a2] hover:text-[#e1e2eb]"
+            onClick={() => handleNavClick('profile')}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-150 cursor-pointer ${
+              activeTab === 'profile' ? 'text-[#ffd700]' : 'text-[#8b92a2] hover:text-[#e1e2eb]'
+            }`}
           >
-            <div className="p-1 rounded-lg">
+            <div className={`p-1 rounded-lg ${activeTab === 'profile' ? 'bg-[#f5c451]/15 text-[#ffd700]' : ''}`}>
               <User className="w-4 h-4" />
             </div>
-            <span className="text-[10px] tracking-tight mt-0.5 leading-none font-medium">
+            <span className={`text-[10px] tracking-tight mt-0.5 leading-none ${activeTab === 'profile' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
               Profile
             </span>
           </button>

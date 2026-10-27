@@ -8,7 +8,7 @@ import WalletView from './components/WalletView';
 import WalletModal from './components/WalletModal';
 import MyTicketsView from './components/MyTicketsView';
 import ResultsView from './components/ResultsView';
-import ProfileModal from './components/ProfileModal';
+import ProfileView from './components/ProfileView';
 import AuthModal from './components/AuthModal';
 import UsernameSetupModal from './components/UsernameSetupModal';
 import WinnerCelebrationModal from './components/WinnerCelebrationModal';
@@ -75,7 +75,6 @@ function LotteryAppContent() {
   const { triggerInstall, isInstalled } = usePwa();
 
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   // Dedicated check for isolated Admin Route
   const [isAdminRoute, setIsAdminRoute] = useState(() => {
@@ -141,13 +140,14 @@ function LotteryAppContent() {
     };
   }, []);
 
-  // Strict Login Gating: unauthenticated visitors cannot access tickets, results, or wallet
+  // Strict Login Gating: unauthenticated visitors cannot access tickets, results, wallet, or profile
   useEffect(() => {
-    if (!user && (activeTab === 'tickets' || activeTab === 'results' || activeTab === 'wallet')) {
+    if (!user && (activeTab === 'tickets' || activeTab === 'results' || activeTab === 'wallet' || activeTab === 'profile')) {
       const tabNames = {
         tickets: 'My Tickets',
         results: 'Draw Results & Past Winners',
-        wallet: 'USDT Wallet & 24h Payouts'
+        wallet: 'USDT Wallet & 24h Payouts',
+        profile: 'Player Profile & Account Settings'
       };
       setActiveTab('lotteries');
       setIsAuthModalOpen(true);
@@ -206,7 +206,7 @@ function LotteryAppContent() {
   return (
     <div className="min-h-screen bg-[#0b0e14] text-[#e1e2eb] flex flex-col">
       {/* Top Navbar */}
-      <Navbar onOpenProfile={() => setIsProfileOpen(true)} />
+      <Navbar onOpenProfile={() => setActiveTab('profile')} />
 
       {/* Main Public User Content */}
       <main className="flex-1 pb-20 md:pb-8">
@@ -394,17 +394,31 @@ function LotteryAppContent() {
           />
         ))}
 
-        {/* VIEW 5: TERMS & CONDITIONS PAGE */}
+        {/* VIEW 5: PLAYER PROFILE FULL SCREEN PAGE */}
+        {activeTab === 'profile' && (user ? (
+          <ProfileView 
+            onSwitchToAdmin={switchToAdminConsole}
+            onBackToHome={() => setActiveTab('lotteries')}
+          />
+        ) : (
+          <AuthRequiredPrompt 
+            title="Player Profile & Account Settings" 
+            onLogin={() => setIsAuthModalOpen(true)} 
+            onHome={() => setActiveTab('lotteries')} 
+          />
+        ))}
+
+        {/* VIEW 6: TERMS & CONDITIONS PAGE */}
         {activeTab === 'terms' && (
           <TermsPage onBackToHome={() => setActiveTab('lotteries')} />
         )}
 
-        {/* VIEW 6: PRIVACY POLICY PAGE */}
+        {/* VIEW 7: PRIVACY POLICY PAGE */}
         {activeTab === 'privacy' && (
           <PrivacyPolicyPage onBackToHome={() => setActiveTab('lotteries')} />
         )}
 
-        {/* VIEW 7: CONTACT US PAGE */}
+        {/* VIEW 8: CONTACT US PAGE */}
         {activeTab === 'contact' && (
           <ContactPage onBackToHome={() => setActiveTab('lotteries')} />
         )}
@@ -419,12 +433,6 @@ function LotteryAppContent() {
         />
       )}
 
-      {/* Profile Modal */}
-      <ProfileModal 
-        isOpen={isProfileOpen} 
-        onClose={() => setIsProfileOpen(false)}
-        onSwitchToAdmin={switchToAdminConsole}
-      />
 
       {/* Auth Modal for Email/Password & Google Login */}
       <AuthModal />
