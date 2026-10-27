@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultClick }) {
-  const { events, getSoldTicketsForEvent, user, profile } = useLottery();
+  const { events, getSoldTicketsForEvent, user, profile, wallet } = useLottery();
   
   // Find top trending active lottery (highest prize or first active event)
   const grandEvent = useMemo(() => {
@@ -49,55 +49,55 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
     return () => clearInterval(interval);
   }, [grandEvent]);
 
-  // Real & realistic tickets sold feed for the featured lottery
+  // 100% Real Tickets Sold Feed from Supabase database (No hardcoded/mock seed buyers)
   const ticketsFeed = useMemo(() => {
     if (!grandEvent) return [];
     const real = getSoldTicketsForEvent ? getSoldTicketsForEvent(grandEvent.id) : [];
 
-    // Realistic seeded buyers list to match ticketsSold counter
-    const seedBuyers = [
-      { num: '7429', user: '@LuckyWinner77', amount: 1, time: '2m ago' },
-      { num: '1084', user: '@crypto_king', amount: 2, time: '5m ago' },
-      { num: '5521', user: '@satoshi_vip', amount: 1, time: '9m ago' },
-      { num: '9102', user: '@priya_invest', amount: 3, time: '14m ago' },
-      { num: '3341', user: '@rahul_trc20', amount: 1, time: '21m ago' },
-      { num: '6782', user: '@trader_dan', amount: 2, time: '35m ago' },
-      { num: '4419', user: '@golden_tiger', amount: 1, time: '48m ago' },
-      { num: '8820', user: '@blockchain_guru', amount: 1, time: '1h ago' }
-    ];
+    return real.map((t, idx) => {
+      const isMine = user && (
+        (profile?.username && (t.username === `@${profile.username}` || t.username === profile.username)) ||
+        (wallet?.address && t.userAddress && t.userAddress.toLowerCase() === wallet.address.toLowerCase()) ||
+        (user.id && t.userId && t.userId === user.id)
+      );
 
-    const formattedReal = real.map((t, idx) => {
-      const isMine = user && (t.username === `@${profile?.username}` || t.userAddress);
+      // Relative elapsed time formatting
+      let timeStr = 'Just now';
+      if (t.purchaseTime) {
+        const diffMs = Math.max(0, Date.now() - t.purchaseTime);
+        const diffSecs = Math.floor(diffMs / 1000);
+        const diffMins = Math.floor(diffSecs / 60);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        if (diffDays > 0) timeStr = `${diffDays}d ago`;
+        else if (diffHours > 0) timeStr = `${diffHours}h ago`;
+        else if (diffMins > 0) timeStr = `${diffMins}m ago`;
+        else if (diffSecs > 10) timeStr = `${diffSecs}s ago`;
+        else timeStr = 'Just now';
+      }
+
+      // Display username: formatted with @ handle
+      let displayUser = t.username || '';
+      if (!displayUser && t.userAddress) {
+        displayUser = `${t.userAddress.slice(0, 6)}...${t.userAddress.slice(-4)}`;
+      }
+      if (!displayUser) {
+        displayUser = isMine ? `@${profile?.username || 'You'}` : 'Player';
+      }
+      if (!displayUser.startsWith('@') && !displayUser.startsWith('0x') && !displayUser.startsWith('T')) {
+        displayUser = `@${displayUser}`;
+      }
+
       return {
         id: t.id || `real-${idx}`,
         num: String(t.ticketNumber).padStart(4, '0'),
-        user: t.username || (isMine ? `@${profile?.username || 'You'}` : '@VIP_Player'),
+        user: displayUser,
         amount: 1,
-        time: 'Just now',
+        time: timeStr,
         isUser: Boolean(isMine)
       };
     });
-
-    const combined = [
-      ...formattedReal,
-      ...seedBuyers.map((s, idx) => ({
-        id: `seed-${idx}`,
-        num: s.num,
-        user: s.user,
-        amount: s.amount,
-        time: s.time,
-        isUser: false
-      }))
-    ];
-
-    // Dedup by ticket number for clean presentation
-    const seen = new Set();
-    return combined.filter(item => {
-      if (seen.has(item.num)) return false;
-      seen.add(item.num);
-      return true;
-    });
-  }, [grandEvent, getSoldTicketsForEvent, user, profile]);
+  }, [grandEvent, getSoldTicketsForEvent, user, profile, wallet?.address]);
 
   if (!grandEvent) return null;
 
@@ -319,7 +319,7 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
                     <span className="text-white">#{grandEvent.id.replace('evt-', '').toUpperCase()}</span>
                   </span>
                   <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
-                    {grandEvent.ticketsSold} SOLD
+                    {ticketsFeed.length} SOLD
                   </span>
                 </div>
               </div>
@@ -327,15 +327,21 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
               <div className="flex items-center justify-between text-xs text-[#9b8f7c] mb-3 px-1">
                 <span className="truncate pr-2">Live Entries for <strong className="text-white font-medium">{grandEvent.title}</strong></span>
                 <span className="font-mono-numbers text-white font-medium shrink-0">
-                  Pool: {(grandEvent.ticketsSold * grandEvent.ticketPrice).toLocaleString()} USDT
+                  Total Collected: {(ticketsFeed.length * grandEvent.ticketPrice).toLocaleString()} USDT
                 </span>
               </div>
 
               {/* Scrollable Feed List */}
               <div className="space-y-2 max-h-[260px] xs:max-h-[300px] sm:max-h-[360px] overflow-y-auto pr-1">
                 {ticketsFeed.length === 0 ? (
-                  <div className="py-10 text-center text-xs text-[#9b8f7c]">
-                    No tickets purchased yet for this pool. Be the first to enter!
+                  <div className="py-12 px-4 text-center space-y-2.5">
+                    <div className="w-10 h-10 mx-auto rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-amber-400">
+                      <Ticket className="w-5 h-5 text-amber-400/70" />
+                    </div>
+                    <div className="text-xs font-bold text-white">No Tickets Purchased Yet</div>
+                    <p className="text-[11px] text-[#9b8f7c] max-w-xs mx-auto leading-relaxed">
+                      0 entries so far. Be the very first player to grab a lucky number for this round!
+                    </p>
                   </div>
                 ) : (
                   ticketsFeed.map((item) => (

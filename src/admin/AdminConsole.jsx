@@ -44,51 +44,6 @@ import {
   Download
 } from 'lucide-react';
 
-const SEASONAL_PRESETS = {
-  cyberpunk: {
-    id: 'cyberpunk',
-    name: '⚡ Cyberpunk VIP Draw',
-    badge: 'VIP DRAW',
-    banner: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80'
-  },
-  diwali: {
-    id: 'diwali',
-    name: '🪔 Diwali Bumper Pot',
-    badge: '🪔 DIWALI BUMPER',
-    banner: 'https://images.unsplash.com/photo-1605371924599-2d0365da1ae0?w=1200&q=80'
-  },
-  eid: {
-    id: 'eid',
-    name: '🌙 Eid Mubarak Super Pot',
-    badge: '🌙 EID MUBARAK',
-    banner: 'https://images.unsplash.com/photo-1564769625905-50e93615e769?w=1200&q=80'
-  },
-  holi: {
-    id: 'holi',
-    name: '🎨 Holi Color Splash',
-    badge: '🎨 HOLI SPLASH',
-    banner: 'https://images.unsplash.com/photo-1576495199011-eb94736d05d6?w=1200&q=80'
-  },
-  durga_puja: {
-    id: 'durga_puja',
-    name: '🌺 Durga Puja Utsav',
-    badge: '🌺 DURGA UTSAV',
-    banner: 'https://images.unsplash.com/photo-1603555501671-8f96b3fce8b5?w=1200&q=80'
-  },
-  new_year: {
-    id: 'new_year',
-    name: '🎆 New Year Grand Gala',
-    badge: '🎆 NEW YEAR GALA',
-    banner: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&q=80'
-  },
-  custom: {
-    id: 'custom',
-    name: '🖼️ Custom Upload / External URL',
-    badge: 'SPECIAL EVENT',
-    banner: ''
-  }
-};
-
 export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
   const { 
     user,
@@ -141,8 +96,8 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
   const [manualWinnerAmount, setManualWinnerAmount] = useState('');
   const [manualWinnerNote, setManualWinnerNote] = useState('Special Seasonal Reward');
 
-  // Create event form state
-  const [eventTitle, setEventTitle] = useState('Diwali Special Bumper Pot 10 USDT');
+  // Create event form state - 100% dynamic, empty by default
+  const [eventTitle, setEventTitle] = useState('');
   const [ticketPrice, setTicketPrice] = useState('10');
   const [durationValue, setDurationValue] = useState('60');
   const [durationUnit, setDurationUnit] = useState('minutes'); // 'minutes' | 'hours' | 'days'
@@ -151,28 +106,25 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
   const [maxPrize, setMaxPrize] = useState('50');
   const [initialJackpot, setInitialJackpot] = useState('25000');
   const [eventWinningDigits, setEventWinningDigits] = useState('7429');
-  const [eventTheme, setEventTheme] = useState('diwali');
-  const [eventBannerImage, setEventBannerImage] = useState(SEASONAL_PRESETS.diwali.banner);
+  const [eventBadge, setEventBadge] = useState('VIP DRAW');
+  const [eventBannerImage, setEventBannerImage] = useState(''); // Empty by default
   const [eventWinnerSharePercent, setEventWinnerSharePercent] = useState('90');
   const [eventWinnerCount, setEventWinnerCount] = useState('1');
 
-  // Handle seasonal theme change
-  const handleThemeChange = (themeKey) => {
-    setEventTheme(themeKey);
-    if (SEASONAL_PRESETS[themeKey] && themeKey !== 'custom') {
-      setEventBannerImage(SEASONAL_PRESETS[themeKey].banner);
-    }
-  };
-
-  // Handle local banner file upload
+  // Handle local banner file upload from device
   const handleBannerFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image file size must be under 5MB', 'error');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (uploadEvt) => {
       setEventBannerImage(uploadEvt.target.result);
-      setEventTheme('custom');
-      showToast('Custom banner photo loaded successfully!', 'success');
+      showToast('Event banner photo uploaded from device!', 'success');
     };
     reader.readAsDataURL(file);
   };
@@ -252,8 +204,12 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
 
   const handleCreateSubmit = (e) => {
     e.preventDefault();
+    if (!eventTitle.trim()) {
+      showToast('Please enter an event title', 'error');
+      return;
+    }
     adminCreateEvent({
-      title: eventTitle,
+      title: eventTitle.trim(),
       ticketPrice,
       durationValue,
       durationUnit,
@@ -261,13 +217,14 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
       maxPrize: prizeType === 'range' ? maxPrize : null,
       initialSeedJackpot: prizeType === 'fixed' ? initialJackpot : maxPrize,
       targetWinningDigits: eventWinningDigits,
-      theme: eventTheme,
-      badge: SEASONAL_PRESETS[eventTheme]?.badge || 'SPECIAL EVENT',
-      bannerImage: eventBannerImage,
+      theme: 'custom',
+      badge: eventBadge?.trim() || 'VIP DRAW',
+      bannerImage: eventBannerImage ? eventBannerImage.trim() : '',
       winnerSharePercent: eventWinnerSharePercent,
       winnerCount: parseInt(eventWinnerCount || 1, 10)
     });
     setEventTitle('');
+    setEventBannerImage('');
   };
 
   const handleApprovePayout = async (payoutId) => {
@@ -930,37 +887,41 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                     </p>
                   </div>
 
-                  {/* Seasonal Festival Theme Selector */}
+                  {/* Event Badge / Tag */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="block text-xs text-[#8b92a2] font-semibold">
-                        Seasonal Festival Theme
+                        Event Badge / Tag
                       </label>
                       <span className="text-[10px] text-amber-400 font-bold">
-                        Banner Card Styling
+                        Card Top Pill
                       </span>
                     </div>
-                    <select
-                      value={eventTheme}
-                      onChange={(e) => handleThemeChange(e.target.value)}
-                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
-                    >
-                      {Object.values(SEASONAL_PRESETS).map(thm => (
-                        <option key={thm.id} value={thm.id}>{thm.name}</option>
-                      ))}
-                    </select>
+                    <input
+                      type="text"
+                      value={eventBadge}
+                      onChange={(e) => setEventBadge(e.target.value)}
+                      placeholder="e.g. VIP DRAW, JACKPOT POT, BUMPER DRAW"
+                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white outline-none"
+                    />
                   </div>
 
-                  {/* Banner Photo Upload or URL */}
-                  <div className="space-y-2 p-3 rounded-xl bg-[#07090d] border border-[#272a31]">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs text-[#8b92a2] font-semibold flex items-center gap-1.5">
-                        <Image className="w-3.5 h-3.5 text-amber-400" />
-                        Card Banner Image
-                      </label>
-                      <label className="cursor-pointer px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-[10px] font-bold text-amber-400 flex items-center gap-1">
-                        <Upload className="w-3 h-3" />
-                        <span>Upload File</span>
+                  {/* Banner Photo Upload or URL (Empty by default, upload when desired) */}
+                  <div className="space-y-3 p-3.5 rounded-xl bg-[#07090d] border border-[#272a31]">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <label className="text-xs text-white font-bold flex items-center gap-1.5">
+                          <Image className="w-4 h-4 text-amber-400" />
+                          <span>Event Banner Photo (Optional)</span>
+                        </label>
+                        <p className="text-[10px] text-[#8b92a2] mt-0.5">
+                          Upload image from phone/PC or paste any direct web image link
+                        </p>
+                      </div>
+
+                      <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-xs font-bold text-amber-400 flex items-center gap-1.5 transition-colors self-start sm:self-auto">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload From Device</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -970,25 +931,45 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                       </label>
                     </div>
 
-                    <input
-                      type="url"
-                      value={eventBannerImage}
-                      onChange={(e) => setEventBannerImage(e.target.value)}
-                      placeholder="Paste image URL or upload above..."
-                      className="w-full bg-[#0b0e14] border border-[#1f2737] focus:border-[#ffd700] rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono outline-none"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="url"
+                        value={eventBannerImage}
+                        onChange={(e) => setEventBannerImage(e.target.value)}
+                        placeholder="Paste image URL (https://...)..."
+                        className="flex-1 bg-[#0b0e14] border border-[#1f2737] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono outline-none"
+                      />
+                      {eventBannerImage && (
+                        <button
+                          type="button"
+                          onClick={() => setEventBannerImage('')}
+                          className="px-2.5 py-2 rounded-lg bg-red-950/30 hover:bg-red-950/60 border border-red-500/30 text-red-400 text-xs font-bold transition-colors cursor-pointer"
+                          title="Remove Image"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
 
-                    {/* Banner & Live Simulation Preview */}
-                    {eventBannerImage && (
-                      <div className="space-y-2 mt-2">
-                        <div className="flex items-center justify-between text-[11px] text-[#8b92a2]">
-                          <span className="font-semibold text-amber-400">Live User Card Preview:</span>
-                          <span className="text-[10px] text-emerald-400 font-bold">Theme: {SEASONAL_PRESETS[eventTheme]?.name || eventTheme}</span>
+                    {/* Banner Preview if provided */}
+                    {eventBannerImage ? (
+                      <div className="space-y-2 pt-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-semibold text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Image Loaded Successfully
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setEventBannerImage('')}
+                            className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                          >
+                            Remove Photo
+                          </button>
                         </div>
-                        
+
                         {/* Simulation Mini Card */}
                         <div className="relative rounded-2xl overflow-hidden border border-amber-500/40 p-4 shadow-xl bg-[#0e121a]">
-                          {/* Background Festive Banner */}
                           <div 
                             className="absolute inset-0 bg-cover bg-center opacity-30"
                             style={{ backgroundImage: `url(${eventBannerImage})` }}
@@ -998,7 +979,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                           <div className="relative z-10 space-y-2.5">
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm">
-                                {SEASONAL_PRESETS[eventTheme]?.badge || '🪔 DIWALI BUMPER'}
+                                {eventBadge || 'VIP DRAW'}
                               </span>
                               <span className="text-[10px] font-mono-numbers text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30">
                                 ⏱️ {durationValue || 60} {durationUnit}
@@ -1007,7 +988,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
 
                             <div>
                               <h4 className="font-display font-black text-sm text-white line-clamp-1">
-                                {eventTitle || 'Diwali Special Bumper Pot 10 USDT'}
+                                {eventTitle || 'Event Title Preview'}
                               </h4>
                               <p className="text-[10px] text-amber-400/90 font-medium">
                                 Entry: <span className="font-bold text-white">{ticketPrice} USDT</span>
@@ -1028,6 +1009,10 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                           </div>
                         </div>
                       </div>
+                    ) : (
+                      <p className="text-[10px] text-[#64748b]">
+                        💡 No image selected. If left blank, this event will be created using the sleek default dark gold platform styling.
+                      </p>
                     )}
                   </div>
 
