@@ -27,3 +27,11 @@ supabase/.temp/
 *.njsproj
 *.sln
 *.sw?
+
+# Flutter & Gradle caches
+earnflow_mobile/build/
+earnflow_mobile/.dart_tool/
+earnflow_mobile/.flutter-plugins
+earnflow_mobile/.flutter-plugins-dependencies
+earnflow_mobile/android/.gradle/
+earnflow_mobile/android/local.properties

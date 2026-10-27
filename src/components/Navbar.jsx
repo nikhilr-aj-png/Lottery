@@ -13,7 +13,8 @@ import {
   User,
   LogIn,
   Lock,
-  Headphones
+  Headphones,
+  Download
 } from 'lucide-react';
 
 export default function Navbar({ onOpenProfile }) {
@@ -123,8 +124,18 @@ export default function Navbar({ onOpenProfile }) {
               })}
             </nav>
 
-            {/* Right Action: Wallet Balance & Login / Profile */}
+            {/* Right Action: Wallet Balance, APK Download & Login / Profile */}
             <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2.5">
+              {/* Desktop Android APK Download Link */}
+              <a
+                href="/download/earnflow.apk"
+                download="earnflow.apk"
+                className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-emerald-500/10 hover:from-amber-500/20 hover:to-emerald-500/20 border border-amber-500/30 text-[#ffd700] hover:text-white text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
+                title="Download Official Flutter Android APK"
+              >
+                <Download className="w-3.5 h-3.5 text-[#ffd700]" />
+                <span>Android App</span>
+              </a>
               {isLoggedIn ? (
                 <>
                   {/* Balance Pill */}
@@ -294,6 +305,16 @@ export default function Navbar({ onOpenProfile }) {
                 <span>Login with Email / Google</span>
               </button>
             )}
+
+            {/* Direct Android APK Download Button in Drawer */}
+            <a
+              href="/download/earnflow.apk"
+              download="earnflow.apk"
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-[#1a2130] to-emerald-500/15 hover:from-amber-500/25 border border-amber-500/30 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
+            >
+              <Download className="w-4 h-4 text-[#ffd700]" />
+              <span>Download Official Android App (APK)</span>
+            </a>
           </div>
         )}
       </header>

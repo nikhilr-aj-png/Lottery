@@ -43,6 +43,14 @@ export default function PwaInstallBanner() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-1.5 shrink-0">
+          <a
+            href="/download/earnflow.apk"
+            download="earnflow.apk"
+            className="hidden xs:inline-flex px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold items-center gap-1 cursor-pointer transition-colors"
+            title="Direct Android APK Download"
+          >
+            <span>APK</span>
+          </a>
           <button
             onClick={triggerInstall}
             className="btn-gold px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shadow-md shadow-[#f5c451]/20"
