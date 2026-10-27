@@ -103,6 +103,7 @@ class _MainWebScreenState extends State<MainWebScreen> {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFF0B0E14))
+      ..setUserAgent('Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 EarnFlowApp/1.0')
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {
@@ -117,11 +118,17 @@ class _MainWebScreenState extends State<MainWebScreen> {
             setState(() {
               _isLoading = true;
             });
+            _controller.runJavaScript(
+              "window.isEarnFlowApp = true; window.isNativeApp = true; document.documentElement.classList.add('in-earnflow-app');"
+            );
           },
           onPageFinished: (String url) {
             setState(() {
               _isLoading = false;
             });
+            _controller.runJavaScript(
+              "window.isEarnFlowApp = true; window.isNativeApp = true; document.documentElement.classList.add('in-earnflow-app');"
+            );
           },
           onWebResourceError: (WebResourceError error) {
             // Only flag offline if main frame fails
@@ -155,7 +162,7 @@ class _MainWebScreenState extends State<MainWebScreen> {
           },
         ),
       )
-      ..loadRequest(Uri.parse(appUrl));
+      ..loadRequest(Uri.parse('$appUrl?app=android'));
   }
 
   Future<void> _handleRefresh() async {

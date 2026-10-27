@@ -40,7 +40,8 @@ import {
   Send,
   Inbox,
   AtSign,
-  User
+  User,
+  Download
 } from 'lucide-react';
 
 const SEASONAL_PRESETS = {
@@ -113,7 +114,8 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
     adminDeleteTicket,
     platformSettings,
     adminUpdatePlatformSettings,
-    showToast
+    showToast,
+    getDirectDownloadUrl
   } = useLottery();
 
   // Navigation tab: 'overview' | 'pools' | 'withdrawals' | 'users' | 'winner-payouts' | 'support' | 'settings'
@@ -201,6 +203,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
   const [treasuryTrc20, setTreasuryTrc20] = useState(() => platformSettings?.treasuryTrc20 || 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m');
   const [supportEmail, setSupportEmail] = useState(() => platformSettings?.supportEmail || 'support@earnflow.in');
   const [usernameChangeFee, setUsernameChangeFee] = useState(() => String(platformSettings?.usernameChangeFee ?? '5.00'));
+  const [apkDownloadUrl, setApkDownloadUrl] = useState(() => platformSettings?.apkDownloadUrl || '/download/earnflow.apk');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState(null);
 
@@ -214,6 +217,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
       setTreasuryTrc20(platformSettings.treasuryTrc20 || 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m');
       setSupportEmail(platformSettings.supportEmail || 'support@earnflow.in');
       setUsernameChangeFee(String(platformSettings.usernameChangeFee ?? '5.00'));
+      setApkDownloadUrl(platformSettings.apkDownloadUrl || '/download/earnflow.apk');
     }
   }, [platformSettings]);
 
@@ -330,7 +334,8 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
         defaultWinnerSharePercent,
         treasuryTrc20,
         supportEmail,
-        usernameChangeFee
+        usernameChangeFee,
+        apkDownloadUrl
       });
       if (res?.success) {
         setLastSavedTime(new Date().toLocaleTimeString());
@@ -2093,6 +2098,68 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                   <p className="text-[10px] text-[#64748b] mt-1">
                     All automated 24h SLA withdrawals are signed and broadcast from this TRON smart contract address.
                   </p>
+                </div>
+
+                {/* Android APK Download URL Settings */}
+                <div className="bg-[#07090d] p-4 rounded-xl border border-[#1f2737] space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                    <label className="text-xs text-white font-bold flex items-center gap-2">
+                      <Download className="w-4 h-4 text-[#ffd700]" />
+                      <span>Official Android App (APK) Download Source</span>
+                    </label>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold self-start sm:self-auto">
+                      Google Drive Auto Direct-Download
+                    </span>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={apkDownloadUrl}
+                    onChange={(e) => setApkDownloadUrl(e.target.value)}
+                    placeholder="https://drive.google.com/file/d/.../view?usp=sharing or /download/earnflow.apk"
+                    className="w-full bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2.5 text-xs text-white font-mono-numbers outline-none"
+                    required
+                  />
+
+                  {/* Status & Helper Info */}
+                  <div className="space-y-2 pt-1 text-[11px]">
+                    {apkDownloadUrl?.includes('drive.google.com') ? (
+                      <div className="p-2.5 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-emerald-300 space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-400">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Google Drive Link Detected & Handled</span>
+                        </div>
+                        <p className="text-[10px] text-emerald-200/80">
+                          Users clicking "Download APK" will <strong>directly download the APK file</strong> without seeing Google Drive's web preview page.
+                        </p>
+                        {getDirectDownloadUrl && (
+                          <div className="text-[10px] font-mono-numbers text-emerald-400/90 break-all bg-black/40 p-1.5 rounded mt-1">
+                            Direct Link: {getDirectDownloadUrl(apkDownloadUrl)}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-[#9b8f7c] leading-relaxed">
+                        💡 <strong>How to use Google Drive:</strong> Upload your compiled APK to Google Drive &rarr; click Share &rarr; set to "Anyone with the link can view" &rarr; paste the link here. The platform will automatically convert it so users get an instant direct download!
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <a
+                        href={getDirectDownloadUrl ? getDirectDownloadUrl(apkDownloadUrl) : apkDownloadUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141924] hover:bg-[#1f2738] border border-[#ffd700]/30 text-[#ffd700] text-xs font-bold transition-colors cursor-pointer"
+                        title="Test whether the direct download link triggers properly"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Test Direct Download Link</span>
+                      </a>
+                      <span className="text-[10px] text-[#8b92a2]">
+                        (App download buttons are strictly hidden when browsing inside the Android App)
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-2">

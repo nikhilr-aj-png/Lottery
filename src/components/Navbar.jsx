@@ -14,7 +14,8 @@ import {
   LogIn,
   Lock,
   Headphones,
-  Download
+  Download,
+  LogOut
 } from 'lucide-react';
 
 export default function Navbar({ onOpenProfile }) {
@@ -27,7 +28,10 @@ export default function Navbar({ onOpenProfile }) {
     setIsWalletModalOpen,
     setWalletModalTab,
     setIsAuthModalOpen,
-    showToast
+    showToast,
+    isNativeApp,
+    apkDirectDownloadUrl,
+    logout
   } = useLottery();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -126,16 +130,20 @@ export default function Navbar({ onOpenProfile }) {
 
             {/* Right Action: Wallet Balance, APK Download & Login / Profile */}
             <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2.5">
-              {/* Desktop Android APK Download Link */}
-              <a
-                href="/download/earnflow.apk"
-                download="earnflow.apk"
-                className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-emerald-500/10 hover:from-amber-500/20 hover:to-emerald-500/20 border border-amber-500/30 text-[#ffd700] hover:text-white text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
-                title="Download Official Flutter Android APK"
-              >
-                <Download className="w-3.5 h-3.5 text-[#ffd700]" />
-                <span>Android App</span>
-              </a>
+              {/* Desktop Android APK Download Link (Hidden inside Native App) */}
+              {!isNativeApp && (
+                <a
+                  href={apkDirectDownloadUrl}
+                  download="earnflow.apk"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-emerald-500/10 hover:from-amber-500/20 hover:to-emerald-500/20 border border-amber-500/30 text-[#ffd700] hover:text-white text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
+                  title="Download Official Flutter Android APK"
+                >
+                  <Download className="w-3.5 h-3.5 text-[#ffd700]" />
+                  <span>Android App</span>
+                </a>
+              )}
               {isLoggedIn ? (
                 <>
                   {/* Balance Pill */}
@@ -275,24 +283,36 @@ export default function Navbar({ onOpenProfile }) {
 
             {/* Profile trigger in mobile drawer */}
             {isLoggedIn ? (
-              <button
-                onClick={() => {
-                  handleNavClick('profile');
-                }}
-                className={`w-full py-2.5 rounded-xl border flex items-center justify-between px-3 text-xs font-medium cursor-pointer transition-all ${
-                  activeTab === 'profile'
-                    ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] border-[#fff2a3] font-bold shadow-sm'
-                    : 'bg-[#141924] text-white border-[#272a31] hover:border-[#ffd700]/30'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <User className={`w-4 h-4 ${activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-[#ffd700]'}`} />
-                  <span>View Player Profile (TRC-20)</span>
-                </div>
-                <span className={`text-[10px] font-mono-numbers ${activeTab === 'profile' ? 'text-[#0b0e14] font-bold' : 'text-[#05d5aa]'}`}>
-                  {profile?.username ? `@${profile.username}` : user?.email}
-                </span>
-              </button>
+              <div className="space-y-1.5">
+                <button
+                  onClick={() => {
+                    handleNavClick('profile');
+                  }}
+                  className={`w-full py-2.5 rounded-xl border flex items-center justify-between px-3 text-xs font-medium cursor-pointer transition-all ${
+                    activeTab === 'profile'
+                      ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] border-[#fff2a3] font-bold shadow-sm'
+                      : 'bg-[#141924] text-white border-[#272a31] hover:border-[#ffd700]/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <User className={`w-4 h-4 ${activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-[#ffd700]'}`} />
+                    <span>View Player Profile (TRC-20)</span>
+                  </div>
+                  <span className={`text-[10px] font-mono-numbers ${activeTab === 'profile' ? 'text-[#0b0e14] font-bold' : 'text-[#05d5aa]'}`}>
+                    {profile?.username ? `@${profile.username}` : user?.email}
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    logout();
+                  }}
+                  className="w-full py-2 rounded-xl bg-red-950/20 hover:bg-red-950/40 text-red-400 border border-red-500/20 hover:border-red-500/40 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
             ) : (
               <button
                 onClick={() => {
@@ -306,15 +326,19 @@ export default function Navbar({ onOpenProfile }) {
               </button>
             )}
 
-            {/* Direct Android APK Download Button in Drawer */}
-            <a
-              href="/download/earnflow.apk"
-              download="earnflow.apk"
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-[#1a2130] to-emerald-500/15 hover:from-amber-500/25 border border-amber-500/30 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
-            >
-              <Download className="w-4 h-4 text-[#ffd700]" />
-              <span>Download Official Android App (APK)</span>
-            </a>
+            {/* Direct Android APK Download Button in Drawer (Hidden inside Native App) */}
+            {!isNativeApp && (
+              <a
+                href={apkDirectDownloadUrl}
+                download="earnflow.apk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-[#1a2130] to-emerald-500/15 hover:from-amber-500/25 border border-amber-500/30 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
+              >
+                <Download className="w-4 h-4 text-[#ffd700]" />
+                <span>Download Official Android App (APK)</span>
+              </a>
+            )}
           </div>
         )}
       </header>

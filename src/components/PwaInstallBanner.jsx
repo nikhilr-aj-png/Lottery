@@ -1,12 +1,14 @@
 import React from 'react';
 import { usePwa } from '../context/PwaContext';
+import { useLottery } from '../context/LotteryContext';
 import { Download, X, Smartphone, Sparkles } from 'lucide-react';
 
 export default function PwaInstallBanner() {
   const { isInstalled, bannerDismissed, dismissBanner, triggerInstall } = usePwa();
+  const { isNativeApp, apkDirectDownloadUrl } = useLottery();
 
-  // If already installed as PWA or user dismissed it in this session/recent days, don't show floating banner
-  if (isInstalled || bannerDismissed) return null;
+  // If already running inside Native App, or already installed as PWA or user dismissed it, don't show floating banner
+  if (isNativeApp || isInstalled || bannerDismissed) return null;
 
   return (
     <aside 
@@ -44,8 +46,10 @@ export default function PwaInstallBanner() {
         {/* Action Buttons */}
         <div className="flex items-center gap-1.5 shrink-0">
           <a
-            href="/download/earnflow.apk"
+            href={apkDirectDownloadUrl}
             download="earnflow.apk"
+            target="_blank"
+            rel="noopener noreferrer"
             className="hidden xs:inline-flex px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold items-center gap-1 cursor-pointer transition-colors"
             title="Direct Android APK Download"
           >

@@ -403,6 +403,27 @@ export function LotteryProvider({ children }) {
     }
   };
 
+  // Helper: Convert any Google Drive URL into an instant direct-download link
+  const getDirectDownloadUrl = (url) => {
+    if (!url) return '/download/earnflow.apk';
+    const trimmed = url.trim();
+    if (!trimmed) return '/download/earnflow.apk';
+
+    // Google Drive format 1: /file/d/{FILE_ID}/view...
+    const driveFileMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (driveFileMatch && driveFileMatch[1]) {
+      return `https://drive.usercontent.google.com/download?id=${driveFileMatch[1]}&export=download&authuser=0`;
+    }
+
+    // Google Drive format 2: drive.google.com with ?id={FILE_ID}
+    const driveIdMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (trimmed.includes('drive.google.com') && driveIdMatch && driveIdMatch[1]) {
+      return `https://drive.usercontent.google.com/download?id=${driveIdMatch[1]}&export=download&authuser=0`;
+    }
+
+    return trimmed;
+  };
+
   // Platform Governance Settings State
   const DEFAULT_PLATFORM_SETTINGS = {
     minWithdrawal: 5.0,
@@ -411,8 +432,45 @@ export function LotteryProvider({ children }) {
     defaultWinnerSharePercent: 90,
     treasuryTrc20: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m',
     supportEmail: 'support@earnflow.in',
-    usernameChangeFee: 5.0
+    usernameChangeFee: 5.0,
+    apkDownloadUrl: '/download/earnflow.apk'
   };
+
+  // Detection for Native Android App vs Web Browser
+  const [isNativeApp, setIsNativeApp] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    if (sessionStorage.getItem('earnflow_in_native_app') === 'true') return true;
+    if (window.location.search.includes('app=android') || window.location.search.includes('is_app=true')) {
+      sessionStorage.setItem('earnflow_in_native_app', 'true');
+      return true;
+    }
+    if (navigator.userAgent && (navigator.userAgent.includes('EarnFlowApp') || navigator.userAgent.includes('wv') || navigator.userAgent.includes('AndroidApp'))) {
+      return true;
+    }
+    if (window.isEarnFlowApp || window.isNativeApp) return true;
+    return false;
+  });
+
+  useEffect(() => {
+    const checkApp = () => {
+      const inApp = Boolean(
+        sessionStorage.getItem('earnflow_in_native_app') === 'true' ||
+        window.location.search.includes('app=android') ||
+        window.location.search.includes('is_app=true') ||
+        (navigator.userAgent && navigator.userAgent.includes('EarnFlowApp')) ||
+        window.isEarnFlowApp ||
+        window.isNativeApp ||
+        document.documentElement.classList.contains('in-earnflow-app')
+      );
+      if (inApp) {
+        setIsNativeApp(true);
+        sessionStorage.setItem('earnflow_in_native_app', 'true');
+      }
+    };
+    checkApp();
+    window.addEventListener('load', checkApp);
+    return () => window.removeEventListener('load', checkApp);
+  }, []);
 
   const [platformSettings, setPlatformSettings] = useState(() => {
     try {
@@ -458,7 +516,8 @@ export function LotteryProvider({ children }) {
         defaultWinnerSharePercent: parseFloat(newSettings.defaultWinnerSharePercent || platformSettings.defaultWinnerSharePercent),
         treasuryTrc20: (newSettings.treasuryTrc20 || platformSettings.treasuryTrc20).trim(),
         supportEmail: (newSettings.supportEmail || platformSettings.supportEmail).trim(),
-        usernameChangeFee: parseFloat(newSettings.usernameChangeFee !== undefined ? newSettings.usernameChangeFee : (platformSettings.usernameChangeFee ?? 5.0))
+        usernameChangeFee: parseFloat(newSettings.usernameChangeFee !== undefined ? newSettings.usernameChangeFee : (platformSettings.usernameChangeFee ?? 5.0)),
+        apkDownloadUrl: (newSettings.apkDownloadUrl !== undefined ? newSettings.apkDownloadUrl : (platformSettings.apkDownloadUrl || '/download/earnflow.apk')).trim()
       };
 
       // Optimistic update
@@ -2334,7 +2393,10 @@ export function LotteryProvider({ children }) {
         getUsernameChangeCount,
         checkUsernameAvailability,
         requestPasswordReset,
-        verifyPasswordResetOtp
+        verifyPasswordResetOtp,
+        isNativeApp,
+        getDirectDownloadUrl,
+        apkDirectDownloadUrl: getDirectDownloadUrl(platformSettings?.apkDownloadUrl)
       }}
     >
       {children}

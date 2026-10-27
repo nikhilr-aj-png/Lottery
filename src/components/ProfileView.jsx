@@ -182,51 +182,6 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }) {
   return (
     <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8 animate-in fade-in duration-200">
       
-      {/* Top Breadcrumb & Title Section */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-[#1f2737]">
-        <div>
-          <button
-            onClick={onBackToHome}
-            className="inline-flex items-center gap-1.5 text-xs text-[#9b8f7c] hover:text-[#ffd700] mb-2 transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Lottery Lobby</span>
-          </button>
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-[#ffd700]/20 to-[#f5c451]/10 border border-[#ffd700]/30 flex items-center justify-center text-[#ffd700] shadow-[0_0_15px_rgba(245,196,81,0.2)]">
-              <User className="w-5 h-5 sm:w-6 sm:h-6" />
-            </div>
-            <div>
-              <h1 className="font-display font-extrabold text-xl xs:text-2xl sm:text-3xl text-white">
-                Player <span className="text-gold-gradient">Profile</span>
-              </h1>
-              <p className="text-xs text-[#9b8f7c]">
-                Manage your TRC-20 wallet, VIP Player ID, and security credentials
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Super Admin Quick Switch or Lobby Link */}
-        <div className="flex items-center gap-2">
-          {profile?.role === 'super_admin' && (
-            <button
-              onClick={onSwitchToAdmin}
-              className="btn-gold px-3.5 xs:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-amber-500/20"
-            >
-              <Lock className="w-3.5 h-3.5" />
-              <span>Admin Console</span>
-            </button>
-          )}
-          <button
-            onClick={logout}
-            className="px-3.5 py-2 rounded-xl bg-[#141924] hover:bg-red-950/30 text-xs text-red-400 hover:text-red-300 border border-[#272a31] hover:border-red-500/30 font-medium transition-colors cursor-pointer flex items-center gap-1.5"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </div>
 
       {/* Super Admin Console Access Banner (if super_admin) */}
       {profile?.role === 'super_admin' && (
@@ -660,54 +615,6 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }) {
         {/* RIGHT COLUMN: Account Credentials, Security & Shortcuts (5 Cols) */}
         <div className="lg:col-span-5 space-y-6">
 
-          {/* CARD 3: Account Credentials & Security Status */}
-          <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-[#272a31] space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#141924] flex items-center justify-center text-[#ffd700]">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="font-display font-bold text-base text-white">
-                  Account Credentials
-                </h3>
-                <p className="text-xs text-[#9b8f7c]">
-                  Your authenticated identity and platform security details
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2.5 text-xs">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-[#0b0e14] border border-[#1b2230]">
-                <span className="text-[#9b8f7c]">Email Address:</span>
-                <span className="font-mono-numbers font-bold text-white truncate max-w-[200px]">
-                  {user?.email || 'N/A'}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-xl bg-[#0b0e14] border border-[#1b2230]">
-                <span className="text-[#9b8f7c]">Account ID (UUID):</span>
-                <span className="font-mono-numbers text-[11px] text-[#05d5aa] truncate max-w-[180px]">
-                  {user?.id ? `${user.id.slice(0, 8)}...${user.id.slice(-6)}` : 'N/A'}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-xl bg-[#0b0e14] border border-[#1b2230]">
-                <span className="text-[#9b8f7c]">Security Protocol:</span>
-                <span className="font-semibold text-emerald-400 flex items-center gap-1 font-mono-numbers">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  256-Bit SSL Encrypted
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-xl bg-[#0b0e14] border border-[#1b2230]">
-                <span className="text-[#9b8f7c]">Provably Fair RNG:</span>
-                <span className="font-semibold text-[#00f2fe] flex items-center gap-1 font-mono-numbers">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Active
-                </span>
-              </div>
-            </div>
-          </div>
 
           {/* CARD 4: Platform Quick Navigation */}
           <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-[#272a31] space-y-4">
