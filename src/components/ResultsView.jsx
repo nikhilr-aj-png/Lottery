@@ -17,10 +17,12 @@ import {
 // All completed lottery results are dynamically fetched from Supabase lottery_events table
 
 function ResultCard({ event, isExpanded, onToggleExpand }) {
-  const winnerCount = event.winnerCount || 1;
-  const winnersList = event.winners || [
-    { rank: 1, user: '@LuckyWinner', ticket: `#${event.winningDigits || '7429'}`, prize: `${(event.poolPrize / winnerCount).toFixed(2)} USDT`, status: 'Disbursed' }
-  ];
+  const hasEntries = (event.ticketsSold || 0) > 0;
+  const winnerCount = hasEntries ? (event.winnerCount || 1) : 0;
+  const winDigits = event.winningDigits || event.targetWinningDigits || '7429';
+  const winnersList = hasEntries ? (event.winners || [
+    { rank: 1, user: '@LuckyWinner', ticket: `#${winDigits}`, prize: `${(event.poolPrize / (winnerCount || 1)).toFixed(2)} USDT`, status: 'Disbursed' }
+  ]) : [];
 
   return (
     <div className="glass-panel rounded-2xl p-3.5 xs:p-4.5 sm:p-5 border border-amber-500/30 flex flex-col justify-between relative overflow-hidden shadow-md hover:border-amber-400/50 transition-all">
@@ -39,7 +41,7 @@ function ResultCard({ event, isExpanded, onToggleExpand }) {
               </span>
               <span className="text-[10px] xs:text-[11px] text-[#9b8f7c] font-mono-numbers flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
-                {new Date(event.drawTime).toLocaleDateString()}
+                {event.drawTime ? new Date(event.drawTime).toLocaleDateString() : 'Recent'}
               </span>
             </div>
 
@@ -64,7 +66,7 @@ function ResultCard({ event, isExpanded, onToggleExpand }) {
               {winnerCount > 1 ? `Winning Drawn Tickets (${winnerCount} Lucky Winners)` : 'Official Winning Combination'}
             </span>
             <span className="text-[9px] xs:text-[10px] text-amber-400 font-semibold">
-              {winnerCount > 1 ? `${winnerCount} Distinct Winners` : '1 Grand Winner'}
+              {winnerCount > 1 ? `${winnerCount} Distinct Winners` : hasEntries ? '1 Grand Winner' : '0 Winners (Rollover)'}
             </span>
           </div>
 
@@ -87,19 +89,26 @@ function ResultCard({ event, isExpanded, onToggleExpand }) {
             </div>
           ) : (
             <div className="flex items-center gap-1.5 xs:gap-2 py-1">
-              {event.winningDigits ? event.winningDigits.split('').map((char, idx) => (
+              {winDigits.split('').map((char, idx) => (
                 <div
                   key={idx}
                   className="w-8 xs:w-9 sm:w-10 h-8 xs:h-9 sm:h-10 rounded-xl bg-gradient-to-b from-[#192233] to-[#0c0f17] border border-[#05d5aa] flex items-center justify-center font-display font-black text-base xs:text-lg sm:text-xl text-[#05d5aa] shadow-[0_0_12px_rgba(5,213,170,0.2)]"
                 >
                   {char}
                 </div>
-              )) : (
-                <span className="text-white text-xs font-mono-numbers">Pending Draw</span>
-              )}
+              ))}
               <div className="ml-1.5 xs:ml-2 pl-2 xs:pl-3 border-l border-[#272a31] text-[10px] xs:text-[11px] text-[#9b8f7c]">
-                <span className="text-white font-semibold block">{winnersList[0]?.user || 'Winner'}</span>
-                <span className="text-emerald-400 font-mono-numbers font-bold">{winnersList[0]?.prize || `${event.poolPrize} USDT`} Disbursed</span>
+                {hasEntries ? (
+                  <>
+                    <span className="text-white font-semibold block">{winnersList[0]?.user || 'Winner'}</span>
+                    <span className="text-emerald-400 font-mono-numbers font-bold">{winnersList[0]?.prize || `${event.poolPrize} USDT`} Disbursed</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-amber-300 font-semibold block">0 Entries / Rollover</span>
+                    <span className="text-[#9b8f7c] font-mono-numbers text-[10px]">No Winning Tickets Claimed</span>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -107,9 +116,9 @@ function ResultCard({ event, isExpanded, onToggleExpand }) {
 
         {/* Summary Outcome line */}
         <div className="text-[11px] text-[#9b8f7c] mb-3 flex items-center justify-between">
-          <span>{event.winnerSummary}</span>
+          <span>{hasEntries ? (event.winnerSummary || 'Draw Concluded') : 'Draw Concluded · 0 Tickets Sold this round'}</span>
           <span className="font-mono-numbers text-emerald-400 font-bold shrink-0 ml-2">
-            100% USDT Settled
+            {hasEntries ? '100% USDT Settled' : '0 USDT Claimed (Rollover)'}
           </span>
         </div>
 
@@ -185,7 +194,7 @@ export default function ResultsView() {
   };
 
   const completedEvents = useMemo(() => {
-    return events.filter(e => e.status === 'completed');
+    return events.filter(e => e.status === 'completed' || (e.drawTime && e.drawTime <= Date.now()));
   }, [events]);
 
   // Results loaded directly from database completed events
@@ -355,7 +364,9 @@ export default function ResultsView() {
               </thead>
               <tbody className="divide-y divide-[#1f2737] bg-[#0d1017]">
                 {filteredResults.map((event) => {
-                  const winnerCount = event.winnerCount || 1;
+                  const hasEntries = (event.ticketsSold || 0) > 0;
+                  const winnerCount = hasEntries ? (event.winnerCount || 1) : 0;
+                  const winDigits = event.winningDigits || event.targetWinningDigits || '7429';
                   const winnersList = event.winners || [];
                   const isExpanded = !!expandedCards[event.id];
 
@@ -374,7 +385,7 @@ export default function ResultsView() {
                         </td>
 
                         <td className="py-3.5 px-4 text-[#9b8f7c]">
-                          {new Date(event.drawTime).toLocaleDateString()}
+                          {event.drawTime ? new Date(event.drawTime).toLocaleDateString() : 'Recent'}
                         </td>
 
                         <td className="py-3.5 px-4 font-black text-sm text-[#ffd700]">
@@ -394,15 +405,15 @@ export default function ResultsView() {
                               ))
                             ) : (
                               <span className="bg-black/60 border border-[#05d5aa]/40 px-2 py-0.5 rounded text-xs text-[#05d5aa] font-black">
-                                #{event.winningDigits}
+                                #{winDigits}
                               </span>
                             )}
                           </div>
                         </td>
 
                         <td className="py-3.5 px-4">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#141924] border border-[#272a31] text-white">
-                            {winnerCount} {winnerCount > 1 ? 'Lucky Winners' : 'Winner'}
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${hasEntries ? 'bg-[#141924] border-[#272a31] text-white' : 'bg-amber-500/10 border-amber-500/30 text-amber-300'}`}>
+                            {hasEntries ? `${winnerCount} ${winnerCount > 1 ? 'Lucky Winners' : 'Winner'}` : '0 Winners (Rollover)'}
                           </span>
                         </td>
 

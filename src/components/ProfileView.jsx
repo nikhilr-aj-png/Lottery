@@ -506,7 +506,7 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }) {
                     TRC-20 USDT Wallet Address
                   </h3>
                   <p className="text-xs text-[#9b8f7c]">
-                    Non-custodial settlement address for automated 24h SLA prize disbursals
+                    Non-custodial settlement address for automated 24h prize disbursals
                   </p>
                 </div>
               </div>

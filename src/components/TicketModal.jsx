@@ -3,7 +3,7 @@ import { useLottery } from '../context/LotteryContext';
 import { X, ArrowLeft, Dices, RotateCcw, Plus, Trash2, ShieldCheck, Check, Sparkles, AlertCircle, LogIn, Lock, Wallet, Clock, Trophy } from 'lucide-react';
 
 export default function TicketModal({ event, onClose }) {
-  const { user, wallet, buyTickets, isTicketNumberSold, getUnsoldRandomNumber, showToast, setIsAuthModalOpen } = useLottery();
+  const { user, wallet, buyTickets, isTicketNumberSold, getUnsoldRandomNumber, showToast, setIsAuthModalOpen, setActiveTab } = useLottery();
 
   // Active 4-digit selection (start with an unsold number!)
   const [digits, setDigits] = useState(() => {
@@ -446,7 +446,10 @@ export default function TicketModal({ event, onClose }) {
                   </div>
 
                   <button
-                    onClick={onClose}
+                    onClick={() => {
+                      onClose();
+                      if (setActiveTab) setActiveTab('results');
+                    }}
                     className="w-full py-4 rounded-xl font-display font-extrabold text-base flex items-center justify-center gap-2 transition-all cursor-pointer bg-gradient-to-r from-amber-500 via-amber-400 to-[#05d5aa] text-black shadow-lg"
                   >
                     <Trophy className="w-5 h-5 text-black" />

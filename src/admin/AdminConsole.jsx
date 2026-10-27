@@ -457,7 +457,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
             }`}
           >
             <Wallet className="w-4 h-4" />
-            <span>24h SLA Withdrawals</span>
+            <span>24h Withdrawals</span>
             {pendingWithdrawals.length > 0 && (
               <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-500 text-black font-bold font-mono-numbers">
                 {pendingWithdrawals.length}
@@ -564,7 +564,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
 
               <div className="bg-[#0d1117] border border-[#272a31] p-5 rounded-2xl relative overflow-hidden shadow-lg">
                 <div className="flex items-center justify-between text-[#8b92a2] mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Pending SLA Payouts</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider">Pending 24h Payouts</span>
                   <Clock className="w-4 h-4 text-orange-400" />
                 </div>
                 <div className="text-2xl font-mono-numbers font-black text-orange-400">
@@ -604,7 +604,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                     Cryptographic Oracle & Autonomous Disbursals
                   </h4>
                   <p className="text-xs text-[#9b8f7c] mt-0.5">
-                    Deploy new USDT pools, run 4-digit provably fair draw settling, and fulfill 24-hour SLA withdrawals.
+                    Deploy new USDT pools, run 4-digit provably fair draw settling, and fulfill 24-hour withdrawals.
                   </p>
                 </div>
               </div>
@@ -1257,7 +1257,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                 <div className="flex items-center gap-2">
                   <Clock className="w-5 h-5 text-amber-400" />
                   <h3 className="font-display font-bold text-base text-white">
-                    24-Hour SLA Withdrawal Disbursal Manager
+                    24-Hour Withdrawal Disbursal Manager
                   </h3>
                 </div>
                 <p className="text-xs text-[#9b8f7c] mt-0.5">
@@ -1303,7 +1303,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                       <th className="py-3.5 px-4">Order ID</th>
                       <th className="py-3.5 px-4">Destination Address (TRC-20)</th>
                       <th className="py-3.5 px-4">Net Disbursal</th>
-                      <th className="py-3.5 px-4">SLA Status</th>
+                      <th className="py-3.5 px-4">Status / Window</th>
                       <th className="py-3.5 px-4">State</th>
                       <th className="py-3.5 px-4 text-right">Actions</th>
                     </tr>
@@ -1342,7 +1342,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                             </td>
                             <td className="py-3.5 px-4">
                               <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/25 text-[10px] font-mono-numbers font-semibold">
-                                Within 24h SLA
+                                Within 24 Hours
                               </span>
                             </td>
                             <td className="py-3.5 px-4">
@@ -1636,7 +1636,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                     }, 0).toLocaleString()} <span className="text-xs text-amber-300">USDT</span>
                   </p>
                   <p className="text-[10px] text-amber-400 font-bold">
-                    {winnerPayouts.filter(p => p.status === 'pending_approval').length} Draws in 24h SLA Queue
+                    {winnerPayouts.filter(p => p.status === 'pending_approval').length} Draws in 24h Queue
                   </p>
                 </div>
               </div>
@@ -1741,7 +1741,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
               <div className="p-4 border-b border-[#1f2737] flex items-center justify-between">
                 <div>
                   <h4 className="font-display font-bold text-sm text-white flex items-center gap-2">
-                    <span>Draw Payout Queue & SLA Audit</span>
+                    <span>Draw Payout Queue & Audit</span>
                     <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
                       Editable Disbursals
                     </span>
@@ -2081,7 +2081,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                     required
                   />
                   <p className="text-[10px] text-[#64748b] mt-1">
-                    All automated 24h SLA withdrawals are signed and broadcast from this TRON smart contract address.
+                    All automated 24h withdrawals are signed and broadcast from this TRON smart contract address.
                   </p>
                 </div>
 
@@ -2198,7 +2198,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                   )}
                 </div>
                 <p className="text-xs text-[#8b92a2] mt-1">
-                  Incoming questions, deposit issues, and withdrawal SLA tickets submitted by users.
+                  Incoming questions, deposit issues, and withdrawal tickets submitted by users.
                 </p>
               </div>
 

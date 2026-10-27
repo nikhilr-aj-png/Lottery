@@ -287,7 +287,7 @@ export default function WalletView() {
             <span className="text-xs text-amber-400 font-bold font-mono-numbers">USDT</span>
           </div>
           <span className="text-[10px] xs:text-[11px] text-amber-400/80 mt-1 block font-mono-numbers">
-            SLA Guaranteed: Disbursed &lt; 24h
+            Disbursed &lt; 24 Hours
           </span>
         </div>
 
@@ -651,7 +651,7 @@ export default function WalletView() {
 
               <div className="badge-gold px-3 py-1 rounded-full text-xs font-bold font-mono-numbers flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-amber-400" />
-                24-Hour SLA Guarantee
+                24-Hour Guarantee
               </div>
             </div>
 
@@ -740,7 +740,7 @@ export default function WalletView() {
               <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/30 flex items-start gap-3">
                 <Clock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-[11px] text-amber-200/90 leading-relaxed">
-                  <strong>24-Hour SLA Guarantee:</strong> All withdrawal requests are processed within 24 hours via multi-sig security. Average disbursement takes 2–4 hours.
+                  <strong>24-Hour Guarantee:</strong> All withdrawal requests are processed within 24 hours via multi-sig security. Average disbursement takes 2–4 hours.
                 </p>
               </div>
 
@@ -750,7 +750,7 @@ export default function WalletView() {
                 className="btn-gold w-full py-4 rounded-xl font-display font-extrabold text-base flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#f5c451]/25"
               >
                 <ArrowUpRight className="w-5 h-5" />
-                Request Withdrawal (24h SLA)
+                Request Withdrawal (24 Hours)
               </button>
             </form>
           </div>
@@ -766,7 +766,7 @@ export default function WalletView() {
               Financial Audit & Transaction Ledger
             </h3>
             <p className="text-[11px] xs:text-xs text-[#9b8f7c]">
-              Real-time audit trail, instant deposit webhook confirmation & 24h SLA disbursals
+              Real-time audit trail, instant deposit webhook confirmation & 24h disbursals
             </p>
           </div>
 
@@ -978,7 +978,7 @@ export default function WalletView() {
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Network</th>
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Destination Address</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status / SLA Timer</th>
+                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status / Timer</th>
                   <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Receipt / Tracking</th>
                 </tr>
               </thead>
@@ -1019,7 +1019,7 @@ export default function WalletView() {
                               <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
                               <div>
                                 <span className="text-amber-400 font-bold block whitespace-nowrap">
-                                  In Progress (24h SLA)
+                                  In Progress (24 Hours)
                                 </span>
                                 <span className="text-[10px] font-mono-numbers text-amber-200/80 whitespace-nowrap">
                                   {formatSLATime(order.slaTargetMs)}

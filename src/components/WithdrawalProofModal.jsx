@@ -101,10 +101,10 @@ export default function WithdrawalProofModal({ order, onClose }) {
               )}
               <div>
                 <span className="font-bold text-xs block uppercase tracking-wider">
-                  {isCompleted ? 'Disbursal Settled & Verified' : 'In Progress (24-Hour SLA)'}
+                  {isCompleted ? 'Disbursal Settled & Verified' : 'In Progress (24 Hours)'}
                 </span>
                 <span className="text-[10px] text-white/80">
-                  {isCompleted ? 'Broadcasted on TRON TRC-20 Public Blockchain' : 'Guaranteed payout within 24-hour service guarantee'}
+                  {isCompleted ? 'Broadcasted on TRON TRC-20 Public Blockchain' : 'Guaranteed payout within 24 hours'}
                 </span>
               </div>
             </div>
@@ -169,7 +169,7 @@ export default function WithdrawalProofModal({ order, onClose }) {
               ) : (
                 <div className="text-xs text-amber-400/90 font-mono-numbers italic bg-[#07090d] p-2 rounded-lg border border-amber-500/20 flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5" />
-                  <span>Pending blockchain broadcast · SLA timer active</span>
+                  <span>Pending blockchain broadcast · 24-hour processing active</span>
                 </div>
               )}
             </div>
@@ -212,7 +212,7 @@ export default function WithdrawalProofModal({ order, onClose }) {
           <div className="p-3.5 rounded-xl bg-[rgba(5,213,170,0.06)] border border-[#05d5aa]/30 flex items-center gap-3">
             <ShieldCheck className="w-6 h-6 text-[#05d5aa] shrink-0" />
             <p className="text-[11px] text-[#d2c5b0] leading-relaxed">
-              <strong>Guaranteed 24-Hour SLA Fulfillment:</strong> Every USDT payout is backed by cryptographic proof and auditable on the public TRON blockchain explorer.
+              <strong>Guaranteed 24-Hour Payout Fulfillment:</strong> Every USDT payout is backed by cryptographic proof and auditable on the public TRON blockchain explorer.
             </p>
           </div>
 

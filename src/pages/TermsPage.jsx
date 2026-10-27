@@ -105,13 +105,13 @@ export default function TermsPage({ onBackToHome }) {
         {/* Section 5 */}
         <div className="glass-panel p-6 rounded-2xl border border-[#232938] space-y-3">
           <div className="flex items-center gap-2 text-white font-bold font-display text-base">
-            <span className="text-[#ffd700]">5.</span> 24-Hour SLA Withdrawal Guarantee
+            <span className="text-[#ffd700]">5.</span> 24-Hour Withdrawal Guarantee
           </div>
           <p>
             Winnings are automatically credited to the player's EarnFlow.In balance immediately upon draw completion.
           </p>
           <ul className="list-disc pl-5 space-y-1.5 text-[#9b8f7c]">
-            <li>Withdrawal requests are processed and broadcast to the TRON blockchain within a guaranteed <strong>24-Hour Service Level Agreement (SLA)</strong>.</li>
+            <li>Withdrawal requests are processed and broadcast to the TRON blockchain within a guaranteed <strong>24-Hour window</strong>.</li>
             <li>A flat network disbursal fee of <strong>1.00 USDT</strong> applies per withdrawal to cover on-chain TRON energy and bandwidth costs.</li>
             <li>Every disbursed withdrawal receives a publicly verifiable Transaction Hash (TxHash).</li>
           </ul>

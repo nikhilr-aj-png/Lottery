@@ -78,10 +78,10 @@ export default function RulesModal({ isOpen, onClose }) {
           {/* Section 3: Instant Credit & 24h Withdrawal */}
           <div className="p-4 rounded-xl bg-[rgba(5,213,170,0.08)] border border-[#05d5aa]/30 space-y-2">
             <h4 className="font-display font-bold text-sm text-[#05d5aa] flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" /> 3. Automated Payouts & 24-Hour Withdrawal SLA
+              <CheckCircle2 className="w-4 h-4" /> 3. Automated Payouts & 24-Hour Withdrawals
             </h4>
             <p className="text-xs text-[#d2c5b0] leading-relaxed">
-              When a draw concludes, winning USDT prizes are <strong>automatically credited</strong> into your platform wallet balance without manual claiming. You can withdraw your USDT at any time to your TRC-20, BEP-20, or ERC-20 crypto wallet with our guaranteed <strong>24-Hour SLA</strong>.
+              When a draw concludes, winning USDT prizes are <strong>automatically credited</strong> into your platform wallet balance without manual claiming. You can withdraw your USDT at any time to your TRC-20, BEP-20, or ERC-20 crypto wallet with our guaranteed <strong>24-Hour Payout</strong>.
             </p>
           </div>
 

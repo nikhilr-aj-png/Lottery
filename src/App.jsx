@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { LotteryProvider, useLottery } from './context/LotteryContext';
 import Navbar from './components/Navbar';
 import HeroBanner from './components/HeroBanner';
@@ -155,7 +155,24 @@ function LotteryAppContent() {
     }
   }, [user, activeTab]);
 
-  const activeEvents = events.filter(e => e.status === 'active');
+  // Active events strictly filters out any pool whose draw time has expired
+  const activeEvents = useMemo(() => {
+    const now = Date.now();
+    return events.filter(e => e.status === 'active' && (!e.drawTime || e.drawTime > now));
+  }, [events]);
+
+  // If currently selected modal event expires or concluded, auto-close and switch to results
+  useEffect(() => {
+    if (selectedEventForModal) {
+      const isConcluded = selectedEventForModal.status === 'completed' || 
+        (selectedEventForModal.drawTime && selectedEventForModal.drawTime <= Date.now());
+      if (isConcluded) {
+        setSelectedEventForModal(null);
+        setActiveTab('results');
+        showToast('This round has concluded! Redirecting to Results to view drawn winning digits.', 'info');
+      }
+    }
+  }, [selectedEventForModal, events]);
 
   // 1. DATABASE ROLE & ROUTE CHECK:
   // If user has role 'super_admin' and is on /admin or hasn't selected User Lobby mode:
@@ -376,7 +393,17 @@ function LotteryAppContent() {
 
         {/* VIEW 3: MY TICKETS */}
         {activeTab === 'tickets' && (user ? (
-          <MyTicketsView onOpenPicker={() => setSelectedEventForModal(activeEvents[0])} />
+          <MyTicketsView 
+            onOpenPicker={() => {
+              const liveEvent = activeEvents[0];
+              if (liveEvent) {
+                setSelectedEventForModal(liveEvent);
+              } else {
+                setActiveTab('lotteries');
+                showToast('All previous rounds have ended! Check Results tab.', 'info');
+              }
+            }} 
+          />
         ) : (
           <AuthRequiredPrompt 
             title="My Lottery Tickets" 
@@ -479,7 +506,7 @@ function LotteryAppContent() {
               </span>
               <span>•</span>
               <span className="flex items-center gap-1 text-[#ffd700]">
-                24-Hour SLA Payout Guarantee
+                24-Hour Payout Guarantee
               </span>
               <span>•</span>
               <span className="font-mono-numbers">
@@ -491,7 +518,7 @@ function LotteryAppContent() {
           {/* Legal Navigation Links */}
           <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-[11px] xs:text-xs text-[#9b8f7c]">
             <div className="text-center sm:text-left leading-relaxed">
-              © 2026 EarnFlow.In Platform. All drawings are provably fair, verifiable on the public blockchain, with guaranteed 24-hour USDT withdrawal SLA.
+              © 2026 EarnFlow.In Platform. All drawings are provably fair, verifiable on the public blockchain, with guaranteed 24-hour USDT withdrawals.
             </div>
 
             <div className="flex items-center gap-3 xs:gap-4 font-semibold text-[11px] xs:text-xs shrink-0 flex-wrap justify-center sm:justify-end">

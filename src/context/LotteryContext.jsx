@@ -46,6 +46,12 @@ export function LotteryProvider({ children }) {
       }
     }
 
+    const drawTimeMs = Number(row.draw_time || Date.now() + 86400000);
+    const isTimedOut = Boolean(drawTimeMs && drawTimeMs <= Date.now());
+    const effectiveStatus = (row.status === 'completed' || isTimedOut) ? 'completed' : (row.status || 'active');
+    const targetDigits = meta.target_winning_digits || row.winning_digits || '7429';
+    const effectiveWinningDigits = row.winning_digits || (isTimedOut ? targetDigits : null);
+
     return {
       id: row.id,
       title: row.title,
@@ -58,10 +64,10 @@ export function LotteryProvider({ children }) {
       maxPrize: meta.max_prize !== undefined && meta.max_prize !== null ? Number(meta.max_prize) : null,
       winnerSharePercent: Number(meta.winner_share_percent || 90),
       winnerCount: Number(meta.winner_count || meta.winnerCount || row.winner_count || 1),
-      drawTime: Number(row.draw_time || Date.now() + 86400000),
-      status: row.status || 'active',
-      winningDigits: row.winning_digits || null,
-      targetWinningDigits: meta.target_winning_digits || row.winning_digits || '7429',
+      drawTime: drawTimeMs,
+      status: effectiveStatus,
+      winningDigits: effectiveWinningDigits,
+      targetWinningDigits: targetDigits,
       participantsCount: Number(row.participants_count || 0),
       ticketsSold: Number(row.tickets_sold || 0),
       sha256Seed: row.sha256_seed || '',
@@ -76,7 +82,7 @@ export function LotteryProvider({ children }) {
   const [events, setEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
 
-  // Fetch events directly from Supabase database
+  // Fetch events directly from Supabase database & auto-conclude expired ones
   const refreshEvents = async () => {
     try {
       const { data, error } = await supabase
@@ -85,7 +91,20 @@ export function LotteryProvider({ children }) {
         .order('created_at', { ascending: false });
 
       if (!error && Array.isArray(data)) {
-        setEvents(data.map(formatEventRow));
+        const now = Date.now();
+        const formatted = data.map(row => {
+          const evt = formatEventRow(row);
+          if (row.status === 'active' && evt.drawTime <= now) {
+            const finalDigits = evt.winningDigits || evt.targetWinningDigits || '7429';
+            supabase
+              .from('lottery_events')
+              .update({ status: 'completed', winning_digits: finalDigits })
+              .eq('id', row.id)
+              .then(() => {});
+          }
+          return evt;
+        });
+        setEvents(formatted);
       } else if (error) {
         console.error('Supabase fetch lottery_events error:', error);
       }
@@ -104,6 +123,32 @@ export function LotteryProvider({ children }) {
       localStorage.removeItem('lotto_events');
     } catch (e) {}
 
+    // Auto-settle timer check: run every 3 seconds to transition any pool that expires live
+    const timerCheck = setInterval(() => {
+      const now = Date.now();
+      setEvents(prev => {
+        let hasChanges = false;
+        const updated = prev.map(e => {
+          if (e.status === 'active' && e.drawTime && e.drawTime <= now) {
+            hasChanges = true;
+            const finalDigits = e.winningDigits || e.targetWinningDigits || '7429';
+            supabase
+              .from('lottery_events')
+              .update({ status: 'completed', winning_digits: finalDigits })
+              .eq('id', e.id)
+              .then(() => {});
+            return {
+              ...e,
+              status: 'completed',
+              winningDigits: finalDigits
+            };
+          }
+          return e;
+        });
+        return hasChanges ? updated : prev;
+      });
+    }, 3000);
+
     // Subscribe to Supabase Realtime changes for lottery_events
     const eventChannel = supabase
       .channel('realtime:lottery_events')
@@ -113,6 +158,7 @@ export function LotteryProvider({ children }) {
       .subscribe();
 
     return () => {
+      clearInterval(timerCheck);
       supabase.removeChannel(eventChannel);
     };
   }, []);
@@ -1619,7 +1665,7 @@ export function LotteryProvider({ children }) {
 
     setWithdrawals(prev => [newOrder, ...prev]);
 
-    showToast(`Withdrawal of ${val} USDT requested! Order #${orderId} queued with 24h SLA.`, 'success');
+    showToast(`Withdrawal of ${val} USDT requested! Order #${orderId} queued for 24-hour processing.`, 'success');
 
     // Sync to Supabase
     try {

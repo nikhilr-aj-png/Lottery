@@ -125,12 +125,12 @@ export default function ContactPage({ onBackToHome }) {
 
           <div className="flex items-center gap-2 text-xs font-mono-numbers px-3 py-1.5 rounded-xl bg-[#0b0e14] border border-[#272a31] text-[#9b8f7c]">
             <Clock className="w-3.5 h-3.5 text-amber-400" />
-            <span>Response SLA: &lt; 2 Hours</span>
+            <span>Response Time: &lt; 2 Hours</span>
           </div>
         </div>
 
         <p className="text-xs sm:text-sm text-[#9b8f7c] leading-relaxed mt-4 max-w-2xl">
-          Encountered an issue with your USDT deposit, 24-hour withdrawal SLA, or provably fair lottery tickets? 
+          Encountered an issue with your USDT deposit, 24-hour withdrawals, or provably fair lottery tickets? 
           Submit your query below. Our administrative team receives all tickets directly and replies promptly to your email.
         </p>
       </div>
@@ -275,8 +275,8 @@ export default function ContactPage({ onBackToHome }) {
                     <option value="Deposit / Payment Issue (USDT / Crypto)">
                       💳 Deposit / Payment Issue (USDT / NOWPayments)
                     </option>
-                    <option value="Withdrawal / 24-Hour SLA Payout Inquiry">
-                      ⏱️ Withdrawal / 24-Hour SLA Payout Inquiry
+                    <option value="Withdrawal / 24-Hour Payout Inquiry">
+                      ⏱️ Withdrawal / 24-Hour Payout Inquiry
                     </option>
                     <option value="Lottery Ticket / Provably Fair Oracle Draw">
                       🎟️ Lottery Ticket / Provably Fair Oracle Draw
@@ -377,7 +377,7 @@ export default function ContactPage({ onBackToHome }) {
             <div className="flex items-center gap-2 text-amber-400">
               <Clock className="w-5 h-5" />
               <h4 className="font-display font-bold text-sm text-white">
-                24-Hour SLA Payout Guarantee
+                24-Hour Payout Guarantee
               </h4>
             </div>
             <p className="text-xs text-[#9b8f7c] leading-relaxed">
