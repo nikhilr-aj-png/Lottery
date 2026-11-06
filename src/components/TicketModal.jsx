@@ -135,7 +135,7 @@ export default function TicketModal({ event, onClose }) {
                   ROUND #{event.id.replace('evt-', '').toUpperCase()}
                 </span>
                 <span className="text-[11px] xs:text-xs font-mono-numbers text-[#9b8f7c] truncate">
-                  Stake: <strong className="text-white">{event.ticketPrice} USDT</strong>
+                  Stake: <strong className="text-white">{event.ticketPrice} FC</strong>
                 </span>
               </div>
               <h1 className="font-display font-extrabold text-xs xs:text-sm sm:text-lg text-white truncate max-w-[160px] xs:max-w-[200px] sm:max-w-md">
@@ -149,7 +149,7 @@ export default function TicketModal({ event, onClose }) {
               <div className="hidden sm:flex items-center gap-2 bg-[#121721] px-3.5 py-1.5 rounded-xl border border-[#272a31]">
                 <span className="text-xs text-[#9b8f7c]">Available:</span>
                 <span className="font-mono-numbers font-bold text-xs text-[#ffd700]">
-                  {wallet.balance.toFixed(2)} USDT
+                  {wallet.balance.toFixed(2)} FC
                 </span>
               </div>
             )}
@@ -382,7 +382,7 @@ export default function TicketModal({ event, onClose }) {
 
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-mono-numbers text-white font-bold">
-                          {event.ticketPrice} USDT
+                          {event.ticketPrice} FC
                         </span>
                         <button
                           onClick={() => handleRemoveStaged(idx)}
@@ -397,14 +397,14 @@ export default function TicketModal({ event, onClose }) {
               </div>
             </div>
 
-            {/* USDT Checkout Breakdown Card */}
+            {/* Flow Coin Checkout Breakdown Card */}
             <div className="glass-panel p-5 rounded-2xl border border-[#ffd700]/30 space-y-3">
               <span className="text-xs font-mono-numbers text-[#9b8f7c] font-bold uppercase tracking-wider block">
-                USDT Non-Custodial Settlement
+                Flow Coin Virtual Settlement
               </span>
 
               <div className="flex items-center justify-between text-xs py-1 border-b border-[#272a31]">
-                <span className="text-[#9b8f7c]">Connected USDT Wallet:</span>
+                <span className="text-[#9b8f7c]">Connected Wallet Vault:</span>
                 <span className="font-mono-numbers text-white font-semibold">
                   {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)} ({wallet.network})
                 </span>
@@ -412,29 +412,29 @@ export default function TicketModal({ event, onClose }) {
 
               <div className="flex items-center justify-between text-xs py-1 border-b border-[#272a31]">
                 <span className="text-[#9b8f7c]">Available Balance:</span>
-                <span className="font-mono-numbers text-[#05d5aa] font-bold">
-                  {wallet.balance.toFixed(2)} USDT
+                <span className="font-mono-numbers text-[#ffd700] font-bold">
+                  {wallet.balance.toFixed(2)} FC
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-xs py-1 border-b border-[#272a31]">
                 <span className="text-[#9b8f7c]">Subtotal ({stagedTickets.length} tickets):</span>
                 <span className="font-mono-numbers text-white font-bold">
-                  {totalCost.toFixed(2)} USDT
+                  {totalCost.toFixed(2)} FC
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-xs py-1 border-b border-[#272a31]">
-                <span className="text-[#9b8f7c]">Network Fee:</span>
+                <span className="text-[#9b8f7c]">Transaction Fee:</span>
                 <span className="font-mono-numbers text-[#05d5aa] font-bold">
-                  0.00 USDT (Subsidized)
+                  0.00 FC (Free)
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-sm pt-1">
                 <span className="text-white font-bold">Balance After Order:</span>
                 <span className={`font-mono-numbers font-black ${hasEnoughBalance ? 'text-[#ffd700]' : 'text-red-400'}`}>
-                  {wallet.balance >= totalCost ? (wallet.balance - totalCost).toFixed(2) : 'Insufficient'} USDT
+                  {wallet.balance >= totalCost ? (wallet.balance - totalCost).toFixed(2) : 'Insufficient'} FC
                 </span>
               </div>
 
@@ -468,7 +468,7 @@ export default function TicketModal({ event, onClose }) {
                     className="btn-gold w-full py-4 rounded-xl font-display font-extrabold text-base flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-[#f5c451]/30"
                   >
                     <LogIn className="w-5 h-5" />
-                    Log In to Buy Tickets {stagedTickets.length > 0 ? `(${totalCost.toFixed(2)} USDT)` : ''}
+                    Log In to Buy Tickets {stagedTickets.length > 0 ? `(${totalCost.toFixed(2)} FC)` : ''}
                   </button>
                 </div>
               ) : (
@@ -476,7 +476,7 @@ export default function TicketModal({ event, onClose }) {
                   {!hasEnoughBalance && (
                     <div className="p-2.5 rounded-lg bg-red-950/40 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
-                      <span>Please deposit additional USDT to purchase these tickets.</span>
+                      <span>Insufficient Flow Coins. Claim your Daily Bonus to get free coins!</span>
                     </div>
                   )}
 
@@ -491,7 +491,7 @@ export default function TicketModal({ event, onClose }) {
                     }`}
                   >
                     <Check className="w-5 h-5" />
-                    Confirm & Buy {stagedTickets.length} Tickets ({totalCost.toFixed(2)} USDT)
+                    Confirm & Buy {stagedTickets.length} Tickets ({totalCost.toFixed(2)} FC)
                   </button>
                 </>
               )}

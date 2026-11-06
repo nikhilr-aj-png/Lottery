@@ -167,8 +167,8 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
                   <span className="uppercase font-bold tracking-wider text-amber-400">
                     {grandEvent.minPrize && grandEvent.maxPrize ? 'GUARANTEED PRIZE RANGE' : 'WIN UP TO GRAND JACKPOT'}
                   </span>
-                  <span className="text-[9px] xs:text-[10px] font-mono-numbers text-emerald-400">
-                    100% USDT Settlement
+                  <span className="text-[9px] xs:text-[10px] font-mono-numbers text-amber-400">
+                    Flow Coin Virtual Settlement
                   </span>
                 </div>
 
@@ -178,15 +178,15 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
                       ? `${grandEvent.minPrize} – ${grandEvent.maxPrize}`
                       : grandEvent.poolPrize.toLocaleString()}
                   </span>
-                  <span className="font-display font-black text-base xs:text-xl sm:text-2xl text-[#05d5aa]">
-                    USDT
+                  <span className="font-display font-black text-base xs:text-xl sm:text-2xl text-amber-400 font-mono-numbers">
+                    FC
                   </span>
                 </div>
 
                 <p className="text-[10px] xs:text-[11px] text-[#9b8f7c] mt-1.5 sm:mt-2 leading-relaxed">
                   {winnerCount > 1 
-                    ? `Prize pool is shared equally among ${winnerCount} lucky winners selected by provably fair luck. Winnings go directly to your USDT wallet.`
-                    : 'Lucky ticket combination wins the jackpot pool! Provably fair draw with guaranteed 24-hour USDT withdrawals.'}
+                    ? `Prize pool is shared equally among ${winnerCount} lucky winners selected by provably fair luck. Winnings go directly to your Flow Coin wallet.`
+                    : 'Lucky ticket combination wins the jackpot pool! Provably fair draw with automated Flow Coin payouts.'}
                 </p>
               </div>
 
@@ -198,7 +198,7 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
                     Entry Price
                   </span>
                   <span className="font-mono-numbers font-bold text-white text-xs xs:text-sm truncate block">
-                    {grandEvent.ticketPrice} USDT
+                    {grandEvent.ticketPrice} FC
                   </span>
                 </div>
 
@@ -282,7 +282,7 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
                     className="btn-gold flex-1 w-full py-3 xs:py-3.5 rounded-xl text-xs xs:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer shadow-lg"
                   >
                     <Sparkles className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
-                    <span>Buy Lucky Ticket ({grandEvent.ticketPrice} USDT)</span>
+                    <span>Buy Lucky Ticket ({grandEvent.ticketPrice} FC)</span>
                     <ArrowRight className="w-3.5 xs:w-4 h-3.5 xs:h-4 ml-1" />
                   </button>
 

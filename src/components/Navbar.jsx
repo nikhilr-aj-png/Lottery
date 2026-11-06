@@ -15,10 +15,14 @@ import {
   Lock,
   Headphones,
   Download,
-  LogOut
+  LogOut,
+  Gift,
+  Coins,
+  Sparkles,
+  Bell
 } from 'lucide-react';
 
-export default function Navbar({ onOpenProfile }) {
+export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotifications }) {
   const {
     user,
     profile,
@@ -31,7 +35,8 @@ export default function Navbar({ onOpenProfile }) {
     showToast,
     isNativeApp,
     apkDirectDownloadUrl,
-    logout
+    logout,
+    claimDailyBonus
   } = useLottery();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -74,31 +79,42 @@ export default function Navbar({ onOpenProfile }) {
         <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto px-2 xs:px-3 sm:px-4 lg:px-8">
           <div className="flex items-center justify-between h-14 xs:h-16 sm:h-18">
             
-            {/* Brand Logo & Name */}
-            <div 
-              onClick={() => handleNavClick('lotteries')}
-              className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 cursor-pointer group shrink-0"
-            >
-              <div className="w-8 h-8 xs:w-9 xs:h-9 sm:w-11 sm:h-11 rounded-full p-0.5 shadow-[0_0_16px_rgba(245,196,81,0.35)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
-                <img 
-                  src="/logo.png" 
-                  alt="EarnFlow.In USDT" 
-                  className="w-full h-full rounded-full object-cover border border-[#ffd700]/40" 
-                />
-              </div>
-              
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <span className="font-display font-extrabold text-sm xs:text-base sm:text-xl tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-none">
-                    EarnFlow<span className="text-[#f5c451]">.In</span>
-                  </span>
-                  <span className="hidden xs:inline-block text-[9px] sm:text-[10px] font-mono-numbers px-1.5 py-0.5 rounded bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/30 font-bold tracking-wide">
-                    USDT
+            <div className="flex items-center gap-2 xs:gap-3">
+              {/* Sidebar Collapse/Drawer Toggle */}
+              <button
+                onClick={onToggleSidebar}
+                className="w-8 h-8 xs:w-9 xs:h-9 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-white flex items-center justify-center border border-[#1F2737] transition-colors cursor-pointer shrink-0 shadow-sm"
+                title="Toggle Casino Sidebar"
+              >
+                <Menu className="w-4 h-4" />
+              </button>
+
+              {/* Brand Logo & Name */}
+              <div 
+                onClick={() => handleNavClick('lotteries')}
+                className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 cursor-pointer group shrink-0"
+              >
+                <div className="w-8 h-8 xs:w-9 xs:h-9 sm:w-11 sm:h-11 rounded-full p-0.5 shadow-[0_0_16px_rgba(245,196,81,0.35)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
+                  <img 
+                    src="/logo.png" 
+                    alt="EarnFlow.In USDT" 
+                    className="w-full h-full rounded-full object-cover border border-[#ffd700]/40" 
+                  />
+                </div>
+                
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <span className="font-display font-extrabold text-sm xs:text-base sm:text-xl tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-none">
+                      EarnFlow<span className="text-[#f5c451]">.In</span>
+                    </span>
+                    <span className="hidden xs:inline-block text-[9px] sm:text-[10px] font-mono-numbers px-1.5 py-0.5 rounded bg-amber-500/15 text-[#ffd700] border border-amber-500/40 font-extrabold tracking-wide">
+                      Flow Coin
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-[#9b8f7c] font-medium hidden lg:block leading-tight mt-0.5">
+                    Casino & Multi-Game Platform
                   </span>
                 </div>
-                <span className="text-[10px] text-[#9b8f7c] font-medium hidden lg:block leading-tight mt-0.5">
-                  USDT Crypto Lottery Platform
-                </span>
               </div>
             </div>
 
@@ -146,31 +162,51 @@ export default function Navbar({ onOpenProfile }) {
               )}
               {isLoggedIn ? (
                 <>
-                  {/* Balance Pill */}
+                  {/* Daily Free Flow Coin Bonus Button */}
+                  <button
+                    onClick={claimDailyBonus}
+                    className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/10 to-amber-500/20 hover:from-amber-500/30 hover:to-amber-500/40 text-[#ffd700] hover:text-white border border-amber-500/40 text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
+                    title="Claim 100 Free Daily Flow Coins"
+                  >
+                    <Gift className="w-3.5 h-3.5 text-[#ffd700] animate-bounce" />
+                    <span className="font-mono-numbers">+100 FC</span>
+                  </button>
+
+                  {/* Flow Coin Balance Pill */}
                   <div 
                     onClick={() => handleNavClick('wallet')}
-                    title="Click to view Wallet & 24h Payouts"
+                    title="Click to view Flow Coin Wallet & Ledger"
                     className="cursor-pointer bg-[#10131a] hover:bg-[#161b26] border border-[rgba(245,196,81,0.25)] hover:border-[#f5c451] rounded-xl px-2 xs:px-2.5 sm:px-3.5 py-1 sm:py-1.5 flex items-center gap-1 sm:gap-2 transition-all shadow-inner"
                   >
-                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#05d5aa] animate-pulse shrink-0"></span>
+                    <Coins className="w-3.5 h-3.5 text-[#ffd700] shrink-0" />
                     <span className="font-mono-numbers font-bold text-[11px] xs:text-xs sm:text-sm text-[#ffd700] whitespace-nowrap">
                       {wallet.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
-                    <span className="text-[9px] sm:text-xs text-[#05d5aa] font-bold font-mono-numbers">
-                      USDT
+                    <span className="text-[9px] sm:text-xs text-amber-400 font-bold font-mono-numbers">
+                      FC
                     </span>
                   </div>
 
-                  {/* Desktop Quick Deposit Button (Full screen page navigation) */}
+                  {/* Desktop Quick Wallet Navigation */}
                   <button
                     onClick={() => {
                       setWalletModalTab('deposit');
                       handleNavClick('wallet');
                     }}
-                    className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[rgba(5,213,170,0.12)] text-[#05d5aa] hover:bg-[#05d5aa] hover:text-[#0b0e14] border border-[#05d5aa]/30 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
+                    className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[rgba(245,196,81,0.12)] text-[#ffd700] hover:bg-[#ffd700] hover:text-[#0b0e14] border border-[#f5c451]/30 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
                   >
-                    <ArrowDownLeft className="w-3.5 h-3.5" />
-                    Deposit
+                    <Wallet className="w-3.5 h-3.5" />
+                    Wallet
+                  </button>
+
+                  {/* Notifications Bell */}
+                  <button
+                    onClick={onOpenNotifications}
+                    className="w-8 h-8 rounded-xl bg-[#10131a] hover:bg-[#161b26] border border-[#2d3545] hover:border-amber-400/50 flex items-center justify-center text-[#94A3B8] hover:text-amber-300 transition-colors cursor-pointer relative shrink-0"
+                    title="View Notifications"
+                  >
+                    <Bell className="w-3.5 h-3.5" />
+                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                   </button>
 
                   {/* Profile Button */}

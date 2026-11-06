@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useLottery } from '../context/LotteryContext';
+import ProvablyFairModal from './ProvablyFairModal';
 import { 
   Trophy, 
   Calendar, 
@@ -11,17 +12,18 @@ import {
   List, 
   Sparkles, 
   ChevronDown, 
-  ChevronUp 
+  ChevronUp,
+  ShieldCheck
 } from 'lucide-react';
 
 // All completed lottery results are dynamically fetched from Supabase lottery_events table
 
-function ResultCard({ event, isExpanded, onToggleExpand }) {
+function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify }) {
   const hasEntries = (event.ticketsSold || 0) > 0;
   const winnerCount = hasEntries ? (event.winnerCount || 1) : 0;
   const winDigits = event.winningDigits || event.targetWinningDigits || '7429';
   const winnersList = hasEntries ? (event.winners || [
-    { rank: 1, user: '@LuckyWinner', ticket: `#${winDigits}`, prize: `${(event.poolPrize / (winnerCount || 1)).toFixed(2)} USDT`, status: 'Disbursed' }
+    { rank: 1, user: '@LuckyWinner', ticket: `#${winDigits}`, prize: `${(event.poolPrize / (winnerCount || 1)).toFixed(2)} FC`, status: 'Disbursed' }
   ]) : [];
 
   return (
@@ -53,7 +55,7 @@ function ResultCard({ event, isExpanded, onToggleExpand }) {
           <div className="text-right shrink-0 bg-[#07090e] px-2.5 xs:px-3 py-1 xs:py-1.5 rounded-xl border border-[#272a31]">
             <span className="text-[8px] xs:text-[9px] uppercase font-bold text-[#9b8f7c] block">Jackpot</span>
             <span className="font-display font-black text-sm xs:text-base text-[#ffd700] font-mono-numbers">
-              {event.poolPrize.toLocaleString()} USDT
+              {event.poolPrize.toLocaleString()} FC
             </span>
           </div>
         </div>
@@ -101,7 +103,7 @@ function ResultCard({ event, isExpanded, onToggleExpand }) {
                 {hasEntries ? (
                   <>
                     <span className="text-white font-semibold block">{winnersList[0]?.user || 'Winner'}</span>
-                    <span className="text-emerald-400 font-mono-numbers font-bold">{winnersList[0]?.prize || `${event.poolPrize} USDT`} Disbursed</span>
+                    <span className="text-emerald-400 font-mono-numbers font-bold">{winnersList[0]?.prize || `${event.poolPrize} FC`} Disbursed</span>
                   </>
                 ) : (
                   <>
@@ -118,7 +120,7 @@ function ResultCard({ event, isExpanded, onToggleExpand }) {
         <div className="text-[11px] text-[#9b8f7c] mb-3 flex items-center justify-between">
           <span>{hasEntries ? (event.winnerSummary || 'Draw Concluded') : 'Draw Concluded · 0 Tickets Sold this round'}</span>
           <span className="font-mono-numbers text-emerald-400 font-bold shrink-0 ml-2">
-            {hasEntries ? '100% USDT Settled' : '0 USDT Claimed (Rollover)'}
+            {hasEntries ? '100% FC Settled' : '0 FC Claimed (Rollover)'}
           </span>
         </div>
 
@@ -160,23 +162,34 @@ function ResultCard({ event, isExpanded, onToggleExpand }) {
 
       </div>
 
-      {/* Footer: Expand / Collapse Button */}
-      <div className="pt-3 border-t border-[#1f2737] flex items-center justify-between mt-3">
+      {/* Footer: Provably Fair & Expand / Collapse Button */}
+      <div className="pt-3 border-t border-[#1f2737] flex flex-wrap items-center justify-between gap-2 mt-3">
         <span className="text-[10px] font-mono-numbers text-[#9b8f7c]">
           Round: #{event.id.replace('evt-', '').toUpperCase()}
         </span>
 
-        <button
-          onClick={onToggleExpand}
-          className={`text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer py-1.5 px-3 rounded-lg border shadow-sm ${
-            isExpanded
-              ? 'bg-amber-500 text-black border-amber-400 font-extrabold shadow-amber-500/20'
-              : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30'
-          }`}
-        >
-          <span>{isExpanded ? 'Hide Details' : `View All Winners (${winnerCount})`}</span>
-          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onOpenVerify(event)}
+            className="text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer py-1.5 px-2.5 rounded-lg border bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-sm"
+            title="Verify Provably Fair Cryptographic Hash"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Verify Fairness</span>
+          </button>
+
+          <button
+            onClick={onToggleExpand}
+            className={`text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer py-1.5 px-3 rounded-lg border shadow-sm ${
+              isExpanded
+                ? 'bg-amber-500 text-black border-amber-400 font-extrabold shadow-amber-500/20'
+                : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30'
+            }`}
+          >
+            <span>{isExpanded ? 'Hide Details' : `View All Winners (${winnerCount})`}</span>
+            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+        </div>
       </div>
 
     </div>
@@ -188,6 +201,7 @@ export default function ResultsView() {
   const [selectedRoundFilter, setSelectedRoundFilter] = useState('all');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
   const [expandedCards, setExpandedCards] = useState({});
+  const [verifyModalEvent, setVerifyModalEvent] = useState(null);
 
   const toggleExpand = (id) => {
     setExpandedCards(prev => ({ ...prev, [id]: !prev[id] }));
@@ -316,6 +330,7 @@ export default function ResultsView() {
                   event={event}
                   isExpanded={!!expandedCards[event.id]}
                   onToggleExpand={() => toggleExpand(event.id)}
+                  onOpenVerify={setVerifyModalEvent}
                 />
               ))}
             </div>
@@ -327,6 +342,7 @@ export default function ResultsView() {
                   event={event}
                   isExpanded={!!expandedCards[event.id]}
                   onToggleExpand={() => toggleExpand(event.id)}
+                  onOpenVerify={setVerifyModalEvent}
                 />
               ))}
             </div>
@@ -340,6 +356,7 @@ export default function ResultsView() {
                 event={event}
                 isExpanded={!!expandedCards[event.id]}
                 onToggleExpand={() => toggleExpand(event.id)}
+                onOpenVerify={setVerifyModalEvent}
               />
             ))}
           </div>
@@ -389,7 +406,7 @@ export default function ResultsView() {
                         </td>
 
                         <td className="py-3.5 px-4 font-black text-sm text-[#ffd700]">
-                          {event.poolPrize.toLocaleString()} USDT
+                          {event.poolPrize.toLocaleString()} FC
                         </td>
 
                         <td className="py-3.5 px-4">
@@ -418,17 +435,27 @@ export default function ResultsView() {
                         </td>
 
                         <td className="py-3.5 px-4 text-right">
-                          <button
-                            onClick={() => toggleExpand(event.id)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 border ${
-                              isExpanded
-                                ? 'bg-amber-500 text-black border-amber-400 font-extrabold'
-                                : 'bg-amber-500/15 hover:bg-amber-400 hover:text-black text-amber-400 border-amber-500/30'
-                            }`}
-                          >
-                            <span>{isExpanded ? 'Hide' : 'View'}</span>
-                            {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => setVerifyModalEvent(event)}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 border bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-sm"
+                              title="Verify Provably Fair Proof"
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                              <span>Audit</span>
+                            </button>
+                            <button
+                              onClick={() => toggleExpand(event.id)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 border ${
+                                isExpanded
+                                  ? 'bg-amber-500 text-black border-amber-400 font-extrabold'
+                                  : 'bg-amber-500/15 hover:bg-amber-400 hover:text-black text-amber-400 border-amber-500/30'
+                              }`}
+                            >
+                              <span>{isExpanded ? 'Hide' : 'View'}</span>
+                              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            </button>
+                          </div>
                         </td>
                       </tr>
 
@@ -442,7 +469,7 @@ export default function ResultsView() {
                                   <Award className="w-4 h-4" />
                                   <span>Official Winners Payout Breakdown</span>
                                 </span>
-                                <span className="text-emerald-400 font-bold">100% USDT Disbursed</span>
+                                <span className="text-emerald-400 font-bold">100% FC Disbursed</span>
                               </div>
 
                               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
@@ -474,6 +501,13 @@ export default function ResultsView() {
         </div>
 
       )}
+
+      {/* Provably Fair Cryptographic Verification Modal */}
+      <ProvablyFairModal
+        isOpen={!!verifyModalEvent}
+        onClose={() => setVerifyModalEvent(null)}
+        event={verifyModalEvent}
+      />
 
     </div>
   );

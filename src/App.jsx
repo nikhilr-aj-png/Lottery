@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { LotteryProvider, useLottery } from './context/LotteryContext';
 import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
+import CasinoLobby from './components/CasinoLobby';
+import LiveBetsTicker from './components/LiveBetsTicker';
+import GameModal from './components/GameModal';
+import ProvablyFairModal from './components/ProvablyFairModal';
 import HeroBanner from './components/HeroBanner';
 import LotteryCard from './components/LotteryCard';
 import TicketModal from './components/TicketModal';
@@ -14,6 +19,10 @@ import UsernameSetupModal from './components/UsernameSetupModal';
 import WinnerCelebrationModal from './components/WinnerCelebrationModal';
 import RulesModal from './components/RulesModal';
 import Toast from './components/Toast';
+import RewardsView from './components/RewardsView';
+import LeaderboardView from './components/LeaderboardView';
+import SupportView from './components/SupportView';
+import NotificationsModal from './components/NotificationsModal';
 import TermsPage from './pages/TermsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import ContactPage from './pages/ContactPage';
@@ -75,6 +84,11 @@ function LotteryAppContent() {
   const { triggerInstall, isInstalled } = usePwa();
 
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [activeGameId, setActiveGameId] = useState(null);
+  const [isFairnessModalOpen, setIsFairnessModalOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   
   // Dedicated check for isolated Admin Route
   const [isAdminRoute, setIsAdminRoute] = useState(() => {
@@ -221,168 +235,49 @@ function LotteryAppContent() {
 
   // Otherwise: Pure Public User Platform
   return (
-    <div className="min-h-screen bg-[#0b0e14] text-[#e1e2eb] flex flex-col">
+    <div className="min-h-screen bg-[#0B0F19] text-[#F8FAFC] flex flex-col font-sans">
       {/* Top Navbar */}
-      <Navbar onOpenProfile={() => setActiveTab('profile')} />
+      <Navbar 
+        onOpenProfile={() => setActiveTab('profile')} 
+        onToggleSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
+        onOpenNotifications={() => setIsNotificationsOpen(true)}
+      />
 
-      {/* Main Public User Content */}
-      <main className="flex-1 pb-20 md:pb-8">
+      {/* Live Bets and High Rollers Realtime Activity Ticker */}
+      <LiveBetsTicker onSelectGame={(gid) => setActiveGameId(gid)} />
+
+      {/* Main Layout: Left Navigation Sidebar + Content Area */}
+      <div className="flex-1 flex overflow-hidden">
         
-        {/* VIEW 1: LOTTERIES LOBBY / HOMEPAGE */}
-        {activeTab === 'lotteries' && (
-          <div>
-            <HeroBanner 
-              onPlayNowClick={(evt) => {
-                if (!user) {
-                  showToast('Please log in to enter the event and pick lucky digits!', 'info');
-                  setIsAuthModalOpen(true);
-                  return;
-                }
-                setSelectedEventForModal(evt || activeEvents[0]);
-              }}
-              onRulesClick={() => setIsRulesModalOpen(true)}
-              onShowResultClick={(evt) => {
-                if (!user) {
-                  showToast('Please log in to view draw results & past winners!', 'info');
-                  setIsAuthModalOpen(true);
-                  return;
-                }
-                setActiveTab('results');
-              }}
+        {/* Left Navigation Sidebar */}
+        <Sidebar
+          isOpen={isMobileSidebarOpen}
+          onClose={() => setIsMobileSidebarOpen(false)}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
+          activeTab={activeTab}
+          onSelectTab={(tab) => {
+            if (tab === 'fairness') {
+              setIsFairnessModalOpen(true);
+            } else {
+              setActiveTab(tab);
+            }
+          }}
+          onLaunchGame={(gid) => setActiveGameId(gid)}
+        />
+
+        {/* Main Content Pane */}
+        <main className="flex-1 overflow-y-auto pb-20 md:pb-8 px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 text-left">
+          
+          {/* VIEW 1: MULTI-GAME CASINO LOBBY & FOUR-DIGIT LOTTERY */}
+          {activeTab === 'lotteries' && (
+            <CasinoLobby 
+              onLaunchGame={(gid) => setActiveGameId(gid)}
+              onOpenLotteryRules={() => setIsRulesModalOpen(true)}
             />
+          )}
 
-            {/* Active Pools Section */}
-            <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
-                <div>
-                  <div className="flex items-center gap-1.5 xs:gap-2 mb-1">
-                    <Flame className="w-3.5 xs:w-4 h-3.5 xs:h-4 text-[#ffd700]" />
-                    <span className="text-[10px] xs:text-xs font-mono-numbers text-[#f5c451] uppercase font-bold tracking-wider">
-                      HIGH-STAKES LOTTERY POOLS
-                    </span>
-                  </div>
-                  <h2 className="font-display font-extrabold text-xl xs:text-2xl sm:text-4xl text-white">
-                    Active <span className="text-gold-gradient">Lottery Pools</span>
-                  </h2>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={() => setIsRulesModalOpen(true)}
-                    className="btn-ghost-gold px-3 xs:px-4 py-1.5 xs:py-2 rounded-xl text-xs font-bold cursor-pointer"
-                  >
-                    Prize Allocation Guide
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (!user) {
-                        showToast('Please log in to view draw results & past winners!', 'info');
-                        setIsAuthModalOpen(true);
-                        return;
-                      }
-                      setActiveTab('results');
-                    }}
-                    className="px-3 xs:px-4 py-1.5 xs:py-2 rounded-xl bg-[#191c22] hover:bg-[#272a31] text-xs font-bold text-white border border-[#32353c] cursor-pointer flex items-center gap-1.5"
-                  >
-                    <span>Past Draws</span>
-                    {!user && <Lock className="w-3 h-3 text-[#9b8f7c]" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Grid of Pools */}
-              {loadingEvents ? (
-                <div className="py-20 text-center glass-panel rounded-3xl border border-[#272a31] p-8 space-y-4">
-                  <div className="w-12 h-12 mx-auto rounded-full border-2 border-[#ffd700] border-t-transparent animate-spin" />
-                  <p className="text-sm font-mono-numbers text-[#ffd700] font-semibold">
-                    Syncing on-chain pools from database...
-                  </p>
-                </div>
-              ) : activeEvents.length === 0 ? (
-                <div className="py-16 text-center glass-panel rounded-3xl border border-[#272a31] p-8 space-y-4">
-                  <div className="w-16 h-16 mx-auto rounded-2xl bg-[#1e2638] flex items-center justify-center text-[#ffd700] border border-[#f5c451]/30">
-                    <Sparkles className="w-8 h-8 animate-pulse text-[#ffd700]" />
-                  </div>
-                  <h3 className="text-xl font-display font-extrabold text-white">
-                    No Active Pools Right Now
-                  </h3>
-                  <p className="text-xs text-[#9b8f7c] max-w-md mx-auto leading-relaxed">
-                    All previous lottery pools have concluded or been settled. New lottery pools will be launched shortly by the administration.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-3 4k:grid-cols-4 gap-4 sm:gap-6">
-                  {activeEvents.map((event) => (
-                    <LotteryCard
-                      key={event.id}
-                      event={event}
-                      onSelect={(evt) => {
-                        const isTimedOut = evt.status === 'completed' || (evt.drawTime && evt.drawTime <= Date.now());
-                        if (isTimedOut) {
-                          if (!user) {
-                            showToast('Please log in to view draw results & past winners!', 'info');
-                            setIsAuthModalOpen(true);
-                            return;
-                          }
-                          setActiveTab('results');
-                          return;
-                        }
-                        if (!user) {
-                          showToast('Please log in to enter the event and purchase tickets!', 'info');
-                          setIsAuthModalOpen(true);
-                          return;
-                        }
-                        setSelectedEventForModal(evt);
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* How it works feature banners */}
-              <div className="mt-10 sm:mt-16 grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-6">
-                <div className="glass-panel p-4 xs:p-5 sm:p-6 rounded-2xl border border-[rgba(245,196,81,0.2)] space-y-2.5 sm:space-y-3">
-                  <div className="w-9 xs:w-10 h-9 xs:h-10 rounded-xl bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700]">
-                    <Sparkles className="w-4 xs:w-5 h-4 xs:h-5" />
-                  </div>
-                  <h3 className="font-display font-bold text-sm xs:text-base text-white">
-                    1. Pick 4 Lucky Digits
-                  </h3>
-                  <p className="text-xs text-[#9b8f7c] leading-relaxed">
-                    Select any 4 digits between 0000 and 9999 or use our Quick Pick randomizer to generate combinations.
-                  </p>
-                </div>
-
-                <div className="glass-panel p-4 xs:p-5 sm:p-6 rounded-2xl border border-[rgba(5,213,170,0.2)] space-y-2.5 sm:space-y-3">
-                  <div className="w-9 xs:w-10 h-9 xs:h-10 rounded-xl bg-[rgba(5,213,170,0.15)] flex items-center justify-center text-[#05d5aa]">
-                    <ShieldCheck className="w-4 xs:w-5 h-4 xs:h-5" />
-                  </div>
-                  <h3 className="font-display font-bold text-sm xs:text-base text-white">
-                    2. 100% Provably Fair
-                  </h3>
-                  <p className="text-xs text-[#9b8f7c] leading-relaxed">
-                    Automated decentralized randomness guarantees completely transparent draws executed automatically.
-                  </p>
-                </div>
-
-                <div className="glass-panel p-4 xs:p-5 sm:p-6 rounded-2xl border border-[rgba(0,242,254,0.2)] space-y-2.5 sm:space-y-3">
-                  <div className="w-9 xs:w-10 h-9 xs:h-10 rounded-xl bg-[rgba(0,242,254,0.15)] flex items-center justify-center text-[#00f2fe]">
-                    <Trophy className="w-4 xs:w-5 h-4 xs:h-5" />
-                  </div>
-                  <h3 className="font-display font-bold text-sm xs:text-base text-white">
-                    3. Auto-Credit & 24h Payouts
-                  </h3>
-                  <p className="text-xs text-[#9b8f7c] leading-relaxed">
-                    Winning prizes are credited instantly to your account. Withdraw your USDT to any TRC-20 wallet within 24 hours.
-                  </p>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        )}
-
-        {/* VIEW 2: WALLET & 24H PAYOUTS */}
+          {/* VIEW 2: WALLET & 24H PAYOUTS */}
         {activeTab === 'wallet' && (user ? <WalletView /> : (
           <AuthRequiredPrompt 
             title="USDT Wallet & 24h Payouts" 
@@ -435,28 +330,57 @@ function LotteryAppContent() {
           />
         ))}
 
-        {/* VIEW 6: TERMS & CONDITIONS PAGE */}
+        {/* VIEW 8: REWARDS & DAILY BONUS FAUCET */}
+        {activeTab === 'rewards' && (
+          <RewardsView />
+        )}
+
+        {/* VIEW 9: SOCIAL LEADERBOARD & HIGH ROLLERS */}
+        {activeTab === 'leaderboard' && (
+          <LeaderboardView />
+        )}
+
+        {/* VIEW 10: CUSTOMER SUPPORT, FAQ & RESPONSIBLE GAMING */}
+        {(activeTab === 'support' || activeTab === 'contact') && (
+          <SupportView />
+        )}
+
+        {/* VIEW 11: TERMS & CONDITIONS PAGE */}
         {activeTab === 'terms' && (
           <TermsPage onBackToHome={() => setActiveTab('lotteries')} />
         )}
 
-        {/* VIEW 7: PRIVACY POLICY PAGE */}
+        {/* VIEW 12: PRIVACY POLICY PAGE */}
         {activeTab === 'privacy' && (
           <PrivacyPolicyPage onBackToHome={() => setActiveTab('lotteries')} />
         )}
 
-        {/* VIEW 8: CONTACT US PAGE */}
-        {activeTab === 'contact' && (
-          <ContactPage onBackToHome={() => setActiveTab('lotteries')} />
-        )}
-
       </main>
+
+      </div>
 
       {/* Global Modals */}
       {selectedEventForModal && (
         <TicketModal
           event={selectedEventForModal}
           onClose={() => setSelectedEventForModal(null)}
+        />
+      )}
+
+      {/* Universal Modular Game Modal (Crash, Dice, Mines, etc.) */}
+      {activeGameId && (
+        <GameModal
+          gameId={activeGameId}
+          onClose={() => setActiveGameId(null)}
+        />
+      )}
+
+      {/* Provably Fair Auditor Modal */}
+      {isFairnessModalOpen && (
+        <ProvablyFairModal
+          isOpen={isFairnessModalOpen}
+          onClose={() => setIsFairnessModalOpen(false)}
+          event={activeEvents[0] || events[0]}
         />
       )}
 
@@ -472,6 +396,14 @@ function LotteryAppContent() {
       <RulesModal 
         isOpen={isRulesModalOpen} 
         onClose={() => setIsRulesModalOpen(false)} 
+      />
+      <NotificationsModal
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        onNavigate={(tab) => {
+          setIsNotificationsOpen(false);
+          setActiveTab(tab);
+        }}
       />
       <Toast />
       

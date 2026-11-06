@@ -19,7 +19,9 @@ import {
   CheckCircle2,
   FileCheck,
   XCircle,
-  X
+  X,
+  Gift,
+  Sparkles
 } from 'lucide-react';
 
 const PAYMENT_CURRENCIES = [
@@ -46,7 +48,11 @@ export default function WalletView() {
     deposits = [],
     loadingDeposits,
     fetchDeposits,
-    cancelDeposit
+    cancelDeposit,
+    walletLedger = [],
+    loadingLedger,
+    fetchWalletLedger,
+    claimDailyBonus
   } = useLottery();
 
   const minWithdrawalLimit = typeof platformSettings?.minWithdrawal === 'number' ? platformSettings.minWithdrawal : 5;
@@ -54,7 +60,7 @@ export default function WalletView() {
   const treasuryAddress = platformSettings?.treasuryTrc20 || wallet.depositAddress;
 
   const [activeTab, setActiveTab] = useState(() => walletModalTab || 'deposit');
-  const [ledgerTab, setLedgerTab] = useState('deposits');
+  const [ledgerTab, setLedgerTab] = useState('ledger');
   const [depositFilter, setDepositFilter] = useState('all');
 
   // Live timer for countdown updates
@@ -225,6 +231,35 @@ export default function WalletView() {
   return (
     <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-8">
       
+      {/* Flow Coin Social Free-to-Play Daily Bonus Banner */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 border border-amber-500/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-amber-500/5">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#ffd700] to-[#f5c451] flex items-center justify-center text-[#0b0e14] shadow-[0_0_25px_rgba(245,196,81,0.35)] shrink-0 font-black">
+            <Gift className="w-6 h-6 animate-bounce" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <h4 className="font-display font-black text-base sm:text-lg text-white">
+                Daily Flow Coin Faucet
+              </h4>
+              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/20 text-[#ffd700] border border-amber-500/40 uppercase font-bold tracking-wider">
+                Free 100 FC
+              </span>
+            </div>
+            <p className="text-xs text-[#9b8f7c]">
+              Claim 100 free Flow Coins every 24 hours to enter lottery pools and play modular casino games without real money stakes.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={claimDailyBonus}
+          className="btn-gold px-6 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#f5c451]/25 cursor-pointer whitespace-nowrap self-stretch sm:self-auto shrink-0"
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Claim Free Daily FC</span>
+        </button>
+      </div>
+
       {/* Portfolio Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         
@@ -232,20 +267,20 @@ export default function WalletView() {
         <div className="glass-panel p-3.5 xs:p-4.5 sm:p-6 rounded-2xl border-l-4 border-l-[#ffd700] relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
-              Available USDT Balance
+              Available Flow Coins
             </span>
             <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700]">
-              <Wallet className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
+              <Coins className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-1.5 xs:gap-2">
-            <span className="font-display font-black text-2xl xs:text-3xl sm:text-4xl text-gold-gradient">
+            <span className="font-display font-black text-2xl xs:text-3xl sm:text-4xl text-gold-gradient font-mono-numbers">
               {wallet.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            <span className="text-xs text-[#05d5aa] font-bold font-mono-numbers">USDT</span>
+            <span className="text-xs text-amber-400 font-bold font-mono-numbers">FC</span>
           </div>
-          <span className="text-[10px] xs:text-[11px] text-[#9b8f7c] mt-1 block">
-            ≈ ${wallet.balance.toFixed(2)} USD • Ready for Instant Draw Entry
+          <span className="text-[10px] xs:text-[11px] text-[#9b8f7c] mt-1 block font-mono-numbers">
+            Flow Coin Balance • Ready for Lottery & Games
           </span>
         </div>
 
@@ -771,7 +806,19 @@ export default function WalletView() {
           </div>
 
           {/* Ledger Switcher Tabs */}
-          <div className="flex items-center gap-1.5 bg-[#0b0e14] p-1 rounded-xl border border-[#272a31]">
+          <div className="flex flex-wrap items-center gap-1.5 bg-[#0b0e14] p-1 rounded-xl border border-[#272a31]">
+            <button
+              type="button"
+              onClick={() => setLedgerTab('ledger')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                ledgerTab === 'ledger'
+                  ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-sm font-extrabold'
+                  : 'text-[#9b8f7c] hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Coins className="w-3.5 h-3.5" />
+              <span>Flow Coin Ledger ({walletLedger.length})</span>
+            </button>
             <button
               type="button"
               onClick={() => setLedgerTab('deposits')}
@@ -799,7 +846,95 @@ export default function WalletView() {
           </div>
         </div>
 
-        {ledgerTab === 'deposits' ? (
+        {ledgerTab === 'ledger' ? (
+          /* IMMUTABLE FLOW COIN AUDIT LEDGER */
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs text-[#9b8f7c] py-1">
+              <span>Cryptographic Double-Entry Ledger (Immutable Server Records)</span>
+              <button
+                type="button"
+                onClick={() => fetchWalletLedger()}
+                className="hover:text-amber-400 flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingLedger ? 'animate-spin' : ''}`} />
+                <span>Refresh Audit Records</span>
+              </button>
+            </div>
+
+            <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
+              <table className="w-full min-w-[720px] text-left text-xs">
+                <thead>
+                  <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
+                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Tx ID</th>
+                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Transaction Type</th>
+                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (FC)</th>
+                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Balance After</th>
+                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Description / Reference</th>
+                    <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1f2737]">
+                  {walletLedger.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="py-8 text-center text-[#9b8f7c] font-mono-numbers">
+                        No transactions recorded in ledger yet. Claim your Daily Bonus to start!
+                      </td>
+                    </tr>
+                  ) : (
+                    walletLedger.map((tx) => {
+                      const isCredit = Number(tx.amount) > 0;
+                      const typeConfig = {
+                        welcome_grant: { label: 'WELCOME BONUS', bg: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
+                        daily_bonus: { label: 'DAILY FAUCET', bg: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
+                        ticket_purchase: { label: 'TICKET PURCHASE', bg: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
+                        lottery_win: { label: 'LOTTERY WIN', bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
+                        game_bet: { label: 'GAME WAGER', bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+                        game_win: { label: 'GAME WIN', bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
+                        admin_adjustment: { label: 'ADMIN GRANT', bg: 'bg-blue-500/15 text-blue-300 border-blue-500/30' }
+                      }[tx.transaction_type] || { label: (tx.transaction_type || 'TRANSACTION').toUpperCase(), bg: 'bg-white/10 text-white/80 border-white/20' };
+
+                      return (
+                        <tr key={tx.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="py-3 px-2 xs:px-3 font-mono-numbers text-[11px] text-white/70 whitespace-nowrap">
+                            <span className="bg-[#10141f] px-2 py-0.5 rounded border border-[#272a31] text-amber-400/90 font-mono">
+                              #{tx.id ? tx.id.slice(0, 14) : '—'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-2 xs:px-3 whitespace-nowrap">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${typeConfig.bg}`}>
+                              {typeConfig.label}
+                            </span>
+                          </td>
+                          <td className="py-3 px-2 xs:px-3 font-mono-numbers font-black text-sm whitespace-nowrap">
+                            <span className={isCredit ? 'text-emerald-400' : 'text-rose-400'}>
+                              {isCredit ? '+' : ''}{Number(tx.amount).toFixed(2)} FC
+                            </span>
+                          </td>
+                          <td className="py-3 px-2 xs:px-3 font-mono-numbers text-xs text-white/90 whitespace-nowrap">
+                            <span className="text-[#ffd700] font-bold">{Number(tx.balance_after || 0).toFixed(2)} FC</span>
+                          </td>
+                          <td className="py-3 px-2 xs:px-3 text-xs text-white/80 max-w-[280px] truncate">
+                            <span title={tx.description || tx.reference_id}>
+                              {tx.description || tx.reference_id || 'Virtual Credit Adjustment'}
+                            </span>
+                            {tx.reference_id && (
+                              <span className="block text-[10px] text-[#9b8f7c] font-mono truncate">
+                                Ref: {tx.reference_id}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-2 xs:px-3 text-right text-[11px] font-mono-numbers text-[#9b8f7c] whitespace-nowrap">
+                            {tx.created_at ? new Date(tx.created_at).toLocaleString() : 'Recent'}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : ledgerTab === 'deposits' ? (
           /* DEPOSIT ORDERS LEDGER */
           <div className="space-y-3">
             {/* Filter Pills for Deposit Ledger */}

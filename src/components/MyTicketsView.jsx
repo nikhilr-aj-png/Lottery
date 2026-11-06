@@ -87,7 +87,7 @@ export default function MyTicketsView({ onOpenPicker }) {
                 <div className="pt-2.5 xs:pt-3 border-t border-[#1f2737] flex items-center justify-between text-[11px] xs:text-xs">
                   <span className="text-[#9b8f7c]">Ticket Cost:</span>
                   <span className="font-mono-numbers font-bold text-white">
-                    {ticket.price} USDT
+                    {ticket.price} FC
                   </span>
                 </div>
               </div>
@@ -150,7 +150,7 @@ export default function MyTicketsView({ onOpenPicker }) {
                         </span>
                       </div>
                       <span className="text-[11px] xs:text-xs text-[#9b8f7c]">
-                        Entry Stake: {ticket.price} USDT
+                        Entry Stake: {ticket.price} FC
                       </span>
                     </div>
                   </div>
@@ -163,7 +163,7 @@ export default function MyTicketsView({ onOpenPicker }) {
                           {ticket.matchTier}
                         </span>
                         <span className="font-display font-black text-lg sm:text-xl text-[#ffd700] block">
-                          +{ticket.wonAmount.toLocaleString()} USDT
+                          +{ticket.wonAmount.toLocaleString()} FC
                         </span>
                         <span className="text-[10px] text-[#05d5aa] font-bold flex items-center justify-end gap-1">
                           <CheckCircle2 className="w-3 h-3" />

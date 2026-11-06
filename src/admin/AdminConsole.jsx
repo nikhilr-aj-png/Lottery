@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLottery } from '../context/LotteryContext';
+import ProvablyFairModal from '../components/ProvablyFairModal';
+import { GAMES } from '../engine';
+import { supabase } from '../lib/supabase';
 import { 
   ShieldAlert, 
   PlusCircle, 
@@ -41,7 +44,10 @@ import {
   Inbox,
   AtSign,
   User,
-  Download
+  Download,
+  Gamepad2,
+  Binary,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
@@ -73,8 +79,34 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
     getDirectDownloadUrl
   } = useLottery();
 
-  // Navigation tab: 'overview' | 'pools' | 'withdrawals' | 'users' | 'winner-payouts' | 'support' | 'settings'
+  // Navigation tab: 'overview' | 'pools' | 'games' | 'game-rounds' | 'withdrawals' | 'users' | 'winner-payouts' | 'support' | 'settings'
   const [activeAdminTab, setActiveAdminTab] = useState('overview');
+
+  // Game Engine Administration state
+  const [adminGameRounds, setAdminGameRounds] = useState([]);
+  const [loadingGameRounds, setLoadingGameRounds] = useState(false);
+  const [gameRoundsFilter, setGameRoundsFilter] = useState('all'); // 'all' | 'won' | 'lost'
+  const [gameRoundsSearch, setGameRoundsSearch] = useState('');
+  const [gameRoundsSelectedGame, setGameRoundsSelectedGame] = useState('all');
+  const [auditVerifyModalData, setAuditVerifyModalData] = useState(null);
+
+  const fetchAdminGameRounds = async () => {
+    setLoadingGameRounds(true);
+    try {
+      const { data, error } = await supabase
+        .from('game_rounds')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (!error && data) {
+        setAdminGameRounds(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch admin game rounds:', err);
+    } finally {
+      setLoadingGameRounds(false);
+    }
+  };
 
   // Support Inquiries state
   const [supportFilter, setSupportFilter] = useState('all'); // 'all' | 'pending' | 'replied' | 'resolved'
@@ -442,9 +474,39 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
             }`}
           >
             <Dices className="w-4 h-4" />
-            <span>Pools & Draw Oracle</span>
+            <span>Lottery Pools & Oracle</span>
             <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-black/40 font-mono-numbers">
               {activeEvents.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveAdminTab('games')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeAdminTab === 'games'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
+                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Gamepad2 className="w-4 h-4" />
+            <span>Game Catalog (12)</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-emerald-500/20 text-emerald-300 font-mono-numbers font-bold">
+              12 Active
+            </span>
+          </button>
+
+          <button
+            onClick={() => { setActiveAdminTab('game-rounds'); fetchAdminGameRounds(); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeAdminTab === 'game-rounds'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
+                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Binary className="w-4 h-4" />
+            <span>Game Rounds Audit</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-black/40 font-mono-numbers">
+              {adminGameRounds.length}
             </span>
           </button>
 
@@ -1239,6 +1301,299 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                         </td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB: 12-GAME CATALOG & ENGINE MANAGEMENT                      */}
+        {/* ============================================================== */}
+        {activeAdminTab === 'games' && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            {/* Header / Stats Banner */}
+            <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-6 shadow-lg space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1f2737]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-emerald-500/20 border border-amber-500/40 flex items-center justify-center">
+                    <Gamepad2 className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-base text-white">
+                      12 Modular Casino Games & Mathematical Models
+                    </h3>
+                    <p className="text-xs text-[#8b92a2]">
+                      Stake-compatible Provably Fair mathematical configurations, stake boundaries, and RTP models.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-mono-numbers font-bold">
+                    All 12 Modules Active
+                  </span>
+                </div>
+              </div>
+
+              {/* KPI Mini-cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-[#141924] p-3.5 rounded-xl border border-[#272a31]">
+                  <span className="text-[10px] text-[#8b92a2] uppercase font-bold block">Total Games</span>
+                  <span className="text-lg font-mono-numbers font-black text-white">12 Games</span>
+                </div>
+                <div className="bg-[#141924] p-3.5 rounded-xl border border-[#272a31]">
+                  <span className="text-[10px] text-[#8b92a2] uppercase font-bold block">Avg House Edge</span>
+                  <span className="text-lg font-mono-numbers font-black text-amber-400">1.4% Edge</span>
+                </div>
+                <div className="bg-[#141924] p-3.5 rounded-xl border border-[#272a31]">
+                  <span className="text-[10px] text-[#8b92a2] uppercase font-bold block">Max RTP</span>
+                  <span className="text-lg font-mono-numbers font-black text-emerald-400">99.5% (Blackjack)</span>
+                </div>
+                <div className="bg-[#141924] p-3.5 rounded-xl border border-[#272a31]">
+                  <span className="text-[10px] text-[#8b92a2] uppercase font-bold block">RNG Security</span>
+                  <span className="text-lg font-mono-numbers font-black text-purple-400">HMAC-SHA256</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 12 Game Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {GAMES.map((game) => (
+                <div
+                  key={game.id}
+                  className="rounded-2xl bg-[#0d1117] border border-[#272a31] hover:border-amber-500/40 p-5 space-y-3 transition-all shadow-md relative overflow-hidden text-left"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#141924] border border-amber-500/30 flex items-center justify-center text-xl shadow-inner shrink-0">
+                        {game.id === 'crash' ? '🚀' :
+                         game.id === 'dice' ? '🎲' :
+                         game.id === 'mines' ? '💣' :
+                         game.id === 'plinko' ? '🎯' :
+                         game.id === 'roulette' ? '🎡' :
+                         game.id === 'coinflip' ? '🪙' :
+                         game.id === 'blackjack' ? '🃏' :
+                         game.id === 'slots' ? '🎰' :
+                         game.id === 'poker' ? '♠️' :
+                         game.id === 'keno' ? '🎱' :
+                         game.id === 'limbo' ? '⚡' : '🎟️'}
+                      </div>
+                      <div>
+                        <h4 className="font-display font-bold text-sm text-white">
+                          {game.name}
+                        </h4>
+                        <span className="text-[10px] font-mono-numbers font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20 uppercase">
+                          {game.category}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(34,197,94,0.6)]" title="Operational" />
+                  </div>
+
+                  <p className="text-xs text-[#8b92a2] leading-snug line-clamp-2">
+                    {game.description}
+                  </p>
+
+                  <div className="grid grid-cols-3 gap-1.5 text-[11px] font-mono-numbers pt-2 border-t border-[#1f2737]">
+                    <div className="bg-[#141924] p-1.5 rounded text-center">
+                      <span className="text-[9px] text-[#64748b] block">Edge</span>
+                      <span className="text-amber-300 font-bold">{game.houseEdge}%</span>
+                    </div>
+                    <div className="bg-[#141924] p-1.5 rounded text-center">
+                      <span className="text-[9px] text-[#64748b] block">RTP</span>
+                      <span className="text-emerald-400 font-bold">{game.rtp}%</span>
+                    </div>
+                    <div className="bg-[#141924] p-1.5 rounded text-center">
+                      <span className="text-[9px] text-[#64748b] block">Max Mult</span>
+                      <span className="text-purple-300 font-bold">{game.maxMultiplier}x</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-[#8b92a2] pt-1">
+                    <span>Stake: <strong className="text-white font-mono-numbers">{game.minStakeFC} - {game.maxStakeFC} FC</strong></span>
+                    <span className="text-[10px] text-emerald-400 font-bold">100% Provably Fair</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB: GAME ROUNDS AUDIT LEDGER (PROVABLY FAIR)                  */}
+        {/* ============================================================== */}
+        {activeAdminTab === 'game-rounds' && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            {/* Header & Controls */}
+            <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-6 shadow-lg space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1f2737]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-purple-500/20 border border-amber-500/40 flex items-center justify-center">
+                    <Binary className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-base text-white">
+                      Universal Game Rounds Cryptographic Audit Ledger
+                    </h3>
+                    <p className="text-xs text-[#8b92a2]">
+                      Real-time immutable log of game rounds across all 12 games with server seed reveals and outcomes.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => fetchAdminGameRounds()}
+                  className="px-3.5 py-1.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] border border-[#272a31] text-xs font-bold text-amber-400 flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingGameRounds ? 'animate-spin' : ''}`} />
+                  <span>Refresh Ledger</span>
+                </button>
+              </div>
+
+              {/* Filters Bar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="flex items-center bg-[#141924] border border-[#272a31] rounded-xl px-3 py-1.5 text-xs">
+                    <Search className="w-3.5 h-3.5 text-[#8b92a2] mr-2 shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Search round ID, wallet, or game..."
+                      value={gameRoundsSearch}
+                      onChange={(e) => setGameRoundsSearch(e.target.value)}
+                      className="bg-transparent text-white outline-none w-full sm:w-60"
+                    />
+                  </div>
+
+                  <select
+                    value={gameRoundsSelectedGame}
+                    onChange={(e) => setGameRoundsSelectedGame(e.target.value)}
+                    className="bg-[#141924] border border-[#272a31] rounded-xl px-3 py-1.5 text-xs text-white outline-none cursor-pointer"
+                  >
+                    <option value="all">All 12 Games</option>
+                    {GAMES.map(g => (
+                      <option key={g.id} value={g.id}>{g.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-1 w-full sm:w-auto justify-end text-xs font-bold font-mono-numbers">
+                  {['all', 'won', 'lost'].map(st => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setGameRoundsFilter(st)}
+                      className={`px-3 py-1 rounded-lg border capitalize transition-all cursor-pointer ${
+                        gameRoundsFilter === st
+                          ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-black'
+                          : 'bg-[#141924] text-[#8b92a2] border-[#272a31]'
+                      }`}
+                    >
+                      {st}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Rounds Table */}
+            <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl overflow-hidden shadow-lg">
+              <div className="overflow-x-auto no-scrollbar">
+                <table className="w-full text-left text-xs font-mono-numbers">
+                  <thead className="bg-[#141924] text-[#8b92a2] uppercase text-[10px] tracking-wider border-b border-[#272a31]">
+                    <tr>
+                      <th className="py-3 px-3">Round ID</th>
+                      <th className="py-3 px-3">Game</th>
+                      <th className="py-3 px-3">Player Wallet</th>
+                      <th className="py-3 px-3">Bet Amount</th>
+                      <th className="py-3 px-3">Multiplier</th>
+                      <th className="py-3 px-3">Payout</th>
+                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-3">Commit Hash</th>
+                      <th className="py-3 px-3 text-right">Proof</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1f2737]/60">
+                    {adminGameRounds
+                      .filter(r => {
+                        if (gameRoundsFilter === 'won') return r.status === 'won';
+                        if (gameRoundsFilter === 'lost') return r.status === 'lost';
+                        return true;
+                      })
+                      .filter(r => {
+                        if (gameRoundsSelectedGame !== 'all') return r.game_id === gameRoundsSelectedGame;
+                        return true;
+                      })
+                      .filter(r => {
+                        if (!gameRoundsSearch) return true;
+                        const q = gameRoundsSearch.toLowerCase();
+                        return (
+                          (r.id && r.id.toLowerCase().includes(q)) ||
+                          (r.game_id && r.game_id.toLowerCase().includes(q)) ||
+                          (r.wallet_address && r.wallet_address.toLowerCase().includes(q))
+                        );
+                      })
+                      .map((round) => (
+                        <tr key={round.id} className="hover:bg-white/2 transition-colors">
+                          <td className="py-3 px-3 text-amber-400 font-bold">
+                            {round.id.slice(-10)}
+                          </td>
+                          <td className="py-3 px-3 font-sans font-bold text-white capitalize">
+                            {round.game_id}
+                          </td>
+                          <td className="py-3 px-3 text-[#8b92a2]">
+                            <span className="truncate max-w-[100px] inline-block font-mono">
+                              {round.wallet_address ? `${round.wallet_address.slice(0, 6)}...${round.wallet_address.slice(-4)}` : 'Guest'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-white font-bold">
+                            {round.bet_amount} FC
+                          </td>
+                          <td className="py-3 px-3 text-purple-300 font-bold">
+                            {round.multiplier ? `${round.multiplier}x` : '—'}
+                          </td>
+                          <td className={`py-3 px-3 font-bold ${round.payout > 0 ? 'text-emerald-400' : 'text-[#64748b]'}`}>
+                            {round.payout > 0 ? `+${round.payout} FC` : '0 FC'}
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              round.status === 'won'
+                                ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-rose-950/60 text-rose-400 border border-rose-500/30'
+                            }`}>
+                              {round.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 font-mono text-[10px] text-amber-300/80">
+                            {round.server_seed_hash ? `${round.server_seed_hash.slice(0, 10)}...` : '—'}
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <button
+                              onClick={() => setAuditVerifyModalData({
+                                event_id: round.id,
+                                event_title: `${round.game_id.toUpperCase()} Round #${round.id.slice(-6)}`,
+                                winning_digits: round.multiplier ? `${round.multiplier}x` : '0x',
+                                commit_hash: round.server_seed_hash,
+                                revealed_seed: round.server_seed,
+                                client_seed: round.client_seed
+                              })}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold cursor-pointer transition-colors"
+                            >
+                              Verify Proof
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+
+                    {adminGameRounds.length === 0 && (
+                      <tr>
+                        <td colSpan={9} className="py-8 text-center text-xs text-[#8b92a2] italic">
+                          {loadingGameRounds ? 'Loading game rounds from database...' : 'No game rounds recorded yet.'}
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -2458,6 +2813,15 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
               </div>
             )}
           </div>
+        )}
+
+        {/* Universal Provably Fair Audit Modal */}
+        {auditVerifyModalData && (
+          <ProvablyFairModal
+            isOpen={!!auditVerifyModalData}
+            onClose={() => setAuditVerifyModalData(null)}
+            auditData={auditVerifyModalData}
+          />
         )}
 
       </div>
