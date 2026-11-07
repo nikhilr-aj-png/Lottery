@@ -195,7 +195,8 @@ export default function RoomChatDrawer({
       message: trimmed.slice(0, 150),
       message_type: 'chat',
       metadata: {
-        isVip: (wallet.balance || 0) >= 500
+        isVip: (wallet.balance || 0) >= 500,
+        vipTier: (wallet.balance || 0) >= 5000 ? 'Diamond' : (wallet.balance || 0) >= 1000 ? 'Platinum' : (wallet.balance || 0) >= 500 ? 'Gold' : 'Silver'
       },
       created_at: new Date().toISOString()
     };
@@ -379,11 +380,15 @@ export default function RoomChatDrawer({
                   <span className={`font-bold truncate ${isMe ? 'text-amber-400 font-black' : 'text-[#8b92a2]'}`}>
                     {isMe ? 'You' : m.username}
                   </span>
-                  {m.metadata?.isVip && (
+                  {m.metadata?.vipTier ? (
+                    <span className="text-[8px] font-mono-numbers px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold uppercase">
+                      {m.metadata.vipTier}
+                    </span>
+                  ) : m.metadata?.isVip ? (
                     <span className="text-[8px] font-mono-numbers px-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
                       VIP
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
                 <span className="text-[9px] text-[#64748b] font-mono-numbers shrink-0">

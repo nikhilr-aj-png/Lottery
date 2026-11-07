@@ -1,12 +1,12 @@
 # DEVELOPMENT STATUS
 
-> **Current Phase:** Phase 12 Completed (Web Audio FX & Procedural Sound Engine)  
-> **Platform Status:** 100% Complete & Verified Across All 12 Modular Games, Table/Room Architecture, Real-Time Community, Admin Super-Hub & Procedural Web Audio FX  
+> **Current Phase:** Phase 13 Completed (Live Database Leaderboards, VIP Tier Loyalty Progression & Daily Lucky Wheel)  
+> **Platform Status:** 100% Complete & Verified Across All 12 Modular Games, Table/Room Architecture, Real-Time Community, Admin Super-Hub, Procedural Web Audio FX & VIP Rewards  
 > **Last Updated:** 2026-11-07  
 
 ---
 
-## 0. 12-Game Modular Platform Transformation (Phases 1–12 100% Completed & Verified)
+## 0. 12-Game Modular Platform Transformation (Phases 1–13 100% Completed & Verified)
 - [x] **Phase 1: Comprehensive System Audit & Migration Strategy**
   - Audited all 12 games, 14 database tables, double-entry wallet ledger, and existing lottery admin workflow.
   - Zero-data-loss migration roadmap established.
@@ -71,6 +71,19 @@
     - Universal win fanfares (standard major chord arpeggio, big win fanfare, jackpot celebration).
   - Verified: 36/36 assertions passed in `scratch/test_phase12_sound_fx.mjs`.
   - Production build passing (0 errors, Vite 954ms).
+- [x] **Phase 13: Live Database Leaderboards, VIP Tier Loyalty Engine & Daily Lucky Wheel**
+  - Database schema & RPCs:
+    - `public.user_vip_progress` table tracking XP points, tier (Bronze -> Obsidian), levels (1-6), faucet multipliers, and spin timestamps.
+    - RPC `public.get_or_update_user_vip` calculating live XP (1 FC wagered = 10 XP) and tier assignment.
+    - RPC `public.spin_lucky_wheel` with server-side weighted prize derivation, VIP multiplier scaling, 24h cooldown, and `wallet_ledger` audit integration.
+    - RPC `public.get_game_leaderboard` aggregating live results by timeframe (`today`, `weekly`, `all`), metric (`earnings`, `multiplier`, `wagered`), and game ID.
+  - Components & UX:
+    - `LeaderboardView.jsx`: Live database standings, 3-person visual podium with champion crown, search filter, and personal player rank banner.
+    - `RewardsView.jsx`: Interactive 8-segment SVG Daily Lucky Wheel with physical rotation physics, ratchet audio ticks, confetti celebration, live VIP progression card, 7-day streak calendar, and milestone achievements.
+    - `Navbar.jsx`: Added responsive `Leaderboard` navigation link.
+    - `RoomChatDrawer.jsx`: Enriched player chat messages with live VIP tier badges.
+  - Verified: 12/12 assertions passed in `scratch/test_phase13_leaderboard_vip_wheel.mjs`.
+  - Production build passing (0 errors, Vite 1.03s).
 
 ---
 

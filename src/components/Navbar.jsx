@@ -87,7 +87,8 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
     { id: 'results', label: 'Results', icon: Trophy, requiresAuth: true, minScreen: 'md' },
     { id: 'wallet', label: 'Wallet', icon: Wallet, requiresAuth: true, minScreen: 'md' },
     { id: 'rewards', label: 'Rewards', icon: Gift, minScreen: 'lg' },
-    { id: 'contact', label: 'Support', icon: Headphones, minScreen: 'xl' },
+    { id: 'leaderboard', label: 'Leaderboard', icon: Trophy, minScreen: 'xl' },
+    { id: 'contact', label: 'Support', icon: Headphones, minScreen: '2xl' },
   ];
 
   const usernameDisplay = profile?.username 
