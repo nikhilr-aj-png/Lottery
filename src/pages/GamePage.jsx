@@ -9,6 +9,7 @@ import {
 } from '../engine';
 import { supabase } from '../lib/supabase';
 import ProvablyFairModal from '../components/ProvablyFairModal';
+import RoomChatDrawer from '../components/RoomChatDrawer';
 import { useLottery } from '../context/LotteryContext';
 import { 
   ArrowLeft, 
@@ -35,7 +36,8 @@ import {
   FileCheck,
   Eye,
   Check,
-  Copy
+  Copy,
+  MessageSquare
 } from 'lucide-react';
 import {
   LotteryWorkstation,
@@ -99,6 +101,10 @@ export default function GamePage({
   const [customClientSeed, setCustomClientSeed] = useState('');
   const [isRotatingSeeds, setIsRotatingSeeds] = useState(false);
   const [copiedKey, setCopiedKey] = useState(null);
+
+  // Live Room Chat & Presence State
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
 
   // Universal Bet History and Verification Modal
   const [selectedRoundForProof, setSelectedRoundForProof] = useState(null);
@@ -304,8 +310,27 @@ export default function GamePage({
             </div>
           </div>
 
-{/* Right Status, Fairness Button & Balance Display */}
-          <div className="flex items-center justify-between sm:justify-end gap-2.5 sm:gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#1f2737]">
+{/* Right Status, Chat & Balance Display */}
+          <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#1f2737]">
+            {/* Live Room Chat Button */}
+            <button
+              onClick={() => {
+                setIsChatOpen(true);
+                setUnreadChatCount(0);
+              }}
+              className="px-2.5 py-1.5 rounded-xl bg-[#141924] hover:bg-[#1f2737] text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer relative"
+              title="Open Live Table Chat & Seated Players"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden xs:inline">Chat</span>
+              {unreadChatCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white font-mono-numbers text-[9px] font-bold animate-pulse">
+                  {unreadChatCount}
+                </span>
+              )}
+            </button>
+
+            {/* Provably Fair Seeds Drawer Button */}
             <button
               onClick={() => setShowFairnessDrawer(!showFairnessDrawer)}
               className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
@@ -316,12 +341,12 @@ export default function GamePage({
               title="Inspect or customize Provably Fair seeds"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden xs:inline">Fairness & Seeds</span>
+              <span className="hidden xs:inline">Fairness</span>
             </button>
 
             <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono-numbers font-bold">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-              <span className="hidden sm:inline">ROOM ACTIVE</span>
+              <span className="hidden md:inline">ROOM ACTIVE</span>
             </div>
 
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0b0e14] border border-[#272a31]">
@@ -587,6 +612,35 @@ export default function GamePage({
               status: selectedRoundForProof.status
             }}
           />
+        )}
+
+        {/* Live In-Room Chat Drawer & Seated Players */}
+        <RoomChatDrawer
+          room={selectedRoom}
+          game={game}
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          onUnreadChange={setUnreadChatCount}
+        />
+
+        {/* Floating Quick Chat Launcher Pill */}
+        {!isChatOpen && (
+          <button
+            onClick={() => {
+              setIsChatOpen(true);
+              setUnreadChatCount(0);
+            }}
+            className="fixed bottom-6 right-6 z-40 px-3.5 sm:px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-xs flex items-center gap-2 shadow-2xl shadow-amber-500/30 transition-all cursor-pointer hover:scale-105"
+            title="Open Live Table Chat"
+          >
+            <MessageSquare className="w-4 h-4 fill-current shrink-0" />
+            <span className="hidden xs:inline">Room Chat</span>
+            {unreadChatCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-black text-amber-400 font-mono-numbers text-[10px] font-black">
+                {unreadChatCount}
+              </span>
+            )}
+          </button>
         )}
 
       </div>
