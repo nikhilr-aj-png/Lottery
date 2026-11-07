@@ -12,8 +12,6 @@ export default function AdminAuthGate({ onAuthenticated, onCancel }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const MASTER_ADMIN_KEY = 'earnflow2026';
-
   // Handle Account Login with Database super_admin role check
   const handleAccountLogin = async (e) => {
     e.preventDefault();
@@ -48,21 +46,28 @@ export default function AdminAuthGate({ onAuthenticated, onCancel }) {
     }
   };
 
-  // Handle Master Key Login
-  const handlePasscodeAuth = (e) => {
+  // Handle Master Key Login via Server-Side Cryptographic Verification
+  const handlePasscodeAuth = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      if (passcode.trim() === MASTER_ADMIN_KEY) {
+    try {
+      const { data, error: rpcErr } = await supabase.rpc('verify_admin_operator_passkey', {
+        p_passkey: passcode.trim()
+      });
+
+      if (rpcErr || !data || !data.success) {
+        setError(data?.error || rpcErr?.message || 'Invalid Operator Master Passkey. Access Denied.');
+      } else {
         sessionStorage.setItem('earnflow_admin_auth', 'true');
         onAuthenticated();
-      } else {
-        setError('Invalid Operator Master Key. Access Denied.');
       }
+    } catch (err) {
+      setError(err.message || 'Verification failed');
+    } finally {
       setLoading(false);
-    }, 400);
+    }
   };
 
   return (

@@ -212,6 +212,14 @@ export default function GamesManagementSuperHub({
         c.game_id === gameId ? { ...c, is_enabled: nextVal } : c
       ));
 
+      // Log immutable admin action
+      await supabase.rpc('log_admin_action', {
+        p_action_type: 'game_toggle',
+        p_target_type: 'game_config',
+        p_target_id: gameId,
+        p_changes: { is_enabled: nextVal }
+      });
+
       if (showToast) {
         showToast(nextVal ? `${gameId.toUpperCase()} enabled successfully.` : `${gameId.toUpperCase()} disabled.`, 'success');
       }
@@ -235,6 +243,14 @@ export default function GamesManagementSuperHub({
       setRooms(prev => prev.map(r => 
         r.id === roomId ? { ...r, status: nextStatus } : r
       ));
+
+      // Log immutable admin action
+      await supabase.rpc('log_admin_action', {
+        p_action_type: 'room_status_toggle',
+        p_target_type: 'game_room',
+        p_target_id: roomId,
+        p_changes: { oldStatus: currentStatus, newStatus: nextStatus }
+      });
 
       if (showToast) {
         showToast(`Room "${roomId}" is now ${nextStatus.toUpperCase()}.`, 'success');
@@ -271,6 +287,14 @@ export default function GamesManagementSuperHub({
         .insert([roomPayload]);
 
       if (error) throw error;
+
+      // Log immutable admin action
+      await supabase.rpc('log_admin_action', {
+        p_action_type: 'room_create',
+        p_target_type: 'game_room',
+        p_target_id: roomPayload.id,
+        p_changes: roomPayload
+      });
 
       setRooms(prev => [...prev, {
         id: roomPayload.id,
@@ -324,6 +348,14 @@ export default function GamesManagementSuperHub({
         .upsert(payload);
 
       if (error) throw error;
+
+      // Log immutable admin action
+      await supabase.rpc('log_admin_action', {
+        p_action_type: 'game_config_save',
+        p_target_type: 'game_configuration',
+        p_target_id: configSelectedGame,
+        p_changes: payload
+      });
 
       if (showToast) showToast(`Configuration saved for ${configSelectedGame.toUpperCase()}`, 'success');
       fetchAllSuperHubData();
