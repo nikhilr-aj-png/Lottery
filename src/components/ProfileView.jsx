@@ -328,29 +328,29 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }) {
         <div className="lg:col-span-7 space-y-6">
 
           {/* CARD 1: VIP Player User ID */}
-          <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-[#272a31] relative overflow-hidden space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700]">
+          <div className="glass-panel rounded-2xl p-4 xs:p-5 sm:p-6 border border-[#272a31] relative overflow-hidden space-y-4">
+            <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700] shrink-0">
                   <User className="w-4 h-4" />
                 </div>
-                <div>
-                  <h3 className="font-display font-bold text-base text-white">
+                <div className="min-w-0">
+                  <h3 className="font-display font-bold text-sm xs:text-base text-white">
                     VIP Player User ID
                   </h3>
-                  <p className="text-xs text-[#9b8f7c]">
+                  <p className="text-[11px] xs:text-xs text-[#9b8f7c] leading-tight">
                     Unique public username visible on lucky leaderboards and winning ticket draws
                   </p>
                 </div>
               </div>
 
               {usernameChangeCount === 0 ? (
-                <span className="text-[10px] font-mono-numbers px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1 shrink-0">
+                <span className="self-start xs:self-center text-[10px] font-mono-numbers px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1 shrink-0">
                   <Sparkles className="w-3 h-3 text-emerald-400" />
                   1st Edit Free Lifetime
                 </span>
               ) : (
-                <span className="text-[10px] font-mono-numbers px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold shrink-0">
+                <span className="self-start xs:self-center text-[10px] font-mono-numbers px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold shrink-0">
                   Fee: {platformSettings?.usernameChangeFee ?? '5.00'} USDT
                 </span>
               )}
@@ -358,10 +358,13 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }) {
 
             {!isEditingUsername ? (
               <div className="space-y-3">
-                <div className="flex items-center justify-between bg-[#0b0e14] px-4 py-3 rounded-xl border border-[#1b2230]">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-xs text-[#9b8f7c]">Handle:</span>
-                    <span className="font-mono-numbers font-bold text-base text-[#ffd700] truncate">
+                <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2.5 xs:gap-3 bg-[#0b0e14] p-3 sm:px-4 sm:py-3 rounded-xl border border-[#1b2230]">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="text-xs text-[#9b8f7c] shrink-0">Handle:</span>
+                    <span 
+                      className="font-mono-numbers font-bold text-sm xs:text-base text-[#ffd700] truncate"
+                      title={`@${currentUsername}`}
+                    >
                       @{currentUsername}
                     </span>
                   </div>
@@ -371,14 +374,15 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }) {
                       setNewUsernameInput(currentUsername);
                       setIsEditingUsername(true);
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-[#1a2130] hover:bg-[#252f45] border border-[#2d3a54] text-xs font-bold text-[#ffd700] flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                    className="w-full xs:w-auto px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-[#1a2130] hover:bg-[#252f45] border border-[#2d3a54] text-xs font-bold text-[#ffd700] flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0 shadow-sm"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
-                    <span>Change User ID</span>
+                    <span className="inline sm:hidden">Change</span>
+                    <span className="hidden sm:inline">Change User ID</span>
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-[#8b92a2] px-1">
+                <div className="flex items-center justify-between text-[11px] xs:text-xs text-[#8b92a2] px-1">
                   <span>
                     {usernameChangeCount === 0 
                       ? '🎁 You have 1 free lifetime User ID change available.' 

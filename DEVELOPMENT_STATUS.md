@@ -179,4 +179,8 @@
 - [x] **PWA Install Banner Positioning (`PwaInstallBanner.jsx`):**
   - Elevated from `bottom-16` to `bottom-[72px] sm:bottom-6`, clearing the mobile bottom navigation bar by 16px.
   - Streamlined compact card with a dedicated close button and 3-day dismissal persistence.
+- [x] **User ID Profile Card Mobile Fix (`ProfileView.jsx`):**
+  - Fixed mobile Handle row crowding where "Change User ID" button truncated `@username` to `@...`.
+  - Replaced rigid width with compact `Change` label on mobile (`<span className="inline sm:hidden">Change</span>`), saving ~80px of space.
+  - Added responsive `flex-col xs:flex-row` fallback so `@username` is 100% visible and never clipped.
 
