@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { generateRouletteNumber, ROULETTE_PAYOUTS } from '../engine';
 import { 
@@ -16,7 +16,7 @@ import confetti from 'canvas-confetti';
 
 const RED_NUMBERS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
 
-export default function RouletteGame() {
+export default function RouletteGame({ room }) {
   const {
     game,
     betAmount,
@@ -31,6 +31,15 @@ export default function RouletteGame() {
     walletBalance,
     loading
   } = useGameEngine('roulette');
+
+  // Enforce room-specific stake bounds
+  useEffect(() => {
+    if (room?.minStakeFC && betAmount < room.minStakeFC) {
+      setBetAmount(room.minStakeFC);
+    } else if (room?.maxStakeFC && betAmount > room.maxStakeFC) {
+      setBetAmount(room.maxStakeFC);
+    }
+  }, [room?.minStakeFC, room?.maxStakeFC]);
 
   // Bet selection: can be outside bet ('red', 'black', 'even', 'odd', 'low', 'high', 'dozen1', 'dozen2', 'dozen3') or straight number (0 to 36)
   const [selectedBetType, setSelectedBetType] = useState('red');
@@ -146,8 +155,10 @@ export default function RouletteGame() {
         selectedNumber: selectedBetType === 'straight' ? selectedNumber : null,
         winningNumber: outcome.number,
         winningColor: outcome.color,
-        isWin
-      }
+        isWin,
+        roomId: room?.id
+      },
+      metadata: { roomId: room?.id, roomName: room?.name }
     });
 
     setRecentSpins(prev => [

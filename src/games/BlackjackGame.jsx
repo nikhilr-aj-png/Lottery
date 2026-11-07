@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { generateShuffledDeck, evaluateBlackjackHand } from '../engine';
 import { 
@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export default function BlackjackGame() {
+export default function BlackjackGame({ room }) {
   const {
     game,
     betAmount,
@@ -32,6 +32,15 @@ export default function BlackjackGame() {
     walletBalance,
     loading
   } = useGameEngine('blackjack');
+
+  // Enforce room-specific stake bounds
+  useEffect(() => {
+    if (room?.minStakeFC && betAmount < room.minStakeFC) {
+      setBetAmount(room.minStakeFC);
+    } else if (room?.maxStakeFC && betAmount > room.maxStakeFC) {
+      setBetAmount(room.maxStakeFC);
+    }
+  }, [room?.minStakeFC, room?.maxStakeFC]);
 
   // Round states: 'idle' | 'playing' | 'dealer_turn' | 'resolved'
   const [roundState, setRoundState] = useState('idle');
@@ -220,8 +229,10 @@ export default function BlackjackGame() {
         playerHand: pHand.map(c => c.id),
         dealerHand: dHand.map(c => c.id),
         playerTotal: pTotal,
-        dealerTotal: dTotal
-      }
+        dealerTotal: dTotal,
+        roomId: room?.id
+      },
+      metadata: { roomId: room?.id, roomName: room?.name }
     });
 
     setRecentHands(prev => [

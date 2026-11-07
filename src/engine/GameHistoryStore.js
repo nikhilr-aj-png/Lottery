@@ -54,13 +54,20 @@ export class GameHistoryStore {
     const formatted = {
       id: bet.id,
       gameId: bet.game_id,
+      roomId: bet.room_id || bet.metadata?.roomId || 'standard',
       walletAddress: bet.wallet_address,
       username: bet.username || `@User_${bet.wallet_address.slice(-4)}`,
       betAmount: Number(bet.bet_amount || 0),
       multiplier: Number(bet.multiplier || 0),
       payout: Number(bet.payout || 0),
+      netProfit: Number(bet.net_profit ?? (Number(bet.payout || 0) - Number(bet.bet_amount || 0))),
       status: bet.status,
-      createdAt: bet.created_at ? new Date(bet.created_at).getTime() : Date.now()
+      createdAt: bet.created_at ? new Date(bet.created_at).getTime() : Date.now(),
+      serverSeedHash: bet.server_seed_hash,
+      serverSeed: bet.server_seed,
+      clientSeed: bet.client_seed,
+      nonce: bet.nonce,
+      outcomeData: bet.outcome_data
     };
 
     // Prepend to all bets
@@ -87,19 +94,102 @@ export class GameHistoryStore {
         this.allBets = data.map(b => ({
           id: b.id,
           gameId: b.game_id,
+          roomId: b.room_id || b.metadata?.roomId || 'standard',
           walletAddress: b.wallet_address,
           username: b.username || `@Player_${b.wallet_address.slice(-4)}`,
           betAmount: Number(b.bet_amount || 0),
           multiplier: Number(b.multiplier || 0),
           payout: Number(b.payout || 0),
+          netProfit: Number(b.net_profit ?? (Number(b.payout || 0) - Number(b.bet_amount || 0))),
           status: b.status,
-          createdAt: b.created_at ? new Date(b.created_at).getTime() : Date.now()
+          createdAt: b.created_at ? new Date(b.created_at).getTime() : Date.now(),
+          serverSeedHash: b.server_seed_hash,
+          serverSeed: b.server_seed,
+          clientSeed: b.client_seed,
+          nonce: b.nonce,
+          outcomeData: b.outcome_data
         }));
         this.notify();
       }
       return this.allBets;
     } catch (err) {
       console.error('fetchAllBets error:', err);
+      return [];
+    }
+  }
+
+  // Fetch bets specifically for a game
+  async fetchGameBets(gameId, limit = 50) {
+    if (!gameId) return [];
+    try {
+      const { data, error } = await supabase
+        .from('game_rounds')
+        .select('*')
+        .eq('game_id', gameId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (!error && Array.isArray(data)) {
+        return data.map(b => ({
+          id: b.id,
+          gameId: b.game_id,
+          roomId: b.room_id || b.metadata?.roomId || 'standard',
+          walletAddress: b.wallet_address,
+          username: b.username || `@Player_${b.wallet_address.slice(-4)}`,
+          betAmount: Number(b.bet_amount || 0),
+          multiplier: Number(b.multiplier || 0),
+          payout: Number(b.payout || 0),
+          netProfit: Number(b.net_profit ?? (Number(b.payout || 0) - Number(b.bet_amount || 0))),
+          status: b.status,
+          createdAt: b.created_at ? new Date(b.created_at).getTime() : Date.now(),
+          serverSeedHash: b.server_seed_hash,
+          serverSeed: b.server_seed,
+          clientSeed: b.client_seed,
+          nonce: b.nonce,
+          outcomeData: b.outcome_data
+        }));
+      }
+      return [];
+    } catch (err) {
+      console.error('fetchGameBets error:', err);
+      return [];
+    }
+  }
+
+  // Fetch bets specifically for a room
+  async fetchRoomBets(roomId, limit = 50) {
+    if (!roomId) return [];
+    try {
+      const { data, error } = await supabase
+        .from('game_rounds')
+        .select('*')
+        .eq('room_id', roomId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (!error && Array.isArray(data)) {
+        return data.map(b => ({
+          id: b.id,
+          gameId: b.game_id,
+          roomId: b.room_id || b.metadata?.roomId || 'standard',
+          walletAddress: b.wallet_address,
+          username: b.username || `@Player_${b.wallet_address.slice(-4)}`,
+          betAmount: Number(b.bet_amount || 0),
+          multiplier: Number(b.multiplier || 0),
+          payout: Number(b.payout || 0),
+          netProfit: Number(b.net_profit ?? (Number(b.payout || 0) - Number(b.bet_amount || 0))),
+          status: b.status,
+          createdAt: b.created_at ? new Date(b.created_at).getTime() : Date.now(),
+          serverSeedHash: b.server_seed_hash,
+          serverSeed: b.server_seed,
+          clientSeed: b.client_seed,
+          nonce: b.nonce,
+          outcomeData: b.outcome_data
+        }));
+      }
+      return [];
+    } catch (err) {
+      console.error('fetchRoomBets error:', err);
       return [];
     }
   }
@@ -119,17 +209,20 @@ export class GameHistoryStore {
         this.myBets = data.map(b => ({
           id: b.id,
           gameId: b.game_id,
+          roomId: b.room_id || b.metadata?.roomId || 'standard',
           walletAddress: b.wallet_address,
           username: b.username || 'You',
           betAmount: Number(b.bet_amount || 0),
           multiplier: Number(b.multiplier || 0),
           payout: Number(b.payout || 0),
+          netProfit: Number(b.net_profit ?? (Number(b.payout || 0) - Number(b.bet_amount || 0))),
           status: b.status,
           createdAt: b.created_at ? new Date(b.created_at).getTime() : Date.now(),
           serverSeedHash: b.server_seed_hash,
           serverSeed: b.server_seed,
           clientSeed: b.client_seed,
-          nonce: b.nonce
+          nonce: b.nonce,
+          outcomeData: b.outcome_data
         }));
         this.notify();
       }

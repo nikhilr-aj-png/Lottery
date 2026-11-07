@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { generateKenoDraw, getKenoMultiplier, KENO_PAYTABLES } from '../engine';
 import { 
@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export default function KenoGame() {
+export default function KenoGame({ room }) {
   const {
     game,
     betAmount,
@@ -31,6 +31,15 @@ export default function KenoGame() {
     walletBalance,
     loading
   } = useGameEngine('keno');
+
+  // Enforce room-specific stake bounds
+  useEffect(() => {
+    if (room?.minStakeFC && betAmount < room.minStakeFC) {
+      setBetAmount(room.minStakeFC);
+    } else if (room?.maxStakeFC && betAmount > room.maxStakeFC) {
+      setBetAmount(room.maxStakeFC);
+    }
+  }, [room?.minStakeFC, room?.maxStakeFC]);
 
   // Player selected numbers: Array of numbers (1 to 40), max 10
   const [selectedNumbers, setSelectedNumbers] = useState([7, 12, 19, 23, 33]);
@@ -156,8 +165,10 @@ export default function KenoGame() {
         picks: selectedNumbers,
         winningBalls,
         totalHits,
-        multiplierWon
-      }
+        multiplierWon,
+        roomId: room?.id
+      },
+      metadata: { roomId: room?.id, roomName: room?.name }
     });
 
     setRecentDraws(prev => [

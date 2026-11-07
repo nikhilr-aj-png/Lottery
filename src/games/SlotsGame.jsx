@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { generateSlotSpin, evaluateSlotsSpin, SLOTS_PAYTABLE } from '../engine';
 import { 
@@ -18,7 +18,7 @@ import confetti from 'canvas-confetti';
 
 const SYMBOLS = ['💎', '7', '🎰', '⭐', '🔔', '🍒', '🍋'];
 
-export default function SlotsGame() {
+export default function SlotsGame({ room }) {
   const {
     game,
     betAmount,
@@ -33,6 +33,15 @@ export default function SlotsGame() {
     walletBalance,
     loading
   } = useGameEngine('slots');
+
+  // Enforce room-specific stake bounds
+  useEffect(() => {
+    if (room?.minStakeFC && betAmount < room.minStakeFC) {
+      setBetAmount(room.minStakeFC);
+    } else if (room?.maxStakeFC && betAmount > room.maxStakeFC) {
+      setBetAmount(room.maxStakeFC);
+    }
+  }, [room?.minStakeFC, room?.maxStakeFC]);
 
   // 3x3 Grid of symbols
   const [grid, setGrid] = useState([
@@ -138,8 +147,10 @@ export default function SlotsGame() {
       outcomeData: {
         grid: finalGrid,
         winningLines: evalResult.winningLines,
-        multiplierWon
-      }
+        multiplierWon,
+        roomId: room?.id
+      },
+      metadata: { roomId: room?.id, roomName: room?.name }
     });
 
     const summaryLine = evalResult.winningLines[0]

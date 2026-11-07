@@ -78,24 +78,8 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }) {
   ];
 
   const handleGameSelect = (game) => {
-    if (game.id === 'lottery') {
-      // If lottery, open active round or scroll to pools
-      if (activeLotteryEvents.length > 0) {
-        if (!user) {
-          setIsAuthModalOpen(true);
-          showToast('Please log in to purchase lottery tickets!', 'info');
-          return;
-        }
-        setSelectedEventForModal(activeLotteryEvents[0]);
-      } else {
-        const el = document.getElementById('lottery-pools-section');
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
-      }
-      return;
-    }
-
     if (onLaunchGame) {
-      onLaunchGame(game.id);
+      onLaunchGame(game.slug || game.id);
     }
   };
 

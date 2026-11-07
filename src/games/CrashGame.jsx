@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export default function CrashGame() {
+export default function CrashGame({ room }) {
   const {
     game,
     betAmount,
@@ -29,6 +29,15 @@ export default function CrashGame() {
     walletBalance,
     loading
   } = useGameEngine('crash');
+
+  // Enforce room-specific stake bounds
+  useEffect(() => {
+    if (room?.minStakeFC && betAmount < room.minStakeFC) {
+      setBetAmount(room.minStakeFC);
+    } else if (room?.maxStakeFC && betAmount > room.maxStakeFC) {
+      setBetAmount(room.maxStakeFC);
+    }
+  }, [room?.minStakeFC, room?.maxStakeFC]);
 
   // Crash round states: 'idle' | 'countdown' | 'flying' | 'crashed'
   const [gameState, setGameState] = useState('idle');
@@ -144,7 +153,8 @@ export default function CrashGame() {
     await settleRound({
       multiplier: mult,
       payout: winAmount,
-      outcomeData: { crashPoint, cashedOutAt: mult }
+      outcomeData: { crashPoint, cashedOutAt: mult, roomId: room?.id },
+      metadata: { roomId: room?.id, roomName: room?.name }
     });
   };
 
@@ -161,7 +171,8 @@ export default function CrashGame() {
       await settleRound({
         multiplier: 0,
         payout: 0,
-        outcomeData: { crashPoint: finalPoint, cashedOutAt: null }
+        outcomeData: { crashPoint: finalPoint, cashedOutAt: null, roomId: room?.id },
+        metadata: { roomId: room?.id, roomName: room?.name }
       });
     }
 

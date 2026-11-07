@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { generateShuffledDeck, evaluatePokerHand } from '../engine';
 import { 
@@ -13,11 +13,12 @@ import {
   Eye,
   Hand,
   CheckCircle2,
-  XCircle
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export default function PokerGame() {
+export default function PokerGame({ room }) {
   const {
     game,
     betAmount,
@@ -32,6 +33,15 @@ export default function PokerGame() {
     walletBalance,
     loading
   } = useGameEngine('poker');
+
+  // Enforce room-specific stake bounds
+  useEffect(() => {
+    if (room?.minStakeFC && betAmount < room.minStakeFC) {
+      setBetAmount(room.minStakeFC);
+    } else if (room?.maxStakeFC && betAmount > room.maxStakeFC) {
+      setBetAmount(room.maxStakeFC);
+    }
+  }, [room?.minStakeFC, room?.maxStakeFC]);
 
   // Stages: 'idle' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown'
   const [street, setStreet] = useState('idle');
@@ -119,6 +129,13 @@ export default function PokerGame() {
     }
   };
 
+  // Raise Action (Adds betAmount to pot and advances street)
+  const handleRaise = () => {
+    if (street === 'idle' || street === 'showdown') return;
+    setPot(prev => prev + betAmount);
+    handleNextStreet();
+  };
+
   // 3. FOLD
   const handleFold = async () => {
     if (street === 'idle' || street === 'showdown') return;
@@ -128,7 +145,8 @@ export default function PokerGame() {
     await settleRound({
       multiplier: 0,
       payout: 0,
-      outcomeData: { action: 'folded', playerHand: playerHoleCards.map(c => c.id) }
+      outcomeData: { action: 'folded', playerHand: playerHoleCards.map(c => c.id), roomId: room?.id },
+      metadata: { roomId: room?.id, roomName: room?.name }
     });
 
     setRecentHands(prev => [
@@ -188,8 +206,10 @@ export default function PokerGame() {
         winner,
         playerRank: finalPlayerEval.rankName,
         dealerRank: finalDealerEval.rankName,
-        multiplier
-      }
+        multiplier,
+        roomId: room?.id
+      },
+      metadata: { roomId: room?.id, roomName: room?.name }
     });
 
     setRecentHands(prev => [
@@ -329,23 +349,32 @@ export default function PokerGame() {
           {/* Action Buttons: Deal Hand OR Check / Fold */}
           <div className="pt-2 space-y-2">
             {street !== 'idle' && street !== 'showdown' ? (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
                   onClick={handleNextStreet}
-                  className="py-3.5 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-black shadow-lg shadow-emerald-500/20 cursor-pointer"
+                  className="py-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-black shadow-lg shadow-emerald-500/20 cursor-pointer"
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-3.5 h-3.5" />
                   <span>{street === 'river' ? 'Showdown' : 'Check / Call'}</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={handleFold}
-                  className="py-3.5 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-[#1F2737] hover:bg-[#2A374A] text-rose-400 border border-rose-500/30 cursor-pointer"
+                  onClick={handleRaise}
+                  className="py-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-black shadow-lg shadow-amber-500/20 cursor-pointer"
                 >
-                  <Hand className="w-4 h-4" />
-                  <span>Fold Hand</span>
+                  <Coins className="w-3.5 h-3.5" />
+                  <span>Raise (+{betAmount})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleFold}
+                  className="py-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1 bg-[#1F2737] hover:bg-[#2A374A] text-rose-400 border border-rose-500/30 cursor-pointer"
+                >
+                  <Hand className="w-3.5 h-3.5" />
+                  <span>Fold</span>
                 </button>
               </div>
             ) : (
@@ -372,9 +401,19 @@ export default function PokerGame() {
         <div className="lg:col-span-8 bg-[#07090E] border border-[#1F2737] rounded-2xl p-4 sm:p-6 flex flex-col justify-between items-center text-center relative overflow-hidden min-h-[480px]">
           <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Top Status */}
-          <div className="w-full flex items-center justify-between text-xs text-[#94A3B8] font-mono-numbers pb-2 border-b border-[#1F2737]">
-            <span>Texas Hold'em Table (No-Limit Social Demo)</span>
+          {/* Top Status & Dealer Button */}
+          <div className="w-full flex flex-wrap items-center justify-between gap-2 text-xs text-[#94A3B8] font-mono-numbers pb-2 border-b border-[#1F2737]">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30 text-[10px] font-bold">
+                HEADS-UP DEMO TABLE (SOLO vs DEALER)
+              </span>
+              <div className="flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                <span className="w-4 h-4 rounded-full bg-white text-slate-900 font-black text-[9px] flex items-center justify-center border border-amber-400 shadow">
+                  D
+                </span>
+                <span className="text-[10px] text-amber-300 font-bold uppercase">Dealer Button</span>
+              </div>
+            </div>
             <span>Pot: <strong className="text-amber-400 font-bold">{pot} FC</strong></span>
           </div>
 

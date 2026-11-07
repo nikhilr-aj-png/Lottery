@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export default function DiceGame() {
+export default function DiceGame({ room }) {
   const {
     game,
     betAmount,
@@ -30,6 +30,15 @@ export default function DiceGame() {
     walletBalance,
     loading
   } = useGameEngine('dice');
+
+  // Enforce room-specific stake bounds
+  useEffect(() => {
+    if (room?.minStakeFC && betAmount < room.minStakeFC) {
+      setBetAmount(room.minStakeFC);
+    } else if (room?.maxStakeFC && betAmount > room.maxStakeFC) {
+      setBetAmount(room.maxStakeFC);
+    }
+  }, [room?.minStakeFC, room?.maxStakeFC]);
 
   const [targetNumber, setTargetNumber] = useState(50.50);
   const [rollMode, setRollMode] = useState('over'); // 'over' | 'under'
@@ -118,8 +127,10 @@ export default function DiceGame() {
         roll: rolledNumber,
         target: targetNumber,
         mode: rollMode,
-        isWin
-      }
+        isWin,
+        roomId: room?.id
+      },
+      metadata: { roomId: room?.id, roomName: room?.name }
     });
 
     // Add to history

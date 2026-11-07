@@ -127,12 +127,12 @@ export default function Sidebar({
     }
 
     if (item.isLottery) {
-      onSelectTab('lotteries');
+      if (onLaunchGame) {
+        onLaunchGame('four-digit-lottery');
+      } else {
+        onSelectTab('lotteries');
+      }
       if (onClose) onClose();
-      setTimeout(() => {
-        const el = document.getElementById('lottery-pools-section');
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
       return;
     }
 

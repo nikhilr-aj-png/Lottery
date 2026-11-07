@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { generateCoinflip } from '../engine';
 import { 
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export default function CoinflipGame() {
+export default function CoinflipGame({ room }) {
   const {
     game,
     betAmount,
@@ -29,6 +29,15 @@ export default function CoinflipGame() {
     walletBalance,
     loading
   } = useGameEngine('coinflip');
+
+  // Enforce room-specific stake bounds
+  useEffect(() => {
+    if (room?.minStakeFC && betAmount < room.minStakeFC) {
+      setBetAmount(room.minStakeFC);
+    } else if (room?.maxStakeFC && betAmount > room.maxStakeFC) {
+      setBetAmount(room.maxStakeFC);
+    }
+  }, [room?.minStakeFC, room?.maxStakeFC]);
 
   // Player choice: 'heads' | 'tails'
   const [selectedSide, setSelectedSide] = useState('heads');
@@ -107,8 +116,10 @@ export default function CoinflipGame() {
       outcomeData: {
         selectedSide,
         landedSide: outcomeSide,
-        isWin
-      }
+        isWin,
+        roomId: room?.id
+      },
+      metadata: { roomId: room?.id, roomName: room?.name }
     });
 
     setRecentFlips(prev => [

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export default function PlinkoGame() {
+export default function PlinkoGame({ room }) {
   const {
     game,
     betAmount,
@@ -30,6 +30,15 @@ export default function PlinkoGame() {
     walletBalance,
     loading
   } = useGameEngine('plinko');
+
+  // Enforce room-specific stake bounds
+  useEffect(() => {
+    if (room?.minStakeFC && betAmount < room.minStakeFC) {
+      setBetAmount(room.minStakeFC);
+    } else if (room?.maxStakeFC && betAmount > room.maxStakeFC) {
+      setBetAmount(room.maxStakeFC);
+    }
+  }, [room?.minStakeFC, room?.maxStakeFC]);
 
   // Board configuration: rows (8, 10, 12, 14, 16) and risk ('low', 'medium', 'high')
   const [rows, setRows] = useState(10);
@@ -242,8 +251,10 @@ export default function PlinkoGame() {
         rows,
         risk,
         slotIndex: finalSlot,
-        multiplier: multiplierWon
-      }
+        multiplier: multiplierWon,
+        roomId: room?.id
+      },
+      metadata: { roomId: room?.id, roomName: room?.name }
     });
 
     setRecentDrops(prev => [

@@ -7,6 +7,9 @@
  * Phase 8: Card & Reel Games (Blackjack, Slots, Poker Demo)
  */
 
+// Four-Digit Lottery Dedicated Workstation
+export { default as LotteryWorkstation } from './LotteryWorkstation.jsx';
+
 // Phase 6: Instant Games
 export { default as CrashGame } from './CrashGame.jsx';
 export { default as DiceGame } from './DiceGame.jsx';

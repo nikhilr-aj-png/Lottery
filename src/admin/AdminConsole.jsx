@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import ProvablyFairModal from '../components/ProvablyFairModal';
+import GamesManagementSuperHub from './GamesManagementSuperHub';
 import { GAMES } from '../engine';
 import { supabase } from '../lib/supabase';
 import { 
@@ -79,8 +80,9 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
     getDirectDownloadUrl
   } = useLottery();
 
-  // Navigation tab: 'overview' | 'pools' | 'games' | 'game-rounds' | 'withdrawals' | 'users' | 'winner-payouts' | 'support' | 'settings'
+  // Navigation tab: 'overview' | 'games-management' | 'pools' | 'games' | 'game-rounds' | 'withdrawals' | 'users' | 'winner-payouts' | 'support' | 'settings'
   const [activeAdminTab, setActiveAdminTab] = useState('overview');
+  const [gamesManagementSubTab, setGamesManagementSubTab] = useState('all-games');
 
   // Game Engine Administration state
   const [adminGameRounds, setAdminGameRounds] = useState([]);
@@ -466,47 +468,38 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
           </button>
 
           <button
-            onClick={() => setActiveAdminTab('pools')}
+            onClick={() => {
+              setActiveAdminTab('games-management');
+              setGamesManagementSubTab('all-games');
+            }}
             className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'pools'
-                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
-                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Dices className="w-4 h-4" />
-            <span>Lottery Pools & Oracle</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-black/40 font-mono-numbers">
-              {activeEvents.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveAdminTab('games')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'games'
-                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
+              activeAdminTab === 'games-management' || activeAdminTab === 'pools' || activeAdminTab === 'games' || activeAdminTab === 'game-rounds'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md font-black'
                 : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
             }`}
           >
             <Gamepad2 className="w-4 h-4" />
-            <span>Game Catalog (12)</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-emerald-500/20 text-emerald-300 font-mono-numbers font-bold">
-              12 Active
+            <span>Games Management</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-black/40 font-mono-numbers text-amber-300 font-bold">
+              7 Hubs
             </span>
           </button>
 
           <button
-            onClick={() => { setActiveAdminTab('game-rounds'); fetchAdminGameRounds(); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'game-rounds'
-                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
+            onClick={() => {
+              setActiveAdminTab('games-management');
+              setGamesManagementSubTab('lottery-draws');
+            }}
+            className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              activeAdminTab === 'games-management' && gamesManagementSubTab === 'lottery-draws'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                 : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
             }`}
           >
-            <Binary className="w-4 h-4" />
-            <span>Game Rounds Audit</span>
+            <Dices className="w-3.5 h-3.5 text-amber-400" />
+            <span>Lottery Draws</span>
             <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-black/40 font-mono-numbers">
-              {adminGameRounds.length}
+              {activeEvents.length}
             </span>
           </button>
 
@@ -749,856 +742,51 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
         )}
 
         {/* ============================================================== */}
-        {/* TAB 2: LOTTERY POOLS & DRAW ORACLE                            */}
+        {/* UNIFIED GAMES MANAGEMENT SUPER-HUB (7 DEDICATED SECTIONS)     */}
         {/* ============================================================== */}
-        {activeAdminTab === 'pools' && (
-          <div className="space-y-8 animate-in fade-in duration-150">
-            {/* 2-Column Workstation: Deploy Pool & Draw Oracle */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
-              {/* Deploy New Event Form */}
-              <div className="lg:col-span-6 bg-[#0d1117] border border-[#272a31] rounded-2xl p-6 space-y-5 shadow-lg">
-                <div className="flex items-center gap-3 pb-3 border-b border-[#1f2737]">
-                  <PlusCircle className="w-5 h-5 text-amber-400" />
-                  <div>
-                    <h3 className="font-display font-bold text-base text-white">
-                      Deploy New Lottery Event
-                    </h3>
-                    <p className="text-xs text-[#9b8f7c]">
-                      Launch autonomous USDT pool with target draw duration
-                    </p>
-                  </div>
-                </div>
-
-                <form onSubmit={handleCreateSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                      Event Title
-                    </label>
-                    <input
-                      type="text"
-                      value={eventTitle}
-                      onChange={(e) => setEventTitle(e.target.value)}
-                      placeholder="e.g. VIP High Stakes 50 USDT Pot"
-                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white outline-none"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                        Ticket Price (USDT)
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={ticketPrice}
-                        onChange={(e) => setTicketPrice(e.target.value)}
-                        className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                        Duration (Minimum 1 min / 60 sec)
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="number"
-                          min="1"
-                          value={durationValue}
-                          onChange={(e) => setDurationValue(e.target.value)}
-                          placeholder="e.g. 60"
-                          className="bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
-                          required
-                        />
-                        <select
-                          value={durationUnit}
-                          onChange={(e) => setDurationUnit(e.target.value)}
-                          className="bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-2 py-2 text-xs text-white outline-none cursor-pointer"
-                        >
-                          <option value="minutes">Minutes</option>
-                          <option value="hours">Hours</option>
-                          <option value="days">Days</option>
-                        </select>
-                      </div>
-                      <p className="text-[10px] text-[#9b8f7c] mt-1">
-                        {durationUnit === 'minutes' ? `Pool will run for ${durationValue || 1} minute(s) (min 60s)` : `Pool will run for ${durationValue || 1} ${durationUnit}`}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Prize Distribution Structure */}
-                  <div className="p-3 rounded-xl bg-[#07090d] border border-[#272a31] space-y-3">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                      <label className="text-xs text-[#8b92a2] font-semibold">
-                        Prize Distribution Structure
-                      </label>
-                      <div className="flex items-center gap-1 bg-[#141924] p-1 rounded-lg border border-[#272a31]">
-                        <button
-                          type="button"
-                          onClick={() => setPrizeType('range')}
-                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
-                            prizeType === 'range' ? 'bg-amber-400 text-black shadow' : 'text-[#8b92a2] hover:text-white'
-                          }`}
-                        >
-                          Range (10 - 50 USDT)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPrizeType('fixed')}
-                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-all ${
-                            prizeType === 'fixed' ? 'bg-amber-400 text-black shadow' : 'text-[#8b92a2] hover:text-white'
-                          }`}
-                        >
-                          Fixed Jackpot (25,000)
-                        </button>
-                      </div>
-                    </div>
-
-                    {prizeType === 'range' ? (
-                      <div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-[11px] text-[#8b92a2] font-semibold mb-1">
-                              Minimum Prize (Floor USDT)
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={minPrize}
-                              onChange={(e) => setMinPrize(e.target.value)}
-                              placeholder="10"
-                              className="w-full bg-[#0b0e14] border border-[#1f2737] focus:border-[#ffd700] rounded-lg px-2.5 py-1.5 text-xs text-white font-mono-numbers outline-none"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] text-[#8b92a2] font-semibold mb-1">
-                              Maximum Prize (Cap USDT)
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={maxPrize}
-                              onChange={(e) => setMaxPrize(e.target.value)}
-                              placeholder="50"
-                              className="w-full bg-[#0b0e14] border border-[#1f2737] focus:border-[#ffd700] rounded-lg px-2.5 py-1.5 text-xs text-white font-mono-numbers outline-none"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-amber-400 mt-1.5 font-medium">
-                          🎯 Lucky winner receives a dynamic prize between <span className="font-bold underline">{minPrize} USDT and {maxPrize} USDT</span>!
-                        </p>
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="block text-[11px] text-[#8b92a2] font-semibold mb-1">
-                          Fixed Win Up To Jackpot Pot (USDT)
-                        </label>
-                        <input
-                          type="number"
-                          min="10"
-                          value={initialJackpot}
-                          onChange={(e) => setInitialJackpot(e.target.value)}
-                          placeholder="25000"
-                          className="w-full bg-[#0b0e14] border border-[#1f2737] focus:border-[#ffd700] rounded-lg px-2.5 py-1.5 text-xs text-white font-mono-numbers outline-none"
-                          required
-                        />
-                        <p className="text-[10px] text-[#9b8f7c] mt-1">
-                          Single exact winner can win up to this jackpot amount.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs text-[#8b92a2] font-semibold">
-                        Pre-Set Winning 4-Digit Seed:
-                      </label>
-                      <span className="text-[10px] text-[#05d5aa] font-bold">
-                        Single Winner Combination
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        maxLength={4}
-                        value={eventWinningDigits}
-                        onChange={(e) => setEventWinningDigits(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                        placeholder="7429"
-                        className="flex-1 bg-[#07090d] border border-amber-500/40 focus:border-[#ffd700] rounded-xl px-3 py-2 text-center text-white font-mono-numbers font-black text-sm tracking-[4px] outline-none"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setEventWinningDigits(String(Math.floor(1000 + Math.random() * 9000)))}
-                        className="px-2.5 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] border border-[#272a31] text-[11px] font-bold text-amber-400 flex items-center gap-1 cursor-pointer"
-                        title="Randomize Digits"
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                        <span>RNG</span>
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-[#9b8f7c] mt-1">
-                      Only this exact 4-digit number will win the full jackpot pot. All other combinations lose.
-                    </p>
-                  </div>
-
-                  {/* Event Badge / Tag */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs text-[#8b92a2] font-semibold">
-                        Event Badge / Tag
-                      </label>
-                      <span className="text-[10px] text-amber-400 font-bold">
-                        Card Top Pill
-                      </span>
-                    </div>
-                    <input
-                      type="text"
-                      value={eventBadge}
-                      onChange={(e) => setEventBadge(e.target.value)}
-                      placeholder="e.g. VIP DRAW, JACKPOT POT, BUMPER DRAW"
-                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white outline-none"
-                    />
-                  </div>
-
-                  {/* Banner Photo Upload or URL (Empty by default, upload when desired) */}
-                  <div className="space-y-3 p-3.5 rounded-xl bg-[#07090d] border border-[#272a31]">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div>
-                        <label className="text-xs text-white font-bold flex items-center gap-1.5">
-                          <Image className="w-4 h-4 text-amber-400" />
-                          <span>Event Banner Photo (Optional)</span>
-                        </label>
-                        <p className="text-[10px] text-[#8b92a2] mt-0.5">
-                          Upload image from phone/PC or paste any direct web image link
-                        </p>
-                      </div>
-
-                      <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-xs font-bold text-amber-400 flex items-center gap-1.5 transition-colors self-start sm:self-auto">
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>Upload From Device</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleBannerFileUpload}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="url"
-                        value={eventBannerImage}
-                        onChange={(e) => setEventBannerImage(e.target.value)}
-                        placeholder="Paste image URL (https://...)..."
-                        className="flex-1 bg-[#0b0e14] border border-[#1f2737] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono outline-none"
-                      />
-                      {eventBannerImage && (
-                        <button
-                          type="button"
-                          onClick={() => setEventBannerImage('')}
-                          className="px-2.5 py-2 rounded-lg bg-red-950/30 hover:bg-red-950/60 border border-red-500/30 text-red-400 text-xs font-bold transition-colors cursor-pointer"
-                          title="Remove Image"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Banner Preview if provided */}
-                    {eventBannerImage ? (
-                      <div className="space-y-2 pt-1">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-semibold text-emerald-400 flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Image Loaded Successfully
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setEventBannerImage('')}
-                            className="text-[10px] text-red-400 hover:underline cursor-pointer"
-                          >
-                            Remove Photo
-                          </button>
-                        </div>
-
-                        {/* Simulation Mini Card */}
-                        <div className="relative rounded-2xl overflow-hidden border border-amber-500/40 p-4 shadow-xl bg-[#0e121a]">
-                          <div 
-                            className="absolute inset-0 bg-cover bg-center opacity-30"
-                            style={{ backgroundImage: `url(${eventBannerImage})` }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#090c13] via-[#090c13]/70 to-transparent" />
-
-                          <div className="relative z-10 space-y-2.5">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm">
-                                {eventBadge || 'VIP DRAW'}
-                              </span>
-                              <span className="text-[10px] font-mono-numbers text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30">
-                                ⏱️ {durationValue || 60} {durationUnit}
-                              </span>
-                            </div>
-
-                            <div>
-                              <h4 className="font-display font-black text-sm text-white line-clamp-1">
-                                {eventTitle || 'Event Title Preview'}
-                              </h4>
-                              <p className="text-[10px] text-amber-400/90 font-medium">
-                                Entry: <span className="font-bold text-white">{ticketPrice} USDT</span>
-                              </p>
-                            </div>
-
-                            {/* Prize display */}
-                            <div className="p-2 rounded-xl bg-black/50 border border-amber-500/30 flex items-center justify-between">
-                              <span className="text-[10px] text-[#8b92a2] font-semibold">
-                                {prizeType === 'range' ? 'PRIZE RANGE:' : 'JACKPOT POT:'}
-                              </span>
-                              <span className="font-mono-numbers font-black text-xs text-amber-300">
-                                {prizeType === 'range' 
-                                  ? `${minPrize || 10} – ${maxPrize || 50} USDT` 
-                                  : `Up to ${Number(initialJackpot || 25000).toLocaleString()} USDT`}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-[10px] text-[#64748b]">
-                        💡 No image selected. If left blank, this event will be created using the sleek default dark gold platform styling.
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Winner Payout Share (%) */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs text-[#8b92a2] font-semibold">
-                        Winner Payout Share (%)
-                      </label>
-                      <span className="text-[10px] text-emerald-400 font-bold font-mono-numbers">
-                        Hidden from Users
-                      </span>
-                    </div>
-                    <input
-                      type="number"
-                      min="50"
-                      max="100"
-                      value={eventWinnerSharePercent}
-                      onChange={(e) => setEventWinnerSharePercent(e.target.value)}
-                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
-                      required
-                    />
-                    <p className="text-[10px] text-[#9b8f7c] mt-1">
-                      Percentage of pool collected to credit to exact winner (e.g. 90%).
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                      Number of Lucky Winners (Luck-Based):
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={eventWinnerCount}
-                      onChange={(e) => setEventWinnerCount(e.target.value)}
-                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
-                      required
-                    />
-                    <p className="text-[10px] text-[#9b8f7c] mt-1">
-                      Prize pool will be divided equally among this many lucky winners based on luck (e.g. 1, 5, 10, 12).
-                    </p>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>Deploy Contract to Supabase</span>
-                  </button>
-                </form>
-              </div>
-
-              {/* Draw Oracle Settlement Center */}
-              <div className="lg:col-span-6 bg-[#0d1117] border border-[#272a31] rounded-2xl p-6 space-y-5 shadow-lg">
-                <div className="flex items-center gap-3 pb-3 border-b border-[#1f2737]">
-                  <Dices className="w-5 h-5 text-[#05d5aa]" />
-                  <div>
-                    <h3 className="font-display font-bold text-base text-white">
-                      Cryptographic Draw Oracle
-                    </h3>
-                    <p className="text-xs text-[#9b8f7c]">
-                      Provably Fair Lucky Winners Settlement (Equal USDT Share)
-                    </p>
-                  </div>
-                </div>
-
-                <form onSubmit={handleTriggerDraw} className="space-y-4">
-                  <div>
-                    <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                      Select Active Event to Draw
-                    </label>
-                    <select
-                      value={selectedEventId}
-                      onChange={(e) => setSelectedEventId(e.target.value)}
-                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
-                    >
-                      {activeEvents.length === 0 ? (
-                        <option value="">No active events</option>
-                      ) : (
-                        activeEvents.map(e => (
-                          <option key={e.id} value={e.id}>
-                            {e.title} (Pot: Up to {e.poolPrize.toLocaleString()} USDT · {e.ticketsSold} Sold · {e.winnerCount || 1} Winners)
-                          </option>
-                        ))
-                      )}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                      Number of Lucky Winners to Draw:
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={drawWinnerCount}
-                      onChange={(e) => setDrawWinnerCount(e.target.value)}
-                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
-                      required
-                    />
-                    <p className="text-[10px] text-[#9b8f7c] mt-1">
-                      Total pool will be divided equally among all lucky winners based on provably fair luck (not rank-based).
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                      4-Digit Winning Combination:
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        maxLength={4}
-                        value={customDigits}
-                        onChange={(e) => setCustomDigits(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                        placeholder="7429"
-                        className="flex-1 bg-[#07090d] border border-amber-500/40 focus:border-[#ffd700] rounded-xl px-4 py-2 text-center text-white font-mono-numbers font-black text-xl tracking-[6px] outline-none"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setCustomDigits(String(Math.floor(1000 + Math.random() * 9000)))}
-                        className="px-3 py-2.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] border border-[#272a31] text-xs font-bold text-amber-400 flex items-center gap-1 cursor-pointer"
-                        title="Randomize Digits"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        <span>RNG</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Lucky Winners Allocation Banner */}
-                  <div className="p-3.5 bg-[#07090d] rounded-xl border border-amber-500/40 space-y-2">
-                    <div className="flex items-center justify-between text-amber-400 font-bold text-xs">
-                      <span className="flex items-center gap-1.5 font-display">
-                        <Trophy className="w-4 h-4 text-amber-400" />
-                        Lucky Winners Allocation ({drawWinnerCount} {parseInt(drawWinnerCount, 10) > 1 ? 'Winners' : 'Winner'}):
-                      </span>
-                      <span className="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded text-[10px] font-mono-numbers border border-amber-500/30 font-bold">
-                        EQUAL LUCK-BASED SHARE
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[#d2c5b0] leading-relaxed">
-                      {parseInt(drawWinnerCount, 10) > 1 
-                        ? `The total prize pool will be divided equally among ${drawWinnerCount} lucky winning tickets. Each winner gets an equal USDT share credited to their balance and queued for disbursal.`
-                        : `Only ticket holders with lucky 4-digit combination (${customDigits || '----'}) win the full jackpot pot (Up to ${selectedEvent ? selectedEvent.poolPrize.toLocaleString() : '---'} USDT).`}
-                    </p>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={!selectedEventId || customDigits.length < 4}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-[#05d5aa] text-black font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg disabled:opacity-50"
-                  >
-                    <Dices className="w-4 h-4" />
-                    <span>Execute Draw & Distribute Winnings</span>
-                  </button>
-                </form>
-              </div>
-
-            </div>
-
-            {/* Active Pools Management Table */}
-            <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-6 space-y-4">
-              <h3 className="font-display font-bold text-base text-white">
-                All Configured Lottery Events
-              </h3>
-              <div className="overflow-x-auto no-scrollbar">
-                <table className="w-full min-w-[760px] text-left text-xs">
-                  <thead className="bg-[#07090d] text-[#8b92a2] uppercase text-[10px] tracking-wider border-b border-[#1f2737]">
-                    <tr>
-                      <th className="py-3 px-3">Title</th>
-                      <th className="py-3 px-3">Price</th>
-                      <th className="py-3 px-3">Max Jackpot (Up to)</th>
-                      <th className="py-3 px-3">Sold</th>
-                      <th className="py-3 px-3">Winners</th>
-                      <th className="py-3 px-3">Winning Seed</th>
-                      <th className="py-3 px-3">Status</th>
-                      <th className="py-3 px-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#1f2737]">
-                    {events.map((evt) => (
-                      <tr key={evt.id} className="hover:bg-white/2">
-                        <td className="py-3 px-3 text-white font-medium">
-                          {evt.title}
-                        </td>
-                        <td className="py-3 px-3 font-mono-numbers text-amber-400 font-bold">
-                          {evt.ticketPrice} USDT
-                        </td>
-                        <td className="py-3 px-3 font-mono-numbers text-[#05d5aa] font-bold">
-                          Up to {evt.poolPrize.toLocaleString()} USDT
-                        </td>
-                        <td className="py-3 px-3 font-mono-numbers text-white">
-                          {evt.ticketsSold}
-                        </td>
-                        <td className="py-3 px-3 font-mono-numbers text-emerald-400 font-bold">
-                          {evt.winnerCount || 1}
-                        </td>
-                        <td className="py-3 px-3 font-mono-numbers font-bold tracking-widest text-amber-300">
-                          {evt.winningDigits || evt.targetWinningDigits || '—'}
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            evt.status === 'active' 
-                              ? 'bg-emerald-950/60 text-[#05d5aa] border border-[#05d5aa]/30' 
-                              : 'bg-zinc-800 text-zinc-400'
-                          }`}>
-                            {evt.status}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <button
-                            onClick={() => adminDeleteEvent(evt.id)}
-                            className="p-1.5 rounded-lg bg-red-950/30 hover:bg-red-950 text-red-400 hover:text-red-300 border border-red-500/30 transition-colors cursor-pointer"
-                            title="Delete Event"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ============================================================== */}
-        {/* TAB: 12-GAME CATALOG & ENGINE MANAGEMENT                      */}
-        {/* ============================================================== */}
-        {activeAdminTab === 'games' && (
-          <div className="space-y-6 animate-in fade-in duration-150">
-            {/* Header / Stats Banner */}
-            <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-6 shadow-lg space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1f2737]">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-emerald-500/20 border border-amber-500/40 flex items-center justify-center">
-                    <Gamepad2 className="w-5 h-5 text-amber-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-display font-bold text-base text-white">
-                      12 Modular Casino Games & Mathematical Models
-                    </h3>
-                    <p className="text-xs text-[#8b92a2]">
-                      Stake-compatible Provably Fair mathematical configurations, stake boundaries, and RTP models.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-mono-numbers font-bold">
-                    All 12 Modules Active
-                  </span>
-                </div>
-              </div>
-
-              {/* KPI Mini-cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-[#141924] p-3.5 rounded-xl border border-[#272a31]">
-                  <span className="text-[10px] text-[#8b92a2] uppercase font-bold block">Total Games</span>
-                  <span className="text-lg font-mono-numbers font-black text-white">12 Games</span>
-                </div>
-                <div className="bg-[#141924] p-3.5 rounded-xl border border-[#272a31]">
-                  <span className="text-[10px] text-[#8b92a2] uppercase font-bold block">Avg House Edge</span>
-                  <span className="text-lg font-mono-numbers font-black text-amber-400">1.4% Edge</span>
-                </div>
-                <div className="bg-[#141924] p-3.5 rounded-xl border border-[#272a31]">
-                  <span className="text-[10px] text-[#8b92a2] uppercase font-bold block">Max RTP</span>
-                  <span className="text-lg font-mono-numbers font-black text-emerald-400">99.5% (Blackjack)</span>
-                </div>
-                <div className="bg-[#141924] p-3.5 rounded-xl border border-[#272a31]">
-                  <span className="text-[10px] text-[#8b92a2] uppercase font-bold block">RNG Security</span>
-                  <span className="text-lg font-mono-numbers font-black text-purple-400">HMAC-SHA256</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 12 Game Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {GAMES.map((game) => (
-                <div
-                  key={game.id}
-                  className="rounded-2xl bg-[#0d1117] border border-[#272a31] hover:border-amber-500/40 p-5 space-y-3 transition-all shadow-md relative overflow-hidden text-left"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#141924] border border-amber-500/30 flex items-center justify-center text-xl shadow-inner shrink-0">
-                        {game.id === 'crash' ? '🚀' :
-                         game.id === 'dice' ? '🎲' :
-                         game.id === 'mines' ? '💣' :
-                         game.id === 'plinko' ? '🎯' :
-                         game.id === 'roulette' ? '🎡' :
-                         game.id === 'coinflip' ? '🪙' :
-                         game.id === 'blackjack' ? '🃏' :
-                         game.id === 'slots' ? '🎰' :
-                         game.id === 'poker' ? '♠️' :
-                         game.id === 'keno' ? '🎱' :
-                         game.id === 'limbo' ? '⚡' : '🎟️'}
-                      </div>
-                      <div>
-                        <h4 className="font-display font-bold text-sm text-white">
-                          {game.name}
-                        </h4>
-                        <span className="text-[10px] font-mono-numbers font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20 uppercase">
-                          {game.category}
-                        </span>
-                      </div>
-                    </div>
-
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(34,197,94,0.6)]" title="Operational" />
-                  </div>
-
-                  <p className="text-xs text-[#8b92a2] leading-snug line-clamp-2">
-                    {game.description}
-                  </p>
-
-                  <div className="grid grid-cols-3 gap-1.5 text-[11px] font-mono-numbers pt-2 border-t border-[#1f2737]">
-                    <div className="bg-[#141924] p-1.5 rounded text-center">
-                      <span className="text-[9px] text-[#64748b] block">Edge</span>
-                      <span className="text-amber-300 font-bold">{game.houseEdge}%</span>
-                    </div>
-                    <div className="bg-[#141924] p-1.5 rounded text-center">
-                      <span className="text-[9px] text-[#64748b] block">RTP</span>
-                      <span className="text-emerald-400 font-bold">{game.rtp}%</span>
-                    </div>
-                    <div className="bg-[#141924] p-1.5 rounded text-center">
-                      <span className="text-[9px] text-[#64748b] block">Max Mult</span>
-                      <span className="text-purple-300 font-bold">{game.maxMultiplier}x</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px] text-[#8b92a2] pt-1">
-                    <span>Stake: <strong className="text-white font-mono-numbers">{game.minStakeFC} - {game.maxStakeFC} FC</strong></span>
-                    <span className="text-[10px] text-emerald-400 font-bold">100% Provably Fair</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ============================================================== */}
-        {/* TAB: GAME ROUNDS AUDIT LEDGER (PROVABLY FAIR)                  */}
-        {/* ============================================================== */}
-        {activeAdminTab === 'game-rounds' && (
-          <div className="space-y-6 animate-in fade-in duration-150">
-            {/* Header & Controls */}
-            <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-6 shadow-lg space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1f2737]">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-purple-500/20 border border-amber-500/40 flex items-center justify-center">
-                    <Binary className="w-5 h-5 text-amber-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-display font-bold text-base text-white">
-                      Universal Game Rounds Cryptographic Audit Ledger
-                    </h3>
-                    <p className="text-xs text-[#8b92a2]">
-                      Real-time immutable log of game rounds across all 12 games with server seed reveals and outcomes.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => fetchAdminGameRounds()}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] border border-[#272a31] text-xs font-bold text-amber-400 flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${loadingGameRounds ? 'animate-spin' : ''}`} />
-                  <span>Refresh Ledger</span>
-                </button>
-              </div>
-
-              {/* Filters Bar */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <div className="flex items-center bg-[#141924] border border-[#272a31] rounded-xl px-3 py-1.5 text-xs">
-                    <Search className="w-3.5 h-3.5 text-[#8b92a2] mr-2 shrink-0" />
-                    <input
-                      type="text"
-                      placeholder="Search round ID, wallet, or game..."
-                      value={gameRoundsSearch}
-                      onChange={(e) => setGameRoundsSearch(e.target.value)}
-                      className="bg-transparent text-white outline-none w-full sm:w-60"
-                    />
-                  </div>
-
-                  <select
-                    value={gameRoundsSelectedGame}
-                    onChange={(e) => setGameRoundsSelectedGame(e.target.value)}
-                    className="bg-[#141924] border border-[#272a31] rounded-xl px-3 py-1.5 text-xs text-white outline-none cursor-pointer"
-                  >
-                    <option value="all">All 12 Games</option>
-                    {GAMES.map(g => (
-                      <option key={g.id} value={g.id}>{g.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-1 w-full sm:w-auto justify-end text-xs font-bold font-mono-numbers">
-                  {['all', 'won', 'lost'].map(st => (
-                    <button
-                      key={st}
-                      type="button"
-                      onClick={() => setGameRoundsFilter(st)}
-                      className={`px-3 py-1 rounded-lg border capitalize transition-all cursor-pointer ${
-                        gameRoundsFilter === st
-                          ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-black'
-                          : 'bg-[#141924] text-[#8b92a2] border-[#272a31]'
-                      }`}
-                    >
-                      {st}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Rounds Table */}
-            <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl overflow-hidden shadow-lg">
-              <div className="overflow-x-auto no-scrollbar">
-                <table className="w-full text-left text-xs font-mono-numbers">
-                  <thead className="bg-[#141924] text-[#8b92a2] uppercase text-[10px] tracking-wider border-b border-[#272a31]">
-                    <tr>
-                      <th className="py-3 px-3">Round ID</th>
-                      <th className="py-3 px-3">Game</th>
-                      <th className="py-3 px-3">Player Wallet</th>
-                      <th className="py-3 px-3">Bet Amount</th>
-                      <th className="py-3 px-3">Multiplier</th>
-                      <th className="py-3 px-3">Payout</th>
-                      <th className="py-3 px-3">Status</th>
-                      <th className="py-3 px-3">Commit Hash</th>
-                      <th className="py-3 px-3 text-right">Proof</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#1f2737]/60">
-                    {adminGameRounds
-                      .filter(r => {
-                        if (gameRoundsFilter === 'won') return r.status === 'won';
-                        if (gameRoundsFilter === 'lost') return r.status === 'lost';
-                        return true;
-                      })
-                      .filter(r => {
-                        if (gameRoundsSelectedGame !== 'all') return r.game_id === gameRoundsSelectedGame;
-                        return true;
-                      })
-                      .filter(r => {
-                        if (!gameRoundsSearch) return true;
-                        const q = gameRoundsSearch.toLowerCase();
-                        return (
-                          (r.id && r.id.toLowerCase().includes(q)) ||
-                          (r.game_id && r.game_id.toLowerCase().includes(q)) ||
-                          (r.wallet_address && r.wallet_address.toLowerCase().includes(q))
-                        );
-                      })
-                      .map((round) => (
-                        <tr key={round.id} className="hover:bg-white/2 transition-colors">
-                          <td className="py-3 px-3 text-amber-400 font-bold">
-                            {round.id.slice(-10)}
-                          </td>
-                          <td className="py-3 px-3 font-sans font-bold text-white capitalize">
-                            {round.game_id}
-                          </td>
-                          <td className="py-3 px-3 text-[#8b92a2]">
-                            <span className="truncate max-w-[100px] inline-block font-mono">
-                              {round.wallet_address ? `${round.wallet_address.slice(0, 6)}...${round.wallet_address.slice(-4)}` : 'Guest'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-white font-bold">
-                            {round.bet_amount} FC
-                          </td>
-                          <td className="py-3 px-3 text-purple-300 font-bold">
-                            {round.multiplier ? `${round.multiplier}x` : '—'}
-                          </td>
-                          <td className={`py-3 px-3 font-bold ${round.payout > 0 ? 'text-emerald-400' : 'text-[#64748b]'}`}>
-                            {round.payout > 0 ? `+${round.payout} FC` : '0 FC'}
-                          </td>
-                          <td className="py-3 px-3">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                              round.status === 'won'
-                                ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/30'
-                                : 'bg-rose-950/60 text-rose-400 border border-rose-500/30'
-                            }`}>
-                              {round.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 font-mono text-[10px] text-amber-300/80">
-                            {round.server_seed_hash ? `${round.server_seed_hash.slice(0, 10)}...` : '—'}
-                          </td>
-                          <td className="py-3 px-3 text-right">
-                            <button
-                              onClick={() => setAuditVerifyModalData({
-                                event_id: round.id,
-                                event_title: `${round.game_id.toUpperCase()} Round #${round.id.slice(-6)}`,
-                                winning_digits: round.multiplier ? `${round.multiplier}x` : '0x',
-                                commit_hash: round.server_seed_hash,
-                                revealed_seed: round.server_seed,
-                                client_seed: round.client_seed
-                              })}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold cursor-pointer transition-colors"
-                            >
-                              Verify Proof
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-
-                    {adminGameRounds.length === 0 && (
-                      <tr>
-                        <td colSpan={9} className="py-8 text-center text-xs text-[#8b92a2] italic">
-                          {loadingGameRounds ? 'Loading game rounds from database...' : 'No game rounds recorded yet.'}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+        {(activeAdminTab === 'games-management' || activeAdminTab === 'pools' || activeAdminTab === 'games' || activeAdminTab === 'game-rounds') && (
+          <GamesManagementSuperHub
+            initialSubTab={gamesManagementSubTab}
+            events={events}
+            activeEvents={activeEvents}
+            eventTitle={eventTitle}
+            setEventTitle={setEventTitle}
+            ticketPrice={ticketPrice}
+            setTicketPrice={setTicketPrice}
+            durationValue={durationValue}
+            setDurationValue={setDurationValue}
+            durationUnit={durationUnit}
+            setDurationUnit={setDurationUnit}
+            prizeType={prizeType}
+            setPrizeType={setPrizeType}
+            minPrize={minPrize}
+            setMinPrize={setMinPrize}
+            maxPrize={maxPrize}
+            setMaxPrize={setMaxPrize}
+            initialJackpot={initialJackpot}
+            setInitialJackpot={setInitialJackpot}
+            eventWinningDigits={eventWinningDigits}
+            setEventWinningDigits={setEventWinningDigits}
+            eventBadge={eventBadge}
+            setEventBadge={setEventBadge}
+            eventBannerImage={eventBannerImage}
+            setEventBannerImage={setEventBannerImage}
+            handleBannerFileUpload={handleBannerFileUpload}
+            eventWinnerSharePercent={eventWinnerSharePercent}
+            setEventWinnerSharePercent={setEventWinnerSharePercent}
+            eventWinnerCount={eventWinnerCount}
+            setEventWinnerCount={setEventWinnerCount}
+            handleCreateSubmit={handleCreateSubmit}
+            selectedEventId={selectedEventId}
+            setSelectedEventId={setSelectedEventId}
+            drawWinnerCount={drawWinnerCount}
+            setDrawWinnerCount={setDrawWinnerCount}
+            customDigits={customDigits}
+            setCustomDigits={setCustomDigits}
+            handleTriggerDraw={handleTriggerDraw}
+            adminDeleteEvent={adminDeleteEvent}
+            showToast={showToast}
+          />
         )}
 
         {/* ============================================================== */}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { generateLimboMultiplier, calculateLimboOdds } from '../engine';
 import { 
@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export default function LimboGame() {
+export default function LimboGame({ room }) {
   const {
     game,
     betAmount,
@@ -32,6 +32,15 @@ export default function LimboGame() {
     walletBalance,
     loading
   } = useGameEngine('limbo');
+
+  // Enforce room-specific stake bounds
+  useEffect(() => {
+    if (room?.minStakeFC && betAmount < room.minStakeFC) {
+      setBetAmount(room.minStakeFC);
+    } else if (room?.maxStakeFC && betAmount > room.maxStakeFC) {
+      setBetAmount(room.maxStakeFC);
+    }
+  }, [room?.minStakeFC, room?.maxStakeFC]);
 
   // Target multiplier: 1.01x to 10,000x (Default: 2.00x)
   const [targetMultiplier, setTargetMultiplier] = useState(2.00);
@@ -121,8 +130,10 @@ export default function LimboGame() {
       outcomeData: {
         targetMultiplier,
         derivedOutcome: outcome,
-        isWin
-      }
+        isWin,
+        roomId: room?.id
+      },
+      metadata: { roomId: room?.id, roomName: room?.name }
     });
 
     // Update history ticker

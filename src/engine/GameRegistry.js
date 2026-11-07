@@ -25,7 +25,8 @@ export const GAMES = [
     id: 'lottery',
     name: 'Four-Digit Lottery',
     shortName: 'Lottery',
-    slug: 'lottery',
+    slug: 'four-digit-lottery',
+    aliases: ['lottery', '4-digit-lottery'],
     category: GAME_CATEGORIES.LOTTERY,
     badge: 'JACKPOT',
     themeColor: '#ffd700',
@@ -176,7 +177,8 @@ export const GAMES = [
     id: 'roulette',
     name: 'European Roulette',
     shortName: 'Roulette',
-    slug: 'roulette',
+    slug: 'european-roulette',
+    aliases: ['roulette'],
     category: GAME_CATEGORIES.TABLE,
     badge: 'CASINO VIP',
     themeColor: '#dc2626',
@@ -234,7 +236,8 @@ export const GAMES = [
     id: 'blackjack',
     name: 'Blackjack 21',
     shortName: 'Blackjack',
-    slug: 'blackjack',
+    slug: 'blackjack-21',
+    aliases: ['blackjack'],
     category: GAME_CATEGORIES.CARD,
     badge: 'STRATEGY',
     themeColor: '#10b981',
@@ -264,7 +267,8 @@ export const GAMES = [
     id: 'slots',
     name: 'Golden Reels Slot',
     shortName: 'Slots',
-    slug: 'slots',
+    slug: 'golden-reels-slot',
+    aliases: ['slots', 'golden-reels'],
     category: GAME_CATEGORIES.SLOTS,
     badge: 'VEGAS',
     themeColor: '#8b5cf6',
@@ -293,7 +297,8 @@ export const GAMES = [
     id: 'poker',
     name: "Texas Hold'em Poker",
     shortName: 'Poker',
-    slug: 'poker',
+    slug: 'texas-holdem-poker',
+    aliases: ['poker', 'texas-holdem'],
     category: GAME_CATEGORIES.CARD,
     badge: 'SKILL',
     themeColor: '#06b6d4',
@@ -323,7 +328,8 @@ export const GAMES = [
     id: 'keno',
     name: 'Classic Keno',
     shortName: 'Keno',
-    slug: 'keno',
+    slug: 'classic-keno',
+    aliases: ['keno'],
     category: GAME_CATEGORIES.ARCADE,
     badge: 'LOTTO',
     themeColor: '#14b8a6',
@@ -376,10 +382,15 @@ export const GAMES = [
   }
 ];
 
-// Helper: Find game by ID
-export function getGameById(id) {
-  if (!id) return null;
-  return GAMES.find(g => g.id.toLowerCase() === id.toLowerCase() || g.slug.toLowerCase() === id.toLowerCase()) || null;
+// Helper: Find game by ID, slug, or alias
+export function getGameById(idOrSlug) {
+  if (!idOrSlug) return null;
+  const key = idOrSlug.toLowerCase().trim();
+  return GAMES.find(g => 
+    g.id.toLowerCase() === key || 
+    g.slug.toLowerCase() === key || 
+    (Array.isArray(g.aliases) && g.aliases.some(a => a.toLowerCase() === key))
+  ) || null;
 }
 
 // Helper: Filter games by category

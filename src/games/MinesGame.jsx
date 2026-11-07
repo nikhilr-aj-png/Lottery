@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { generateMinesGrid, calculateMinesMultiplier } from '../engine';
 import { 
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export default function MinesGame() {
+export default function MinesGame({ room }) {
   const {
     game,
     betAmount,
@@ -30,6 +30,15 @@ export default function MinesGame() {
     walletBalance,
     loading
   } = useGameEngine('mines');
+
+  // Enforce room-specific stake bounds
+  useEffect(() => {
+    if (room?.minStakeFC && betAmount < room.minStakeFC) {
+      setBetAmount(room.minStakeFC);
+    } else if (room?.maxStakeFC && betAmount > room.maxStakeFC) {
+      setBetAmount(room.maxStakeFC);
+    }
+  }, [room?.minStakeFC, room?.maxStakeFC]);
 
   // Mine count: 1 to 24 (Default: 3)
   const [mineCount, setMineCount] = useState(3);
@@ -145,8 +154,10 @@ export default function MinesGame() {
         gemsUncovered: uncoveredGems,
         mineCount,
         minePositions,
-        explodedAt: explodedIndex
-      }
+        explodedAt: explodedIndex,
+        roomId: room?.id
+      },
+      metadata: { roomId: room?.id, roomName: room?.name }
     });
 
     setRecentRounds(prev => [
@@ -196,8 +207,10 @@ export default function MinesGame() {
         gemsUncovered: uncoveredGems,
         mineCount,
         minePositions,
-        cashedOut: true
-      }
+        cashedOut: true,
+        roomId: room?.id
+      },
+      metadata: { roomId: room?.id, roomName: room?.name }
     });
 
     setRecentRounds(prev => [

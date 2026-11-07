@@ -27,6 +27,8 @@ import TermsPage from './pages/TermsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import ContactPage from './pages/ContactPage';
 import AdminPortal from './admin/AdminPortal';
+import GamePage from './pages/GamePage';
+import { getGameById } from './engine';
 import { PwaProvider, usePwa } from './context/PwaContext';
 import PwaInstallBanner from './components/PwaInstallBanner';
 import PwaInstallModal from './components/PwaInstallModal';
@@ -108,6 +110,43 @@ function LotteryAppContent() {
   const [activeGameId, setActiveGameId] = useState(null);
   const [isFairnessModalOpen, setIsFairnessModalOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  // Parse dedicated game routes: /games/:gameSlug or /games/:gameSlug/:roomId
+  const parseGameRoute = (path) => {
+    if (!path) return null;
+    const cleanPath = path.split('?')[0].split('#')[0];
+    const match = cleanPath.match(/^\/games\/([^\/]+)(?:\/([^\/]+))?/);
+    if (match) {
+      return { gameSlug: match[1], roomId: match[2] || null };
+    }
+    return null;
+  };
+
+  const [currentGameRoute, setCurrentGameRoute] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return parseGameRoute(window.location.pathname);
+    }
+    return null;
+  });
+
+  // Programmatic navigation for SPA routing
+  const navigate = (path) => {
+    try {
+      window.history.pushState(null, '', path);
+    } catch (e) {}
+    const gr = parseGameRoute(path);
+    setCurrentGameRoute(gr);
+    if (gr) {
+      setActiveGameId(null);
+    }
+    if (path === '/admin') {
+      setIsAdminRoute(true);
+      setIsViewingUserLobby(false);
+    } else {
+      setIsAdminRoute(false);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   
   // Dedicated check for isolated Admin Route
   const [isAdminRoute, setIsAdminRoute] = useState(() => {
@@ -127,20 +166,14 @@ function LotteryAppContent() {
     sessionStorage.setItem('earnflow_view_mode_user', 'true');
     setIsViewingUserLobby(true);
     setIsAdminRoute(false);
-    try {
-      window.history.pushState(null, 'EarnFlow.In USDT', '/');
-    } catch (e) {}
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate('/');
   };
 
   const switchToAdminConsole = () => {
     sessionStorage.removeItem('earnflow_view_mode_user');
     setIsViewingUserLobby(false);
     setIsAdminRoute(true);
-    try {
-      window.history.pushState(null, 'Admin Console · EarnFlow.In', '/admin');
-    } catch (e) {}
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate('/admin');
   };
 
   useEffect(() => {
@@ -155,6 +188,9 @@ function LotteryAppContent() {
         const userMode = sessionStorage.getItem('earnflow_view_mode_user') === 'true';
         setIsViewingUserLobby(userMode);
       }
+
+      const gr = parseGameRoute(window.location.pathname);
+      setCurrentGameRoute(gr);
     };
 
     window.addEventListener('hashchange', handleLocationChange);
@@ -269,7 +305,10 @@ function LotteryAppContent() {
       />
 
       {/* Live Bets and High Rollers Realtime Activity Ticker */}
-      <LiveBetsTicker onSelectGame={(gid) => setActiveGameId(gid)} />
+      <LiveBetsTicker onSelectGame={(gid) => {
+        const g = getGameById(gid);
+        navigate('/games/' + (g?.slug || gid));
+      }} />
 
       {/* Main Layout: Left Navigation Sidebar + Content Area */}
       <div className="flex-1 flex overflow-hidden w-full max-w-[2000px] mx-auto min-w-0">
@@ -280,105 +319,129 @@ function LotteryAppContent() {
           onClose={() => setIsMobileSidebarOpen(false)}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
-          activeTab={activeTab}
+          activeTab={currentGameRoute ? `game-${currentGameRoute.gameSlug}` : activeTab}
           onSelectTab={(tab) => {
+            if (currentGameRoute) {
+              navigate('/');
+            }
             if (tab === 'fairness') {
               setIsFairnessModalOpen(true);
             } else {
               setActiveTab(tab);
             }
           }}
-          onLaunchGame={(gid) => setActiveGameId(gid)}
+          onLaunchGame={(gid) => {
+            const g = getGameById(gid);
+            navigate('/games/' + (g?.slug || gid));
+          }}
         />
 
         {/* Main Content Pane */}
         <main className="flex-1 min-w-0 overflow-y-auto pb-24 md:pb-12 px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 text-left">
           
-          {/* VIEW 1: MULTI-GAME CASINO LOBBY & FOUR-DIGIT LOTTERY */}
-          {activeTab === 'lotteries' && (
-            <CasinoLobby 
-              onLaunchGame={(gid) => setActiveGameId(gid)}
-              onOpenLotteryRules={() => setIsRulesModalOpen(true)}
-            />
-          )}
-
-          {/* VIEW 2: WALLET & 24H PAYOUTS */}
-        {activeTab === 'wallet' && (user ? <WalletView /> : (
-          <AuthRequiredPrompt 
-            title="USDT Wallet & 24h Payouts" 
-            onLogin={() => setIsAuthModalOpen(true)} 
-            onHome={() => setActiveTab('lotteries')} 
-          />
-        ))}
-
-        {/* VIEW 3: MY TICKETS */}
-        {activeTab === 'tickets' && (user ? (
-          <MyTicketsView 
-            onOpenPicker={() => {
-              const liveEvent = activeEvents[0];
-              if (liveEvent) {
-                setSelectedEventForModal(liveEvent);
-              } else {
+          {/* DEDICATED GAME ROUTE VIEW (LOBBY OR DEDICATED ROOM) */}
+          {currentGameRoute ? (
+            <GamePage
+              gameSlug={currentGameRoute.gameSlug}
+              roomId={currentGameRoute.roomId}
+              onNavigate={(path) => navigate(path)}
+              onBackToHome={() => {
+                navigate('/');
                 setActiveTab('lotteries');
-                showToast('All previous rounds have ended! Check Results tab.', 'info');
-              }
-            }} 
-          />
-        ) : (
-          <AuthRequiredPrompt 
-            title="My Lottery Tickets" 
-            onLogin={() => setIsAuthModalOpen(true)} 
-            onHome={() => setActiveTab('lotteries')} 
-          />
-        ))}
+              }}
+            />
+          ) : (
+            <>
+              {/* VIEW 1: MULTI-GAME CASINO LOBBY & FOUR-DIGIT LOTTERY */}
+              {activeTab === 'lotteries' && (
+                <CasinoLobby 
+                  onLaunchGame={(gid) => {
+                    const g = getGameById(gid);
+                    navigate('/games/' + (g?.slug || gid));
+                  }}
+                  onOpenLotteryRules={() => setIsRulesModalOpen(true)}
+                />
+              )}
 
-        {/* VIEW 4: RESULTS */}
-        {activeTab === 'results' && (user ? <ResultsView /> : (
-          <AuthRequiredPrompt 
-            title="Draw Results & Past Winners" 
-            onLogin={() => setIsAuthModalOpen(true)} 
-            onHome={() => setActiveTab('lotteries')} 
-          />
-        ))}
+              {/* VIEW 2: WALLET & 24H PAYOUTS */}
+              {activeTab === 'wallet' && (user ? <WalletView /> : (
+                <AuthRequiredPrompt 
+                  title="USDT Wallet & 24h Payouts" 
+                  onLogin={() => setIsAuthModalOpen(true)} 
+                  onHome={() => setActiveTab('lotteries')} 
+                />
+              ))}
 
-        {/* VIEW 5: PLAYER PROFILE FULL SCREEN PAGE */}
-        {activeTab === 'profile' && (user ? (
-          <ProfileView 
-            onSwitchToAdmin={switchToAdminConsole}
-            onBackToHome={() => setActiveTab('lotteries')}
-          />
-        ) : (
-          <AuthRequiredPrompt 
-            title="Player Profile & Account Settings" 
-            onLogin={() => setIsAuthModalOpen(true)} 
-            onHome={() => setActiveTab('lotteries')} 
-          />
-        ))}
+              {/* VIEW 3: MY TICKETS */}
+              {activeTab === 'tickets' && (user ? (
+                <MyTicketsView 
+                  onOpenPicker={() => {
+                    const liveEvent = activeEvents[0];
+                    if (liveEvent) {
+                      setSelectedEventForModal(liveEvent);
+                    } else {
+                      setActiveTab('lotteries');
+                      showToast('All previous rounds have ended! Check Results tab.', 'info');
+                    }
+                  }} 
+                />
+              ) : (
+                <AuthRequiredPrompt 
+                  title="My Lottery Tickets" 
+                  onLogin={() => setIsAuthModalOpen(true)} 
+                  onHome={() => setActiveTab('lotteries')} 
+                />
+              ))}
 
-        {/* VIEW 8: REWARDS & DAILY BONUS FAUCET */}
-        {activeTab === 'rewards' && (
-          <RewardsView />
-        )}
+              {/* VIEW 4: RESULTS */}
+              {activeTab === 'results' && (user ? <ResultsView /> : (
+                <AuthRequiredPrompt 
+                  title="Draw Results & Past Winners" 
+                  onLogin={() => setIsAuthModalOpen(true)} 
+                  onHome={() => setActiveTab('lotteries')} 
+                />
+              ))}
 
-        {/* VIEW 9: SOCIAL LEADERBOARD & HIGH ROLLERS */}
-        {activeTab === 'leaderboard' && (
-          <LeaderboardView />
-        )}
+              {/* VIEW 5: PLAYER PROFILE FULL SCREEN PAGE */}
+              {activeTab === 'profile' && (user ? (
+                <ProfileView 
+                  onSwitchToAdmin={switchToAdminConsole}
+                  onBackToHome={() => setActiveTab('lotteries')}
+                />
+              ) : (
+                <AuthRequiredPrompt 
+                  title="Player Profile & Account Settings" 
+                  onLogin={() => setIsAuthModalOpen(true)} 
+                  onHome={() => setActiveTab('lotteries')} 
+                />
+              ))}
 
-        {/* VIEW 10: CUSTOMER SUPPORT, FAQ & RESPONSIBLE GAMING */}
-        {(activeTab === 'support' || activeTab === 'contact') && (
-          <SupportView />
-        )}
+              {/* VIEW 8: REWARDS & DAILY BONUS FAUCET */}
+              {activeTab === 'rewards' && (
+                <RewardsView />
+              )}
 
-        {/* VIEW 11: TERMS & CONDITIONS PAGE */}
-        {activeTab === 'terms' && (
-          <TermsPage onBackToHome={() => setActiveTab('lotteries')} />
-        )}
+              {/* VIEW 9: SOCIAL LEADERBOARD & HIGH ROLLERS */}
+              {activeTab === 'leaderboard' && (
+                <LeaderboardView />
+              )}
 
-        {/* VIEW 12: PRIVACY POLICY PAGE */}
-        {activeTab === 'privacy' && (
-          <PrivacyPolicyPage onBackToHome={() => setActiveTab('lotteries')} />
-        )}
+              {/* VIEW 10: CUSTOMER SUPPORT, FAQ & RESPONSIBLE GAMING */}
+              {(activeTab === 'support' || activeTab === 'contact') && (
+                <SupportView />
+              )}
+
+              {/* VIEW 11: TERMS & CONDITIONS PAGE */}
+              {activeTab === 'terms' && (
+                <TermsPage onBackToHome={() => setActiveTab('lotteries')} />
+              )}
+
+              {/* VIEW 12: PRIVACY POLICY PAGE */}
+              {activeTab === 'privacy' && (
+                <PrivacyPolicyPage onBackToHome={() => setActiveTab('lotteries')} />
+              )}
+            </>
+          )}
 
       </main>
 

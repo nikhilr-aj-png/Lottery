@@ -162,23 +162,29 @@ export default function ProvablyFairModal({ isOpen, onClose, event, auditData = 
           )}
         </div>
 
-        {/* Winning Number Balls Showcase */}
+        {/* Winning Number Balls or Casino Outcome Showcase */}
         <div className="my-5 bg-[#07090e] p-4 rounded-2xl border border-[#1f2737] flex flex-col items-center justify-center text-center">
           <span className="text-[10px] uppercase font-mono-numbers tracking-widest text-[#94A3B8] mb-2 font-bold">
-            Authoritative Winning Sequence (0000 - 9999)
+            {/^\d{4}$/.test(String(winningDigits)) ? 'Authoritative Winning Sequence (0000 - 9999)' : 'Authoritative Verified Round Outcome'}
           </span>
-          <div className="flex items-center gap-2 xs:gap-3">
-            {String(winningDigits).padStart(4, '0').split('').map((digit, idx) => (
-              <div
-                key={idx}
-                className="w-11 xs:w-12 sm:w-14 h-11 xs:h-12 sm:h-14 rounded-2xl bg-gradient-to-b from-[#1E293B] to-[#0F172A] border-2 border-emerald-400 flex items-center justify-center font-display font-black text-xl xs:text-2xl text-emerald-300 shadow-[0_0_18px_rgba(5,213,170,0.3)] font-mono-numbers"
-              >
-                {digit}
-              </div>
-            ))}
-          </div>
+          {/^\d{4}$/.test(String(winningDigits)) ? (
+            <div className="flex items-center gap-2 xs:gap-3">
+              {String(winningDigits).split('').map((digit, idx) => (
+                <div
+                  key={idx}
+                  className="w-11 xs:w-12 sm:w-14 h-11 xs:h-12 sm:h-14 rounded-2xl bg-gradient-to-b from-[#1E293B] to-[#0F172A] border-2 border-emerald-400 flex items-center justify-center font-display font-black text-xl xs:text-2xl text-emerald-300 shadow-[0_0_18px_rgba(5,213,170,0.3)] font-mono-numbers"
+                >
+                  {digit}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-emerald-500/15 to-purple-500/15 border-2 border-emerald-400 font-mono-numbers font-black text-xl xs:text-2xl text-emerald-300 shadow-[0_0_20px_rgba(34,197,94,0.25)]">
+              {winningDigits}
+            </div>
+          )}
           <span className="text-[10px] font-mono-numbers text-emerald-400 font-bold mt-2.5">
-            Formula Derived: {computedDigits}
+            Cryptographically Derived Outcome: {computedDigits}
           </span>
         </div>
 
@@ -190,12 +196,12 @@ export default function ProvablyFairModal({ isOpen, onClose, event, auditData = 
             <div className="flex items-center justify-between text-[11px]">
               <div className="flex items-center gap-1.5 text-amber-400 font-bold">
                 <Lock className="w-3.5 h-3.5" />
-                <span>1. Pre-Draw Commitment (SHA-256 Commit Hash)</span>
+                <span>1. Pre-Round Commitment (SHA-256 Commit Hash)</span>
               </div>
-              <span className="text-[9px] text-[#94A3B8] uppercase">Published Before Draw</span>
+              <span className="text-[9px] text-[#94A3B8] uppercase">Published Pre-Round</span>
             </div>
             <p className="text-[10px] text-[#94A3B8] font-sans">
-              Generated before ticket sales commenced; guarantees the casino cannot alter the server seed after bets are placed.
+              Generated before any bet is accepted; guarantees the casino cannot alter the server seed after bets are placed.
             </p>
             <div className="flex items-center justify-between bg-[#07090e] p-2 rounded-xl border border-[#1f2737] text-[10px] break-all">
               <span className="text-amber-300 font-mono select-all truncate pr-2">
@@ -223,7 +229,7 @@ export default function ProvablyFairModal({ isOpen, onClose, event, auditData = 
               </span>
             </div>
             <p className="text-[10px] text-[#94A3B8] font-sans">
-              Unveiled to the public immediately upon draw cutoff. Anyone can hash this seed to independently verify the commit hash.
+              Unveiled to the player immediately upon completion of round/rotation. Hash this string to independently confirm the commit hash.
             </p>
             <div className="flex items-center justify-between bg-[#07090e] p-2 rounded-xl border border-[#1f2737] text-[10px] break-all">
               <span className="text-purple-300 font-mono select-all truncate pr-2">
@@ -239,19 +245,19 @@ export default function ProvablyFairModal({ isOpen, onClose, event, auditData = 
             </div>
           </div>
 
-          {/* Step 3: Client Seed & Ticket Snapshot */}
+          {/* Step 3: Client Seed & Nonce */}
           <div className="bg-[#111827] p-3.5 rounded-2xl border border-[#1f2737] space-y-1.5">
             <div className="flex items-center justify-between text-[11px]">
               <div className="flex items-center gap-1.5 text-blue-400 font-bold">
                 <Binary className="w-3.5 h-3.5" />
-                <span>3. Client Seed / Player Ticket Snapshot</span>
+                <span>3. Client Seed & Nonce Entropy</span>
               </div>
               <span className="text-[9px] text-[#94A3B8] uppercase">
-                {event?.snapshotCount || verification?.snapshot_count || 0} Tickets Snapshot
+                {auditData?.nonce ? `Nonce #${auditData.nonce}` : `${event?.snapshotCount || verification?.snapshot_count || 0} Tickets Snapshot`}
               </span>
             </div>
             <p className="text-[10px] text-[#94A3B8] font-sans">
-              Derived from the cryptographic snapshot of all player ticket IDs active at the draw timestamp.
+              Client-controlled randomness contributed by the player before placing bets.
             </p>
             <div className="flex items-center justify-between bg-[#07090e] p-2 rounded-xl border border-[#1f2737] text-[10px] break-all">
               <span className="text-blue-300 font-mono select-all truncate pr-2">
@@ -278,13 +284,15 @@ export default function ProvablyFairModal({ isOpen, onClose, event, auditData = 
             </div>
             <div className="bg-[#07090e] p-2.5 rounded-xl border border-[#1f2737] text-[10px] text-[#94A3B8] space-y-1 font-mono">
               <div className="text-emerald-400 font-semibold">
-                Combined = ServerSeed : ClientSeed : EventID
+                {/^\d{4}$/.test(String(winningDigits)) ? 'Combined = ServerSeed : ClientSeed : EventID' : 'HMAC = HMAC_SHA256(ServerSeed, ClientSeed : Nonce)'}
               </div>
               <div>
-                Hash = SHA-256(Combined)
+                {/^\d{4}$/.test(String(winningDigits)) ? 'Hash = SHA-256(Combined)' : 'Bytes = HexToBytes(HMAC)'}
               </div>
               <div className="text-amber-300">
-                WinningDigits = (uint32(Hash[0..8]) % 10000).padStart(4, '0') = <span className="font-bold text-emerald-300">"{winningDigits}"</span>
+                {/^\d{4}$/.test(String(winningDigits)) 
+                  ? `WinningDigits = (uint32(Hash[0..8]) % 10000).padStart(4, '0') = "${winningDigits}"` 
+                  : `Outcome = DeriveDeterministicResult(Bytes) => "${winningDigits}"`}
               </div>
             </div>
           </div>
