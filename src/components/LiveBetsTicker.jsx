@@ -71,18 +71,17 @@ export default function LiveBetsTicker({ onSelectGame }) {
     <div className="w-full bg-[#07090E] border-y border-[#1F2737] py-1.5 sm:py-2 px-2 xs:px-3 sm:px-6">
       <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto flex items-center justify-between gap-1.5 sm:gap-2.5 overflow-hidden">
         
-        {/* Left: Ticker Label & Filter Tabs (Single row on mobile & desktop) */}
-        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 select-none">
-          <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-amber-400 mr-0.5 sm:mr-1.5 uppercase tracking-wider font-display shrink-0">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            <span className="hidden sm:inline">Live Activity</span>
-            <span className="sm:hidden">Live</span>
+        {/* Left: Ticker Label & Filter Tabs */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 select-none">
+          <div className="flex items-center gap-1 px-1.5 xs:px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] sm:text-[11px] font-bold text-emerald-400 font-display shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="hidden xs:inline">LIVE</span>
           </div>
 
           <div className="flex items-center bg-[#111827] p-0.5 rounded-xl border border-[#1F2737] text-[9px] sm:text-[10px] font-bold">
             <button
               onClick={() => setActiveFeedTab('all')}
-              className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg transition-all cursor-pointer ${
+              className={`px-1.5 xs:px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg transition-all cursor-pointer ${
                 activeFeedTab === 'all'
                   ? 'bg-amber-500 text-black font-extrabold shadow-sm'
                   : 'text-[#94A3B8] hover:text-white'
@@ -92,15 +91,15 @@ export default function LiveBetsTicker({ onSelectGame }) {
             </button>
             <button
               onClick={() => setActiveFeedTab('high')}
-              className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-1.5 xs:px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                 activeFeedTab === 'high'
                   ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-extrabold shadow-sm'
                   : 'text-[#94A3B8] hover:text-purple-300'
               }`}
             >
-              <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-300" />
-              <span className="hidden xs:inline">High Rollers</span>
-              <span className="xs:hidden">High</span>
+              <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-300 shrink-0" />
+              <span className="hidden sm:inline">High Rollers</span>
+              <span className="sm:hidden">High</span>
             </button>
             {wallet.address && (
               <button
@@ -133,13 +132,13 @@ export default function LiveBetsTicker({ onSelectGame }) {
                     onClick={() => {
                       if (onSelectGame && bet.gameId) onSelectGame(bet.gameId);
                     }}
-                    className="flex items-center gap-1.5 sm:gap-2 bg-[#111827] hover:bg-[#151C2B] border border-[#1F2737] hover:border-amber-500/40 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl transition-all cursor-pointer shadow-sm group shrink-0"
+                    className="flex items-center gap-1.5 bg-[#111827] hover:bg-[#151C2B] border border-[#1F2737] hover:border-amber-500/40 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl transition-all cursor-pointer shadow-sm group shrink-0"
                     title="Click to view game"
                   >
                     <span className="text-xs sm:text-sm shrink-0">{getGameEmoji(bet.gameId)}</span>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-1 text-[9px] sm:text-[10px] font-mono-numbers">
-                        <span className="font-sans font-semibold text-[#F8FAFC] group-hover:text-amber-300 transition-colors truncate max-w-[55px] xs:max-w-[75px] sm:max-w-[85px]">
+                        <span className="font-sans font-semibold text-[#F8FAFC] group-hover:text-amber-300 transition-colors truncate max-w-[50px] xs:max-w-[70px] sm:max-w-[85px]">
                           {bet.username}
                         </span>
                         <span className="text-[#94A3B8]">·</span>

@@ -156,3 +156,27 @@
   - Min touch targets >= 44px on mobile interactive controls.
   - 100% production build pass in Vite.
 
+---
+
+## 5. Critical Mobile Header Overflow & Navigation Spacing Refinement
+
+> **Status:** 100% Complete & Verified  
+> **Key Architecture Change:** Two-Row Header on Mobile (`< 640px`), Adaptive Navigation on Tablet & Desktop  
+> **Automated Verification:** 33/33 assertions passing ([`scratch/test_phase5_final_matrix.mjs`](file:///d:/vs.code/Lottery/scratch/test_phase5_final_matrix.mjs))
+
+- [x] **Mobile Header Two-Row Architecture (`Navbar.jsx`):**
+  - **Row 1:** Hamburger menu, EarnFlow.In logo + brand, Notifications bell, Profile avatar (full `@username` hidden on `< 640px` to eliminate horizontal crowding).
+  - **Row 2:** Dedicated full-width Flow Coins balance strip (`Coins` icon, balance number, `FC` badge, quick `Wallet` button, and `+100` daily faucet claim button). Zero collision with logo or right controls.
+- [x] **Adaptive Tablet & Desktop Header Navigation (`Navbar.jsx`):**
+  - **Tablet (`768px`):** 4 primary core tabs (`Home`, `My Tickets`, `Results`, `Wallet`) displayed in a centered compact pill without horizontal overflow.
+  - **Laptop (`1024px`):** 5 tabs displayed (`Rewards` tab activates).
+  - **Desktop (`1280px` / `1440px`):** All 6 tabs displayed (`Support` tab activates) along with the full brand subtitle `"Casino & Multi-Game Platform"`.
+- [x] **Live Casino Activity Bar Refinement (`LiveBetsTicker.jsx`):**
+  - Separated `LIVE` indicator into its own compact emerald glowing pill.
+  - Horizontally scrolling activity cards track contained in `overflow-x-auto no-scrollbar` without expanding page width.
+- [x] **Hero VIP Badge Wrapping Fix (`CasinoLobby.jsx`):**
+  - Removed rigid single-line `truncate` clipping; applied `whitespace-normal break-words sm:whitespace-nowrap` allowing natural 2-line wrapping on narrow mobile displays without clipping.
+- [x] **PWA Install Banner Positioning (`PwaInstallBanner.jsx`):**
+  - Elevated from `bottom-16` to `bottom-[72px] sm:bottom-6`, clearing the mobile bottom navigation bar by 16px.
+  - Streamlined compact card with a dedicated close button and 3-day dismissal persistence.
+

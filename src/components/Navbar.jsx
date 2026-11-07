@@ -52,14 +52,17 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Primary desktop navigation links (visible >= 1024px)
+  // Adaptive responsive navigation links:
+  // - Tablet (md: 768px): Primary 4 links (Home, Tickets, Results, Wallet) in compact pill
+  // - Laptop (lg: 1024px): Primary + Rewards (5 links)
+  // - Desktop (xl: 1280px+): All 6 links including Support
   const navItems = [
-    { id: 'lotteries', label: 'Home', icon: Flame },
-    { id: 'tickets', label: 'My Tickets', icon: Ticket, requiresAuth: true },
-    { id: 'results', label: 'Results', icon: Trophy, requiresAuth: true },
-    { id: 'wallet', label: 'Wallet', icon: Wallet, requiresAuth: true },
-    { id: 'rewards', label: 'Rewards', icon: Gift },
-    { id: 'contact', label: 'Support', icon: Headphones },
+    { id: 'lotteries', label: 'Home', icon: Flame, minScreen: 'md' },
+    { id: 'tickets', label: 'My Tickets', icon: Ticket, requiresAuth: true, minScreen: 'md' },
+    { id: 'results', label: 'Results', icon: Trophy, requiresAuth: true, minScreen: 'md' },
+    { id: 'wallet', label: 'Wallet', icon: Wallet, requiresAuth: true, minScreen: 'md' },
+    { id: 'rewards', label: 'Rewards', icon: Gift, minScreen: 'lg' },
+    { id: 'contact', label: 'Support', icon: Headphones, minScreen: 'xl' },
   ];
 
   const usernameDisplay = profile?.username 
@@ -78,7 +81,7 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
           <div className="flex items-center justify-between h-13 xs:h-14 sm:h-16">
             
             {/* LEFT: Sidebar Toggle & EarnFlow.In Branding */}
-            <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 min-w-0">
+            <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
               
               {/* Sidebar Drawer Toggle (Mobile / Tablet / Desktop) */}
               <button
@@ -115,17 +118,28 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
               </div>
             </div>
 
-            {/* CENTER: Desktop Navigation Links (>= 1024px) */}
-            <nav className="hidden lg:flex items-center gap-1 bg-[#10131A]/90 p-1 rounded-xl border border-[rgba(245,196,81,0.15)] shadow-inner">
+            {/* CENTER: Adaptive Navigation Links (md: 768px compact, lg: 1024px expanded, xl: 1280px+ full) */}
+            <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 bg-[#10131A]/90 p-1 rounded-xl border border-[rgba(245,196,81,0.15)] shadow-inner">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
                 const isLocked = !isLoggedIn && item.requiresAuth;
+                
+                // Visibility:
+                // 'xl' items appear only on xl: (1280px+)
+                // 'lg' items appear on lg: (1024px+)
+                // 'md' items appear on md: (768px+)
+                const screenVisibilityClass = item.minScreen === 'xl'
+                  ? 'hidden xl:flex'
+                  : item.minScreen === 'lg'
+                    ? 'hidden lg:flex'
+                    : 'flex';
+
                 return (
                   <button
                     key={item.id}
                     onClick={() => handleNavClick(item.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+                    className={`${screenVisibilityClass} px-2 lg:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
                       isActive
                         ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-sm font-bold'
                         : 'text-[#d2c5b0] hover:text-[#ffd700] hover:bg-white/5'
@@ -141,8 +155,8 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
               })}
             </nav>
 
-            {/* RIGHT: Wallet Balance, Notifications, Profile & Actions */}
-            <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2 shrink-0">
+            {/* RIGHT: Desktop Controls (Wallet + Notifications + Profile) / Mobile Icons */}
+            <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-2 shrink-0">
               
               {/* Optional Android APK direct download (hidden on small/medium displays) */}
               {!isNativeApp && (
@@ -161,7 +175,7 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
 
               {isLoggedIn ? (
                 <>
-                  {/* Daily Free Flow Coin Bonus Button (Visible >= 640px) */}
+                  {/* Daily Free Flow Coin Bonus Button (Desktop / Tablet >= 640px) */}
                   <button
                     onClick={claimDailyBonus}
                     className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 hover:from-amber-500/25 hover:to-amber-500/35 text-[#ffd700] hover:text-white border border-amber-500/35 text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
@@ -171,54 +185,55 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                     <span className="font-mono-numbers">+100 FC</span>
                   </button>
 
-                  {/* Flow Coin Balance Pill (Accessible across all viewports from 320px to 2560px+) */}
+                  {/* Flow Coin Balance Pill: Desktop/Tablet view ONLY (>= 640px) */}
                   <div 
                     onClick={() => handleNavClick('wallet')}
                     title="Click to view Flow Coin Virtual Wallet & Ledger"
-                    className="cursor-pointer bg-[#10131A] hover:bg-[#151C2B] border border-[rgba(245,196,81,0.25)] hover:border-[#f5c451] rounded-xl px-1.5 xs:px-2 sm:px-3 py-1 sm:py-1.5 flex items-center gap-1 sm:gap-1.5 transition-all shadow-inner"
+                    className="hidden sm:flex cursor-pointer bg-[#10131A] hover:bg-[#151C2B] border border-[rgba(245,196,81,0.25)] hover:border-[#f5c451] rounded-xl px-2.5 sm:px-3 py-1 sm:py-1.5 items-center gap-1.5 transition-all shadow-inner"
                   >
                     <Coins className="w-3.5 h-3.5 text-[#ffd700] shrink-0" />
-                    <span className="font-mono-numbers font-bold text-[11px] xs:text-xs sm:text-sm text-[#ffd700] whitespace-nowrap">
+                    <span className="font-mono-numbers font-bold text-xs sm:text-sm text-[#ffd700] whitespace-nowrap">
                       {Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                     </span>
-                    <span className="text-[9px] xs:text-[10px] sm:text-xs text-amber-400 font-extrabold font-mono-numbers">
+                    <span className="text-[10px] sm:text-xs text-amber-400 font-extrabold font-mono-numbers">
                       FC
                     </span>
                   </div>
 
-                  {/* Realtime Notifications Bell */}
+                  {/* Realtime Notifications Bell (Mobile & Desktop) */}
                   <button
                     onClick={onOpenNotifications}
-                    className="w-7.5 h-7.5 xs:w-8 xs:h-8 sm:w-9 sm:h-9 rounded-xl bg-[#10131A] hover:bg-[#151C2B] border border-[#2D3545] hover:border-amber-400/50 flex items-center justify-center text-[#94A3B8] hover:text-amber-300 transition-colors cursor-pointer relative shrink-0"
+                    className="w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-9 sm:h-9 rounded-xl bg-[#10131A] hover:bg-[#151C2B] border border-[#2D3545] hover:border-amber-400/50 flex items-center justify-center text-[#94A3B8] hover:text-amber-300 transition-colors cursor-pointer relative shrink-0 shadow-sm"
                     title="View Notifications"
                     aria-label="View Notifications"
                   >
-                    <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <Bell className="w-4 h-4 sm:w-4 sm:h-4" />
                     <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                   </button>
 
-                  {/* User Profile Pill (Compact truncation to prevent horizontal overflow) */}
+                  {/* User Profile Pill: Compact icon-only on mobile (< 640px), full pill on sm+ */}
                   <button
                     onClick={() => handleNavClick('profile')}
-                    className={`flex items-center gap-1 xs:gap-1.5 text-xs font-mono-numbers px-1.5 xs:px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl border transition-all cursor-pointer ${
+                    className={`flex items-center gap-1.5 text-xs font-mono-numbers p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border transition-all cursor-pointer shrink-0 shadow-sm ${
                       activeTab === 'profile'
-                        ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] border-[#fff2a3] font-bold shadow-sm'
+                        ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] border-[#fff2a3] font-bold'
                         : 'bg-[#151C2B] text-[#E1E2EB] border-[#2D3545] hover:border-[#F5C451]/50'
                     }`}
                     title="Open Player Profile"
                     aria-label="Open Player Profile"
                   >
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
                       activeTab === 'profile' ? 'bg-[#0b0e14]/20 text-[#0b0e14]' : 'bg-[#05d5aa]/20 text-[#05d5aa]'
                     }`}>
-                      <User className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                      <User className="w-3 h-3" />
                     </div>
-                    <span className={`truncate max-w-[44px] xs:max-w-[65px] sm:max-w-[95px] lg:max-w-[120px] font-bold text-[11px] sm:text-xs ${
+                    {/* Username hidden on mobile (< 640px) to prevent clutter & clipping */}
+                    <span className={`hidden sm:inline truncate max-w-[95px] lg:max-w-[120px] font-bold text-xs ${
                       activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-white'
                     }`}>
                       {usernameDisplay}
                     </span>
-                    <ChevronDown className={`w-2.5 h-2.5 sm:w-3 sm:h-3 hidden xs:inline shrink-0 ${
+                    <ChevronDown className={`w-3 h-3 hidden sm:inline shrink-0 ${
                       activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-[#94A3B8]'
                     }`} />
                   </button>
@@ -227,7 +242,7 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                 /* Login / Sign Up Button when unauthenticated */
                 <button
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="btn-gold px-2.5 xs:px-3.5 sm:px-4.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 sm:gap-1.5 shadow-md cursor-pointer whitespace-nowrap"
+                  className="btn-gold px-2.5 xs:px-3.5 sm:px-4.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 sm:gap-1.5 shadow-md cursor-pointer whitespace-nowrap shrink-0"
                 >
                   <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Login</span>
@@ -238,6 +253,48 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
 
           </div>
         </div>
+
+        {/* ======================================================== */}
+        {/* MOBILE HEADER — ROW 2: Dedicated Flow Coin Balance Row    */}
+        {/* Visible only on mobile (< 640px), prevents any overlap   */}
+        {/* ======================================================== */}
+        {isLoggedIn && (
+          <div className="sm:hidden border-t border-[rgba(245,196,81,0.12)] bg-[#07090D]/90 px-2 xs:px-3 py-1.5">
+            <div className="w-full flex items-center justify-between gap-2">
+              {/* Balance Card: Full-width flexible row */}
+              <div 
+                onClick={() => handleNavClick('wallet')}
+                title="Tap to open Flow Coin Virtual Wallet"
+                className="flex-1 min-w-0 bg-[#10131A] active:bg-[#151C2B] border border-[rgba(245,196,81,0.25)] rounded-xl px-2.5 py-1 flex items-center justify-between transition-colors cursor-pointer shadow-inner"
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Coins className="w-3.5 h-3.5 text-[#ffd700] shrink-0" />
+                  <span className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider shrink-0">
+                    FC
+                  </span>
+                  <span className="font-mono-numbers font-bold text-xs text-[#ffd700] truncate">
+                    {Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 shrink-0">
+                  <Wallet className="w-3 h-3 text-amber-400" />
+                  <span>Wallet</span>
+                </div>
+              </div>
+
+              {/* Mobile Daily Faucet Claim Button */}
+              <button
+                onClick={claimDailyBonus}
+                className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 text-[#ffd700] border border-amber-500/35 text-[11px] font-bold transition-all shadow-sm cursor-pointer"
+                title="Claim 100 Free Daily Flow Coins"
+              >
+                <Gift className="w-3.5 h-3.5 text-[#ffd700] animate-bounce" />
+                <span className="font-mono-numbers">+100</span>
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ======================================================== */}

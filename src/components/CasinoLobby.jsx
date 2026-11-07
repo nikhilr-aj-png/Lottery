@@ -110,10 +110,12 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }) {
         <div className="relative z-10 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 lg:gap-8">
           
           {/* LEFT COLUMN: Hero Copy & Actions */}
-          <div className="flex-1 space-y-3.5 sm:space-y-4 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 xs:gap-2 px-2.5 xs:px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono-numbers text-[10px] xs:text-xs font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="truncate">VIP Casino & Lottery Platform · 100% Social Entertainment</span>
+          <div className="flex-1 space-y-3.5 sm:space-y-4 max-w-2xl min-w-0">
+            <div className="inline-flex items-start xs:items-center gap-1.5 xs:gap-2 px-2.5 xs:px-3 py-1 sm:py-1.5 rounded-2xl xs:rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono-numbers text-[10px] xs:text-xs font-bold max-w-full leading-tight">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5 xs:mt-0" />
+              <span className="whitespace-normal break-words sm:whitespace-nowrap">
+                VIP Casino & Lottery Platform <span className="opacity-60 hidden xs:inline">·</span> <span className="block xs:inline text-amber-200/90">100% Social Entertainment</span>
+              </span>
             </div>
 
             <h1 
