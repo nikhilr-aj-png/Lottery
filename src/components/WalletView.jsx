@@ -348,56 +348,56 @@ export default function WalletView() {
       </div>
 
       {/* Main Two-Column Workstation: Deposit & Withdrawal */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8">
         
         {/* LEFT COLUMN: Deposit USDT / Multi-Crypto (6 Cols) */}
-        <div className="lg:col-span-6 glass-panel rounded-2xl p-4 sm:p-8 flex flex-col justify-between">
+        <div className="lg:col-span-6 glass-panel rounded-2xl p-3.5 xs:p-4.5 sm:p-6 lg:p-8 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[rgba(5,213,170,0.15)] flex items-center justify-center text-[#05d5aa] border border-[#05d5aa]/30">
-                  <ArrowDownLeft className="w-5 h-5" />
+            <div className="flex items-center justify-between gap-2 mb-4 sm:mb-5">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[rgba(5,213,170,0.15)] flex items-center justify-center text-[#05d5aa] border border-[#05d5aa]/30 shrink-0">
+                  <ArrowDownLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <h3 className="font-display font-extrabold text-xl text-white">
+                <div className="min-w-0">
+                  <h3 className="font-display font-extrabold text-lg sm:text-xl text-white truncate">
                     Deposit Funds
                   </h3>
-                  <p className="text-xs text-[#9b8f7c]">
+                  <p className="text-[11px] xs:text-xs text-[#9b8f7c] truncate">
                     Multi-crypto gateway & automated settlement
                   </p>
                 </div>
               </div>
 
-              <span className="text-[11px] font-mono-numbers font-bold px-2.5 py-1 rounded bg-[#10131a] text-[#05d5aa] border border-[#05d5aa]/30">
+              <span className="text-[10px] xs:text-[11px] font-mono-numbers font-bold px-2 xs:px-2.5 py-1 rounded bg-[#10131a] text-[#05d5aa] border border-[#05d5aa]/30 shrink-0">
                 0% Fee
               </span>
             </div>
 
             {/* Deposit Method Selector */}
-            <div className="grid grid-cols-2 gap-2 p-1 bg-[#0b0e14] rounded-xl border border-[#272a31] mb-6">
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 p-1 bg-[#0b0e14] rounded-xl border border-[#272a31] mb-5">
               <button
                 type="button"
                 onClick={() => setDepositMethod('nowpayments')}
-                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                className={`py-2 px-2 sm:px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
                   depositMethod === 'nowpayments'
                     ? 'bg-[#1e2638] text-[#ffd700] border border-[#f5c451]/50 shadow-md'
                     : 'text-[#9b8f7c] hover:text-white'
                 }`}
               >
-                <CreditCard className="w-3.5 h-3.5 text-[#ffd700]" />
-                <span>NOWPayments Gateway</span>
+                <CreditCard className="w-3.5 h-3.5 text-[#ffd700] shrink-0" />
+                <span className="truncate">NOWPayments</span>
               </button>
               <button
                 type="button"
                 onClick={() => setDepositMethod('direct')}
-                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                className={`py-2 px-2 sm:px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
                   depositMethod === 'direct'
                     ? 'bg-[#1e2638] text-[#ffd700] border border-[#f5c451]/50 shadow-md'
                     : 'text-[#9b8f7c] hover:text-white'
                 }`}
               >
-                <Coins className="w-3.5 h-3.5 text-[#05d5aa]" />
-                <span>Direct TRC-20 Address</span>
+                <Coins className="w-3.5 h-3.5 text-[#05d5aa] shrink-0" />
+                <span className="truncate">Direct TRC-20</span>
               </button>
             </div>
 
@@ -543,13 +543,13 @@ export default function WalletView() {
                       </div>
 
                       {/* Quick Chips */}
-                      <div className="flex gap-2 mt-2">
+                      <div className="grid grid-cols-5 gap-1.5 sm:gap-2 mt-2">
                         {[20, 50, 100, 250, 500].map((amt) => (
                           <button
                             key={amt}
                             type="button"
                             onClick={() => setDepositAmount(String(amt))}
-                            className={`flex-1 py-1.5 rounded-lg text-[11px] font-mono-numbers font-bold border transition-colors cursor-pointer ${
+                            className={`w-full py-1.5 rounded-lg text-[11px] font-mono-numbers font-bold border transition-colors cursor-pointer text-center ${
                               depositAmount === String(amt)
                                 ? 'bg-[rgba(245,196,81,0.2)] text-[#ffd700] border-[#f5c451]'
                                 : 'bg-[#121721] hover:bg-[#1a2232] text-[#9b8f7c] hover:text-white border-[#272a31]'
@@ -565,17 +565,17 @@ export default function WalletView() {
                     <button
                       type="submit"
                       disabled={isGeneratingInvoice}
-                      className="btn-gold w-full py-4 rounded-xl font-display font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#f5c451]/25 disabled:opacity-50 mt-2"
+                      className="btn-gold w-full sm:max-w-xs mx-auto py-2.5 sm:py-3 px-6 rounded-xl font-display font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#f5c451]/20 disabled:opacity-50 mt-2 transition-all"
                     >
                       {isGeneratingInvoice ? (
                         <>
                           <RefreshCw className="w-4 h-4 animate-spin" />
-                          <span>Generating NOWPayments Invoice...</span>
+                          <span>Generating Invoice...</span>
                         </>
                       ) : (
                         <>
                           <CreditCard className="w-4 h-4" />
-                          <span>Deposit via NOWPayments Gateway</span>
+                          <span>Deposit</span>
                         </>
                       )}
                     </button>
@@ -667,26 +667,26 @@ export default function WalletView() {
         </div>
 
         {/* RIGHT COLUMN: Withdraw USDT (24-Hour SLA) (6 Cols) */}
-        <div className="lg:col-span-6 glass-panel rounded-2xl p-4 sm:p-8 flex flex-col justify-between border border-[rgba(245,196,81,0.35)]">
+        <div className="lg:col-span-6 glass-panel rounded-2xl p-3.5 xs:p-4.5 sm:p-6 lg:p-8 flex flex-col justify-between border border-[rgba(245,196,81,0.35)]">
           <div>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700] border border-[#f5c451]/30">
-                  <ArrowUpRight className="w-5 h-5" />
+            <div className="flex items-center justify-between gap-2 mb-4 sm:mb-5">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700] border border-[#f5c451]/30 shrink-0">
+                  <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <h3 className="font-display font-extrabold text-xl text-white">
+                <div className="min-w-0">
+                  <h3 className="font-display font-extrabold text-lg sm:text-xl text-white truncate">
                     Withdraw USDT
                   </h3>
-                  <p className="text-xs text-[#9b8f7c]">
+                  <p className="text-[11px] xs:text-xs text-[#9b8f7c] truncate">
                     Cold-storage multi-sig verified disbursal
                   </p>
                 </div>
               </div>
 
-              <div className="badge-gold px-3 py-1 rounded-full text-xs font-bold font-mono-numbers flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-amber-400" />
-                24-Hour Guarantee
+              <div className="badge-gold px-2.5 xs:px-3 py-1 rounded-full text-[10px] xs:text-xs font-bold font-mono-numbers flex items-center gap-1.5 shrink-0">
+                <Clock className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-amber-400" />
+                <span className="hidden xs:inline">24-Hour</span> Guarantee
               </div>
             </div>
 
@@ -724,13 +724,13 @@ export default function WalletView() {
                 </div>
 
                 {/* Percentage Presets */}
-                <div className="flex gap-2 mt-2">
+                <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mt-2">
                   {[25, 50, 75, 100].map((pct) => (
                     <button
                       key={pct}
                       type="button"
                       onClick={() => handlePreset(pct)}
-                      className="px-2.5 py-1 rounded-lg bg-[#121721] hover:bg-[#1a2232] text-[11px] font-mono-numbers text-[#9b8f7c] hover:text-white border border-[#272a31]"
+                      className="w-full py-1.5 rounded-lg bg-[#121721] hover:bg-[#1a2232] text-[11px] font-mono-numbers text-[#9b8f7c] hover:text-white border border-[#272a31] text-center cursor-pointer transition-colors"
                     >
                       {pct === 100 ? 'MAX' : `${pct}%`}
                     </button>
@@ -782,11 +782,17 @@ export default function WalletView() {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="btn-gold w-full py-4 rounded-xl font-display font-extrabold text-base flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#f5c451]/25"
+                className="btn-gold w-full sm:max-w-xs mx-auto py-2.5 sm:py-3 px-6 rounded-xl font-display font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#f5c451]/20 transition-all whitespace-nowrap"
               >
-                <ArrowUpRight className="w-5 h-5" />
-                Request Withdrawal (24 Hours)
+                <ArrowUpRight className="w-4 h-4" />
+                <span>Request Withdrawal</span>
               </button>
+
+              {/* Supporting 24-Hour Notice Label */}
+              <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#9b8f7c] text-center pt-1">
+                <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Disbursement guaranteed within <strong className="text-amber-300">24 Hours</strong></span>
+              </div>
             </form>
           </div>
         </div>

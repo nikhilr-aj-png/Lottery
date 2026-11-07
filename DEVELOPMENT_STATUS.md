@@ -184,3 +184,26 @@
   - Replaced rigid width with compact `Change` label on mobile (`<span className="inline sm:hidden">Change</span>`), saving ~80px of space.
   - Added responsive `flex-col xs:flex-row` fallback so `@username` is 100% visible and never clipped.
 
+---
+
+## 6. Wallet Deposit & Withdrawal Responsive UI Refinement
+
+> **Status:** 100% Complete & Verified  
+> **Key Architecture Change:** Compact symmetrical button dimensions, clean labels, preserved 24h SLA notice  
+> **Automated Verification:** 18/18 assertions passing ([`scratch/test_phase5_wallet_matrix.mjs`](file:///d:/vs.code/Lottery/scratch/test_phase5_wallet_matrix.mjs))
+
+- [x] **Deposit Button Fix (`WalletView.jsx`):**
+  - Changed visible button label to strictly `"Deposit"` (removed verbose `"via NOWPayments Gateway"` / `"Now Payment Gateway"`).
+  - Scaled padding down to compact `py-2.5 sm:py-3 px-6` with `sm:max-w-xs mx-auto` max-width capping on tablet/desktop.
+  - Preserved gold styling (`btn-gold`), icon (`CreditCard`), and payment gateway submission logic.
+- [x] **Request Withdrawal Button Fix (`WalletView.jsx`):**
+  - Kept visible button label as strictly `"Request Withdrawal"` (removed baked-in `(24 Hours)` from button label).
+  - Reduced oversized `py-4` padding to compact `py-2.5 sm:py-3 px-6` with single-line `whitespace-nowrap`.
+  - Added dedicated supporting 24-hour guarantee notice directly underneath the button with clock icon.
+  - Preserved top badge and SLA guarantee notice box in the card.
+- [x] **Workstation Responsive Layout Optimization (`WalletView.jsx`):**
+  - Main grid gap scaled to `gap-5 sm:gap-6 lg:gap-8` (clean 20px gap on mobile, 32px on desktop).
+  - Card padding standardized to `p-3.5 xs:p-4.5 sm:p-6 lg:p-8`, saving 16px of horizontal space on 320px–375px screens.
+  - Amount chips and percentage presets organized in clean 5-col and 4-col grids (`grid-cols-5` and `grid-cols-4`).
+  - Symmetrical header titles and method selector tabs with truncation protection.
+
