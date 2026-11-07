@@ -14,6 +14,7 @@ import {
   Play
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { soundFX } from '../engine/SoundFXService';
 
 export default function MinesGame({ room }) {
   const {
@@ -90,6 +91,8 @@ export default function MinesGame({ room }) {
     const startRes = await startRound();
     if (!startRes.success) return;
 
+    soundFX.playChipBet();
+
     // Derive deterministic mine positions using Provably Fair HMAC-SHA256
     const gridData = await generateMinesGrid(
       seeds.serverHash || 'seed_mines_default',
@@ -112,9 +115,11 @@ export default function MinesGame({ room }) {
     const isMine = minePositions.includes(index);
 
     if (isMine) {
+      soundFX.playMinesReveal(false);
       // BOMB EXPLODED! (Loss)
       handleExplosion(index);
     } else {
+      soundFX.playMinesReveal(true);
       // SAFE GEM!
       const newGemsCount = uncoveredGems + 1;
       const totalSafeTiles = 25 - mineCount;
@@ -174,6 +179,8 @@ export default function MinesGame({ room }) {
     const finalMultiplier = currentCalc.multiplier;
     const finalPayout = currentPayout;
 
+    soundFX.playWinFanfare(finalMultiplier >= 5 ? 'big' : 'standard');
+
     // Trigger celebration confetti
     try {
       confetti({
@@ -221,6 +228,7 @@ export default function MinesGame({ room }) {
 
   // 5. MAX WIN HANDLER (All safe gems uncovered)
   const handleMaxWin = async (gemsCount) => {
+    soundFX.playWinFanfare('jackpot');
     setGameState('cashed_out');
     const finalCalc = calculateMinesMultiplier(mineCount, gemsCount, 1.0);
     const finalPayout = parseFloat((betAmount * finalCalc.multiplier).toFixed(2));

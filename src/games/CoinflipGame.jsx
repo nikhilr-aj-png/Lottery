@@ -13,6 +13,7 @@ import {
   XCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { soundFX } from '../engine/SoundFXService';
 
 export default function CoinflipGame({ room }) {
   const {
@@ -67,6 +68,9 @@ export default function CoinflipGame({ room }) {
     const startRes = await startRound();
     if (!startRes.success) return;
 
+    soundFX.playChipBet();
+    soundFX.playCoinflipToss();
+
     setIsFlipping(true);
     setLastResult(null);
 
@@ -93,12 +97,14 @@ export default function CoinflipGame({ room }) {
     setIsFlipping(false);
 
     const isWin = outcomeSide === selectedSide;
+    soundFX.playCoinflipLand(isWin);
     setLastResult(isWin ? 'won' : 'lost');
 
     const finalMultiplier = isWin ? multiplier : 0;
     const finalPayout = isWin ? potentialPayout : 0;
 
     if (isWin) {
+      soundFX.playWinFanfare('standard');
       try {
         confetti({
           particleCount: 75,

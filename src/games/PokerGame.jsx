@@ -17,6 +17,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { soundFX } from '../engine/SoundFXService';
 
 export default function PokerGame({ room }) {
   const {
@@ -80,6 +81,9 @@ export default function PokerGame({ room }) {
     const startRes = await startRound();
     if (!startRes.success) return;
 
+    soundFX.playChipBet();
+    soundFX.playCardFlip();
+
     // Derive deterministic 52-card deck
     const shuffledDeck = await generateShuffledDeck(
       seeds.serverHash || 'seed_poker_default',
@@ -105,6 +109,7 @@ export default function PokerGame({ room }) {
 
   // 2. ADVANCE STREET (Check / Call action)
   const handleNextStreet = async () => {
+    soundFX.playCardFlip();
     if (street === 'preflop') {
       // Deal Flop (First 3 community cards)
       const flop = [deck[4], deck[5], deck[6]];
@@ -132,6 +137,7 @@ export default function PokerGame({ room }) {
   // Raise Action (Adds betAmount to pot and advances street)
   const handleRaise = () => {
     if (street === 'idle' || street === 'showdown') return;
+    soundFX.playChipBet();
     setPot(prev => prev + betAmount);
     handleNextStreet();
   };
@@ -188,6 +194,7 @@ export default function PokerGame({ room }) {
     const finalPayout = parseFloat((betAmount * multiplier).toFixed(2));
 
     if (winner === 'player_won') {
+      soundFX.playWinFanfare(multiplier >= 4 ? 'big' : 'standard');
       try {
         confetti({
           particleCount: 90,

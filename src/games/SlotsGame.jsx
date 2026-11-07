@@ -15,6 +15,7 @@ import {
   Flame
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { soundFX } from '../engine/SoundFXService';
 
 const SYMBOLS = ['💎', '7', '🎰', '⭐', '🔔', '🍒', '🍋'];
 
@@ -72,6 +73,9 @@ export default function SlotsGame({ room }) {
     const startRes = await startRound();
     if (!startRes.success) return;
 
+    soundFX.playChipBet();
+    soundFX.playSlotSpin();
+
     setIsSpinning(true);
     setWinningData(null);
     setLastWin(null);
@@ -104,6 +108,10 @@ export default function SlotsGame({ room }) {
   };
 
   const finalizeSpin = async (finalGrid) => {
+    soundFX.playSlotReelStop(0);
+    setTimeout(() => soundFX.playSlotReelStop(1), 50);
+    setTimeout(() => soundFX.playSlotReelStop(2), 100);
+
     setGrid(finalGrid);
     setIsSpinning(false);
 
@@ -112,6 +120,10 @@ export default function SlotsGame({ room }) {
     const multiplierWon = evalResult.totalMultiplier;
     const payoutWon = parseFloat((betAmount * multiplierWon).toFixed(2));
     const isWin = multiplierWon > 0;
+
+    if (isWin) {
+      soundFX.playWinFanfare(multiplierWon >= 15 ? 'jackpot' : multiplierWon >= 5 ? 'big' : 'standard');
+    }
 
     setWinningData(evalResult);
     setLastWin({

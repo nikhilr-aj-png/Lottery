@@ -16,6 +16,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { soundFX } from '../engine/SoundFXService';
 
 export default function LimboGame({ room }) {
   const {
@@ -77,6 +78,8 @@ export default function LimboGame({ room }) {
     const startRes = await startRound();
     if (!startRes.success) return;
 
+    soundFX.playChipBet();
+
     setIsSpinning(true);
     setLastRoundResult(null);
 
@@ -90,6 +93,7 @@ export default function LimboGame({ room }) {
     // Dynamic digital spin animation (450ms)
     let steps = 0;
     const interval = setInterval(() => {
+      soundFX.playLimboTick();
       // Rapid random visual numbers
       const fakeNumber = (Math.random() * (targetMultiplier * 2.5)).toFixed(2);
       setDisplayedOutcome(fakeNumber);
@@ -113,6 +117,7 @@ export default function LimboGame({ room }) {
     const finalPayout = isWin ? potentialPayout : 0;
 
     if (isWin) {
+      soundFX.playWinFanfare(targetMultiplier >= 10 ? 'big' : 'standard');
       try {
         confetti({
           particleCount: 70,

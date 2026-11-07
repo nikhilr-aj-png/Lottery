@@ -13,6 +13,7 @@ import {
   History
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { soundFX } from '../engine/SoundFXService';
 
 export default function CrashGame({ room }) {
   const {
@@ -63,6 +64,7 @@ export default function CrashGame({ room }) {
   // Clean animation frame on unmount
   useEffect(() => {
     return () => {
+      soundFX.stopCrashHum();
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -76,6 +78,8 @@ export default function CrashGame({ room }) {
     // 1. Start round in game engine
     const startRes = await startRound();
     if (!startRes.success) return;
+
+    soundFX.playChipBet();
 
     // 2. Pre-derive crash point using Provably Fair algorithm
     const derivedPoint = await generateCrashPoint(
@@ -127,6 +131,7 @@ export default function CrashGame({ room }) {
         return;
       }
 
+      soundFX.playCrashHum(calculatedMult);
       setCurrentMultiplier(calculatedMult);
       drawCanvas(calculatedMult, false);
       animationFrameRef.current = requestAnimationFrame(tick);
@@ -138,6 +143,10 @@ export default function CrashGame({ room }) {
   // Cashout during flight
   const handleCashout = async (forcedMult = null) => {
     if (gameState !== 'flying' || cashedOutAt) return;
+
+    soundFX.stopCrashHum();
+    soundFX.playCrashCashout();
+    soundFX.playWinFanfare('standard');
 
     const mult = forcedMult || currentMultiplier;
     setCashedOutAt(mult);
@@ -160,6 +169,7 @@ export default function CrashGame({ room }) {
 
   // Crash Occurred
   const handleCrash = async (finalPoint) => {
+    soundFX.playCrashExplosion();
     setGameState('crashed');
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);

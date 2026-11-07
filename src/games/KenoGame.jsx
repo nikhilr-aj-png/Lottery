@@ -15,6 +15,7 @@ import {
   XCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { soundFX } from '../engine/SoundFXService';
 
 export default function KenoGame({ room }) {
   const {
@@ -64,6 +65,7 @@ export default function KenoGame({ room }) {
   const toggleNumber = (num) => {
     if (isDrawing) return;
 
+    soundFX.playKenoPick();
     if (selectedNumbers.includes(num)) {
       setSelectedNumbers(prev => prev.filter(n => n !== num));
     } else {
@@ -75,6 +77,7 @@ export default function KenoGame({ room }) {
   // Auto Pick 10 random numbers
   const handleAutoPick = () => {
     if (isDrawing) return;
+    soundFX.playClick();
     const pool = Array.from({ length: 40 }, (_, i) => i + 1);
     const shuffled = pool.sort(() => 0.5 - Math.random());
     setSelectedNumbers(shuffled.slice(0, 10).sort((a, b) => a - b));
@@ -83,6 +86,7 @@ export default function KenoGame({ room }) {
   // Clear selections
   const handleClear = () => {
     if (isDrawing) return;
+    soundFX.playClick();
     setSelectedNumbers([]);
   };
 
@@ -93,6 +97,8 @@ export default function KenoGame({ room }) {
     // 1. Start round in Game Engine (debits stake)
     const startRes = await startRound();
     if (!startRes.success) return;
+
+    soundFX.playChipBet();
 
     setIsDrawing(true);
     setDrawnNumbers([]);
@@ -115,6 +121,7 @@ export default function KenoGame({ room }) {
 
     winningBalls.forEach((ball, idx) => {
       setTimeout(() => {
+        soundFX.playKenoPick();
         currentDrawn.push(ball);
         setDrawnNumbers([...currentDrawn]);
 
@@ -138,6 +145,10 @@ export default function KenoGame({ room }) {
     const multiplierWon = getKenoMultiplier(pickCount, totalHits);
     const payoutWon = parseFloat((betAmount * multiplierWon).toFixed(2));
     const isWin = payoutWon > 0;
+
+    if (isWin) {
+      soundFX.playWinFanfare(multiplierWon >= 10 ? 'big' : 'standard');
+    }
 
     setLastWin({
       hits: totalHits,

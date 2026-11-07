@@ -14,6 +14,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { soundFX } from '../engine/SoundFXService';
 
 export default function PlinkoGame({ room }) {
   const {
@@ -115,6 +116,8 @@ export default function PlinkoGame({ room }) {
     const startRes = await startRound();
     if (!startRes.success) return;
 
+    soundFX.playChipBet();
+
     setIsDropping(true);
     setActiveSlot(null);
     setLastWin(null);
@@ -210,6 +213,7 @@ export default function PlinkoGame({ room }) {
         if (t >= 1) {
           t = 0;
           currentSegment++;
+          soundFX.playPlinkoBounce(currentSegment);
         }
 
         animFrameRef.current = requestAnimationFrame(animate);
@@ -225,6 +229,11 @@ export default function PlinkoGame({ room }) {
   const finalizeDrop = async (finalSlot, multiplierWon, payoutWon) => {
     setIsDropping(false);
     setActiveSlot(finalSlot);
+
+    soundFX.playPlinkoSlot(multiplierWon);
+    if (multiplierWon >= 2.0) {
+      soundFX.playWinFanfare(multiplierWon >= 10 ? 'big' : 'standard');
+    }
 
     setLastWin({
       multiplier: multiplierWon,

@@ -16,6 +16,7 @@ import {
   Scale
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { soundFX } from '../engine/SoundFXService';
 
 export default function BlackjackGame({ room }) {
   const {
@@ -80,6 +81,9 @@ export default function BlackjackGame({ room }) {
     const startRes = await startRound();
     if (!startRes.success) return;
 
+    soundFX.playChipBet();
+    soundFX.playCardFlip();
+
     // Derive deterministic 52-card deck via Provably Fair HMAC-SHA256
     const shuffledDeck = await generateShuffledDeck(
       seeds.serverHash || 'seed_blackjack_default',
@@ -123,6 +127,7 @@ export default function BlackjackGame({ room }) {
   const handleHit = async () => {
     if (roundState !== 'playing') return;
 
+    soundFX.playCardFlip();
     const nextCard = deck[cardIndex];
     const newHand = [...playerHand, nextCard];
     setPlayerHand(newHand);
@@ -181,6 +186,8 @@ export default function BlackjackGame({ room }) {
     // Double effective stake
     const doubled = effectiveBet * 2;
     setEffectiveBet(doubled);
+    soundFX.playChipBet();
+    soundFX.playCardFlip();
 
     const nextCard = deck[cardIndex];
     const newHand = [...playerHand, nextCard];
@@ -206,6 +213,7 @@ export default function BlackjackGame({ room }) {
     setPayoutResult(finalPayout);
 
     if (isWin) {
+      soundFX.playWinFanfare(outcome === 'player_blackjack' ? 'big' : 'standard');
       try {
         confetti({
           particleCount: 85,

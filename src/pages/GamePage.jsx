@@ -37,8 +37,12 @@ import {
   Eye,
   Check,
   Copy,
-  MessageSquare
+  MessageSquare,
+  Volume2,
+  VolumeX,
+  Volume1
 } from 'lucide-react';
+import { useSoundFX } from '../hooks/useSoundFX';
 import {
   LotteryWorkstation,
   CrashGame,
@@ -105,6 +109,9 @@ export default function GamePage({
   // Live Room Chat & Presence State
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
+
+  // Sound Engine
+  const { enabled: soundEnabled, volume: soundVolume, toggleSound, playClick } = useSoundFX();
 
   // Universal Bet History and Verification Modal
   const [selectedRoundForProof, setSelectedRoundForProof] = useState(null);
@@ -312,6 +319,29 @@ export default function GamePage({
 
 {/* Right Status, Chat & Balance Display */}
           <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#1f2737]">
+            {/* Audio Mute / Unmute Quick Toggle */}
+            <button
+              onClick={() => {
+                toggleSound();
+                playClick();
+              }}
+              className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                soundEnabled
+                  ? 'bg-[#141924] hover:bg-[#1f2737] text-amber-400 border-amber-500/30'
+                  : 'bg-[#141924] text-[#64748B] border-[#272a31] hover:text-white'
+              }`}
+              title={soundEnabled ? `Sound FX On (${Math.round(soundVolume * 100)}%) — Click to Mute` : 'Sound FX Muted — Click to Unmute'}
+            >
+              {soundEnabled ? (
+                soundVolume > 0.4 ? <Volume2 className="w-3.5 h-3.5 text-amber-400" /> : <Volume1 className="w-3.5 h-3.5 text-amber-400" />
+              ) : (
+                <VolumeX className="w-3.5 h-3.5 text-[#64748B]" />
+              )}
+              <span className="hidden lg:inline text-[11px] font-mono-numbers">
+                {soundEnabled ? `${Math.round(soundVolume * 100)}%` : 'MUTED'}
+              </span>
+            </button>
+
             {/* Live Room Chat Button */}
             <button
               onClick={() => {

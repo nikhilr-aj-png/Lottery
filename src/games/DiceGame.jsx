@@ -14,6 +14,7 @@ import {
   Hash
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { soundFX } from '../engine/SoundFXService';
 
 export default function DiceGame({ room }) {
   const {
@@ -75,6 +76,9 @@ export default function DiceGame({ room }) {
     const startRes = await startRound();
     if (!startRes.success) return;
 
+    soundFX.playChipBet();
+    soundFX.playDiceRoll();
+
     setIsRolling(true);
     setLastOutcome(null);
 
@@ -111,6 +115,7 @@ export default function DiceGame({ room }) {
     setLastOutcome(isWin ? 'won' : 'lost');
 
     if (isWin) {
+      soundFX.playWinFanfare(calc.multiplier >= 10 ? 'big' : 'standard');
       confetti({
         particleCount: 70,
         spread: 60,

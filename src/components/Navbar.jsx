@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLottery } from '../context/LotteryContext';
+import { useSoundFX } from '../hooks/useSoundFX';
 import { 
   Wallet, 
   Ticket, 
@@ -15,7 +16,10 @@ import {
   Gift,
   Coins,
   Bell,
-  Sparkles
+  Sparkles,
+  Volume2,
+  VolumeX,
+  Volume1
 } from 'lucide-react';
 
 export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotifications }) {
@@ -31,6 +35,27 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
     apkDirectDownloadUrl,
     claimDailyBonus
   } = useLottery();
+
+  const {
+    enabled: soundEnabled,
+    volume: soundVolume,
+    toggleSound,
+    setVolume: setSoundVolume,
+    playClick
+  } = useSoundFX();
+
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const volumeMenuRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (volumeMenuRef.current && !volumeMenuRef.current.contains(e.target)) {
+        setShowVolumeSlider(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const isLoggedIn = !!user;
 
@@ -172,6 +197,74 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                   <span>APK</span>
                 </a>
               )}
+
+              {/* Master Audio FX Toggle & Volume Popover (Mobile & Desktop) */}
+              <div className="relative" ref={volumeMenuRef}>
+                <button
+                  onClick={() => {
+                    toggleSound();
+                    playClick();
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setShowVolumeSlider(prev => !prev);
+                  }}
+                  className={`w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-9 sm:h-9 rounded-xl border flex items-center justify-center transition-colors cursor-pointer relative shrink-0 shadow-sm ${
+                    soundEnabled 
+                      ? 'bg-[#10131A] hover:bg-[#151C2B] text-amber-400 border-[#2D3545] hover:border-amber-400/50' 
+                      : 'bg-[#10131A] text-[#64748B] border-[#2D3545] hover:text-[#94A3B8]'
+                  }`}
+                  title={soundEnabled ? `Sound FX On (${Math.round(soundVolume * 100)}%) — Click to mute, right-click for volume slider` : 'Sound FX Muted — Click to unmute'}
+                  aria-label="Toggle Sound FX"
+                >
+                  {soundEnabled ? (
+                    soundVolume > 0.4 ? <Volume2 className="w-4 h-4 text-amber-400" /> : <Volume1 className="w-4 h-4 text-amber-400" />
+                  ) : (
+                    <VolumeX className="w-4 h-4 text-[#64748B]" />
+                  )}
+                </button>
+
+                {showVolumeSlider && (
+                  <div className="absolute right-0 top-full mt-2 w-48 p-3 rounded-2xl bg-[#0B0F19]/95 backdrop-blur-xl border border-amber-500/30 shadow-2xl z-50 text-left animate-in fade-in zoom-in-95 duration-150">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-bold text-white uppercase tracking-wider">Sound Volume</span>
+                      <span className="text-[11px] font-mono-numbers font-bold text-amber-400">
+                        {soundEnabled ? `${Math.round(soundVolume * 100)}%` : 'MUTED'}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={soundEnabled ? soundVolume : 0}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        if (!soundEnabled && val > 0) toggleSound();
+                        setSoundVolume(val);
+                      }}
+                      className="w-full accent-amber-400 cursor-pointer h-1.5 bg-[#1F2737] rounded-lg appearance-none"
+                    />
+                    <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-[#1F2737]">
+                      <button
+                        onClick={() => {
+                          toggleSound();
+                          playClick();
+                        }}
+                        className="text-[10px] text-amber-400 hover:text-white font-bold cursor-pointer"
+                      >
+                        {soundEnabled ? 'Mute' : 'Unmute'}
+                      </button>
+                      <button
+                        onClick={() => setShowVolumeSlider(false)}
+                        className="text-[10px] text-[#94A3B8] hover:text-white cursor-pointer"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {isLoggedIn ? (
                 <>

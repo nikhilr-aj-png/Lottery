@@ -12,3 +12,4 @@ export * from './GameRulesEngine.js';
 export * from './GameSessionManager.js';
 export * from './GameHistoryStore.js';
 export * from './GameRoomManager.js';
+export * from './SoundFXService.js';

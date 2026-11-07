@@ -13,6 +13,7 @@ import {
   Hash
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { soundFX } from '../engine/SoundFXService';
 
 const RED_NUMBERS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
 
@@ -75,6 +76,9 @@ export default function RouletteGame({ room }) {
     const startRes = await startRound();
     if (!startRes.success) return;
 
+    soundFX.playChipBet();
+    soundFX.playRouletteSpin();
+
     setIsSpinning(true);
     setLastRoundResult(null);
 
@@ -101,6 +105,7 @@ export default function RouletteGame({ room }) {
   };
 
   const finalizeSpin = async (outcome) => {
+    soundFX.playRoulettePocket(outcome.number);
     setWinningOutcome(outcome);
     setIsSpinning(false);
 
@@ -136,6 +141,7 @@ export default function RouletteGame({ room }) {
     setLastPayout(finalPayout);
 
     if (isWin) {
+      soundFX.playWinFanfare(selectedBetType === 'straight' ? 'big' : 'standard');
       try {
         confetti({
           particleCount: 80,

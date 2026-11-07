@@ -31,3 +31,4 @@ DROP POLICY IF EXISTS "Allow users to post room messages" ON public.room_chat_me
 CREATE POLICY "Allow users to post room messages"
   ON public.room_chat_messages FOR INSERT
   WITH CHECK (true);
+

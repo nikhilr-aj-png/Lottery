@@ -23,6 +23,7 @@ import {
   Hash
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { soundFX } from '../engine/SoundFXService';
 
 export default function LotteryWorkstation({ room, onBackToLobby }) {
   const { 
@@ -104,6 +105,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
 
   // Keypad presses
   const handleKeypadPress = (val) => {
+    soundFX.playDialTick();
     const newDigits = [...digits];
     newDigits[activeSlot] = String(val);
     setDigits(newDigits);
@@ -111,6 +113,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
   };
 
   const handleBackspace = () => {
+    soundFX.playClick();
     const newDigits = [...digits];
     newDigits[activeSlot] = '0';
     setDigits(newDigits);
@@ -119,6 +122,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
 
   // Dial increment / decrement
   const incrementDigit = (slotIdx) => {
+    soundFX.playDialTick();
     const newDigits = [...digits];
     newDigits[slotIdx] = String((parseInt(newDigits[slotIdx], 10) + 1) % 10);
     setDigits(newDigits);
@@ -126,6 +130,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
   };
 
   const decrementDigit = (slotIdx) => {
+    soundFX.playDialTick();
     const newDigits = [...digits];
     newDigits[slotIdx] = String((parseInt(newDigits[slotIdx], 10) + 9) % 10);
     setDigits(newDigits);
@@ -134,6 +139,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
 
   // Quick Pick randomizer for current dials
   const handleQuickPickCurrent = () => {
+    soundFX.playDialTick();
     if (getUnsoldRandomNumber) {
       const unsold = getUnsoldRandomNumber(event.id);
       setDigits(unsold.split(''));
@@ -154,6 +160,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
       showToast(`Combination #${num} is already in your selected tickets!`, 'error');
       return;
     }
+    soundFX.playChipBet();
     setStagedTickets(prev => [...prev, num]);
     
     // Automatically advance dials to next available number
@@ -165,6 +172,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
 
   // Bulk add quick picks
   const handleBulkAdd = (count) => {
+    soundFX.playChipBet();
     const added = [];
     const used = new Set([...stagedTickets]);
     for (let i = 0; i < count; i++) {
@@ -182,6 +190,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
   };
 
   const handleRemoveStaged = (index) => {
+    soundFX.playClick();
     setStagedTickets(prev => prev.filter((_, idx) => idx !== index));
   };
 
@@ -213,6 +222,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
 
     const success = await buyTickets(event.id, stagedTickets);
     if (success) {
+      soundFX.playWinFanfare('big');
       confetti({
         particleCount: 120,
         spread: 80,
