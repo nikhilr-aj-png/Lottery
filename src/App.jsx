@@ -85,7 +85,26 @@ function LotteryAppContent() {
 
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024 && window.innerWidth < 1440;
+    }
+    return false;
+  });
+
+  // Responsive sidebar collapse on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024 && window.innerWidth < 1440) {
+        setIsSidebarCollapsed(true);
+      } else if (window.innerWidth >= 1440) {
+        setIsSidebarCollapsed(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [activeGameId, setActiveGameId] = useState(null);
   const [isFairnessModalOpen, setIsFairnessModalOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -239,7 +258,13 @@ function LotteryAppContent() {
       {/* Top Navbar */}
       <Navbar 
         onOpenProfile={() => setActiveTab('profile')} 
-        onToggleSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
+        onToggleSidebar={() => {
+          if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+            setIsMobileSidebarOpen(prev => !prev);
+          } else {
+            setIsSidebarCollapsed(prev => !prev);
+          }
+        }}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
       />
 
@@ -247,7 +272,7 @@ function LotteryAppContent() {
       <LiveBetsTicker onSelectGame={(gid) => setActiveGameId(gid)} />
 
       {/* Main Layout: Left Navigation Sidebar + Content Area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden w-full max-w-[2000px] mx-auto min-w-0">
         
         {/* Left Navigation Sidebar */}
         <Sidebar
@@ -267,7 +292,7 @@ function LotteryAppContent() {
         />
 
         {/* Main Content Pane */}
-        <main className="flex-1 overflow-y-auto pb-20 md:pb-8 px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 text-left">
+        <main className="flex-1 min-w-0 overflow-y-auto pb-24 md:pb-12 px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 text-left">
           
           {/* VIEW 1: MULTI-GAME CASINO LOBBY & FOUR-DIGIT LOTTERY */}
           {activeTab === 'lotteries' && (
@@ -413,20 +438,20 @@ function LotteryAppContent() {
 
       {/* Platform Public Footer */}
       <footer className="mt-auto border-t border-[rgba(245,196,81,0.15)] bg-[#07090d] py-8 sm:py-10 pb-24 md:pb-10">
-        <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
             <div className="flex items-center gap-2.5 xs:gap-3 text-center sm:text-left">
               <img 
                 src="/logo.png" 
-                alt="EarnFlow.In USDT" 
+                alt="EarnFlow.In" 
                 className="w-8 xs:w-10 h-8 xs:h-10 rounded-full border border-[#ffd700]/40 object-cover shadow-md shrink-0" 
               />
               <div>
                 <span className="font-display font-black text-base xs:text-lg text-white">
-                  EarnFlow<span className="text-[#f5c451]">.In</span> <span className="text-[#ffd700]">USDT</span>
+                  EarnFlow<span className="text-[#f5c451]">.In</span>
                 </span>
                 <p className="text-[11px] xs:text-xs text-[#9b8f7c]">
-                  Provably Fair Crypto Lottery Platform · TRON (TRC-20)
+                  Provably Fair Casino & Lottery Platform · Flow Coins (FC)
                 </p>
               </div>
             </div>
@@ -450,7 +475,7 @@ function LotteryAppContent() {
           {/* Legal Navigation Links */}
           <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-[11px] xs:text-xs text-[#9b8f7c]">
             <div className="text-center sm:text-left leading-relaxed">
-              © 2026 EarnFlow.In Platform. All drawings are provably fair, verifiable on the public blockchain, with guaranteed 24-hour USDT withdrawals.
+              © 2026 EarnFlow.In Platform. All drawings and games are provably fair, verifiable on the public ledger with Flow Coins (FC).
             </div>
 
             <div className="flex items-center gap-3 xs:gap-4 font-semibold text-[11px] xs:text-xs shrink-0 flex-wrap justify-center sm:justify-end">

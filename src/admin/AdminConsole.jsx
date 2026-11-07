@@ -449,7 +449,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
       </header>
 
       {/* Main Admin Container with Tabbed Navigation */}
-      <div className="flex-1 max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto px-2 xs:px-3 sm:px-6 lg:px-8 py-4 sm:py-6 w-full space-y-4 sm:space-y-6">
+      <div className="flex-1 w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2 xs:px-3 sm:px-6 lg:px-8 py-4 sm:py-6 w-full space-y-4 sm:space-y-6">
         
         {/* Navigation Bar Tabs */}
         <div className="flex items-center gap-1.5 xs:gap-2 p-1.5 bg-[#0d1117] border border-[#272a31] rounded-2xl overflow-x-auto no-scrollbar shadow-inner">

@@ -201,7 +201,7 @@ export default function LotteryCard({ event, onSelect }) {
       {isTimedOut ? (
         <button
           onClick={() => onSelect(event)}
-          className="w-full py-2.5 xs:py-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-[#191c22] to-emerald-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 text-amber-300 border border-amber-500/40 text-xs xs:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md"
+          className="w-full min-h-[44px] py-2.5 xs:py-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-[#191c22] to-emerald-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 text-amber-300 border border-amber-500/40 text-xs xs:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md"
         >
           <Trophy className="w-3.5 xs:w-4 h-3.5 xs:h-4 text-[#ffd700]" />
           <span>Show Result</span>
@@ -210,7 +210,7 @@ export default function LotteryCard({ event, onSelect }) {
       ) : (
         <button
           onClick={() => onSelect(event)}
-          className="btn-gold w-full py-2.5 xs:py-3 rounded-xl text-xs xs:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
+          className="btn-gold w-full min-h-[44px] py-2.5 xs:py-3 rounded-xl text-xs xs:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
         >
           <Flame className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
           <span>Buy 4-Digit Ticket ({event.ticketPrice} FC)</span>

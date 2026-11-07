@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   Flame, 
   Gamepad2, 
@@ -6,7 +6,6 @@ import {
   Trophy, 
   Wallet, 
   ShieldCheck, 
-  HelpCircle, 
   Headphones, 
   Gift, 
   FileText, 
@@ -39,6 +38,29 @@ export default function Sidebar({
   onLaunchGame 
 }) {
   const { wallet, user, claimDailyBonus } = useLottery();
+
+  // Prevent background scrolling when mobile drawer is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  // Handle ESC key to dismiss mobile drawer
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen && onClose) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const getGameIcon = (id) => {
     switch (id) {
@@ -107,7 +129,6 @@ export default function Sidebar({
     if (item.isLottery) {
       onSelectTab('lotteries');
       if (onClose) onClose();
-      // Scroll to active lottery section
       setTimeout(() => {
         const el = document.getElementById('lottery-pools-section');
         if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -120,45 +141,50 @@ export default function Sidebar({
   };
 
   const sidebarContent = (
-    <div className="h-full flex flex-col justify-between overflow-y-auto no-scrollbar py-3 px-2 sm:px-3 text-left">
+    <div className="h-full flex flex-col justify-between overflow-y-auto no-scrollbar py-3 px-2 sm:px-2.5 text-left">
       
       {/* Top Header / Collapse Button */}
-      <div className="flex items-center justify-between pb-3 mb-2 border-b border-[#1F2737]">
+      <div className={`flex items-center pb-3 mb-2 border-b border-[#1F2737] ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         {!isCollapsed && (
           <div className="flex items-center gap-2 pl-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_#ffd700]" />
-            <span className="font-display font-black text-sm text-white uppercase tracking-wider">
+            <span className="font-display font-black text-xs sm:text-sm text-white uppercase tracking-wider">
               Navigation
             </span>
           </div>
         )}
 
-        {/* Collapse toggle (Desktop) */}
+        {/* Collapse toggle (Desktop/Laptop >= 1024px) */}
         <button
           onClick={onToggleCollapse}
-          className="hidden lg:flex w-8 h-8 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white items-center justify-center border border-[#1F2737] transition-colors cursor-pointer mx-auto"
+          className={`hidden lg:flex w-8 h-8 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white items-center justify-center border border-[#1F2737] hover:border-amber-500/40 transition-colors cursor-pointer ${isCollapsed ? 'mx-auto' : ''}`}
           title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+          aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
         >
-          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          {isCollapsed ? <ChevronRight className="w-4 h-4 text-amber-400" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
 
-        {/* Close Button (Mobile) */}
+        {/* Close Button (Mobile/Tablet < 1024px) */}
         <button
           onClick={onClose}
           className="lg:hidden w-8 h-8 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white flex items-center justify-center border border-[#1F2737] transition-colors cursor-pointer"
+          title="Close Navigation"
+          aria-label="Close Navigation"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Navigation Sections */}
-      <div className="flex-1 space-y-4">
+      <div className="flex-1 space-y-3.5">
         {navSections.map((sec, secIdx) => (
           <div key={secIdx} className="space-y-1">
-            {!isCollapsed && (
+            {!isCollapsed ? (
               <span className="text-[10px] font-mono-numbers font-bold uppercase tracking-wider text-[#94A3B8] px-2.5 block">
                 {sec.title}
               </span>
+            ) : (
+              <div className="w-6 h-px bg-[#1F2737] mx-auto my-2" />
             )}
 
             <div className="space-y-0.5">
@@ -169,16 +195,17 @@ export default function Sidebar({
                   <button
                     key={item.id}
                     onClick={() => handleItemClick(item)}
-                    className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer group ${
-                      isCollapsed ? 'justify-center' : 'justify-between'
+                    className={`w-full min-h-[44px] flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer group ${
+                      isCollapsed ? 'justify-center px-0' : 'justify-between'
                     } ${
                       isActive 
                         ? 'bg-amber-500 text-black font-extrabold shadow-md shadow-amber-500/20' 
                         : 'text-[#94A3B8] hover:text-white hover:bg-[#151C2B]'
                     }`}
-                    title={isCollapsed ? item.label : undefined}
+                    title={item.label}
+                    aria-label={item.label}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`flex items-center gap-2.5 min-w-0 ${isCollapsed ? 'justify-center' : ''}`}>
                       <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-black' : 'text-amber-400 group-hover:scale-110 transition-transform'}`} />
                       {!isCollapsed && (
                         <span className="truncate">{item.label}</span>
@@ -201,51 +228,63 @@ export default function Sidebar({
       </div>
 
       {/* Bottom Balance & Faucet Banner */}
-      {!isCollapsed && (
-        <div className="pt-3 mt-4 border-t border-[#1F2737] space-y-2">
-          <div className="bg-[#111827] border border-[#1F2737] p-3 rounded-2xl">
-            <span className="text-[9px] uppercase font-bold text-[#94A3B8] block">Available Social Credits</span>
+      <div className="pt-2.5 mt-3 border-t border-[#1F2737]">
+        {!isCollapsed ? (
+          <div className="bg-[#111827] border border-[#1F2737] p-2.5 rounded-2xl">
+            <span className="text-[9px] uppercase font-bold text-[#94A3B8] block">Social Credits</span>
             <div className="flex items-center justify-between mt-1">
-              <span className="font-mono-numbers font-black text-sm text-[#F5C451]">
+              <span className="font-mono-numbers font-black text-xs sm:text-sm text-[#F5C451] truncate max-w-[120px]">
                 {Number(wallet?.balance || 0).toLocaleString()} FC
               </span>
               <button
                 onClick={() => claimDailyBonus && claimDailyBonus()}
-                className="px-2 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                className="px-2 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
                 title="Claim 100 Flow Coins every 24 hours"
               >
                 <Gift className="w-3 h-3" />
-                <span>+100 FC</span>
+                <span>+100</span>
               </button>
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          /* Collapsed Mini Faucet Icon Button */
+          <div className="flex justify-center">
+            <button
+              onClick={() => claimDailyBonus && claimDailyBonus()}
+              className="w-10 h-10 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 flex items-center justify-center transition-colors cursor-pointer"
+              title="Claim 100 Free Daily Flow Coins"
+              aria-label="Claim 100 Free Daily Flow Coins"
+            >
+              <Gift className="w-4 h-4 animate-bounce" />
+            </button>
+          </div>
+        )}
+      </div>
 
     </div>
   );
 
   return (
     <>
-      {/* 1. Desktop Persistent Sidebar */}
+      {/* 1. Desktop Persistent Sidebar (68px when collapsed on laptop, 240px expanded on desktop) */}
       <aside 
-        className={`hidden lg:block shrink-0 bg-[#0B0F19] border-r border-[#1F2737] transition-all duration-300 z-30 sticky top-14 sm:top-18 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4.5rem)] ${
-          isCollapsed ? 'w-16' : 'w-64'
+        className={`hidden lg:block shrink-0 bg-[#0B0F19] border-r border-[#1F2737] transition-all duration-300 z-30 sticky top-13 xs:top-14 sm:top-16 h-[calc(100vh-3.25rem)] sm:h-[calc(100vh-4rem)] ${
+          isCollapsed ? 'w-[68px]' : 'w-60'
         }`}
       >
         {sidebarContent}
       </aside>
 
-      {/* 2. Mobile Slide-out Drawer */}
+      {/* 2. Mobile/Tablet Slide-out Drawer (< 1024px) */}
       {isOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          {/* Backdrop */}
+          {/* Backdrop with click-to-dismiss */}
           <div 
             onClick={onClose}
             className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
           />
-          {/* Drawer panel */}
-          <div className="absolute top-0 bottom-0 left-0 w-72 bg-[#0B0F19] border-r border-[#1F2737] shadow-2xl animate-in slide-in-from-left duration-250 z-10">
+          {/* Drawer panel with slide-in animation */}
+          <div className="absolute top-0 bottom-0 left-0 w-64 xs:w-72 max-w-[85vw] bg-[#0B0F19] border-r border-[#1F2737] shadow-2xl animate-in slide-in-from-left duration-250 z-10">
             {sidebarContent}
           </div>
         </div>
@@ -253,4 +292,3 @@ export default function Sidebar({
     </>
   );
 }
-

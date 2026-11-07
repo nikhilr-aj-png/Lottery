@@ -108,7 +108,7 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
       {/* Background Ambient Glows */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[360px] bg-gradient-to-r from-amber-500/10 via-[#00f2fe]/5 to-emerald-500/10 blur-[130px] pointer-events-none rounded-full" />
       
-      <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Top Badges Bar */}
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3 sm:mb-5">

@@ -118,7 +118,7 @@ export default function TicketModal({ event, onClose }) {
       
       {/* Top Full-Screen Navigation Bar */}
       <div className="sticky top-0 z-30 bg-[#0b0e14]/95 backdrop-blur-xl border-b border-[rgba(245,196,81,0.25)] px-3 xs:px-4 sm:px-8 py-2.5 xs:py-3.5 shadow-lg">
-        <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto flex items-center justify-between w-full">
+        <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto flex items-center justify-between w-full">
           <div className="flex items-center gap-2 xs:gap-3 sm:gap-4 min-w-0">
             <button
               onClick={onClose}
@@ -165,7 +165,7 @@ export default function TicketModal({ event, onClose }) {
       </div>
 
       {/* Full-Screen Workspace Body: 2 Columns */}
-      <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto w-full p-2.5 xs:p-4 sm:p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8">
+      <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto w-full p-2.5 xs:p-4 sm:p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8">
           
           {/* LEFT COLUMN: 4-Digit Dial & Keypad (7 Cols) */}
           <div className="lg:col-span-7 flex flex-col gap-3.5 sm:gap-5">

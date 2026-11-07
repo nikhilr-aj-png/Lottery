@@ -163,19 +163,19 @@ export default function GameCard({ game, onPlay }) {
       </div>
 
       {/* Card Footer: RTP, Max Win & Play CTA */}
-      <div className="px-4 py-3 bg-[#0B0F19]/80 border-t border-[#1F2737] flex items-center justify-between gap-2 relative z-10">
-        <div className="flex items-center gap-2 text-[10px] font-mono-numbers">
-          <span className="text-[#94A3B8] bg-[#111827] px-2 py-0.5 rounded border border-[#1F2737]">
+      <div className="px-3.5 xs:px-4 py-2.5 sm:py-3 bg-[#0B0F19]/80 border-t border-[#1F2737] flex items-center justify-between gap-1.5 xs:gap-2 relative z-10 flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-1 xs:gap-1.5 text-[9px] xs:text-[10px] font-mono-numbers">
+          <span className="text-[#94A3B8] bg-[#111827] px-1.5 xs:px-2 py-0.5 rounded border border-[#1F2737]">
             RTP <strong className="text-white">{game.rtp}%</strong>
           </span>
-          <span className="text-[#94A3B8] bg-[#111827] px-2 py-0.5 rounded border border-[#1F2737]">
-            Up to <strong className="text-amber-300">{game.maxMultiplier}x</strong>
+          <span className="text-[#94A3B8] bg-[#111827] px-1.5 xs:px-2 py-0.5 rounded border border-[#1F2737]">
+            <span className="hidden xs:inline">Up to </span><strong className="text-amber-300">{game.maxMultiplier}x</strong>
           </span>
         </div>
 
         {/* Play Button Trigger */}
         <button
-          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 group-hover:from-amber-400 group-hover:to-amber-500 text-black font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/20 group-hover:shadow-amber-500/40 cursor-pointer"
+          className="min-h-[34px] px-3 xs:px-3.5 py-1 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 group-hover:from-amber-400 group-hover:to-amber-500 text-black font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/20 group-hover:shadow-amber-500/40 cursor-pointer shrink-0"
         >
           <Play className="w-3.5 h-3.5 fill-current" />
           <span>Play</span>

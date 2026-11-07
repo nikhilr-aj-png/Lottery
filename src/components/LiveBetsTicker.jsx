@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { gameHistoryStore } from '../engine';
 import { useLottery } from '../context/LotteryContext';
 import { 
-  Flame, 
   Trophy, 
   Coins, 
-  ExternalLink, 
   ShieldCheck, 
   Sparkles,
   Zap,
@@ -70,42 +68,44 @@ export default function LiveBetsTicker({ onSelectGame }) {
   };
 
   return (
-    <div className="w-full bg-[#07090E] border-y border-[#1F2737] py-2.5 px-3 sm:px-6">
-      <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5">
+    <div className="w-full bg-[#07090E] border-y border-[#1F2737] py-1.5 sm:py-2 px-2 xs:px-3 sm:px-6">
+      <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto flex items-center justify-between gap-1.5 sm:gap-2.5 overflow-hidden">
         
-        {/* Ticker Tabs */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <div className="flex items-center gap-1 text-[11px] font-bold text-amber-400 mr-1.5 uppercase tracking-wider font-display">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Live Casino Activity</span>
+        {/* Left: Ticker Label & Filter Tabs (Single row on mobile & desktop) */}
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 select-none">
+          <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-amber-400 mr-0.5 sm:mr-1.5 uppercase tracking-wider font-display shrink-0">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="hidden sm:inline">Live Activity</span>
+            <span className="sm:hidden">Live</span>
           </div>
 
-          <div className="flex items-center bg-[#111827] p-0.5 rounded-xl border border-[#1F2737] text-[10px] font-bold">
+          <div className="flex items-center bg-[#111827] p-0.5 rounded-xl border border-[#1F2737] text-[9px] sm:text-[10px] font-bold">
             <button
               onClick={() => setActiveFeedTab('all')}
-              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+              className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg transition-all cursor-pointer ${
                 activeFeedTab === 'all'
                   ? 'bg-amber-500 text-black font-extrabold shadow-sm'
                   : 'text-[#94A3B8] hover:text-white'
               }`}
             >
-              All Bets
+              All
             </button>
             <button
               onClick={() => setActiveFeedTab('high')}
-              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                 activeFeedTab === 'high'
                   ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-extrabold shadow-sm'
                   : 'text-[#94A3B8] hover:text-purple-300'
               }`}
             >
-              <Trophy className="w-3 h-3 text-amber-300" />
-              <span>High Rollers</span>
+              <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-300" />
+              <span className="hidden xs:inline">High Rollers</span>
+              <span className="xs:hidden">High</span>
             </button>
             {wallet.address && (
               <button
                 onClick={() => setActiveFeedTab('my')}
-                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                className={`hidden md:inline-block px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg transition-all cursor-pointer ${
                   activeFeedTab === 'my'
                     ? 'bg-emerald-500 text-black font-extrabold shadow-sm'
                     : 'text-[#94A3B8] hover:text-white'
@@ -117,12 +117,12 @@ export default function LiveBetsTicker({ onSelectGame }) {
           </div>
         </div>
 
-        {/* Rolling Bets Track */}
-        <div className="flex-1 w-full overflow-x-auto no-scrollbar">
-          <div className="flex items-center gap-2 min-w-max py-0.5">
+        {/* Right: Rolling Bets Track (Single compact horizontal strip, zero overflow) */}
+        <div className="flex-1 w-full min-w-0 overflow-x-auto no-scrollbar ml-1 sm:ml-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-max py-0.5">
             {currentList.length === 0 ? (
-              <span className="text-[11px] text-[#94A3B8] font-mono-numbers italic py-0.5">
-                Waiting for next live bet across the network...
+              <span className="text-[10px] sm:text-[11px] text-[#94A3B8] font-mono-numbers italic py-0.5">
+                Waiting for next live round across network...
               </span>
             ) : (
               currentList.slice(0, 10).map((bet) => {
@@ -133,31 +133,31 @@ export default function LiveBetsTicker({ onSelectGame }) {
                     onClick={() => {
                       if (onSelectGame && bet.gameId) onSelectGame(bet.gameId);
                     }}
-                    className="flex items-center gap-2 bg-[#111827] hover:bg-[#151C2B] border border-[#1F2737] hover:border-amber-500/40 px-2.5 py-1.5 rounded-xl transition-all cursor-pointer shadow-sm group shrink-0"
+                    className="flex items-center gap-1.5 sm:gap-2 bg-[#111827] hover:bg-[#151C2B] border border-[#1F2737] hover:border-amber-500/40 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl transition-all cursor-pointer shadow-sm group shrink-0"
                     title="Click to view game"
                   >
-                    <span className="text-sm shrink-0">{getGameEmoji(bet.gameId)}</span>
+                    <span className="text-xs sm:text-sm shrink-0">{getGameEmoji(bet.gameId)}</span>
                     <div className="flex flex-col">
-                      <div className="flex items-center gap-1 text-[10px] font-mono-numbers">
-                        <span className="font-sans font-semibold text-[#F8FAFC] group-hover:text-amber-300 transition-colors truncate max-w-[80px]">
+                      <div className="flex items-center gap-1 text-[9px] sm:text-[10px] font-mono-numbers">
+                        <span className="font-sans font-semibold text-[#F8FAFC] group-hover:text-amber-300 transition-colors truncate max-w-[55px] xs:max-w-[75px] sm:max-w-[85px]">
                           {bet.username}
                         </span>
                         <span className="text-[#94A3B8]">·</span>
-                        <span className="uppercase text-[#94A3B8] font-bold text-[9px]">
+                        <span className="uppercase text-[#94A3B8] font-bold text-[8px] sm:text-[9px]">
                           {bet.gameId}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-[10px] font-mono-numbers font-bold">
+                      <div className="flex items-center gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-mono-numbers font-bold">
                         <span className="text-[#94A3B8]">
                           {bet.betAmount} FC
                         </span>
-                        <span className={`px-1 py-0.2 rounded text-[9px] ${
+                        <span className={`px-1 py-0.2 rounded text-[8px] sm:text-[9px] ${
                           isWin ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/10 text-red-400'
                         }`}>
                           {bet.multiplier ? `${bet.multiplier.toFixed(2)}x` : (isWin ? 'WIN' : 'LOST')}
                         </span>
                         <span className={isWin ? 'text-emerald-400 font-extrabold' : 'text-[#64748B]'}>
-                          {isWin ? `+${bet.payout.toFixed(2)}` : '0'} FC
+                          {isWin ? `+${bet.payout.toFixed(1)}` : '0'} FC
                         </span>
                       </div>
                     </div>
@@ -178,7 +178,7 @@ export default function LiveBetsTicker({ onSelectGame }) {
           auditData={{
             event_id: verifyModalBet.id,
             event_title: `${verifyModalBet.gameId.toUpperCase()} Round #${verifyModalBet.id.slice(-6)}`,
-            winning_digits: verifyModalBet.multiplier ? `${verifyModalBet.multiplier}x` : 'N/A',
+            winning_digits: verifyModalBet.multiplier ? `${verifyModalBet.multiplier}x` : '0x',
             commit_hash: verifyModalBet.serverSeedHash,
             revealed_seed: verifyModalBet.serverSeed,
             client_seed: verifyModalBet.clientSeed
@@ -188,4 +188,3 @@ export default function LiveBetsTicker({ onSelectGame }) {
     </div>
   );
 }
-

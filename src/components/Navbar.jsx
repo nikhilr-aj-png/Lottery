@@ -1,25 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useLottery } from '../context/LotteryContext';
 import { 
   Wallet, 
   Ticket, 
   Trophy, 
-  ArrowUpRight, 
   Flame, 
   Menu, 
-  X, 
-  ArrowDownLeft,
   ChevronDown,
   User,
   LogIn,
   Lock,
   Headphones,
   Download,
-  LogOut,
   Gift,
   Coins,
-  Sparkles,
-  Bell
+  Bell,
+  Sparkles
 } from 'lucide-react';
 
 export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotifications }) {
@@ -29,101 +25,102 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
     wallet,
     activeTab,
     setActiveTab,
-    setIsWalletModalOpen,
-    setWalletModalTab,
     setIsAuthModalOpen,
     showToast,
     isNativeApp,
     apkDirectDownloadUrl,
-    logout,
     claimDailyBonus
   } = useLottery();
-
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isLoggedIn = !!user;
 
   const handleNavClick = (tabId) => {
-    // Unauthenticated visitors are allowed on public tabs: lotteries, contact, terms, privacy
-    const publicTabs = ['lotteries', 'contact', 'terms', 'privacy'];
+    // Unauthenticated visitors are allowed on public tabs: lotteries, contact, terms, privacy, rewards
+    const publicTabs = ['lotteries', 'contact', 'terms', 'privacy', 'rewards', 'leaderboard'];
     if (!isLoggedIn && !publicTabs.includes(tabId)) {
-      setIsMobileMenuOpen(false);
       setIsAuthModalOpen(true);
       const tabNames = {
         tickets: 'My Tickets',
         results: 'Lottery Results & Past Winners',
-        wallet: 'USDT Wallet',
+        wallet: 'Flow Coin Wallet',
         profile: 'User Profile'
       };
       showToast(`Please log in to access ${tabNames[tabId] || 'this section'}!`, 'info');
       return;
     }
     setActiveTab(tabId);
-    setIsMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Pure public user navigation
+  // Primary desktop navigation links (visible >= 1024px)
   const navItems = [
     { id: 'lotteries', label: 'Home', icon: Flame },
-    { id: 'tickets', label: 'My Tickets', icon: Ticket },
-    { id: 'results', label: 'Results', icon: Trophy },
-    { id: 'wallet', label: 'Wallet', icon: Wallet },
-    { id: 'contact', label: 'Contact Us', icon: Headphones },
+    { id: 'tickets', label: 'My Tickets', icon: Ticket, requiresAuth: true },
+    { id: 'results', label: 'Results', icon: Trophy, requiresAuth: true },
+    { id: 'wallet', label: 'Wallet', icon: Wallet, requiresAuth: true },
+    { id: 'rewards', label: 'Rewards', icon: Gift },
+    { id: 'contact', label: 'Support', icon: Headphones },
   ];
+
+  const usernameDisplay = profile?.username 
+    ? `@${profile.username}` 
+    : (user?.user_metadata?.username 
+      ? `@${user.user_metadata.username}` 
+      : (user?.email ? user.email.split('@')[0] : 'Profile'));
 
   return (
     <>
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-[#0b0e14]/95 backdrop-blur-xl border-b border-[rgba(245,196,81,0.18)]">
-        <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] 4k:max-w-[2400px] mx-auto px-2 xs:px-3 sm:px-4 lg:px-8">
-          <div className="flex items-center justify-between h-14 xs:h-16 sm:h-18">
+      {/* ======================================================== */}
+      {/* 1. TOP HEADER                                            */}
+      {/* ======================================================== */}
+      <header className="sticky top-0 z-40 bg-[#0B0F19]/95 backdrop-blur-xl border-b border-[rgba(245,196,81,0.18)]">
+        <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2 xs:px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div className="flex items-center justify-between h-13 xs:h-14 sm:h-16">
             
-            <div className="flex items-center gap-2 xs:gap-3">
-              {/* Sidebar Collapse/Drawer Toggle */}
+            {/* LEFT: Sidebar Toggle & EarnFlow.In Branding */}
+            <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 min-w-0">
+              
+              {/* Sidebar Drawer Toggle (Mobile / Tablet / Desktop) */}
               <button
                 onClick={onToggleSidebar}
-                className="w-8 h-8 xs:w-9 xs:h-9 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-white flex items-center justify-center border border-[#1F2737] transition-colors cursor-pointer shrink-0 shadow-sm"
-                title="Toggle Casino Sidebar"
+                className="w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-9.5 sm:h-9.5 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-amber-500/40 transition-colors cursor-pointer shrink-0 shadow-sm"
+                title="Toggle Casino Navigation"
+                aria-label="Toggle Casino Navigation"
               >
-                <Menu className="w-4 h-4" />
+                <Menu className="w-4 h-4 xs:w-4.5 xs:h-4.5" />
               </button>
 
-              {/* Brand Logo & Name */}
+              {/* Brand Logo & Clean Name (No duplicate 'Flow' tag) */}
               <div 
                 onClick={() => handleNavClick('lotteries')}
-                className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 cursor-pointer group shrink-0"
+                className="flex items-center gap-1.5 xs:gap-2 sm:gap-2.5 cursor-pointer group shrink-0 select-none"
               >
-                <div className="w-8 h-8 xs:w-9 xs:h-9 sm:w-11 sm:h-11 rounded-full p-0.5 shadow-[0_0_16px_rgba(245,196,81,0.35)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
+                <div className="w-7.5 h-7.5 xs:w-8 xs:h-8 sm:w-9.5 sm:h-9.5 rounded-full p-0.5 shadow-[0_0_12px_rgba(245,196,81,0.3)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
                   <img 
                     src="/logo.png" 
-                    alt="EarnFlow.In USDT" 
+                    alt="EarnFlow.In" 
                     className="w-full h-full rounded-full object-cover border border-[#ffd700]/40" 
                   />
                 </div>
                 
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <span className="font-display font-extrabold text-sm xs:text-base sm:text-xl tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-none">
-                      EarnFlow<span className="text-[#f5c451]">.In</span>
-                    </span>
-                    <span className="hidden xs:inline-block text-[9px] sm:text-[10px] font-mono-numbers px-1.5 py-0.5 rounded bg-amber-500/15 text-[#ffd700] border border-amber-500/40 font-extrabold tracking-wide">
-                      Flow Coin
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-[#9b8f7c] font-medium hidden lg:block leading-tight mt-0.5">
+                <div className="flex flex-col justify-center">
+                  <span className="font-display font-extrabold text-sm xs:text-base sm:text-lg lg:text-xl tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-tight">
+                    EarnFlow<span className="text-[#F5C451]">.In</span>
+                  </span>
+                  {/* Subtitle visible ONLY on xl (1280px+) where ample space exists */}
+                  <span className="text-[10px] text-[#94A3B8] font-medium hidden xl:block leading-none mt-0.5">
                     Casino & Multi-Game Platform
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Desktop Navigation Links (>= 1024px) */}
-            <nav className="hidden lg:flex items-center gap-1 bg-[#10131a]/90 p-1 rounded-xl border border-[rgba(245,196,81,0.15)]">
+            {/* CENTER: Desktop Navigation Links (>= 1024px) */}
+            <nav className="hidden lg:flex items-center gap-1 bg-[#10131A]/90 p-1 rounded-xl border border-[rgba(245,196,81,0.15)] shadow-inner">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
-                const isLocked = !isLoggedIn && !['lotteries', 'contact'].includes(item.id);
+                const isLocked = !isLoggedIn && item.requiresAuth;
                 return (
                   <button
                     key={item.id}
@@ -135,7 +132,7 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5 shrink-0" />
-                    <span className="whitespace-nowrap">{item.label}</span>
+                    <span>{item.label}</span>
                     {isLocked && (
                       <Lock className="w-2.5 h-2.5 text-[#9b8f7c] opacity-60 ml-0.5 shrink-0" />
                     )}
@@ -144,330 +141,208 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
               })}
             </nav>
 
-            {/* Right Action: Wallet Balance, APK Download & Login / Profile */}
-            <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2.5">
-              {/* Desktop Android APK Download Link (Hidden inside Native App) */}
+            {/* RIGHT: Wallet Balance, Notifications, Profile & Actions */}
+            <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2 shrink-0">
+              
+              {/* Optional Android APK direct download (hidden on small/medium displays) */}
               {!isNativeApp && (
                 <a
                   href={apkDirectDownloadUrl}
                   download="earnflow.apk"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-emerald-500/10 hover:from-amber-500/20 hover:to-emerald-500/20 border border-amber-500/30 text-[#ffd700] hover:text-white text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
-                  title="Download Official Flutter Android APK"
+                  className="hidden 2xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-emerald-500/10 hover:from-amber-500/20 hover:to-emerald-500/20 border border-amber-500/30 text-[#ffd700] hover:text-white text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
+                  title="Download Official Android App"
                 >
                   <Download className="w-3.5 h-3.5 text-[#ffd700]" />
-                  <span>Android App</span>
+                  <span>APK</span>
                 </a>
               )}
+
               {isLoggedIn ? (
                 <>
-                  {/* Daily Free Flow Coin Bonus Button */}
+                  {/* Daily Free Flow Coin Bonus Button (Visible >= 640px) */}
                   <button
                     onClick={claimDailyBonus}
-                    className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/10 to-amber-500/20 hover:from-amber-500/30 hover:to-amber-500/40 text-[#ffd700] hover:text-white border border-amber-500/40 text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
+                    className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 hover:from-amber-500/25 hover:to-amber-500/35 text-[#ffd700] hover:text-white border border-amber-500/35 text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
                     title="Claim 100 Free Daily Flow Coins"
                   >
                     <Gift className="w-3.5 h-3.5 text-[#ffd700] animate-bounce" />
                     <span className="font-mono-numbers">+100 FC</span>
                   </button>
 
-                  {/* Flow Coin Balance Pill */}
+                  {/* Flow Coin Balance Pill (Accessible across all viewports from 320px to 2560px+) */}
                   <div 
                     onClick={() => handleNavClick('wallet')}
-                    title="Click to view Flow Coin Wallet & Ledger"
-                    className="cursor-pointer bg-[#10131a] hover:bg-[#161b26] border border-[rgba(245,196,81,0.25)] hover:border-[#f5c451] rounded-xl px-2 xs:px-2.5 sm:px-3.5 py-1 sm:py-1.5 flex items-center gap-1 sm:gap-2 transition-all shadow-inner"
+                    title="Click to view Flow Coin Virtual Wallet & Ledger"
+                    className="cursor-pointer bg-[#10131A] hover:bg-[#151C2B] border border-[rgba(245,196,81,0.25)] hover:border-[#f5c451] rounded-xl px-1.5 xs:px-2 sm:px-3 py-1 sm:py-1.5 flex items-center gap-1 sm:gap-1.5 transition-all shadow-inner"
                   >
                     <Coins className="w-3.5 h-3.5 text-[#ffd700] shrink-0" />
                     <span className="font-mono-numbers font-bold text-[11px] xs:text-xs sm:text-sm text-[#ffd700] whitespace-nowrap">
-                      {wallet.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                     </span>
-                    <span className="text-[9px] sm:text-xs text-amber-400 font-bold font-mono-numbers">
+                    <span className="text-[9px] xs:text-[10px] sm:text-xs text-amber-400 font-extrabold font-mono-numbers">
                       FC
                     </span>
                   </div>
 
-                  {/* Desktop Quick Wallet Navigation */}
-                  <button
-                    onClick={() => {
-                      setWalletModalTab('deposit');
-                      handleNavClick('wallet');
-                    }}
-                    className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[rgba(245,196,81,0.12)] text-[#ffd700] hover:bg-[#ffd700] hover:text-[#0b0e14] border border-[#f5c451]/30 text-xs font-bold transition-all cursor-pointer whitespace-nowrap"
-                  >
-                    <Wallet className="w-3.5 h-3.5" />
-                    Wallet
-                  </button>
-
-                  {/* Notifications Bell */}
+                  {/* Realtime Notifications Bell */}
                   <button
                     onClick={onOpenNotifications}
-                    className="w-8 h-8 rounded-xl bg-[#10131a] hover:bg-[#161b26] border border-[#2d3545] hover:border-amber-400/50 flex items-center justify-center text-[#94A3B8] hover:text-amber-300 transition-colors cursor-pointer relative shrink-0"
+                    className="w-7.5 h-7.5 xs:w-8 xs:h-8 sm:w-9 sm:h-9 rounded-xl bg-[#10131A] hover:bg-[#151C2B] border border-[#2D3545] hover:border-amber-400/50 flex items-center justify-center text-[#94A3B8] hover:text-amber-300 transition-colors cursor-pointer relative shrink-0"
                     title="View Notifications"
+                    aria-label="View Notifications"
                   >
-                    <Bell className="w-3.5 h-3.5" />
+                    <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                   </button>
 
-                  {/* Profile Button */}
+                  {/* User Profile Pill (Compact truncation to prevent horizontal overflow) */}
                   <button
                     onClick={() => handleNavClick('profile')}
                     className={`flex items-center gap-1 xs:gap-1.5 text-xs font-mono-numbers px-1.5 xs:px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl border transition-all cursor-pointer ${
                       activeTab === 'profile'
                         ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] border-[#fff2a3] font-bold shadow-sm'
-                        : 'bg-[#161c28] text-[#e1e2eb] border-[#2d3545] hover:border-[#f5c451]/50'
+                        : 'bg-[#151C2B] text-[#E1E2EB] border-[#2D3545] hover:border-[#F5C451]/50'
                     }`}
-                    title="Open User Profile"
+                    title="Open Player Profile"
+                    aria-label="Open Player Profile"
                   >
                     <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
                       activeTab === 'profile' ? 'bg-[#0b0e14]/20 text-[#0b0e14]' : 'bg-[#05d5aa]/20 text-[#05d5aa]'
                     }`}>
-                      <User className="w-3 h-3" />
+                      <User className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                     </div>
-                    <span className={`truncate max-w-[50px] xs:max-w-[75px] sm:max-w-[110px] font-bold text-[11px] sm:text-xs ${
+                    <span className={`truncate max-w-[44px] xs:max-w-[65px] sm:max-w-[95px] lg:max-w-[120px] font-bold text-[11px] sm:text-xs ${
                       activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-white'
                     }`}>
-                      {profile?.username ? `@${profile.username}` : (user?.user_metadata?.username ? `@${user.user_metadata.username}` : (user?.email ? user.email.split('@')[0] : 'Profile'))}
+                      {usernameDisplay}
                     </span>
-                    <ChevronDown className={`w-2.5 h-2.5 sm:w-3 sm:h-3 hidden xs:inline ${
-                      activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-[#9b8f7c]'
+                    <ChevronDown className={`w-2.5 h-2.5 sm:w-3 sm:h-3 hidden xs:inline shrink-0 ${
+                      activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-[#94A3B8]'
                     }`} />
-                  </button>
-
-                  {/* Mobile Drawer Toggle (visible < 1024px) */}
-                  <button
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    aria-label="Toggle Navigation Menu"
-                    className="lg:hidden w-7 h-7 xs:w-8 xs:h-8 rounded-lg bg-[#161c28] border border-[#2d3545] text-[#d2c5b0] hover:text-[#ffd700] flex items-center justify-center cursor-pointer shrink-0 ml-0.5"
-                  >
-                    {isMobileMenuOpen ? <X className="w-3.5 h-3.5 xs:w-4 xs:h-4" /> : <Menu className="w-3.5 h-3.5 xs:w-4 xs:h-4" />}
                   </button>
                 </>
               ) : (
-                /* Login Button when not signed in */
+                /* Login / Sign Up Button when unauthenticated */
                 <button
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="btn-gold px-2.5 xs:px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 sm:gap-1.5 shadow-md cursor-pointer whitespace-nowrap"
+                  className="btn-gold px-2.5 xs:px-3.5 sm:px-4.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 sm:gap-1.5 shadow-md cursor-pointer whitespace-nowrap"
                 >
                   <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Login</span>
                 </button>
               )}
+
             </div>
 
           </div>
         </div>
-
-        {/* Mobile Dropdown Drawer Menu (< 1024px) */}
-        {isMobileMenuOpen && (
-          <div className="lg:hidden bg-[#0e1118] border-b border-[rgba(245,196,81,0.2)] px-4 py-4 space-y-3 animate-in slide-in-from-top duration-200 no-scrollbar">
-            {/* Navigation links */}
-            <div className="grid grid-cols-2 gap-2">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                const isLocked = !isLoggedIn && !['lotteries', 'contact'].includes(item.id);
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavClick(item.id)}
-                    className={`p-2.5 rounded-xl text-xs font-semibold flex items-center justify-between border text-left cursor-pointer ${
-                      isActive
-                        ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] border-[#fff2a3] font-bold shadow-sm'
-                        : 'bg-[#121721] text-[#e1e2eb] border-[#272a31] hover:border-[#f5c451]/40'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-4 h-4 shrink-0" />
-                      <span className="truncate">{item.label}</span>
-                    </div>
-                    {isLocked && (
-                      <Lock className="w-3 h-3 text-[#9b8f7c] opacity-60" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Quick Actions in drawer (Full-screen view) */}
-            {isLoggedIn && (
-              <div className="pt-2 border-t border-[#1f2737] flex gap-2">
-                <button
-                  onClick={() => {
-                    setWalletModalTab('deposit');
-                    handleNavClick('wallet');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="flex-1 py-2 rounded-xl bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/30 text-xs font-bold flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
-                >
-                  <ArrowDownLeft className="w-3.5 h-3.5" />
-                  Deposit USDT
-                </button>
-                <button
-                  onClick={() => {
-                    setWalletModalTab('withdraw');
-                    handleNavClick('wallet');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="flex-1 py-2 rounded-xl bg-[rgba(245,196,81,0.15)] text-[#ffd700] border border-[#f5c451]/30 text-xs font-bold flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
-                >
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                  Withdraw 24h
-                </button>
-              </div>
-            )}
-
-            {/* Profile trigger in mobile drawer */}
-            {isLoggedIn ? (
-              <div className="space-y-1.5">
-                <button
-                  onClick={() => {
-                    handleNavClick('profile');
-                  }}
-                  className={`w-full py-2.5 rounded-xl border flex items-center justify-between px-3 text-xs font-medium cursor-pointer transition-all ${
-                    activeTab === 'profile'
-                      ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] border-[#fff2a3] font-bold shadow-sm'
-                      : 'bg-[#141924] text-white border-[#272a31] hover:border-[#ffd700]/30'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <User className={`w-4 h-4 ${activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-[#ffd700]'}`} />
-                    <span>View Player Profile (TRC-20)</span>
-                  </div>
-                  <span className={`text-[10px] font-mono-numbers ${activeTab === 'profile' ? 'text-[#0b0e14] font-bold' : 'text-[#05d5aa]'}`}>
-                    {profile?.username ? `@${profile.username}` : user?.email}
-                  </span>
-                </button>
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    logout();
-                  }}
-                  className="w-full py-2 rounded-xl bg-red-950/20 hover:bg-red-950/40 text-red-400 border border-red-500/20 hover:border-red-500/40 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign Out</span>
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  setIsAuthModalOpen(true);
-                }}
-                className="w-full py-2.5 rounded-xl btn-gold flex items-center justify-center gap-2 text-xs font-bold"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>Login with Email / Google</span>
-              </button>
-            )}
-
-            {/* Direct Android APK Download Button in Drawer (Hidden inside Native App) */}
-            {!isNativeApp && (
-              <a
-                href={apkDirectDownloadUrl}
-                download="earnflow.apk"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-[#1a2130] to-emerald-500/15 hover:from-amber-500/25 border border-amber-500/30 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
-              >
-                <Download className="w-4 h-4 text-[#ffd700]" />
-                <span>Download Official Android App (APK)</span>
-              </a>
-            )}
-          </div>
-        )}
       </header>
 
-      {/* Persistent Bottom Mobile Nav Bar (Fixed on screens < 768px for supreme thumb ergonomics) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0b0e14]/95 backdrop-blur-xl border-t border-[rgba(245,196,81,0.18)] px-2 py-1.5 flex items-center justify-around safe-area-pb shadow-[0_-5px_20px_rgba(0,0,0,0.8)]">
-        <button
-          onClick={() => handleNavClick('lotteries')}
-          className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-150 cursor-pointer ${
-            activeTab === 'lotteries' ? 'text-[#ffd700]' : 'text-[#8b92a2] hover:text-[#e1e2eb]'
-          }`}
-        >
-          <div className={`p-1 rounded-lg ${activeTab === 'lotteries' ? 'bg-[#f5c451]/15 text-[#ffd700]' : ''}`}>
-            <Flame className="w-4 h-4" />
-          </div>
-          <span className={`text-[10px] tracking-tight mt-0.5 leading-none ${activeTab === 'lotteries' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
-            Home
-          </span>
-        </button>
-
-        <button
-          onClick={() => handleNavClick('tickets')}
-          className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-150 cursor-pointer relative ${
-            activeTab === 'tickets' ? 'text-[#ffd700]' : 'text-[#8b92a2] hover:text-[#e1e2eb]'
-          }`}
-        >
-          <div className={`p-1 rounded-lg ${activeTab === 'tickets' ? 'bg-[#f5c451]/15 text-[#ffd700]' : ''}`}>
-            <Ticket className="w-4 h-4" />
-          </div>
-          <span className={`text-[10px] tracking-tight mt-0.5 leading-none flex items-center gap-0.5 ${activeTab === 'tickets' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
-            <span>Tickets</span>
-            {!isLoggedIn && <Lock className="w-2 h-2 text-[#9b8f7c] opacity-70" />}
-          </span>
-        </button>
-
-        <button
-          onClick={() => handleNavClick('results')}
-          className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-150 cursor-pointer relative ${
-            activeTab === 'results' ? 'text-[#ffd700]' : 'text-[#8b92a2] hover:text-[#e1e2eb]'
-          }`}
-        >
-          <div className={`p-1 rounded-lg ${activeTab === 'results' ? 'bg-[#f5c451]/15 text-[#ffd700]' : ''}`}>
-            <Trophy className="w-4 h-4" />
-          </div>
-          <span className={`text-[10px] tracking-tight mt-0.5 leading-none flex items-center gap-0.5 ${activeTab === 'results' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
-            <span>Results</span>
-            {!isLoggedIn && <Lock className="w-2 h-2 text-[#9b8f7c] opacity-70" />}
-          </span>
-        </button>
-
-        <button
-          onClick={() => handleNavClick('wallet')}
-          className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-150 cursor-pointer relative ${
-            activeTab === 'wallet' ? 'text-[#ffd700]' : 'text-[#8b92a2] hover:text-[#e1e2eb]'
-          }`}
-        >
-          <div className={`p-1 rounded-lg ${activeTab === 'wallet' ? 'bg-[#f5c451]/15 text-[#ffd700]' : ''}`}>
-            <Wallet className="w-4 h-4" />
-          </div>
-          <span className={`text-[10px] tracking-tight mt-0.5 leading-none flex items-center gap-0.5 ${activeTab === 'wallet' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
-            <span>Wallet</span>
-            {!isLoggedIn && <Lock className="w-2 h-2 text-[#9b8f7c] opacity-70" />}
-          </span>
-        </button>
-
-        {isLoggedIn ? (
+      {/* ======================================================== */}
+      {/* 2. REFINED BOTTOM MOBILE NAV BAR (< 768px)                */}
+      {/* ======================================================== */}
+      <nav 
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B0F19]/95 backdrop-blur-xl border-t border-[rgba(245,196,81,0.18)] px-1 xs:px-2 py-1 safe-area-pb shadow-[0_-5px_25px_rgba(0,0,0,0.85)]"
+        aria-label="Mobile Bottom Navigation"
+      >
+        <div className="flex items-center justify-around max-w-md mx-auto">
+          
+          {/* 1. Home */}
           <button
-            onClick={() => handleNavClick('profile')}
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-150 cursor-pointer ${
-              activeTab === 'profile' ? 'text-[#ffd700]' : 'text-[#8b92a2] hover:text-[#e1e2eb]'
+            onClick={() => handleNavClick('lotteries')}
+            className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'lotteries' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
             }`}
           >
-            <div className={`p-1 rounded-lg ${activeTab === 'profile' ? 'bg-[#f5c451]/15 text-[#ffd700]' : ''}`}>
-              <User className="w-4 h-4" />
+            <div className={`p-1 rounded-lg ${activeTab === 'lotteries' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
+              <Flame className="w-4 h-4" />
             </div>
-            <span className={`text-[10px] tracking-tight mt-0.5 leading-none ${activeTab === 'profile' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
-              Profile
+            <span className={`text-[10px] tracking-tight mt-0.5 leading-none ${activeTab === 'lotteries' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
+              Home
             </span>
           </button>
-        ) : (
+
+          {/* 2. My Tickets */}
           <button
-            onClick={() => setIsAuthModalOpen(true)}
-            className="flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-150 cursor-pointer text-[#ffd700]"
+            onClick={() => handleNavClick('tickets')}
+            className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all cursor-pointer relative ${
+              activeTab === 'tickets' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
+            }`}
           >
-            <div className="p-1 rounded-lg bg-[#ffd700]/15">
-              <LogIn className="w-4 h-4" />
+            <div className={`p-1 rounded-lg ${activeTab === 'tickets' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
+              <Ticket className="w-4 h-4" />
             </div>
-            <span className="text-[10px] tracking-tight mt-0.5 leading-none font-bold">
-              Login
+            <span className={`text-[10px] tracking-tight mt-0.5 leading-none flex items-center gap-0.5 ${activeTab === 'tickets' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
+              <span>Tickets</span>
+              {!isLoggedIn && <Lock className="w-2 h-2 text-[#94A3B8] opacity-70" />}
             </span>
           </button>
-        )}
-      </div>
+
+          {/* 3. Results */}
+          <button
+            onClick={() => handleNavClick('results')}
+            className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all cursor-pointer relative ${
+              activeTab === 'results' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
+            }`}
+          >
+            <div className={`p-1 rounded-lg ${activeTab === 'results' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
+              <Trophy className="w-4 h-4" />
+            </div>
+            <span className={`text-[10px] tracking-tight mt-0.5 leading-none flex items-center gap-0.5 ${activeTab === 'results' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
+              <span>Results</span>
+              {!isLoggedIn && <Lock className="w-2 h-2 text-[#94A3B8] opacity-70" />}
+            </span>
+          </button>
+
+          {/* 4. Virtual Wallet */}
+          <button
+            onClick={() => handleNavClick('wallet')}
+            className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all cursor-pointer relative ${
+              activeTab === 'wallet' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
+            }`}
+          >
+            <div className={`p-1 rounded-lg ${activeTab === 'wallet' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
+              <Wallet className="w-4 h-4" />
+            </div>
+            <span className={`text-[10px] tracking-tight mt-0.5 leading-none flex items-center gap-0.5 ${activeTab === 'wallet' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
+              <span>Wallet</span>
+              {!isLoggedIn && <Lock className="w-2 h-2 text-[#94A3B8] opacity-70" />}
+            </span>
+          </button>
+
+          {/* 5. Profile or Login */}
+          {isLoggedIn ? (
+            <button
+              onClick={() => handleNavClick('profile')}
+              className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all cursor-pointer ${
+                activeTab === 'profile' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
+              }`}
+            >
+              <div className={`p-1 rounded-lg ${activeTab === 'profile' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
+                <User className="w-4 h-4" />
+              </div>
+              <span className={`text-[10px] tracking-tight mt-0.5 leading-none ${activeTab === 'profile' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
+                Profile
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all cursor-pointer text-amber-400 hover:text-white"
+            >
+              <div className="p-1 rounded-lg bg-amber-500/15 text-[#ffd700]">
+                <LogIn className="w-4 h-4" />
+              </div>
+              <span className="text-[10px] tracking-tight mt-0.5 leading-none font-bold">
+                Login
+              </span>
+            </button>
+          )}
+
+        </div>
+      </nav>
     </>
   );
 }
