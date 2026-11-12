@@ -63,8 +63,8 @@ const ACHIEVEMENTS = [
     title: 'First Roll',
     description: 'Place your first bet on any casino game or lottery',
     reward: 50,
-    progress: 100,
-    unlocked: true,
+    progress: 0,
+    unlocked: false,
     icon: '🎲'
   },
   {
@@ -72,8 +72,8 @@ const ACHIEVEMENTS = [
     title: 'High Roller',
     description: 'Place a single wager of 50 FC or higher',
     reward: 100,
-    progress: 100,
-    unlocked: true,
+    progress: 0,
+    unlocked: false,
     icon: '👑'
   },
   {
@@ -81,8 +81,8 @@ const ACHIEVEMENTS = [
     title: 'Lucky Multiplier',
     description: 'Hit any outcome with multiplier >= 5.0x',
     reward: 150,
-    progress: 100,
-    unlocked: true,
+    progress: 0,
+    unlocked: false,
     icon: '⚡'
   },
   {
@@ -90,7 +90,7 @@ const ACHIEVEMENTS = [
     title: 'Casino Explorer',
     description: 'Play 5 or more different games from the 12-game catalog',
     reward: 200,
-    progress: 80,
+    progress: 0,
     unlocked: false,
     icon: '🌟'
   },
@@ -99,14 +99,14 @@ const ACHIEVEMENTS = [
     title: 'Flow Coin Whale',
     description: 'Accumulate a balance of 1,000 Flow Coins or more',
     reward: 500,
-    progress: 60,
+    progress: 0,
     unlocked: false,
     icon: '💎'
   }
 ];
 
 export default function RewardsView() {
-  const { wallet, setWallet, user, claimDailyBonus, showToast, setIsAuthModalOpen, fetchWalletLedger } = useLottery();
+  const { wallet, setWallet, user, claimDailyBonus, showToast, setIsAuthModalOpen, fetchWalletLedger, setActiveTab } = useLottery();
   const { soundFX, playClick, playRouletteSpin, playDialTick, playWinFanfare } = useSoundFX();
 
   // VIP State
@@ -122,7 +122,7 @@ export default function RewardsView() {
   // Streak & Achievements
   const [claimedAchievements, setClaimedAchievements] = useState([]);
   const [isClaimingDaily, setIsClaimingDaily] = useState(false);
-  const currentStreakDay = 3;
+  const currentStreakDay = Math.max(1, Math.min(7, vipData?.streak_days || 1));
 
   // Load VIP Status and Cooldowns
   const fetchVipStatus = async () => {
@@ -562,12 +562,14 @@ export default function RewardsView() {
           </div>
 
           <button
-            onClick={handleClaimDaily}
-            disabled={isClaimingDaily}
+            onClick={() => {
+              playClick();
+              if (setActiveTab) setActiveTab('wallet');
+            }}
             className="px-5 py-2.5 rounded-xl btn-gold text-xs font-black flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/20 shrink-0 hover:scale-105 transition-all"
           >
             <Gift className="w-4 h-4 text-black animate-bounce" />
-            <span>Claim Daily 100 FC</span>
+            <span>Claim in Wallet</span>
           </button>
         </div>
 

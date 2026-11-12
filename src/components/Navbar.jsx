@@ -32,8 +32,7 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
     setIsAuthModalOpen,
     showToast,
     isNativeApp,
-    apkDirectDownloadUrl,
-    claimDailyBonus
+    apkDirectDownloadUrl
   } = useLottery();
 
   const {
@@ -182,7 +181,7 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
             </nav>
 
             {/* RIGHT: Desktop Controls (Wallet + Notifications + Profile) / Mobile Icons */}
-            <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-2 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
               
               {/* Optional Android APK direct download (hidden on small/medium displays) */}
               {!isNativeApp && (
@@ -200,7 +199,7 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
               )}
 
               {/* Master Audio FX Toggle & Volume Popover (Mobile & Desktop) */}
-              <div className="relative" ref={volumeMenuRef}>
+              <div className="relative flex items-center" ref={volumeMenuRef}>
                 <button
                   onClick={() => {
                     toggleSound();
@@ -210,12 +209,12 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                     e.preventDefault();
                     setShowVolumeSlider(prev => !prev);
                   }}
-                  className={`w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-9 sm:h-9 rounded-xl border flex items-center justify-center transition-colors cursor-pointer relative shrink-0 shadow-sm ${
+                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center transition-all cursor-pointer relative shrink-0 shadow-sm ${
                     soundEnabled 
-                      ? 'bg-[#10131A] hover:bg-[#151C2B] text-amber-400 border-[#2D3545] hover:border-amber-400/50' 
-                      : 'bg-[#10131A] text-[#64748B] border-[#2D3545] hover:text-[#94A3B8]'
+                      ? 'bg-[#10131A] hover:bg-[#151C2B] text-amber-400 border-[#2D3545] hover:border-amber-400/50 hover:shadow-[0_0_12px_rgba(245,196,81,0.2)]' 
+                      : 'bg-[#10131A] text-[#64748B] border-[#2D3545] hover:text-[#94A3B8] hover:border-slate-600'
                   }`}
-                  title={soundEnabled ? `Sound FX On (${Math.round(soundVolume * 100)}%) — Click to mute, right-click for volume slider` : 'Sound FX Muted — Click to unmute'}
+                  title={soundEnabled ? `Sound FX On (${Math.round(soundVolume * 100)}%) — Tap to mute, right-click for volume` : 'Sound FX Muted — Tap to unmute'}
                   aria-label="Toggle Sound FX"
                 >
                   {soundEnabled ? (
@@ -269,20 +268,10 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
 
               {isLoggedIn ? (
                 <>
-                  {/* Daily Free Flow Coin Bonus Button (Desktop / Tablet >= 640px) */}
-                  <button
-                    onClick={claimDailyBonus}
-                    className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 hover:from-amber-500/25 hover:to-amber-500/35 text-[#ffd700] hover:text-white border border-amber-500/35 text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
-                    title="Claim 100 Free Daily Flow Coins"
-                  >
-                    <Gift className="w-3.5 h-3.5 text-[#ffd700] animate-bounce" />
-                    <span className="font-mono-numbers">+100 FC</span>
-                  </button>
-
                   {/* Flow Coin Balance Pill: Desktop/Tablet view ONLY (>= 640px) */}
                   <div 
                     onClick={() => handleNavClick('wallet')}
-                    title="Click to view Flow Coin Virtual Wallet & Ledger"
+                    title="Click to view Flow Coin Virtual Wallet & Ledger (1 FLO = 1 USDT)"
                     className="hidden sm:flex cursor-pointer bg-[#10131A] hover:bg-[#151C2B] border border-[rgba(245,196,81,0.25)] hover:border-[#f5c451] rounded-xl px-2.5 sm:px-3 py-1 sm:py-1.5 items-center gap-1.5 transition-all shadow-inner"
                   >
                     <Coins className="w-3.5 h-3.5 text-[#ffd700] shrink-0" />
@@ -290,7 +279,7 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                       {Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                     </span>
                     <span className="text-[10px] sm:text-xs text-amber-400 font-extrabold font-mono-numbers">
-                      FC
+                      FLO
                     </span>
                   </div>
 
@@ -353,21 +342,24 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
         {/* Visible only on mobile (< 640px), prevents any overlap   */}
         {/* ======================================================== */}
         {isLoggedIn && (
-          <div className="sm:hidden border-t border-[rgba(245,196,81,0.12)] bg-[#07090D]/90 px-2 xs:px-3 py-1.5">
+          <div className="sm:hidden border-t border-[rgba(245,196,81,0.12)] bg-[#07090D]/90 px-2.5 xs:px-3 py-1.5">
             <div className="w-full flex items-center justify-between gap-2">
               {/* Balance Card: Full-width flexible row */}
               <div 
                 onClick={() => handleNavClick('wallet')}
-                title="Tap to open Flow Coin Virtual Wallet"
-                className="flex-1 min-w-0 bg-[#10131A] active:bg-[#151C2B] border border-[rgba(245,196,81,0.25)] rounded-xl px-2.5 py-1 flex items-center justify-between transition-colors cursor-pointer shadow-inner"
+                title="Tap to open Flow Coin Virtual Wallet (1 FLO = 1 USDT)"
+                className="w-full bg-[#10131A] active:bg-[#151C2B] border border-[rgba(245,196,81,0.25)] rounded-xl px-3 py-1.5 flex items-center justify-between transition-colors cursor-pointer shadow-inner"
               >
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Coins className="w-3.5 h-3.5 text-[#ffd700] shrink-0" />
                   <span className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider shrink-0">
-                    FC
+                    FLO
                   </span>
                   <span className="font-mono-numbers font-bold text-xs text-[#ffd700] truncate">
                     {Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                  </span>
+                  <span className="text-[10px] text-[#94A3B8] font-mono-numbers ml-1 truncate">
+                    (≈ ${Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} USDT)
                   </span>
                 </div>
 
@@ -376,16 +368,6 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                   <span>Wallet</span>
                 </div>
               </div>
-
-              {/* Mobile Daily Faucet Claim Button */}
-              <button
-                onClick={claimDailyBonus}
-                className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 text-[#ffd700] border border-amber-500/35 text-[11px] font-bold transition-all shadow-sm cursor-pointer"
-                title="Claim 100 Free Daily Flow Coins"
-              >
-                <Gift className="w-3.5 h-3.5 text-[#ffd700] animate-bounce" />
-                <span className="font-mono-numbers">+100</span>
-              </button>
             </div>
           </div>
         )}

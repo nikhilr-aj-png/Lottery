@@ -37,7 +37,7 @@ export default function Sidebar({
   onSelectTab,
   onLaunchGame 
 }) {
-  const { wallet, user, claimDailyBonus } = useLottery();
+  const { wallet, user } = useLottery();
 
   // Prevent background scrolling when mobile drawer is open
   useEffect(() => {
@@ -249,31 +249,26 @@ export default function Sidebar({
       <div className="pt-2.5 mt-3 border-t border-[#1F2737]">
         {!isCollapsed ? (
           <div className="bg-[#111827] border border-[#1F2737] p-2.5 rounded-2xl">
-            <span className="text-[9px] uppercase font-bold text-[#94A3B8] block">Social Credits</span>
+            <span className="text-[9px] uppercase font-bold text-[#94A3B8] block">Wallet Balance</span>
             <div className="flex items-center justify-between mt-1">
-              <span className="font-mono-numbers font-black text-xs sm:text-sm text-[#F5C451] truncate max-w-[120px]">
-                {Number(wallet?.balance || 0).toLocaleString()} FC
+              <span className="font-mono-numbers font-black text-xs sm:text-sm text-[#F5C451] truncate">
+                {Number(wallet?.balance || 0).toLocaleString()} FLO
               </span>
-              <button
-                onClick={() => claimDailyBonus && claimDailyBonus()}
-                className="px-2 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
-                title="Claim 100 Flow Coins every 24 hours"
-              >
-                <Gift className="w-3 h-3" />
-                <span>+100</span>
-              </button>
+              <span className="text-[10px] text-[#94A3B8] font-mono-numbers">
+                ≈ ${Number(wallet?.balance || 0).toLocaleString()}
+              </span>
             </div>
           </div>
         ) : (
-          /* Collapsed Mini Faucet Icon Button */
+          /* Collapsed Mini Wallet Icon Button */
           <div className="flex justify-center">
             <button
-              onClick={() => claimDailyBonus && claimDailyBonus()}
-              className="w-10 h-10 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 flex items-center justify-center transition-colors cursor-pointer"
-              title="Claim 100 Free Daily Flow Coins"
-              aria-label="Claim 100 Free Daily Flow Coins"
+              onClick={() => onSelectTab && onSelectTab('wallet')}
+              className="w-10 h-10 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-400 border border-[#1F2737] flex items-center justify-center transition-colors cursor-pointer"
+              title="Open Wallet (1 FLO = 1 USDT)"
+              aria-label="Open Wallet"
             >
-              <Gift className="w-4 h-4 animate-bounce" />
+              <Wallet className="w-4 h-4" />
             </button>
           </div>
         )}

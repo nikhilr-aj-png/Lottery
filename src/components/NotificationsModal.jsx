@@ -15,34 +15,18 @@ import {
 const INITIAL_NOTIFICATIONS = [
   {
     id: 1,
-    title: 'Daily Bonus Faucet Available',
-    message: 'Your 24-hour streak bonus (+100 FC) is ready to claim now!',
+    title: 'Daily FLO Coin Reward Available',
+    message: 'Your 24-hour daily reward (up to 1.00 FLO = 1.00 USDT) is ready to claim inside your Wallet!',
     type: 'reward',
-    time: 'Just now',
+    time: 'Recent',
     isUnread: true
   },
   {
     id: 2,
-    title: 'Lottery Round #39 Concluded',
-    message: 'Provably fair winning digits 7482 finalized with 100% mathematical equality.',
-    type: 'lottery',
-    time: '25m ago',
-    isUnread: true
-  },
-  {
-    id: 3,
-    title: 'High Roller Crash Cashout',
-    message: 'Player @MoonRocket cashed out at 18.25x multiplier for +912.50 Flow Coins.',
-    type: 'game',
-    time: '1h ago',
-    isUnread: false
-  },
-  {
-    id: 4,
-    title: 'Provably Fair Seeds Rotated',
-    message: 'Previous server seed hash revealed. New cryptographic commit committed to database.',
+    title: 'Provably Fair Cryptographic Engine',
+    message: 'All 12 modular games and lottery draws use immutable SHA-256 pre-commit verification.',
     type: 'security',
-    time: '3h ago',
+    time: 'Active',
     isUnread: false
   }
 ];

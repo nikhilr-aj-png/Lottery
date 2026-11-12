@@ -19,8 +19,6 @@ import {
 } from 'lucide-react';
 
 export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }) {
-  const { claimDailyBonus } = useLottery();
-
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('popular'); // 'popular' | 'rtp' | 'multiplier'
@@ -134,24 +132,20 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }) {
           {/* RIGHT COLUMN: Balanced VIP Showcase Panel (Visible on lg: 1024px+, fills unused space) */}
           <div className="hidden lg:flex flex-col gap-3 w-72 xl:w-80 shrink-0 bg-[#0B0F19]/80 border border-amber-500/20 rounded-2xl p-4 shadow-xl backdrop-blur-md">
             
-            {/* Daily Bonus Faucet Card */}
+            {/* Platform Parity Status Card */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#111827] border border-[#1F2737]">
               <div>
                 <span className="text-[10px] font-mono-numbers uppercase text-[#94A3B8] font-bold block">
-                  Free Daily Faucet
+                  Platform Parity
                 </span>
                 <span className="font-display font-black text-amber-300 text-sm">
-                  +100 Flow Coins
+                  1 FLO = 1 USDT
                 </span>
               </div>
-              <button
-                onClick={() => claimDailyBonus && claimDailyBonus()}
-                className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                title="Claim 100 FC every 24 hours"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Claim</span>
-              </button>
+              <div className="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs font-bold font-mono-numbers flex items-center gap-1">
+                <Coins className="w-3.5 h-3.5" />
+                <span>FLO</span>
+              </div>
             </div>
 
             {/* Cryptographic Provably Fair Trust Banner */}
@@ -290,9 +284,9 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }) {
           <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-400 flex items-center justify-center">
             <TrendingUp className="w-5 h-5" />
           </div>
-          <h3 className="font-display font-bold text-sm text-white">Daily Rewards & Faucets</h3>
+          <h3 className="font-display font-bold text-sm text-white">Daily FLO Coin Rewards</h3>
           <p className="text-xs text-[#94A3B8] leading-relaxed">
-            Claim 100 Flow Coins every 24 hours plus starter welcome grants to keep enjoying games with zero risk.
+            Claim random daily FLO Coin rewards inside your Wallet (up to 1 FLO = 1 USDT) to enjoy games with zero risk.
           </p>
         </div>
       </section>

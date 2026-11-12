@@ -29,19 +29,6 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-const SEED_FALLBACK_LEADERBOARD = [
-  { rank: 1, username: 'VegasWhale', address: '0x1a8f...92d1', vip_tier: 'Diamond', vip_level: 5, total_won_fc: 14820.50, total_net_profit: 8940.00, total_wagered: 5880.50, biggest_mult: 50.0, rounds_count: 312, fav_game: 'slots' },
-  { rank: 2, username: 'CryptoLucky', address: '0x3c4b...88a2', vip_tier: 'Platinum', vip_level: 4, total_won_fc: 11450.00, total_net_profit: 6720.00, total_wagered: 4730.00, biggest_mult: 36.0, rounds_count: 245, fav_game: 'roulette' },
-  { rank: 3, username: 'AcesHigh', address: '0x7e2d...41f9', vip_tier: 'Platinum', vip_level: 4, total_won_fc: 9820.25, total_net_profit: 5410.00, total_wagered: 4410.25, biggest_mult: 22.0, rounds_count: 198, fav_game: 'plinko' },
-  { rank: 4, username: 'MoonRocket', address: '0x99a1...3b7c', vip_tier: 'Gold', vip_level: 3, total_won_fc: 8140.00, total_net_profit: 4890.00, total_wagered: 3250.00, biggest_mult: 18.25, rounds_count: 167, fav_game: 'crash' },
-  { rank: 5, username: 'DiamondHands', address: '0x55d8...11e4', vip_tier: 'Gold', vip_level: 3, total_won_fc: 6920.80, total_net_profit: 3950.00, total_wagered: 2970.80, biggest_mult: 15.0, rounds_count: 142, fav_game: 'mines' },
-  { rank: 6, username: 'TexasShark', address: '0x22c4...77d3', vip_tier: 'Silver', vip_level: 2, total_won_fc: 5800.50, total_net_profit: 3200.00, total_wagered: 2600.50, biggest_mult: 10.0, rounds_count: 115, fav_game: 'poker' },
-  { rank: 7, username: 'LuckyStrike', address: '0x88f2...99c0', vip_tier: 'Silver', vip_level: 2, total_won_fc: 4950.00, total_net_profit: 2650.00, total_wagered: 2300.00, biggest_mult: 8.0, rounds_count: 98, fav_game: 'dice' },
-  { rank: 8, username: 'GoldenCoin', address: '0x44b1...66a5', vip_tier: 'Bronze', vip_level: 1, total_won_fc: 4210.00, total_net_profit: 2110.00, total_wagered: 2100.00, biggest_mult: 4.8, rounds_count: 84, fav_game: 'coinflip' },
-  { rank: 9, username: 'KenoMaster', address: '0x11d9...22f8', vip_tier: 'Bronze', vip_level: 1, total_won_fc: 3750.00, total_net_profit: 1850.00, total_wagered: 1900.00, biggest_mult: 45.0, rounds_count: 72, fav_game: 'keno' },
-  { rank: 10, username: 'LimboKing', address: '0x66c7...33e1', vip_tier: 'Bronze', vip_level: 1, total_won_fc: 3120.00, total_net_profit: 1420.00, total_wagered: 1700.00, biggest_mult: 12.4, rounds_count: 65, fav_game: 'limbo' }
-];
-
 const GAME_OPTIONS = [
   { id: 'all', label: 'All Games' },
   { id: 'lottery', label: 'Lottery' },
@@ -96,9 +83,9 @@ export default function LeaderboardView() {
     fetchLeaderboard();
   }, [timeFilter, metricFilter, gameFilter]);
 
-  // Combine database data with fallback seed data if database has few entries
+  // Genuine leaderboard data retrieved directly from database
   const displayList = useMemo(() => {
-    const list = dbLeaderboard.length >= 5 ? [...dbLeaderboard] : [...dbLeaderboard, ...SEED_FALLBACK_LEADERBOARD.slice(dbLeaderboard.length)];
+    const list = Array.isArray(dbLeaderboard) ? [...dbLeaderboard] : [];
 
     return list
       .filter(p => {
@@ -393,7 +380,20 @@ export default function LeaderboardView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1F2737] font-mono-numbers">
-              {displayList.map((row) => {
+              {displayList.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="py-12 text-center text-[#94A3B8]">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <Trophy className="w-8 h-8 text-amber-500/30" />
+                      <span className="font-display font-bold text-sm text-white">No Leaderboard Standings Yet</span>
+                      <span className="text-xs text-[#64748B] max-w-sm">
+                        Place bets on any of the 12 Provably Fair games or lottery rounds to claim the #1 spot!
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                displayList.map((row) => {
                 const isTop1 = row.rank === 1;
                 const isTop2 = row.rank === 2;
                 const isTop3 = row.rank === 3;
@@ -476,7 +476,7 @@ export default function LeaderboardView() {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

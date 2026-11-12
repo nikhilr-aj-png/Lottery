@@ -52,7 +52,10 @@ export default function WalletView() {
     walletLedger = [],
     loadingLedger,
     fetchWalletLedger,
-    claimDailyBonus
+    claimDailyBonus,
+    claimDailyFloReward,
+    getDailyFloRewardStatus,
+    calculateDailyFloReward
   } = useLottery();
 
   const minWithdrawalLimit = typeof platformSettings?.minWithdrawal === 'number' ? platformSettings.minWithdrawal : 5;
@@ -62,6 +65,64 @@ export default function WalletView() {
   const [activeTab, setActiveTab] = useState(() => walletModalTab || 'deposit');
   const [ledgerTab, setLedgerTab] = useState('ledger');
   const [depositFilter, setDepositFilter] = useState('all');
+
+  // Daily FLO Coin Reward State
+  const [dailyRewardStatus, setDailyRewardStatus] = useState({
+    canClaim: true,
+    secondsRemaining: 0,
+    availableReward: 0.25,
+    lastReward: null
+  });
+  const [isClaimingDailyReward, setIsClaimingDailyReward] = useState(false);
+
+  const refreshDailyRewardStatus = async () => {
+    if (getDailyFloRewardStatus) {
+      const status = await getDailyFloRewardStatus();
+      setDailyRewardStatus(status);
+    }
+  };
+
+  useEffect(() => {
+    refreshDailyRewardStatus();
+  }, [wallet.address, walletLedger.length]);
+
+  // Tick countdown timer for remaining cooldown
+  useEffect(() => {
+    if (dailyRewardStatus.secondsRemaining <= 0) return;
+    const interval = setInterval(() => {
+      setDailyRewardStatus(prev => {
+        if (prev.secondsRemaining <= 1) {
+          refreshDailyRewardStatus();
+          return { ...prev, canClaim: true, secondsRemaining: 0 };
+        }
+        return { ...prev, secondsRemaining: prev.secondsRemaining - 1 };
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [dailyRewardStatus.secondsRemaining]);
+
+  const handleClaimDailyReward = async () => {
+    if (isClaimingDailyReward || !dailyRewardStatus.canClaim) return;
+    setIsClaimingDailyReward(true);
+    try {
+      const fn = claimDailyFloReward || claimDailyBonus;
+      if (fn) {
+        const res = await fn();
+        if (res?.success) {
+          await refreshDailyRewardStatus();
+        }
+      }
+    } finally {
+      setIsClaimingDailyReward(false);
+    }
+  };
+
+  const formatCountdown = (secs) => {
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   // Live timer for countdown updates
   const [now, setNow] = useState(Date.now());
@@ -91,8 +152,8 @@ export default function WalletView() {
   const [depositAmount, setDepositAmount] = useState('50');
 
   // Withdrawal form
-  const [withdrawAmount, setWithdrawAmount] = useState('500');
-  const [destinationAddress, setDestinationAddress] = useState('TYv889XaKLQpNm4xW9jRtZbCuYxK9m');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [destinationAddress, setDestinationAddress] = useState('');
   const [copied, setCopied] = useState(false);
   const [selectedProofOrder, setSelectedProofOrder] = useState(null);
 
@@ -231,32 +292,73 @@ export default function WalletView() {
   return (
     <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-8">
       
-      {/* Flow Coin Social Free-to-Play Daily Bonus Banner */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 border border-amber-500/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-amber-500/5">
+      {/* Daily FLO Coin Reward Card — Exclusively in Wallet */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 border border-amber-500/35 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg shadow-amber-500/5">
         <div className="flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#ffd700] to-[#f5c451] flex items-center justify-center text-[#0b0e14] shadow-[0_0_25px_rgba(245,196,81,0.35)] shrink-0 font-black">
             <Gift className="w-6 h-6 animate-bounce" />
           </div>
           <div>
-            <div className="flex items-center gap-2 mb-0.5">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
               <h4 className="font-display font-black text-base sm:text-lg text-white">
-                Daily Flow Coin Faucet
+                Daily FLO Coin Reward
               </h4>
               <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/20 text-[#ffd700] border border-amber-500/40 uppercase font-bold tracking-wider">
-                Free 100 FC
+                1 FLO = 1 USDT
+              </span>
+              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 uppercase font-bold tracking-wider">
+                Once Every 24h
               </span>
             </div>
-            <p className="text-xs text-[#9b8f7c]">
-              Claim 100 free Flow Coins every 24 hours to enter lottery pools and play modular casino games without real money stakes.
-            </p>
+            
+            {dailyRewardStatus.canClaim ? (
+              <p className="text-xs text-[#9b8f7c]">
+                Ready to claim! Available today:{' '}
+                <span className="text-amber-300 font-bold font-mono-numbers">
+                  +{dailyRewardStatus.availableReward.toFixed(2)} FLO
+                </span>{' '}
+                <span className="text-white/60 font-mono-numbers">
+                  (≈ ${dailyRewardStatus.availableReward.toFixed(2)} USDT)
+                </span>
+                . Random reward up to 1 FLO Coin every 24 hours.
+              </p>
+            ) : (
+              <p className="text-xs text-[#9b8f7c]">
+                Reward already claimed for today! Next daily reward unlocks in:{' '}
+                <span className="text-amber-400 font-bold font-mono-numbers">
+                  {formatCountdown(dailyRewardStatus.secondsRemaining)}
+                </span>
+                . Maximum reward is strictly capped at 1.00 FLO Coin (1.00 USDT).
+              </p>
+            )}
           </div>
         </div>
+
         <button
-          onClick={claimDailyBonus}
-          className="btn-gold px-6 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#f5c451]/25 cursor-pointer whitespace-nowrap self-stretch sm:self-auto shrink-0"
+          onClick={handleClaimDailyReward}
+          disabled={!dailyRewardStatus.canClaim || isClaimingDailyReward}
+          className={`px-6 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer whitespace-nowrap self-stretch md:self-auto shrink-0 ${
+            dailyRewardStatus.canClaim
+              ? 'btn-gold shadow-[#f5c451]/25 hover:scale-[1.02]'
+              : 'bg-[#1f2737] text-white/40 border border-[#272a31] cursor-not-allowed shadow-none'
+          }`}
         >
-          <Sparkles className="w-4 h-4" />
-          <span>Claim Free Daily FC</span>
+          {isClaimingDailyReward ? (
+            <>
+              <RefreshCw className="w-4 h-4 animate-spin text-amber-300" />
+              <span>Verifying Ledger...</span>
+            </>
+          ) : dailyRewardStatus.canClaim ? (
+            <>
+              <Sparkles className="w-4 h-4 text-black" />
+              <span>Claim {dailyRewardStatus.availableReward.toFixed(2)} FLO (${dailyRewardStatus.availableReward.toFixed(2)})</span>
+            </>
+          ) : (
+            <>
+              <Clock className="w-4 h-4 text-white/40" />
+              <span>Claimed ({formatCountdown(dailyRewardStatus.secondsRemaining)})</span>
+            </>
+          )}
         </button>
       </div>
 
@@ -267,7 +369,7 @@ export default function WalletView() {
         <div className="glass-panel p-3.5 xs:p-4.5 sm:p-6 rounded-2xl border-l-4 border-l-[#ffd700] relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
-              Available Flow Coins
+              Available FLO Coins
             </span>
             <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700]">
               <Coins className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
@@ -277,10 +379,10 @@ export default function WalletView() {
             <span className="font-display font-black text-2xl xs:text-3xl sm:text-4xl text-gold-gradient font-mono-numbers">
               {wallet.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            <span className="text-xs text-amber-400 font-bold font-mono-numbers">FC</span>
+            <span className="text-xs text-amber-400 font-bold font-mono-numbers">FLO</span>
           </div>
           <span className="text-[10px] xs:text-[11px] text-[#9b8f7c] mt-1 block font-mono-numbers">
-            Flow Coin Balance • Ready for Lottery & Games
+            ≈ ${wallet.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT · 1 FLO = 1 USDT
           </span>
         </div>
 
@@ -868,13 +970,15 @@ export default function WalletView() {
             </div>
 
             <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
-              <table className="w-full min-w-[720px] text-left text-xs">
+              <table className="w-full min-w-[840px] text-left text-xs">
                 <thead>
                   <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
                     <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Tx ID</th>
                     <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Transaction Type</th>
-                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (FC)</th>
+                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (FLO)</th>
+                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">USDT Value (1:1)</th>
                     <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Balance After</th>
+                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status</th>
                     <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Description / Reference</th>
                     <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Timestamp</th>
                   </tr>
@@ -882,8 +986,8 @@ export default function WalletView() {
                 <tbody className="divide-y divide-[#1f2737]">
                   {walletLedger.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="py-8 text-center text-[#9b8f7c] font-mono-numbers">
-                        No transactions recorded in ledger yet. Claim your Daily Bonus to start!
+                      <td colSpan="8" className="py-8 text-center text-[#9b8f7c] font-mono-numbers">
+                        No transactions recorded in ledger yet. Claim your Daily FLO Coin Reward to start!
                       </td>
                     </tr>
                   ) : (
@@ -891,7 +995,8 @@ export default function WalletView() {
                       const isCredit = Number(tx.amount) > 0;
                       const typeConfig = {
                         welcome_grant: { label: 'WELCOME BONUS', bg: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
-                        daily_bonus: { label: 'DAILY FAUCET', bg: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
+                        daily_reward: { label: 'DAILY FLO REWARD', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+                        daily_bonus: { label: 'DAILY FLO REWARD', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
                         ticket_purchase: { label: 'TICKET PURCHASE', bg: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
                         lottery_win: { label: 'LOTTERY WIN', bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
                         game_bet: { label: 'GAME WAGER', bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
@@ -913,11 +1018,22 @@ export default function WalletView() {
                           </td>
                           <td className="py-3 px-2 xs:px-3 font-mono-numbers font-black text-sm whitespace-nowrap">
                             <span className={isCredit ? 'text-emerald-400' : 'text-rose-400'}>
-                              {isCredit ? '+' : ''}{Number(tx.amount).toFixed(2)} FC
+                              {isCredit ? '+' : ''}{Number(tx.amount).toFixed(2)} FLO
+                            </span>
+                          </td>
+                          <td className="py-3 px-2 xs:px-3 font-mono-numbers font-bold text-xs whitespace-nowrap">
+                            <span className={isCredit ? 'text-emerald-300' : 'text-rose-300'}>
+                              {isCredit ? '+' : '-'}${Math.abs(Number(tx.amount || 0)).toFixed(2)} USDT
                             </span>
                           </td>
                           <td className="py-3 px-2 xs:px-3 font-mono-numbers text-xs text-white/90 whitespace-nowrap">
-                            <span className="text-[#ffd700] font-bold">{Number(tx.balance_after || 0).toFixed(2)} FC</span>
+                            <span className="text-[#ffd700] font-bold">{Number(tx.balance_after || 0).toFixed(2)} FLO</span>
+                          </td>
+                          <td className="py-3 px-2 xs:px-3 whitespace-nowrap">
+                            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                              <span>Completed</span>
+                            </span>
                           </td>
                           <td className="py-3 px-2 xs:px-3 text-xs text-white/80 max-w-[280px] truncate">
                             <span title={tx.description || tx.reference_id}>

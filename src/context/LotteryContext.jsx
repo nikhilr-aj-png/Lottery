@@ -26,7 +26,7 @@ export function LotteryProvider({ children }) {
     return {
       address: guestAddr,
       connected: false,
-      balance: 500,
+      balance: 0,
       network: 'Flow Coin',
       lifetimeWon: 0,
       depositAddress: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m'
@@ -399,37 +399,141 @@ export function LotteryProvider({ children }) {
     }
   };
 
-  // Claim Daily Free Flow Coin Bonus (100 FC every 24 hours)
-  const claimDailyBonus = async () => {
+  // Helper: Calculate deterministic fractional daily FLO Coin reward (0.05 to 1.00 FLO Coin = 0.05 to 1.00 USDT)
+  const calculateDailyFloReward = (address, dateStr) => {
+    const todayStr = dateStr || new Date().toISOString().slice(0, 10);
+    const key = `${(address || '0x0000').toLowerCase()}-${todayStr}-flo-daily-salt-v1`;
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+      hash = ((hash << 5) - hash) + key.charCodeAt(i);
+      hash |= 0;
+    }
+    // Cent variations from 5 to 100 cents (0.05 to 1.00 FLO Coin)
+    const cents = 5 + (Math.abs(hash) % 96);
+    const amount = parseFloat((cents / 100).toFixed(2));
+    return Math.min(1.00, Math.max(0.05, amount));
+  };
+
+  // Check 24-hour daily reward status from real wallet_ledger records
+  const getDailyFloRewardStatus = async () => {
+    if (!wallet?.address) {
+      return { canClaim: false, secondsRemaining: 0, availableReward: 0.25 };
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const availableReward = calculateDailyFloReward(wallet.address, today);
+
     try {
-      const { data, error } = await supabase.rpc('claim_daily_bonus', {
-        p_user_address: wallet.address
-      });
-      if (error) throw error;
-      if (data && !data.success) {
-        showToast(data.error || 'Daily bonus already claimed for today.', 'info');
-        return data;
+      let query = supabase
+        .from('wallet_ledger')
+        .select('created_at, amount')
+        .in('transaction_type', ['daily_reward', 'daily_bonus'])
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (user?.id) {
+        query = query.or(`wallet_address.eq.${wallet.address},user_id.eq.${user.id}`);
+      } else {
+        query = query.eq('wallet_address', wallet.address);
       }
+
+      const { data, error } = await query;
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        const lastTime = new Date(data[0].created_at).getTime();
+        const elapsed = Date.now() - lastTime;
+        const cooldown = 86400 * 1000; // 24 hours in ms
+        if (elapsed < cooldown) {
+          const secondsRemaining = Math.ceil((cooldown - elapsed) / 1000);
+          return {
+            canClaim: false,
+            secondsRemaining,
+            availableReward,
+            lastReward: Number(data[0].amount || 0),
+            lastClaimedAt: data[0].created_at
+          };
+        }
+      }
+      return { canClaim: true, secondsRemaining: 0, availableReward };
+    } catch (e) {
+      console.warn('getDailyFloRewardStatus error:', e);
+      return { canClaim: true, secondsRemaining: 0, availableReward };
+    }
+  };
+
+  // Claim Daily Random FLO Coin Reward (Strictly <= 1.00 FLO = 1.00 USDT, once per 24 hours)
+  const claimDailyFloReward = async () => {
+    if (!wallet.address) {
+      setIsAuthModalOpen(true);
+      showToast('Please log in or connect your wallet to claim daily rewards!', 'info');
+      return { success: false, error: 'Authentication required' };
+    }
+
+    try {
+      // 1. Verify 24h eligibility against genuine database ledger
+      const status = await getDailyFloRewardStatus();
+      if (!status.canClaim) {
+        const hours = Math.floor(status.secondsRemaining / 3600);
+        const mins = Math.floor((status.secondsRemaining % 3600) / 60);
+        showToast(`Daily reward already claimed. Next claim available in ${hours}h ${mins}m.`, 'info');
+        return { success: false, error: 'Already claimed', secondsRemaining: status.secondsRemaining };
+      }
+
+      // 2. Compute fractional reward amount (Strict Invariant: <= 1.00 FLO)
+      const today = new Date().toISOString().slice(0, 10);
+      const rewardAmount = Math.min(1.00, Math.max(0.05, status.availableReward));
+      const refId = `daily-flo-${today}-${wallet.address.slice(-6)}`;
+
+      // 3. Atomically credit into wallet and record in ledger
+      const { data, error } = await supabase.rpc('credit_virtual_credits', {
+        p_amount: rewardAmount,
+        p_transaction_type: 'daily_reward',
+        p_reference_id: refId,
+        p_description: `Daily FLO Coin Reward (${rewardAmount.toFixed(2)} FLO = ${rewardAmount.toFixed(2)} USDT)`,
+        p_user_address: wallet.address,
+        p_user_id: user?.id || null,
+        p_metadata: {
+          source: 'daily_flo_reward',
+          flo_amount: rewardAmount,
+          usdt_value: rewardAmount,
+          rate: '1 FLO = 1 USDT',
+          status: 'completed',
+          claimed_at: new Date().toISOString()
+        }
+      });
+
+      if (error) throw error;
+
       if (data && data.success) {
-        showToast(`🎉 Daily Reward Claimed! +${data.bonus_amount} Flow Coins added to your wallet!`, 'success');
+        showToast(`🎉 Daily Reward Claimed! +${rewardAmount.toFixed(2)} FLO (≈ $${rewardAmount.toFixed(2)} USDT)`, 'success');
         confetti({
           particleCount: 80,
           spread: 80,
           origin: { y: 0.6 },
-          colors: ['#ffd700', '#f5c451', '#22c55e', '#8b5cf6']
+          colors: ['#ffd700', '#f5c451', '#22c55e', '#00f2fe']
         });
+
         if (data.new_balance !== undefined) {
           setWallet(prev => ({ ...prev, balance: parseFloat(data.new_balance) }));
         }
+
         await fetchWalletLedger();
-        return data;
+        return {
+          success: true,
+          bonus_amount: rewardAmount,
+          usdt_value: rewardAmount,
+          new_balance: data.new_balance
+        };
       }
+      return { success: false, error: 'Failed to credit' };
     } catch (err) {
-      console.error('claimDailyBonus error:', err);
+      console.error('claimDailyFloReward error:', err);
       showToast(err.message || 'Error claiming daily reward', 'error');
       return { success: false, error: err.message };
     }
   };
+
+  // Alias for backward compatibility
+  const claimDailyBonus = claimDailyFloReward;
 
   // Universal Server-Authoritative Debit RPC (Used by 12 Games, Tickets, etc.)
   const debitCredits = async (amount, type = 'game_bet', referenceId = null, description = null, metadata = {}) => {
@@ -1438,7 +1542,7 @@ export function LotteryProvider({ children }) {
         await supabase.from('lottery_wallets').upsert({
           address: addrToUse,
           user_id: user?.id || null,
-          balance: 500.00,
+          balance: 0.00,
           lifetime_won: 0,
           network: 'Flow Coin'
         });
@@ -1446,7 +1550,7 @@ export function LotteryProvider({ children }) {
           ...prev,
           address: addrToUse,
           connected: true,
-          balance: 500.00,
+          balance: 0.00,
           lifetimeWon: 0,
           network: 'Flow Coin'
         }));
@@ -2616,6 +2720,9 @@ export function LotteryProvider({ children }) {
         loadingLedger,
         fetchWalletLedger,
         claimDailyBonus,
+        claimDailyFloReward,
+        getDailyFloRewardStatus,
+        calculateDailyFloReward,
         debitCredits,
         creditCredits,
         adminDeleteTicket,
