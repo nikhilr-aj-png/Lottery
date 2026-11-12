@@ -48,7 +48,8 @@ import {
   Download,
   Gamepad2,
   Binary,
-  ShieldCheck
+  ShieldCheck,
+  Gift
 } from 'lucide-react';
 
 export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
@@ -76,6 +77,8 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
     adminDeleteTicket,
     platformSettings,
     adminUpdatePlatformSettings,
+    adminUpdateRewardSettings,
+    adminGetRewardsAnalytics,
     showToast,
     getDirectDownloadUrl
   } = useLottery();
@@ -129,6 +132,73 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
   const [manualWinnerUser, setManualWinnerUser] = useState('');
   const [manualWinnerAmount, setManualWinnerAmount] = useState('');
   const [manualWinnerNote, setManualWinnerNote] = useState('Special Seasonal Reward');
+
+  // Bonus & Daily Reward Controls State
+  const [bonusRewardSettings, setBonusRewardSettings] = useState({
+    enabled: true,
+    reward_mode: 'streak', // 'streak' | 'random' | 'fixed'
+    fixed_amount: 0.50,
+    min_amount: 0.05,
+    max_amount: 1.00,
+    cooldown_hours: 24,
+    eligibility: 'all'
+  });
+
+  const [dailyCheckinSettings, setDailyCheckinSettings] = useState({
+    enabled: true,
+    streak_rewards: {
+      day1: 0.10,
+      day2: 0.15,
+      day3: 0.20,
+      day4: 0.25,
+      day5: 0.30,
+      day6: 0.40,
+      day7: 1.00
+    },
+    full_streak_bonus: 1.00,
+    missed_day_policy: 'reset'
+  });
+
+  const [rewardsAnalytics, setRewardsAnalytics] = useState({
+    total_claims: 0,
+    total_distributed_flo: 0,
+    active_streaks_count: 0,
+    recent_claims: []
+  });
+  const [loadingRewardsAnalytics, setLoadingRewardsAnalytics] = useState(false);
+  const [savingRewardSettings, setSavingRewardSettings] = useState(false);
+
+  const loadRewardsAnalytics = async () => {
+    if (!adminGetRewardsAnalytics) return;
+    setLoadingRewardsAnalytics(true);
+    try {
+      const data = await adminGetRewardsAnalytics();
+      if (data) {
+        setRewardsAnalytics(data);
+        if (data.bonus_settings) {
+          setBonusRewardSettings(prev => ({ ...prev, ...data.bonus_settings }));
+        }
+        if (data.checkin_settings) {
+          setDailyCheckinSettings(prev => ({ ...prev, ...data.checkin_settings }));
+        }
+      }
+    } catch (e) {
+      console.warn('loadRewardsAnalytics error:', e);
+    } finally {
+      setLoadingRewardsAnalytics(false);
+    }
+  };
+
+  const handleSaveRewardSettings = async () => {
+    if (!adminUpdateRewardSettings) return;
+    setSavingRewardSettings(true);
+    try {
+      await adminUpdateRewardSettings(bonusRewardSettings, dailyCheckinSettings);
+      await loadRewardsAnalytics();
+    } finally {
+      setSavingRewardSettings(false);
+    }
+  };
 
   // Create event form state - 100% dynamic, empty by default
   const [eventTitle, setEventTitle] = useState('');
@@ -567,6 +637,18 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                 {pendingSupportCount}
               </span>
             )}
+          </button>
+
+          <button
+            onClick={() => { setActiveAdminTab('rewards-control'); loadRewardsAnalytics(); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeAdminTab === 'rewards-control'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
+                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Gift className="w-4 h-4" />
+            <span>Bonus & Daily Rewards</span>
           </button>
 
           <button
@@ -2000,6 +2082,432 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }) {
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB: BONUS & DAILY REWARDS MANAGEMENT                           */}
+        {/* ============================================================== */}
+        {activeAdminTab === 'rewards-control' && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            
+            {/* Header, Status & Save Actions */}
+            <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 sm:p-6 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-black shadow-md">
+                    <Gift className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-display font-black text-lg sm:text-xl text-white">
+                      Bonus & Daily Check-In Reward Controls
+                    </h2>
+                    <p className="text-xs text-[#8b92a2]">
+                      Server-authoritative bonus distribution, 7-day streak ladder, and ledger analytics
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 self-stretch sm:self-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={loadRewardsAnalytics}
+                  disabled={loadingRewardsAnalytics}
+                  className="px-3.5 py-2.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="Refresh analytics and settings"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingRewardsAnalytics ? 'animate-spin text-amber-400' : ''}`} />
+                  <span>Refresh</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveRewardSettings}
+                  disabled={savingRewardSettings}
+                  className="px-5 py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-amber-500/20"
+                >
+                  {savingRewardSettings ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving to DB...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Save All Reward Settings</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 space-y-1">
+                <div className="flex items-center justify-between text-xs text-[#8b92a2]">
+                  <span className="font-bold uppercase tracking-wider">Total Claims Processed</span>
+                  <Award className="w-4 h-4 text-amber-400" />
+                </div>
+                <div className="text-2xl font-black font-mono-numbers text-white">
+                  {rewardsAnalytics?.total_claims || 0}
+                </div>
+                <div className="text-[11px] text-[#8b92a2]">
+                  Atomic database transactions
+                </div>
+              </div>
+
+              <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 space-y-1">
+                <div className="flex items-center justify-between text-xs text-[#8b92a2]">
+                  <span className="font-bold uppercase tracking-wider">Total FLO Coins Awarded</span>
+                  <Coins className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="text-2xl font-black font-mono-numbers text-emerald-400">
+                  {Number(rewardsAnalytics?.total_distributed_flo || 0).toFixed(2)} FLO
+                </div>
+                <div className="text-[11px] text-white/60 font-mono-numbers">
+                  ≈ ${Number(rewardsAnalytics?.total_distributed_flo || 0).toFixed(2)} USDT (1 FLO = 1 USDT)
+                </div>
+              </div>
+
+              <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 space-y-1">
+                <div className="flex items-center justify-between text-xs text-[#8b92a2]">
+                  <span className="font-bold uppercase tracking-wider">Active Streak Users</span>
+                  <Flame className="w-4 h-4 text-orange-400" />
+                </div>
+                <div className="text-2xl font-black font-mono-numbers text-amber-400">
+                  {rewardsAnalytics?.active_streaks_count || 0}
+                </div>
+                <div className="text-[11px] text-[#8b92a2]">
+                  Users currently tracking 7-day ladder
+                </div>
+              </div>
+            </div>
+
+            {/* Grid of Section A & Section B */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* SECTION A: MASTER BONUS REWARD CONTROLS */}
+              <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 sm:p-6 space-y-5 shadow-lg">
+                <div className="flex items-center justify-between border-b border-[#272a31] pb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <h3 className="font-display font-black text-sm sm:text-base text-white">
+                      Bonus Rewards Configuration
+                    </h3>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bonusRewardSettings.enabled}
+                      onChange={(e) => setBonusRewardSettings(prev => ({ ...prev, enabled: e.target.checked }))}
+                      className="sr-only"
+                    />
+                    <div className={`w-11 h-6 rounded-full transition-colors relative ${bonusRewardSettings.enabled ? 'bg-amber-400' : 'bg-gray-700'}`}>
+                      <div className={`w-4 h-4 rounded-full bg-black absolute top-1 transition-transform ${bonusRewardSettings.enabled ? 'left-6' : 'left-1'}`} />
+                    </div>
+                    <span className="text-xs font-bold text-white">
+                      {bonusRewardSettings.enabled ? 'Enabled' : 'Paused'}
+                    </span>
+                  </label>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Reward Mode */}
+                  <div>
+                    <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-1.5">
+                      Reward Distribution Mode
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: 'streak', label: '7-Day Streak', desc: 'Progression ladder' },
+                        { id: 'random', label: 'Random Range', desc: 'Min to Max FLO' },
+                        { id: 'fixed', label: 'Flat Fixed', desc: 'Static amount' }
+                      ].map((mode) => (
+                        <button
+                          key={mode.id}
+                          type="button"
+                          onClick={() => setBonusRewardSettings(prev => ({ ...prev, reward_mode: mode.id }))}
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                            bonusRewardSettings.reward_mode === mode.id
+                              ? 'bg-amber-500/15 border-amber-400 text-amber-300'
+                              : 'bg-[#141924] border-[#272a31] text-[#8b92a2] hover:text-white'
+                          }`}
+                        >
+                          <div className="text-xs font-bold">{mode.label}</div>
+                          <div className="text-[10px] text-[#8b92a2]">{mode.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mode Specific Inputs */}
+                  {bonusRewardSettings.reward_mode === 'fixed' && (
+                    <div>
+                      <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-1.5">
+                        Fixed Bonus Amount (FLO Coins)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        max="1.00"
+                        value={bonusRewardSettings.fixed_amount}
+                        onChange={(e) => setBonusRewardSettings(prev => ({ ...prev, fixed_amount: parseFloat(e.target.value) || 0.10 }))}
+                        className="w-full px-3.5 py-2.5 bg-[#141924] border border-[#272a31] rounded-xl text-white text-xs font-mono-numbers focus:border-amber-400 outline-none"
+                      />
+                      <span className="text-[10px] text-[#8b92a2] mt-1 block">
+                        Strict limit: 1 FLO = 1 USDT. Maximum allowable bonus is 1.00 FLO.
+                      </span>
+                    </div>
+                  )}
+
+                  {bonusRewardSettings.reward_mode === 'random' && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-1.5">
+                          Min Amount (FLO)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          max="1.00"
+                          value={bonusRewardSettings.min_amount}
+                          onChange={(e) => setBonusRewardSettings(prev => ({ ...prev, min_amount: parseFloat(e.target.value) || 0.05 }))}
+                          className="w-full px-3.5 py-2.5 bg-[#141924] border border-[#272a31] rounded-xl text-white text-xs font-mono-numbers focus:border-amber-400 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-1.5">
+                          Max Amount (FLO)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          max="1.00"
+                          value={bonusRewardSettings.max_amount}
+                          onChange={(e) => setBonusRewardSettings(prev => ({ ...prev, max_amount: parseFloat(e.target.value) || 1.00 }))}
+                          className="w-full px-3.5 py-2.5 bg-[#141924] border border-[#272a31] rounded-xl text-white text-xs font-mono-numbers focus:border-amber-400 outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cooldown Hours */}
+                  <div>
+                    <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-1.5">
+                      Claim Interval / Cooldown Period (Hours)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="168"
+                      value={bonusRewardSettings.cooldown_hours}
+                      onChange={(e) => setBonusRewardSettings(prev => ({ ...prev, cooldown_hours: parseInt(e.target.value, 10) || 24 }))}
+                      className="w-full px-3.5 py-2.5 bg-[#141924] border border-[#272a31] rounded-xl text-white text-xs font-mono-numbers focus:border-amber-400 outline-none"
+                    />
+                    <span className="text-[10px] text-[#8b92a2] mt-1 block">
+                      Default: 24 hours (enforces once-daily claim).
+                    </span>
+                  </div>
+
+                  {/* Eligibility */}
+                  <div>
+                    <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-1.5">
+                      User Eligibility Criteria
+                    </label>
+                    <select
+                      value={bonusRewardSettings.eligibility}
+                      onChange={(e) => setBonusRewardSettings(prev => ({ ...prev, eligibility: e.target.value }))}
+                      className="w-full px-3.5 py-2.5 bg-[#141924] border border-[#272a31] rounded-xl text-white text-xs focus:border-amber-400 outline-none"
+                    >
+                      <option value="all">All Registered Users & Guests</option>
+                      <option value="verified">Verified Email / Auth Only</option>
+                      <option value="vip">VIP Tier 1+ Only</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION B: 7-DAY DAILY CHECK-IN STREAK SYSTEM */}
+              <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 sm:p-6 space-y-5 shadow-lg">
+                <div className="flex items-center justify-between border-b border-[#272a31] pb-3">
+                  <div className="flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-orange-400" />
+                    <h3 className="font-display font-black text-sm sm:text-base text-white">
+                      7-Day Daily Check-In Management
+                    </h3>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={dailyCheckinSettings.enabled}
+                      onChange={(e) => setDailyCheckinSettings(prev => ({ ...prev, enabled: e.target.checked }))}
+                      className="sr-only"
+                    />
+                    <div className={`w-11 h-6 rounded-full transition-colors relative ${dailyCheckinSettings.enabled ? 'bg-amber-400' : 'bg-gray-700'}`}>
+                      <div className={`w-4 h-4 rounded-full bg-black absolute top-1 transition-transform ${dailyCheckinSettings.enabled ? 'left-6' : 'left-1'}`} />
+                    </div>
+                    <span className="text-xs font-bold text-white">
+                      {dailyCheckinSettings.enabled ? 'Active' : 'Disabled'}
+                    </span>
+                  </label>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Missed Day Policy */}
+                  <div>
+                    <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-1.5">
+                      Missed-Day Streak Policy
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDailyCheckinSettings(prev => ({ ...prev, missed_day_policy: 'reset' }))}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          dailyCheckinSettings.missed_day_policy === 'reset'
+                            ? 'bg-amber-500/15 border-amber-400 text-amber-300'
+                            : 'bg-[#141924] border-[#272a31] text-[#8b92a2] hover:text-white'
+                        }`}
+                      >
+                        <div className="text-xs font-bold">Reset to Day 1</div>
+                        <div className="text-[10px] text-[#8b92a2]">Daily commitment incentive</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setDailyCheckinSettings(prev => ({ ...prev, missed_day_policy: 'continue' }))}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          dailyCheckinSettings.missed_day_policy === 'continue'
+                            ? 'bg-amber-500/15 border-amber-400 text-amber-300'
+                            : 'bg-[#141924] border-[#272a31] text-[#8b92a2] hover:text-white'
+                        }`}
+                      >
+                        <div className="text-xs font-bold">Keep Progress</div>
+                        <div className="text-[10px] text-[#8b92a2]">Lenient check-in retention</div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 7 Days Reward Inputs */}
+                  <div>
+                    <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-2">
+                      Daily Streak Reward Ladder (FLO Coins = USDT)
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      {[1, 2, 3, 4, 5, 6, 7].map((day) => {
+                        const dayKey = `day${day}`;
+                        const currentVal = dailyCheckinSettings.streak_rewards?.[dayKey] ?? (day === 7 ? 1.00 : 0.10 * day);
+                        return (
+                          <div key={day} className="p-2.5 rounded-xl bg-[#141924] border border-[#272a31] space-y-1">
+                            <span className="text-[10px] font-mono-numbers font-bold text-[#8b92a2] block">
+                              Day {day} {day === 7 ? '★ Jackpot' : ''}
+                            </span>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                max="1.00"
+                                value={currentVal}
+                                onChange={(e) => {
+                                  const val = Math.min(1.00, Math.max(0.01, parseFloat(e.target.value) || 0.05));
+                                  setDailyCheckinSettings(prev => ({
+                                    ...prev,
+                                    streak_rewards: {
+                                      ...(prev.streak_rewards || {}),
+                                      [dayKey]: val
+                                    }
+                                  }));
+                                }}
+                                className="w-full px-2 py-1.5 bg-[#0b0e14] border border-[#272a31] rounded-lg text-white text-xs font-mono-numbers font-bold focus:border-amber-400 outline-none"
+                              />
+                            </div>
+                            <span className="text-[9px] text-amber-400/80 font-mono-numbers block">
+                              = ${Number(currentVal).toFixed(2)} USDT
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 1 FLO = 1 USDT Notice */}
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-amber-400" />
+                    <span>Fixed rate enforced: 1 FLO Coin = 1 USDT across all reward claims and ledger credits.</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* SECTION C: RECENT BONUS CLAIMS & AUDIT LOG */}
+            <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 sm:p-6 space-y-4 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-display font-black text-sm sm:text-base text-white">
+                    Recent Daily Bonus Claims
+                  </h3>
+                  <p className="text-xs text-[#8b92a2]">
+                    Server ledger records of recently claimed daily rewards
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 rounded-lg bg-white/5 text-[11px] font-mono-numbers font-bold text-[#8b92a2]">
+                  {rewardsAnalytics?.recent_claims?.length || 0} Recent Records
+                </span>
+              </div>
+
+              {rewardsAnalytics?.recent_claims && rewardsAnalytics.recent_claims.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-[#272a31] text-[#8b92a2] uppercase tracking-wider text-[10px]">
+                        <th className="py-2.5 px-3">Wallet / User</th>
+                        <th className="py-2.5 px-3">Amount</th>
+                        <th className="py-2.5 px-3">USDT Value</th>
+                        <th className="py-2.5 px-3">Description</th>
+                        <th className="py-2.5 px-3">Date & Time</th>
+                        <th className="py-2.5 px-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#272a31]/50 font-mono-numbers">
+                      {rewardsAnalytics.recent_claims.map((claim, idx) => (
+                        <tr key={claim.id || idx} className="hover:bg-white/2 transition-colors">
+                          <td className="py-3 px-3 text-white font-medium">
+                            {claim.wallet_address ? `${claim.wallet_address.slice(0, 6)}...${claim.wallet_address.slice(-4)}` : 'System'}
+                          </td>
+                          <td className="py-3 px-3 text-amber-400 font-bold">
+                            +{parseFloat(claim.amount || 0).toFixed(2)} FLO
+                          </td>
+                          <td className="py-3 px-3 text-emerald-400 font-semibold">
+                            ${parseFloat(claim.amount || 0).toFixed(2)} USDT
+                          </td>
+                          <td className="py-3 px-3 text-[#8b92a2] font-sans truncate max-w-xs">
+                            {claim.description || 'Daily FLO Reward'}
+                          </td>
+                          <td className="py-3 px-3 text-[#8b92a2]">
+                            {new Date(claim.created_at).toLocaleString()}
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-bold border border-emerald-500/30">
+                              Completed
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-8 text-center text-xs text-[#8b92a2] italic">
+                  No daily reward claims recorded yet. Claims will appear here in real-time as users claim rewards.
+                </div>
+              )}
+            </div>
+
           </div>
         )}
 

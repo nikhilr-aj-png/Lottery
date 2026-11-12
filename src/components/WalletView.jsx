@@ -70,7 +70,10 @@ export default function WalletView() {
   const [dailyRewardStatus, setDailyRewardStatus] = useState({
     canClaim: true,
     secondsRemaining: 0,
-    availableReward: 0.25,
+    availableReward: 0.10,
+    currentStreak: 1,
+    nextStreak: 2,
+    nextRewardAmount: 0.15,
     lastReward: null
   });
   const [isClaimingDailyReward, setIsClaimingDailyReward] = useState(false);
@@ -293,73 +296,127 @@ export default function WalletView() {
     <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-8">
       
       {/* Daily FLO Coin Reward Card — Exclusively in Wallet */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 border border-amber-500/35 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg shadow-amber-500/5">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#ffd700] to-[#f5c451] flex items-center justify-center text-[#0b0e14] shadow-[0_0_25px_rgba(245,196,81,0.35)] shrink-0 font-black">
-            <Gift className="w-6 h-6 animate-bounce" />
-          </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <h4 className="font-display font-black text-base sm:text-lg text-white">
-                Daily FLO Coin Reward
-              </h4>
-              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/20 text-[#ffd700] border border-amber-500/40 uppercase font-bold tracking-wider">
-                1 FLO = 1 USDT
-              </span>
-              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 uppercase font-bold tracking-wider">
-                Once Every 24h
-              </span>
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 border border-amber-500/35 flex flex-col gap-4 shadow-lg shadow-amber-500/5">
+        
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#ffd700] to-[#f5c451] flex items-center justify-center text-[#0b0e14] shadow-[0_0_25px_rgba(245,196,81,0.35)] shrink-0 font-black">
+              <Gift className="w-6 h-6 animate-bounce" />
             </div>
-            
-            {dailyRewardStatus.canClaim ? (
-              <p className="text-xs text-[#9b8f7c]">
-                Ready to claim! Available today:{' '}
-                <span className="text-amber-300 font-bold font-mono-numbers">
-                  +{dailyRewardStatus.availableReward.toFixed(2)} FLO
-                </span>{' '}
-                <span className="text-white/60 font-mono-numbers">
-                  (≈ ${dailyRewardStatus.availableReward.toFixed(2)} USDT)
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <h4 className="font-display font-black text-base sm:text-lg text-white">
+                  Daily FLO Coin Reward & 7-Day Streak
+                </h4>
+                <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/20 text-[#ffd700] border border-amber-500/40 uppercase font-bold tracking-wider">
+                  1 FLO = 1 USDT
                 </span>
-                . Random reward up to 1 FLO Coin every 24 hours.
-              </p>
+                <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 uppercase font-bold tracking-wider">
+                  Day {dailyRewardStatus.currentStreak || 1} of 7
+                </span>
+              </div>
+              
+              {dailyRewardStatus.canClaim ? (
+                <p className="text-xs text-[#9b8f7c]">
+                  Ready to claim! Available today:{' '}
+                  <span className="text-amber-300 font-bold font-mono-numbers">
+                    +{dailyRewardStatus.availableReward ? dailyRewardStatus.availableReward.toFixed(2) : '0.10'} FLO
+                  </span>{' '}
+                  <span className="text-white/60 font-mono-numbers">
+                    (≈ ${dailyRewardStatus.availableReward ? dailyRewardStatus.availableReward.toFixed(2) : '0.10'} USDT)
+                  </span>
+                  . Complete your 7-day streak for maximum payouts!
+                </p>
+              ) : (
+                <p className="text-xs text-[#9b8f7c]">
+                  Day {dailyRewardStatus.currentStreak || 1} claimed! Next reward (Day {dailyRewardStatus.nextStreak || 2}: +{(dailyRewardStatus.nextRewardAmount || 0.15).toFixed(2)} FLO) unlocks in:{' '}
+                  <span className="text-amber-400 font-bold font-mono-numbers">
+                    {formatCountdown(dailyRewardStatus.secondsRemaining)}
+                  </span>
+                  . All rewards are backed 1:1 by USDT.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <button
+            onClick={handleClaimDailyReward}
+            disabled={!dailyRewardStatus.canClaim || isClaimingDailyReward}
+            className={`px-6 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer whitespace-nowrap self-stretch md:self-auto shrink-0 ${
+              dailyRewardStatus.canClaim
+                ? 'btn-gold shadow-[#f5c451]/25 hover:scale-[1.02]'
+                : 'bg-[#1f2737] text-white/40 border border-[#272a31] cursor-not-allowed shadow-none'
+            }`}
+          >
+            {isClaimingDailyReward ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin text-amber-300" />
+                <span>Verifying Eligibility...</span>
+              </>
+            ) : dailyRewardStatus.canClaim ? (
+              <>
+                <Sparkles className="w-4 h-4 text-black" />
+                <span>Claim {(dailyRewardStatus.availableReward || 0.10).toFixed(2)} FLO (${(dailyRewardStatus.availableReward || 0.10).toFixed(2)})</span>
+              </>
             ) : (
-              <p className="text-xs text-[#9b8f7c]">
-                Reward already claimed for today! Next daily reward unlocks in:{' '}
-                <span className="text-amber-400 font-bold font-mono-numbers">
-                  {formatCountdown(dailyRewardStatus.secondsRemaining)}
-                </span>
-                . Maximum reward is strictly capped at 1.00 FLO Coin (1.00 USDT).
-              </p>
+              <>
+                <Clock className="w-4 h-4 text-white/40" />
+                <span>Claimed ({formatCountdown(dailyRewardStatus.secondsRemaining)})</span>
+              </>
             )}
+          </button>
+        </div>
+
+        {/* 7-Day Check-In Streak Visual */}
+        <div className="pt-3 border-t border-amber-500/20">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>7-Day Check-In Streak Progression</span>
+            </span>
+            <span className="text-[10px] text-[#94A3B8]">
+              Streak resets after 24h missed check-in
+            </span>
+          </div>
+
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5 sm:gap-2">
+            {[1, 2, 3, 4, 5, 6, 7].map((day) => {
+              const currentDayNum = dailyRewardStatus.currentStreak || 1;
+              const isPast = day < currentDayNum || (!dailyRewardStatus.canClaim && day === currentDayNum);
+              const isCurrent = day === currentDayNum && dailyRewardStatus.canClaim;
+              const defaultRewards = [0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 1.00];
+              const rewardVal = dailyRewardStatus.checkinSettings?.streak_rewards?.[`day${day}`] !== undefined 
+                ? Number(dailyRewardStatus.checkinSettings.streak_rewards[`day${day}`]) 
+                : defaultRewards[day - 1];
+
+              return (
+                <div
+                  key={day}
+                  className={`p-2 rounded-xl text-center border transition-all ${
+                    isCurrent
+                      ? 'bg-amber-500/25 border-amber-400 shadow-[0_0_15px_rgba(245,196,81,0.35)] scale-[1.03]'
+                      : isPast
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                      : 'bg-[#0B0F19]/60 border-[#1F2737] text-[#94A3B8]'
+                  }`}
+                >
+                  <div className="text-[10px] font-mono-numbers font-bold">
+                    Day {day}
+                  </div>
+                  <div className={`text-xs font-black font-mono-numbers my-0.5 ${
+                    isCurrent ? 'text-amber-300 font-extrabold text-sm' : isPast ? 'text-emerald-400' : 'text-white/80'
+                  }`}>
+                    +{rewardVal.toFixed(2)}
+                  </div>
+                  <div className="text-[9px] font-mono-numbers uppercase tracking-wider">
+                    {isPast ? '✓ Claimed' : isCurrent ? '★ Today' : 'FLO'}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        <button
-          onClick={handleClaimDailyReward}
-          disabled={!dailyRewardStatus.canClaim || isClaimingDailyReward}
-          className={`px-6 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer whitespace-nowrap self-stretch md:self-auto shrink-0 ${
-            dailyRewardStatus.canClaim
-              ? 'btn-gold shadow-[#f5c451]/25 hover:scale-[1.02]'
-              : 'bg-[#1f2737] text-white/40 border border-[#272a31] cursor-not-allowed shadow-none'
-          }`}
-        >
-          {isClaimingDailyReward ? (
-            <>
-              <RefreshCw className="w-4 h-4 animate-spin text-amber-300" />
-              <span>Verifying Ledger...</span>
-            </>
-          ) : dailyRewardStatus.canClaim ? (
-            <>
-              <Sparkles className="w-4 h-4 text-black" />
-              <span>Claim {dailyRewardStatus.availableReward.toFixed(2)} FLO (${dailyRewardStatus.availableReward.toFixed(2)})</span>
-            </>
-          ) : (
-            <>
-              <Clock className="w-4 h-4 text-white/40" />
-              <span>Claimed ({formatCountdown(dailyRewardStatus.secondsRemaining)})</span>
-            </>
-          )}
-        </button>
       </div>
 
       {/* Portfolio Overview Cards */}

@@ -23,7 +23,9 @@ import {
   Spade,
   Zap,
   LayoutGrid,
-  Medal
+  Medal,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { useLottery } from '../context/LotteryContext';
 import { GAMES, getGameIconUrl } from '../engine';
@@ -144,7 +146,7 @@ export default function Sidebar({
   const sidebarContent = (
     <div className="h-full flex flex-col justify-between overflow-y-auto no-scrollbar py-3 px-2 sm:px-2.5 text-left">
       
-      {/* Top Header / Collapse Button */}
+      {/* Top Header / Collapse & Close Controls */}
       <div className={`flex items-center pb-3 mb-2 border-b border-[#1F2737] ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         {!isCollapsed && (
           <div className="flex items-center gap-2 pl-2">
@@ -155,24 +157,36 @@ export default function Sidebar({
           </div>
         )}
 
-        {/* Collapse toggle (Desktop/Laptop >= 1024px) */}
-        <button
-          onClick={onToggleCollapse}
-          className={`hidden lg:flex w-8 h-8 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white items-center justify-center border border-[#1F2737] hover:border-amber-500/40 transition-colors cursor-pointer ${isCollapsed ? 'mx-auto' : ''}`}
-          title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-          aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-        >
-          {isCollapsed ? <ChevronRight className="w-4 h-4 text-amber-400" /> : <ChevronLeft className="w-4 h-4" />}
-        </button>
+        {/* Desktop Collapse / Expand Control (>= 1024px) */}
+        {!isCollapsed ? (
+          <button
+            onClick={onToggleCollapse}
+            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-amber-300 border border-[#1F2737] hover:border-amber-400/50 transition-all cursor-pointer shadow-sm text-xs font-bold"
+            title="Collapse Sidebar"
+            aria-label="Collapse Sidebar"
+          >
+            <PanelLeftClose className="w-4 h-4 text-amber-400" />
+            <span className="text-[11px] font-medium text-[#E2E8F0]">Collapse</span>
+          </button>
+        ) : (
+          <button
+            onClick={onToggleCollapse}
+            className="hidden lg:flex w-9 h-9 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-amber-300 items-center justify-center border border-[#1F2737] hover:border-amber-400/50 transition-all cursor-pointer mx-auto shadow-sm"
+            title="Expand Sidebar"
+            aria-label="Expand Sidebar"
+          >
+            <PanelLeftOpen className="w-4 h-4" />
+          </button>
+        )}
 
-        {/* Close Button (Mobile/Tablet < 1024px) */}
+        {/* Mobile & Tablet Close Button (< 1024px) */}
         <button
           onClick={onClose}
-          className="lg:hidden w-8 h-8 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white flex items-center justify-center border border-[#1F2737] transition-colors cursor-pointer"
-          title="Close Navigation"
-          aria-label="Close Navigation"
+          className="lg:hidden min-w-[44px] min-h-[44px] rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-rose-400/40 transition-colors cursor-pointer"
+          title="Close Navigation Menu"
+          aria-label="Close Navigation Menu"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5 text-rose-400" />
         </button>
       </div>
 

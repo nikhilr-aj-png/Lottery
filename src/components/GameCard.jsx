@@ -9,7 +9,7 @@ import {
   Zap,
   Info
 } from 'lucide-react';
-import { getGameIconUrl } from '../engine';
+import { getGameIconUrl, getGameFallbackIconUrl } from '../engine';
 
 export default function GameCard({ game, onPlay }) {
   if (!game) return null;
@@ -154,8 +154,14 @@ export default function GameCard({ game, onPlay }) {
                 src={iconUrl} 
                 alt={game.name} 
                 className="w-full h-full object-cover rounded-2xl transition-transform duration-300 group-hover:scale-110"
-                loading="lazy"
+                loading="eager"
                 onError={(e) => {
+                  const fallback = getGameFallbackIconUrl(game.id);
+                  if (fallback && !e.currentTarget.dataset.fallbackTried && e.currentTarget.src !== fallback) {
+                    e.currentTarget.dataset.fallbackTried = 'true';
+                    e.currentTarget.src = fallback;
+                    return;
+                  }
                   e.currentTarget.style.display = 'none';
                   if (e.currentTarget.nextSibling) {
                     e.currentTarget.nextSibling.style.display = 'flex';

@@ -32,7 +32,8 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
     setIsAuthModalOpen,
     showToast,
     isNativeApp,
-    apkDirectDownloadUrl
+    apkDirectDownloadUrl,
+    unreadNotificationsCount = 0
   } = useLottery();
 
   const {
@@ -287,11 +288,15 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                   <button
                     onClick={onOpenNotifications}
                     className="w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-9 sm:h-9 rounded-xl bg-[#10131A] hover:bg-[#151C2B] border border-[#2D3545] hover:border-amber-400/50 flex items-center justify-center text-[#94A3B8] hover:text-amber-300 transition-colors cursor-pointer relative shrink-0 shadow-sm"
-                    title="View Notifications"
+                    title={unreadNotificationsCount > 0 ? `${unreadNotificationsCount} unread notification(s)` : 'View Notifications'}
                     aria-label="View Notifications"
                   >
                     <Bell className="w-4 h-4 sm:w-4 sm:h-4" />
-                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    {unreadNotificationsCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-black text-[9px] font-mono-numbers font-black flex items-center justify-center border border-[#0B0F19] shadow-sm animate-pulse">
+                        {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                      </span>
+                    )}
                   </button>
 
                   {/* User Profile Pill: Compact icon-only on mobile (< 640px), full pill on sm+ */}

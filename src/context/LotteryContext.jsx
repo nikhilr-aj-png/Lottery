@@ -399,7 +399,89 @@ export function LotteryProvider({ children }) {
     }
   };
 
-  // Helper: Calculate deterministic fractional daily FLO Coin reward (0.05 to 1.00 FLO Coin = 0.05 to 1.00 USDT)
+  // ============================================================================
+  // PERSISTENT USER NOTIFICATIONS SYSTEM (BACKEND-AUTHENTICATED)
+  // ============================================================================
+  const [userNotifications, setUserNotifications] = useState([]);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+
+  // Fetch real persistent notifications from Supabase
+  const fetchUserNotifications = async (targetAddr = null) => {
+    const addr = targetAddr || wallet?.address;
+    if (!addr && !user?.id) {
+      setUserNotifications([]);
+      setUnreadNotificationsCount(0);
+      return;
+    }
+    setLoadingNotifications(true);
+    try {
+      const { data, error } = await supabase.rpc('get_user_notifications', {
+        p_user_address: addr || null,
+        p_user_id: user?.id || null
+      });
+      if (!error && data && data.success) {
+        setUserNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+        setUnreadNotificationsCount(Number(data.unread_count || 0));
+      }
+    } catch (err) {
+      console.warn('fetchUserNotifications error:', err);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  // Mark single notification as read with DB persistence
+  const markNotificationAsRead = async (id) => {
+    if (!id) return;
+    setUserNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n));
+    setUnreadNotificationsCount(prev => Math.max(0, prev - 1));
+    try {
+      await supabase.rpc('mark_notification_read', {
+        p_notification_id: id,
+        p_user_address: wallet?.address || null,
+        p_user_id: user?.id || null
+      });
+    } catch (err) {
+      console.warn('markNotificationAsRead error:', err);
+    }
+  };
+
+  // Mark all notifications as read
+  const markAllNotificationsAsRead = async () => {
+    setUserNotifications(prev => prev.map(n => ({ ...n, is_read: true, read_at: new Date().toISOString() })));
+    setUnreadNotificationsCount(0);
+    try {
+      await supabase.rpc('mark_all_notifications_read', {
+        p_user_address: wallet?.address || null,
+        p_user_id: user?.id || null
+      });
+      showToast('All notifications marked as read', 'success');
+    } catch (err) {
+      console.warn('markAllNotificationsAsRead error:', err);
+    }
+  };
+
+  // Clear all notifications permanently
+  const clearUserNotifications = async () => {
+    setUserNotifications([]);
+    setUnreadNotificationsCount(0);
+    try {
+      await supabase.rpc('clear_user_notifications', {
+        p_user_address: wallet?.address || null,
+        p_user_id: user?.id || null
+      });
+      showToast('All notifications cleared', 'success');
+    } catch (err) {
+      console.warn('clearUserNotifications error:', err);
+    }
+  };
+
+  // ============================================================================
+  // SERVER-AUTHORITATIVE DAILY FLO REWARDS & 7-DAY STREAK (1 FLO = 1 USDT)
+  // ============================================================================
+
+  // Helper: Calculate fallback fractional daily FLO Coin reward
   const calculateDailyFloReward = (address, dateStr) => {
     const todayStr = dateStr || new Date().toISOString().slice(0, 10);
     const key = `${(address || '0x0000').toLowerCase()}-${todayStr}-flo-daily-salt-v1`;
@@ -408,103 +490,60 @@ export function LotteryProvider({ children }) {
       hash = ((hash << 5) - hash) + key.charCodeAt(i);
       hash |= 0;
     }
-    // Cent variations from 5 to 100 cents (0.05 to 1.00 FLO Coin)
-    const cents = 5 + (Math.abs(hash) % 96);
+    const cents = 10 + (Math.abs(hash) % 91);
     const amount = parseFloat((cents / 100).toFixed(2));
-    return Math.min(1.00, Math.max(0.05, amount));
+    return Math.min(1.00, Math.max(0.10, amount));
   };
 
-  // Check 24-hour daily reward status from real wallet_ledger records
+  // Check 24-hour daily reward status from server-authoritative RPC
   const getDailyFloRewardStatus = async () => {
-    if (!wallet?.address) {
-      return { canClaim: false, secondsRemaining: 0, availableReward: 0.25 };
+    if (!wallet?.address && !user?.id) {
+      return { canClaim: false, secondsRemaining: 0, availableReward: 0.10, currentStreak: 1, nextStreak: 2, nextRewardAmount: 0.15 };
     }
-    const today = new Date().toISOString().slice(0, 10);
-    const availableReward = calculateDailyFloReward(wallet.address, today);
-
     try {
-      let query = supabase
-        .from('wallet_ledger')
-        .select('created_at, amount')
-        .in('transaction_type', ['daily_reward', 'daily_bonus'])
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (user?.id) {
-        query = query.or(`wallet_address.eq.${wallet.address},user_id.eq.${user.id}`);
-      } else {
-        query = query.eq('wallet_address', wallet.address);
+      const { data, error } = await supabase.rpc('get_daily_reward_status', {
+        p_user_address: wallet?.address || null,
+        p_user_id: user?.id || null
+      });
+      if (!error && data && data.success) {
+        return {
+          canClaim: Boolean(data.can_claim),
+          secondsRemaining: Number(data.seconds_remaining || 0),
+          availableReward: parseFloat(data.available_reward || 0.10),
+          currentStreak: Number(data.current_streak || 1),
+          nextStreak: Number(data.next_streak || 2),
+          nextRewardAmount: parseFloat(data.next_reward_amount || 0.15),
+          bonusSettings: data.bonus_settings || null,
+          checkinSettings: data.checkin_settings || null,
+          lastClaimedAt: data.last_claimed_at || null
+        };
       }
-
-      const { data, error } = await query;
-
-      if (!error && Array.isArray(data) && data.length > 0) {
-        const lastTime = new Date(data[0].created_at).getTime();
-        const elapsed = Date.now() - lastTime;
-        const cooldown = 86400 * 1000; // 24 hours in ms
-        if (elapsed < cooldown) {
-          const secondsRemaining = Math.ceil((cooldown - elapsed) / 1000);
-          return {
-            canClaim: false,
-            secondsRemaining,
-            availableReward,
-            lastReward: Number(data[0].amount || 0),
-            lastClaimedAt: data[0].created_at
-          };
-        }
-      }
-      return { canClaim: true, secondsRemaining: 0, availableReward };
+      return { canClaim: true, secondsRemaining: 0, availableReward: 0.10, currentStreak: 1, nextStreak: 2, nextRewardAmount: 0.15 };
     } catch (e) {
-      console.warn('getDailyFloRewardStatus error:', e);
-      return { canClaim: true, secondsRemaining: 0, availableReward };
+      console.warn('getDailyFloRewardStatus rpc error:', e);
+      return { canClaim: true, secondsRemaining: 0, availableReward: 0.10, currentStreak: 1, nextStreak: 2, nextRewardAmount: 0.15 };
     }
   };
 
-  // Claim Daily Random FLO Coin Reward (Strictly <= 1.00 FLO = 1.00 USDT, once per 24 hours)
+  // Claim Daily FLO Coin Reward (Server-Authoritative, Streak & Cooldown enforced)
   const claimDailyFloReward = async () => {
-    if (!wallet.address) {
+    if (!wallet?.address && !user?.id) {
       setIsAuthModalOpen(true);
       showToast('Please log in or connect your wallet to claim daily rewards!', 'info');
       return { success: false, error: 'Authentication required' };
     }
 
     try {
-      // 1. Verify 24h eligibility against genuine database ledger
-      const status = await getDailyFloRewardStatus();
-      if (!status.canClaim) {
-        const hours = Math.floor(status.secondsRemaining / 3600);
-        const mins = Math.floor((status.secondsRemaining % 3600) / 60);
-        showToast(`Daily reward already claimed. Next claim available in ${hours}h ${mins}m.`, 'info');
-        return { success: false, error: 'Already claimed', secondsRemaining: status.secondsRemaining };
-      }
-
-      // 2. Compute fractional reward amount (Strict Invariant: <= 1.00 FLO)
-      const today = new Date().toISOString().slice(0, 10);
-      const rewardAmount = Math.min(1.00, Math.max(0.05, status.availableReward));
-      const refId = `daily-flo-${today}-${wallet.address.slice(-6)}`;
-
-      // 3. Atomically credit into wallet and record in ledger
-      const { data, error } = await supabase.rpc('credit_virtual_credits', {
-        p_amount: rewardAmount,
-        p_transaction_type: 'daily_reward',
-        p_reference_id: refId,
-        p_description: `Daily FLO Coin Reward (${rewardAmount.toFixed(2)} FLO = ${rewardAmount.toFixed(2)} USDT)`,
-        p_user_address: wallet.address,
-        p_user_id: user?.id || null,
-        p_metadata: {
-          source: 'daily_flo_reward',
-          flo_amount: rewardAmount,
-          usdt_value: rewardAmount,
-          rate: '1 FLO = 1 USDT',
-          status: 'completed',
-          claimed_at: new Date().toISOString()
-        }
+      const { data, error } = await supabase.rpc('claim_daily_bonus', {
+        p_user_address: wallet?.address || null,
+        p_user_id: user?.id || null
       });
 
       if (error) throw error;
 
       if (data && data.success) {
-        showToast(`🎉 Daily Reward Claimed! +${rewardAmount.toFixed(2)} FLO (≈ $${rewardAmount.toFixed(2)} USDT)`, 'success');
+        const bonusAmount = parseFloat(data.bonus_amount || 0);
+        showToast(`🎉 Day ${data.current_streak} Claimed! +${bonusAmount.toFixed(2)} FLO (≈ $${bonusAmount.toFixed(2)} USDT)`, 'success');
         confetti({
           particleCount: 80,
           spread: 80,
@@ -517,14 +556,20 @@ export function LotteryProvider({ children }) {
         }
 
         await fetchWalletLedger();
+        fetchUserNotifications();
         return {
           success: true,
-          bonus_amount: rewardAmount,
-          usdt_value: rewardAmount,
-          new_balance: data.new_balance
+          bonus_amount: bonusAmount,
+          usdt_value: bonusAmount,
+          new_balance: data.new_balance,
+          current_streak: data.current_streak,
+          next_streak: data.next_streak
         };
+      } else {
+        const errMsg = data?.error || 'Failed to claim daily reward';
+        showToast(errMsg, 'info');
+        return { success: false, error: errMsg, secondsRemaining: data?.seconds_remaining };
       }
-      return { success: false, error: 'Failed to credit' };
     } catch (err) {
       console.error('claimDailyFloReward error:', err);
       showToast(err.message || 'Error claiming daily reward', 'error');
@@ -534,6 +579,34 @@ export function LotteryProvider({ children }) {
 
   // Alias for backward compatibility
   const claimDailyBonus = claimDailyFloReward;
+
+  // Admin Reward & Streak Management RPCs
+  const adminUpdateRewardSettings = async (bonusSettings, checkinSettings) => {
+    try {
+      const { data, error } = await supabase.rpc('admin_update_reward_settings', {
+        p_bonus_settings: bonusSettings,
+        p_checkin_settings: checkinSettings
+      });
+      if (error) throw error;
+      showToast('Reward settings updated successfully!', 'success');
+      return { success: true, data };
+    } catch (e) {
+      console.error('adminUpdateRewardSettings error:', e);
+      showToast(e.message || 'Failed to update reward settings', 'error');
+      return { success: false, error: e.message };
+    }
+  };
+
+  const adminGetRewardsAnalytics = async () => {
+    try {
+      const { data, error } = await supabase.rpc('admin_get_rewards_analytics');
+      if (error) throw error;
+      return data;
+    } catch (e) {
+      console.error('adminGetRewardsAnalytics error:', e);
+      return null;
+    }
+  };
 
   // Universal Server-Authoritative Debit RPC (Used by 12 Games, Tickets, etc.)
   const debitCredits = async (amount, type = 'game_bet', referenceId = null, description = null, metadata = {}) => {
@@ -1565,6 +1638,7 @@ export function LotteryProvider({ children }) {
     if (wallet.address || user?.id) {
       fetchWallet(wallet.address);
       fetchWalletLedger(wallet.address);
+      fetchUserNotifications(wallet.address);
     }
   }, [wallet.address, user?.id]);
 
@@ -1579,6 +1653,7 @@ export function LotteryProvider({ children }) {
         if (wallet.address || user?.id) {
           await fetchWallet(wallet.address);
           await fetchWalletLedger(wallet.address);
+          await fetchUserNotifications(wallet.address);
         }
         await fetchSupportTickets();
         await fetchPlatformSettings();
@@ -2719,10 +2794,19 @@ export function LotteryProvider({ children }) {
         walletLedger,
         loadingLedger,
         fetchWalletLedger,
+        userNotifications,
+        unreadNotificationsCount,
+        loadingNotifications,
+        fetchUserNotifications,
+        markNotificationAsRead,
+        markAllNotificationsAsRead,
+        clearUserNotifications,
         claimDailyBonus,
         claimDailyFloReward,
         getDailyFloRewardStatus,
         calculateDailyFloReward,
+        adminUpdateRewardSettings,
+        adminGetRewardsAnalytics,
         debitCredits,
         creditCredits,
         adminDeleteTicket,

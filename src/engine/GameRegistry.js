@@ -471,4 +471,43 @@ export function getGameIconUrl(idOrSlug) {
   }
 }
 
+// Helper: Get fallback icon URL for any game in case primary file fails
+export function getGameFallbackIconUrl(idOrSlug) {
+  const key = (typeof idOrSlug === 'object' && idOrSlug !== null ? (idOrSlug.id || idOrSlug.slug) : idOrSlug)?.toLowerCase();
+  switch (key) {
+    case 'lottery':
+    case 'four-digit-lottery':
+      return '/items/lottery.jpg';
+    case 'roulette':
+    case 'european-roulette':
+      return '/items/roulette.jpg';
+    case 'blackjack':
+    case 'blackjack-21':
+      return '/items/blackjack.jpg';
+    case 'slots':
+    case 'golden-reels-slot':
+      return '/items/slots.jpg';
+    case 'poker':
+    case 'texas-holdem-poker':
+      return '/items/poker.jpg';
+    case 'keno':
+    case 'classic-keno':
+      return '/items/keno.jpg';
+    case 'crash':
+      return '/items/Crash.jpg';
+    case 'dice':
+      return '/items/Dice.jpg';
+    case 'mines':
+      return '/items/Mines.jpg';
+    case 'plinko':
+      return '/items/Plinko.jpg';
+    case 'coinflip':
+      return '/items/Coinflip.jpg';
+    case 'limbo':
+      return '/items/Limbo.jpg';
+    default:
+      return null;
+  }
+}
+
 
