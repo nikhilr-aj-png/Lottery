@@ -436,13 +436,13 @@ export default function PokerGame({ room }) {
                 </span>
               </div>
 
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-1.5 xs:gap-2">
                 {dealerHoleCards.map((c, i) => {
                   const isHidden = (street !== 'showdown');
                   return (
                     <div
                       key={i}
-                      className={`w-12 h-18 sm:w-14 sm:h-20 rounded-xl border flex flex-col items-center justify-between p-1 shadow-md transition-all ${
+                      className={`w-11 h-16 xs:w-12 xs:h-18 sm:w-14 sm:h-20 rounded-xl border flex flex-col items-center justify-between p-1 shadow-md transition-all ${
                         isHidden
                           ? 'bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-900 border-purple-500/40 text-purple-400'
                           : 'bg-white text-slate-900 border-slate-300'
@@ -477,13 +477,13 @@ export default function PokerGame({ room }) {
                 Community Cards (Flop • Turn • River)
               </span>
 
-              <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+              <div className="flex items-center justify-center gap-1 xs:gap-1.5 sm:gap-2">
                 {Array.from({ length: 5 }, (_, i) => {
                   const card = communityCards[i];
                   return (
                     <div
                       key={i}
-                      className={`w-12 h-18 sm:w-14 sm:h-20 rounded-xl border flex flex-col items-center justify-between p-1 shadow-md transition-all ${
+                      className={`w-11 h-16 xs:w-12 xs:h-18 sm:w-14 sm:h-20 rounded-xl border flex flex-col items-center justify-between p-1 shadow-md transition-all ${
                         card
                           ? 'bg-white text-slate-900 border-slate-300 animate-in zoom-in-75'
                           : 'bg-[#0B0F19] border-dashed border-[#1F2737] text-[#64748B]'
@@ -521,11 +521,11 @@ export default function PokerGame({ room }) {
                 </span>
               </div>
 
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-1.5 xs:gap-2">
                 {playerHoleCards.map((c, i) => (
                   <div
                     key={i}
-                    className="w-12 h-18 sm:w-14 sm:h-20 rounded-xl bg-white text-slate-900 border border-slate-300 flex flex-col items-center justify-between p-1 shadow-md transition-all animate-in zoom-in-75"
+                    className="w-11 h-16 xs:w-12 xs:h-18 sm:w-14 sm:h-20 rounded-xl bg-white text-slate-900 border border-slate-300 flex flex-col items-center justify-between p-1 shadow-md transition-all animate-in zoom-in-75"
                   >
                     <span className={`font-black text-xs self-start leading-none ${c.color === 'red' ? 'text-rose-600' : 'text-slate-900'}`}>
                       {c.rank}

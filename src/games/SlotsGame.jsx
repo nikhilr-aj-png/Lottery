@@ -331,7 +331,7 @@ export default function SlotsGame({ room }) {
           {/* 3x3 Luxury Reel Matrix */}
           <div className="my-auto py-4">
             <div className="p-3 sm:p-4 rounded-3xl bg-gradient-to-b from-[#151C2B] via-[#0B0F19] to-[#151C2B] border-2 border-amber-500/40 shadow-[0_0_40px_rgba(245,196,81,0.2)]">
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 w-[260px] sm:w-[320px]">
+              <div className="grid grid-cols-3 gap-1.5 xs:gap-2 sm:gap-3 w-full max-w-[260px] sm:max-w-[320px]">
                 {grid.map((row, rIdx) => 
                   row.map((symbol, cIdx) => {
                     const isWinningCell = winningData?.winningLines?.some(line => 

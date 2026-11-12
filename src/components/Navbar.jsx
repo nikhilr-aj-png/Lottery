@@ -358,7 +358,7 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                   <span className="font-mono-numbers font-bold text-xs text-[#ffd700] truncate">
                     {Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                   </span>
-                  <span className="text-[10px] text-[#94A3B8] font-mono-numbers ml-1 truncate">
+                  <span className="text-[10px] text-[#94A3B8] font-mono-numbers ml-1 truncate hidden xs:inline">
                     (≈ ${Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} USDT)
                   </span>
                 </div>

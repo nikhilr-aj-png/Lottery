@@ -356,7 +356,7 @@ export default function KenoGame({ room }) {
 
           {/* 40-Number Interactive Grid */}
           <div className="my-auto py-3 w-full max-w-[500px]">
-            <div className="grid grid-cols-8 sm:grid-cols-10 gap-1.5 sm:gap-2">
+            <div className="grid grid-cols-8 sm:grid-cols-10 gap-1 xs:gap-1.5 sm:gap-2">
               {Array.from({ length: 40 }, (_, i) => i + 1).map((num) => {
                 const isSelected = selectedNumbers.includes(num);
                 const isDrawn = drawnNumbers.includes(num);

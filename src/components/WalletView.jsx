@@ -753,13 +753,13 @@ export default function WalletView() {
             <span className="text-[11px] text-[#9b8f7c] block mb-2 font-semibold">
               QUICK TEST DEPOSIT (INSTANT ON-CHAIN SIMULATION):
             </span>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 xs:grid-cols-4 gap-1.5 sm:gap-2">
               {[20, 50, 100, 500].map((amt) => (
                 <button
                   key={amt}
                   type="button"
                   onClick={() => depositUSDT(amt)}
-                  className="flex-1 py-2 rounded-xl bg-[rgba(5,213,170,0.12)] hover:bg-[#05d5aa] text-[#05d5aa] hover:text-[#0b0e14] border border-[#05d5aa]/30 text-xs font-bold font-mono-numbers transition-all cursor-pointer"
+                  className="w-full py-2 rounded-xl bg-[rgba(5,213,170,0.12)] hover:bg-[#05d5aa] text-[#05d5aa] hover:text-[#0b0e14] border border-[#05d5aa]/30 text-xs font-bold font-mono-numbers transition-all cursor-pointer text-center"
                 >
                   +{amt} USDT
                 </button>

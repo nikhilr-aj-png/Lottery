@@ -489,8 +489,8 @@ export default function MinesGame({ room }) {
           </div>
 
           {/* 5x5 Interactive Tile Grid */}
-          <div className="my-auto py-4">
-            <div className="grid grid-cols-5 gap-2 sm:gap-3 w-[290px] sm:w-[380px] md:w-[420px]">
+          <div className="my-auto py-4 w-full flex justify-center">
+            <div className="grid grid-cols-5 gap-1.5 xs:gap-2 sm:gap-3 w-full max-w-[270px] xs:max-w-[320px] sm:max-w-[380px] md:max-w-[420px]">
               {tiles.map((tile) => {
                 const isGem = tile.state === 'gem';
                 const isMine = tile.state === 'mine';

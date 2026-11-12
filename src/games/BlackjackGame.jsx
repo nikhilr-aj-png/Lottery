@@ -437,13 +437,13 @@ export default function BlackjackGame({ room }) {
                 </span>
               </div>
 
-              <div className="flex items-center justify-center gap-2.5">
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 flex-wrap">
                 {dealerHand.map((c, i) => {
                   const isHoleCard = (i === 1 && roundState === 'playing');
                   return (
                     <div
                       key={i}
-                      className={`w-14 h-20 sm:w-16 sm:h-24 rounded-xl border flex flex-col items-center justify-between p-1.5 shadow-xl transition-all duration-300 ${
+                      className={`w-12 h-18 xs:w-14 xs:h-20 sm:w-16 sm:h-24 rounded-xl border flex flex-col items-center justify-between p-1.5 shadow-xl transition-all duration-300 ${
                         isHoleCard
                           ? 'bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-900 border-purple-500/50'
                           : 'bg-white text-slate-900 border-slate-300'
@@ -487,11 +487,11 @@ export default function BlackjackGame({ room }) {
                 </span>
               </div>
 
-              <div className="flex items-center justify-center gap-2.5">
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 flex-wrap">
                 {playerHand.map((c, i) => (
                   <div
                     key={i}
-                    className="w-14 h-20 sm:w-16 sm:h-24 rounded-xl bg-white text-slate-900 border border-slate-300 flex flex-col items-center justify-between p-1.5 shadow-xl transition-all duration-300 animate-in zoom-in-75"
+                    className="w-12 h-18 xs:w-14 xs:h-20 sm:w-16 sm:h-24 rounded-xl bg-white text-slate-900 border border-slate-300 flex flex-col items-center justify-between p-1.5 shadow-xl transition-all duration-300 animate-in zoom-in-75"
                   >
                     <span className={`font-black text-sm self-start leading-none ${c.color === 'red' ? 'text-rose-600' : 'text-slate-900'}`}>
                       {c.rank}
