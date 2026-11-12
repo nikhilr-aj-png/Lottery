@@ -135,7 +135,20 @@ export default function LiveBetsTicker({ onSelectGame }) {
                     className="flex items-center gap-1.5 bg-[#111827] hover:bg-[#151C2B] border border-[#1F2737] hover:border-amber-500/40 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl transition-all cursor-pointer shadow-sm group shrink-0"
                     title="Click to view game"
                   >
-                    <span className="text-xs sm:text-sm shrink-0">{getGameEmoji(bet.gameId)}</span>
+                    <div className="w-4 h-4 rounded overflow-hidden shrink-0 flex items-center justify-center">
+                      <img 
+                        src={`/items/${bet.gameId?.toLowerCase()}.jpg`}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          if (e.currentTarget.nextSibling) {
+                            e.currentTarget.nextSibling.style.display = 'inline';
+                          }
+                        }}
+                      />
+                      <span className="text-xs sm:text-sm shrink-0 hidden">{getGameEmoji(bet.gameId)}</span>
+                    </div>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-1 text-[9px] sm:text-[10px] font-mono-numbers">
                         <span className="font-sans font-semibold text-[#F8FAFC] group-hover:text-amber-300 transition-colors truncate max-w-[50px] xs:max-w-[70px] sm:max-w-[85px]">

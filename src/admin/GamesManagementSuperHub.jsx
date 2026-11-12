@@ -593,19 +593,32 @@ export default function GamesManagementSuperHub({
                       <tr key={g.id} className="hover:bg-white/2 transition-colors">
                         <td className="py-3.5 px-3">
                           <div className="flex items-center gap-2.5">
-                            <span className="text-xl">
-                              {g.id === 'crash' ? '🚀' :
-                               g.id === 'dice' ? '🎲' :
-                               g.id === 'mines' ? '💣' :
-                               g.id === 'plinko' ? '🎯' :
-                               g.id === 'roulette' ? '🎡' :
-                               g.id === 'coinflip' ? '🪙' :
-                               g.id === 'blackjack' ? '🃏' :
-                               g.id === 'slots' ? '🎰' :
-                               g.id === 'poker' ? '♠️' :
-                               g.id === 'keno' ? '🎱' :
-                               g.id === 'limbo' ? '⚡' : '🎟️'}
-                            </span>
+                            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-[#272a31] bg-[#0b0e14] flex items-center justify-center">
+                              <img 
+                                src={g.icon || g.image || `/items/${g.id}.jpg`} 
+                                alt=""
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.nextSibling) {
+                                    e.currentTarget.nextSibling.style.display = 'inline';
+                                  }
+                                }}
+                              />
+                              <span className="text-xl hidden">
+                                {g.id === 'crash' ? '🚀' :
+                                 g.id === 'dice' ? '🎲' :
+                                 g.id === 'mines' ? '💣' :
+                                 g.id === 'plinko' ? '🎯' :
+                                 g.id === 'roulette' ? '🎡' :
+                                 g.id === 'coinflip' ? '🪙' :
+                                 g.id === 'blackjack' ? '🃏' :
+                                 g.id === 'slots' ? '🎰' :
+                                 g.id === 'poker' ? '♠️' :
+                                 g.id === 'keno' ? '🎱' :
+                                 g.id === 'limbo' ? '⚡' : '🎟️'}
+                              </span>
+                            </div>
                             <div>
                               <span className="font-bold text-white block">{g.name}</span>
                               <span className="text-[10px] text-[#8b92a2] font-mono">/games/{g.slug}</span>

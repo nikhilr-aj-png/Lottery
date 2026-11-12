@@ -75,18 +75,31 @@ export default function GameModal({ gameId, onClose }) {
         {/* 1. MODAL TOP HEADER */}
         <div className="flex items-center justify-between p-3.5 sm:p-5 border-b border-[#1F2737] bg-[#07090E]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#111827] border border-amber-500/30 flex items-center justify-center text-xl shadow-inner shrink-0">
-              {game.id === 'crash' ? '🚀' : 
-               game.id === 'dice' ? '🎲' : 
-               game.id === 'mines' ? '💣' : 
-               game.id === 'plinko' ? '🎯' : 
-               game.id === 'roulette' ? '🎡' : 
-               game.id === 'coinflip' ? '🪙' : 
-               game.id === 'blackjack' ? '🃏' : 
-               game.id === 'slots' ? '🎰' : 
-               game.id === 'poker' ? '♠️' : 
-               game.id === 'keno' ? '🎱' : 
-               game.id === 'limbo' ? '⚡' : '🎟️'}
+            <div className="w-10 h-10 rounded-xl bg-[#111827] border border-amber-500/30 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+              <img 
+                src={game.icon || game.image || `/items/${game.id}.jpg`} 
+                alt={game.name} 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.nextSibling) {
+                    e.currentTarget.nextSibling.style.display = 'inline';
+                  }
+                }}
+              />
+              <span className="hidden text-xl">
+                {game.id === 'crash' ? '🚀' : 
+                 game.id === 'dice' ? '🎲' : 
+                 game.id === 'mines' ? '💣' : 
+                 game.id === 'plinko' ? '🎯' : 
+                 game.id === 'roulette' ? '🎡' : 
+                 game.id === 'coinflip' ? '🪙' : 
+                 game.id === 'blackjack' ? '🃏' : 
+                 game.id === 'slots' ? '🎰' : 
+                 game.id === 'poker' ? '♠️' : 
+                 game.id === 'keno' ? '🎱' : 
+                 game.id === 'limbo' ? '⚡' : '🎟️'}
+              </span>
             </div>
             <div>
               <div className="flex items-center gap-2">

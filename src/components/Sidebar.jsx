@@ -85,7 +85,7 @@ export default function Sidebar({
       title: 'Casino Lobby',
       items: [
         { id: 'lotteries', label: 'All Games Lobby', icon: LayoutGrid, isLobby: true },
-        { id: 'lottery-game', label: 'Four-Digit Lottery', icon: Ticket, isLottery: true },
+        { id: 'lottery-game', label: 'Four-Digit Lottery', icon: Ticket, image: '/items/lottery.jpg', isLottery: true },
       ]
     },
     {
@@ -95,6 +95,7 @@ export default function Sidebar({
         gameId: g.id,
         label: g.name,
         icon: getGameIcon(g.id),
+        image: g.icon || `/items/${g.id}.jpg`,
         badge: g.badge,
         isModularGame: true
       }))
@@ -206,7 +207,24 @@ export default function Sidebar({
                     aria-label={item.label}
                   >
                     <div className={`flex items-center gap-2.5 min-w-0 ${isCollapsed ? 'justify-center' : ''}`}>
-                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-black' : 'text-amber-400 group-hover:scale-110 transition-transform'}`} />
+                      {item.image ? (
+                        <div className="w-5 h-5 rounded-md overflow-hidden shrink-0 border border-[#272A31] bg-[#0B0F19] flex items-center justify-center">
+                          <img 
+                            src={item.image} 
+                            alt=""
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              if (e.currentTarget.nextSibling) {
+                                e.currentTarget.nextSibling.style.display = 'inline';
+                              }
+                            }}
+                          />
+                          <Icon className={`w-3.5 h-3.5 shrink-0 hidden ${isActive ? 'text-black' : 'text-amber-400 group-hover:scale-110 transition-transform'}`} />
+                        </div>
+                      ) : (
+                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-black' : 'text-amber-400 group-hover:scale-110 transition-transform'}`} />
+                      )}
                       {!isCollapsed && (
                         <span className="truncate">{item.label}</span>
                       )}

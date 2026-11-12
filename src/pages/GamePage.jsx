@@ -288,18 +288,31 @@ export default function GamePage({
               <span className="hidden xs:inline">Lobby</span>
             </button>
 
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#141924] border border-amber-500/30 flex items-center justify-center text-lg sm:text-xl shrink-0 shadow-inner">
-              {game.id === 'crash' ? '🚀' : 
-               game.id === 'dice' ? '🎲' : 
-               game.id === 'mines' ? '💣' : 
-               game.id === 'plinko' ? '🎯' : 
-               game.id === 'roulette' ? '🎡' : 
-               game.id === 'coinflip' ? '🪙' : 
-               game.id === 'blackjack' ? '🃏' : 
-               game.id === 'slots' ? '🎰' : 
-               game.id === 'poker' ? '♠️' : 
-               game.id === 'keno' ? '🎱' : 
-               game.id === 'limbo' ? '⚡' : '🎟️'}
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#141924] border border-amber-500/30 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+              <img 
+                src={game.icon || game.image || `/items/${game.id}.jpg`} 
+                alt={game.name} 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.nextSibling) {
+                    e.currentTarget.nextSibling.style.display = 'inline';
+                  }
+                }}
+              />
+              <span className="hidden text-lg sm:text-xl">
+                {game.id === 'crash' ? '🚀' : 
+                 game.id === 'dice' ? '🎲' : 
+                 game.id === 'mines' ? '💣' : 
+                 game.id === 'plinko' ? '🎯' : 
+                 game.id === 'roulette' ? '🎡' : 
+                 game.id === 'coinflip' ? '🪙' : 
+                 game.id === 'blackjack' ? '🃏' : 
+                 game.id === 'slots' ? '🎰' : 
+                 game.id === 'poker' ? '♠️' : 
+                 game.id === 'keno' ? '🎱' : 
+                 game.id === 'limbo' ? '⚡' : '🎟️'}
+              </span>
             </div>
 
             <div className="min-w-0">
@@ -705,18 +718,31 @@ export default function GamePage({
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#141924] border border-amber-500/40 flex items-center justify-center text-3xl shrink-0 shadow-lg">
-                {game.id === 'crash' ? '🚀' : 
-                 game.id === 'dice' ? '🎲' : 
-                 game.id === 'mines' ? '💣' : 
-                 game.id === 'plinko' ? '🎯' : 
-                 game.id === 'roulette' ? '🎡' : 
-                 game.id === 'coinflip' ? '🪙' : 
-                 game.id === 'blackjack' ? '🃏' : 
-                 game.id === 'slots' ? '🎰' : 
-                 game.id === 'poker' ? '♠️' : 
-                 game.id === 'keno' ? '🎱' : 
-                 game.id === 'limbo' ? '⚡' : '🎟️'}
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#141924] border border-amber-500/40 flex items-center justify-center overflow-hidden shrink-0 shadow-lg">
+                <img 
+                  src={game.icon || game.image || `/items/${game.id}.jpg`} 
+                  alt={game.name} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    if (e.currentTarget.nextSibling) {
+                      e.currentTarget.nextSibling.style.display = 'inline';
+                    }
+                  }}
+                />
+                <span className="hidden text-3xl">
+                  {game.id === 'crash' ? '🚀' : 
+                   game.id === 'dice' ? '🎲' : 
+                   game.id === 'mines' ? '💣' : 
+                   game.id === 'plinko' ? '🎯' : 
+                   game.id === 'roulette' ? '🎡' : 
+                   game.id === 'coinflip' ? '🪙' : 
+                   game.id === 'blackjack' ? '🃏' : 
+                   game.id === 'slots' ? '🎰' : 
+                   game.id === 'poker' ? '♠️' : 
+                   game.id === 'keno' ? '🎱' : 
+                   game.id === 'limbo' ? '⚡' : '🎟️'}
+                </span>
               </div>
 
               <div>
