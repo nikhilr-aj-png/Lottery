@@ -33,7 +33,7 @@ import {
   ChevronRight,
   Filter
 } from 'lucide-react';
-import { GAMES, gameRoomManager, ROOM_TYPES, ROOM_STATUSES } from '../engine';
+import { GAMES, gameRoomManager, ROOM_TYPES, ROOM_STATUSES, getGameIconUrl } from '../engine';
 import { supabase } from '../lib/supabase';
 import ProvablyFairModal from '../components/ProvablyFairModal';
 
@@ -595,7 +595,7 @@ export default function GamesManagementSuperHub({
                           <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-[#272a31] bg-[#0b0e14] flex items-center justify-center">
                               <img 
-                                src={g.icon || g.image || `/items/${g.id}.jpg`} 
+                                src={getGameIconUrl(g.id) || g.icon || g.image || `/items/${g.id}.jpg`} 
                                 alt=""
                                 className="w-full h-full object-cover"
                                 onError={(e) => {

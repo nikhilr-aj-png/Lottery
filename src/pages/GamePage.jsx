@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   getGameById, 
+  getGameIconUrl,
   GAMES, 
   gameRoomManager, 
   ROOM_TYPES, 
@@ -290,7 +291,7 @@ export default function GamePage({
 
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#141924] border border-amber-500/30 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
               <img 
-                src={game.icon || game.image || `/items/${game.id}.jpg`} 
+                src={getGameIconUrl(game.id) || game.icon || game.image} 
                 alt={game.name} 
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -720,7 +721,7 @@ export default function GamePage({
             <div className="flex items-center gap-3">
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#141924] border border-amber-500/40 flex items-center justify-center overflow-hidden shrink-0 shadow-lg">
                 <img 
-                  src={game.icon || game.image || `/items/${game.id}.jpg`} 
+                  src={getGameIconUrl(game.id) || game.icon || game.image} 
                   alt={game.name} 
                   className="w-full h-full object-cover"
                   onError={(e) => {

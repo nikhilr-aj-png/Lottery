@@ -30,8 +30,8 @@ export const GAMES = [
     category: GAME_CATEGORIES.LOTTERY,
     badge: 'JACKPOT',
     themeColor: '#ffd700',
-    icon: '/items/lottery.jpg',
-    image: '/items/lottery.jpg',
+    icon: '/items/Four Digit Lottery.jpg',
+    image: '/items/Four Digit Lottery.jpg',
     description: 'Pick your lucky 4-digit number (0000–9999) and win huge Flow Coin jackpot pots with provably fair draws.',
     rtp: 95.0,
     houseEdge: 5.0,
@@ -63,8 +63,8 @@ export const GAMES = [
     category: GAME_CATEGORIES.INSTANT,
     badge: 'HOT',
     themeColor: '#f97316',
-    icon: '/items/crash.jpg',
-    image: '/items/crash.jpg',
+    icon: '/items/Crash.jpg',
+    image: '/items/Crash.jpg',
     description: 'Watch the multiplier climb from 1.00x upward. Cash out before the rocket crashes to multiply your Flow Coins!',
     rtp: 99.0,
     houseEdge: 1.0,
@@ -95,8 +95,8 @@ export const GAMES = [
     category: GAME_CATEGORIES.INSTANT,
     badge: 'CLASSIC',
     themeColor: '#3b82f6',
-    icon: '/items/dice.jpg',
-    image: '/items/dice.jpg',
+    icon: '/items/Dice.jpg',
+    image: '/items/Dice.jpg',
     description: 'Roll the provably fair 100-sided die. Choose Roll Over or Roll Under and adjust win probability up to 99%.',
     rtp: 99.0,
     houseEdge: 1.0,
@@ -127,8 +127,8 @@ export const GAMES = [
     category: GAME_CATEGORIES.ARCADE,
     badge: 'POPULAR',
     themeColor: '#ef4444',
-    icon: '/items/mines.jpg',
-    image: '/items/mines.jpg',
+    icon: '/items/Mines.jpg',
+    image: '/items/Mines.jpg',
     description: 'Uncover gems on a 5x5 grid while avoiding hidden mines. Each uncovered gem increases your multiplier!',
     rtp: 99.0,
     houseEdge: 1.0,
@@ -159,8 +159,8 @@ export const GAMES = [
     category: GAME_CATEGORIES.ARCADE,
     badge: 'VIRAL',
     themeColor: '#ec4899',
-    icon: '/items/plinko.jpg',
-    image: '/items/plinko.jpg',
+    icon: '/items/Plinko.jpg',
+    image: '/items/Plinko.jpg',
     description: 'Drop bouncing balls through a responsive pegboard pyramid into high-multiplier slots at the base.',
     rtp: 99.0,
     houseEdge: 1.0,
@@ -192,8 +192,8 @@ export const GAMES = [
     category: GAME_CATEGORIES.TABLE,
     badge: 'CASINO VIP',
     themeColor: '#dc2626',
-    icon: '/items/roulette.jpg',
-    image: '/items/roulette.jpg',
+    icon: '/items/European Roulette.jpg',
+    image: '/items/European Roulette.jpg',
     description: 'Classic European Roulette wheel with single green zero (0) and 36 red and black numbers. Place inside or outside bets.',
     rtp: 97.3,
     houseEdge: 2.7,
@@ -223,8 +223,8 @@ export const GAMES = [
     category: GAME_CATEGORIES.INSTANT,
     badge: 'FAST',
     themeColor: '#eab308',
-    icon: '/items/coinflip.jpg',
-    image: '/items/coinflip.jpg',
+    icon: '/items/Coinflip.jpg',
+    image: '/items/Coinflip.jpg',
     description: 'The purest game of 50/50 luck. Pick Heads or Tails, flip the 3D coin, and double your Flow Coins instantly.',
     rtp: 98.0,
     houseEdge: 2.0,
@@ -255,8 +255,8 @@ export const GAMES = [
     category: GAME_CATEGORIES.CARD,
     badge: 'STRATEGY',
     themeColor: '#10b981',
-    icon: '/items/blackjack.jpg',
-    image: '/items/blackjack.jpg',
+    icon: '/items/Black Jack.jpg',
+    image: '/items/Black Jack.jpg',
     description: 'Beat the dealer by getting closer to 21 without going over. Features Hit, Stand, Double Down, and Dealer stands on 17.',
     rtp: 99.5,
     houseEdge: 0.5,
@@ -288,8 +288,8 @@ export const GAMES = [
     category: GAME_CATEGORIES.SLOTS,
     badge: 'VEGAS',
     themeColor: '#8b5cf6',
-    icon: '/items/slots.jpg',
-    image: '/items/slots.jpg',
+    icon: '/items/Golden Slot.jpg',
+    image: '/items/Golden Slot.jpg',
     description: 'Classic Vegas-style slot machine with 5 paylines, wild diamonds, golden sevens, lucky bars, and juicy cherries.',
     rtp: 97.5,
     houseEdge: 2.5,
@@ -320,8 +320,8 @@ export const GAMES = [
     category: GAME_CATEGORIES.CARD,
     badge: 'SKILL',
     themeColor: '#06b6d4',
-    icon: '/items/poker.jpg',
-    image: '/items/poker.jpg',
+    icon: "/items/Texas Hold'em poker.jpg",
+    image: "/items/Texas Hold'em poker.jpg",
     description: 'High-stakes Texas Hold’em table action. Play your hole cards with the community flop, turn, and river against AI dealers.',
     rtp: 98.5,
     houseEdge: 1.5,
@@ -353,8 +353,8 @@ export const GAMES = [
     category: GAME_CATEGORIES.ARCADE,
     badge: 'LOTTO',
     themeColor: '#14b8a6',
-    icon: '/items/keno.jpg',
-    image: '/items/keno.jpg',
+    icon: '/items/Classic Keno.jpg',
+    image: '/items/Classic Keno.jpg',
     description: 'Pick between 1 and 10 lucky numbers from a 40-ball board. 10 balls are drawn; match them for massive multiplier payouts!',
     rtp: 97.0,
     houseEdge: 3.0,
@@ -384,8 +384,8 @@ export const GAMES = [
     category: GAME_CATEGORIES.INSTANT,
     badge: '10,000X',
     themeColor: '#6366f1',
-    icon: '/items/limbo.jpg',
-    image: '/items/limbo.jpg',
+    icon: '/items/Limbo.jpg',
+    image: '/items/Limbo.jpg',
     description: 'Target astronomical multipliers up to 10,000x! Set your target multiplier and see if the outcome flies higher.',
     rtp: 99.0,
     houseEdge: 1.0,
@@ -429,4 +429,46 @@ export function getGamesByCategory(category) {
 export function getActiveGameIds() {
   return GAMES.filter(g => g.status === 'active').map(g => g.id);
 }
+
+// Helper: Get canonical icon URL for any game
+export function getGameIconUrl(idOrSlug) {
+  const key = (typeof idOrSlug === 'object' && idOrSlug !== null ? (idOrSlug.id || idOrSlug.slug) : idOrSlug)?.toLowerCase();
+  switch (key) {
+    case 'lottery':
+    case 'four-digit-lottery':
+      return '/items/Four Digit Lottery.jpg';
+    case 'crash':
+      return '/items/Crash.jpg';
+    case 'dice':
+      return '/items/Dice.jpg';
+    case 'mines':
+      return '/items/Mines.jpg';
+    case 'plinko':
+      return '/items/Plinko.jpg';
+    case 'roulette':
+    case 'european-roulette':
+      return '/items/European Roulette.jpg';
+    case 'coinflip':
+      return '/items/Coinflip.jpg';
+    case 'blackjack':
+    case 'blackjack-21':
+      return '/items/Black Jack.jpg';
+    case 'slots':
+    case 'golden-reels-slot':
+      return '/items/Golden Slot.jpg';
+    case 'poker':
+    case 'texas-holdem-poker':
+      return "/items/Texas Hold'em poker.jpg";
+    case 'keno':
+    case 'classic-keno':
+      return '/items/Classic Keno.jpg';
+    case 'limbo':
+      return '/items/Limbo.jpg';
+    default: {
+      const g = getGameById(idOrSlug);
+      return g?.icon || g?.image || null;
+    }
+  }
+}
+
 

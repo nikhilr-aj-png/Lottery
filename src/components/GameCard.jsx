@@ -9,6 +9,7 @@ import {
   Zap,
   Info
 } from 'lucide-react';
+import { getGameIconUrl } from '../engine';
 
 export default function GameCard({ game, onPlay }) {
   if (!game) return null;
@@ -109,6 +110,7 @@ export default function GameCard({ game, onPlay }) {
     }
   };
 
+  const iconUrl = getGameIconUrl(game.id) || game.icon || game.image;
   const art = getArtwork(game.id);
 
   return (
@@ -118,14 +120,6 @@ export default function GameCard({ game, onPlay }) {
     >
       {/* Top Gradient Banner / Background Glow */}
       <div className={`absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br ${art.gradient} rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500`} />
-      <div className="absolute top-0 right-0 w-24 h-24 sm:w-28 sm:h-28 opacity-10 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none overflow-hidden rounded-tr-2xl">
-        <img 
-          src={game.icon || game.image || `/items/${game.id}.jpg`}
-          alt=""
-          className="w-full h-full object-cover scale-125 blur-[1px]"
-          loading="lazy"
-        />
-      </div>
 
       {/* Card Content Top */}
       <div className="p-4 sm:p-5 relative z-10">
@@ -154,20 +148,22 @@ export default function GameCard({ game, onPlay }) {
 
         {/* Game Visual Icon & Name */}
         <div className="flex items-center gap-3.5 my-2">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#0B0F19] border border-[#272A31] flex items-center justify-center overflow-hidden shadow-inner group-hover:scale-110 group-hover:rotate-2 group-hover:shadow-[0_0_20px_rgba(245,196,81,0.3)] transition-all duration-300 shrink-0 relative">
-            <img 
-              src={game.icon || game.image || `/items/${game.id}.jpg`} 
-              alt={game.name} 
-              className="w-full h-full object-cover rounded-2xl transition-transform duration-300 group-hover:scale-105"
-              loading="lazy"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                if (e.currentTarget.nextSibling) {
-                  e.currentTarget.nextSibling.style.display = 'flex';
-                }
-              }}
-            />
-            <span className="text-3xl sm:text-4xl hidden items-center justify-center w-full h-full">
+          <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-[#0B0F19] border border-[#272A31] group-hover:border-amber-400/50 flex items-center justify-center overflow-hidden shadow-inner group-hover:scale-105 group-hover:shadow-[0_0_20px_rgba(245,196,81,0.25)] transition-all duration-300 shrink-0 relative">
+            {iconUrl ? (
+              <img 
+                src={iconUrl} 
+                alt={game.name} 
+                className="w-full h-full object-cover rounded-2xl transition-transform duration-300 group-hover:scale-110"
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.nextSibling) {
+                    e.currentTarget.nextSibling.style.display = 'flex';
+                  }
+                }}
+              />
+            ) : null}
+            <span className={`text-3xl sm:text-4xl ${iconUrl ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
               {art.emoji}
             </span>
           </div>

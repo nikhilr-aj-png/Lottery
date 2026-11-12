@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { gameHistoryStore } from '../engine';
+import { gameHistoryStore, getGameIconUrl } from '../engine';
 import { useLottery } from '../context/LotteryContext';
 import { 
   Trophy, 
@@ -137,7 +137,7 @@ export default function LiveBetsTicker({ onSelectGame }) {
                   >
                     <div className="w-4 h-4 rounded overflow-hidden shrink-0 flex items-center justify-center">
                       <img 
-                        src={`/items/${bet.gameId?.toLowerCase()}.jpg`}
+                        src={getGameIconUrl(bet.gameId) || `/items/${bet.gameId}.jpg`}
                         alt=""
                         className="w-full h-full object-cover"
                         onError={(e) => {

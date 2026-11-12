@@ -29,6 +29,7 @@ import {
   SlotsGame,
   PokerGame
 } from '../games';
+import { getGameIconUrl } from '../engine';
 
 export default function GameModal({ gameId, onClose }) {
   const { wallet, claimDailyBonus } = useLottery();
@@ -77,7 +78,7 @@ export default function GameModal({ gameId, onClose }) {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#111827] border border-amber-500/30 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
               <img 
-                src={game.icon || game.image || `/items/${game.id}.jpg`} 
+                src={getGameIconUrl(game.id) || game.icon || game.image || `/items/${game.id}.jpg`} 
                 alt={game.name} 
                 className="w-full h-full object-cover"
                 onError={(e) => {

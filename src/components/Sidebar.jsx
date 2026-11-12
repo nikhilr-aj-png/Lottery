@@ -26,7 +26,7 @@ import {
   Medal
 } from 'lucide-react';
 import { useLottery } from '../context/LotteryContext';
-import { GAMES } from '../engine';
+import { GAMES, getGameIconUrl } from '../engine';
 
 export default function Sidebar({ 
   isOpen, 
@@ -85,7 +85,7 @@ export default function Sidebar({
       title: 'Casino Lobby',
       items: [
         { id: 'lotteries', label: 'All Games Lobby', icon: LayoutGrid, isLobby: true },
-        { id: 'lottery-game', label: 'Four-Digit Lottery', icon: Ticket, image: '/items/lottery.jpg', isLottery: true },
+        { id: 'lottery-game', label: 'Four-Digit Lottery', icon: Ticket, image: getGameIconUrl('lottery'), isLottery: true },
       ]
     },
     {
@@ -95,7 +95,7 @@ export default function Sidebar({
         gameId: g.id,
         label: g.name,
         icon: getGameIcon(g.id),
-        image: g.icon || `/items/${g.id}.jpg`,
+        image: getGameIconUrl(g.id),
         badge: g.badge,
         isModularGame: true
       }))
