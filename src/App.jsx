@@ -528,10 +528,6 @@ function LotteryAppContent() {
               <span className="flex items-center gap-1 text-[#ffd700]">
                 24-Hour Payout Guarantee
               </span>
-              <span>•</span>
-              <span className="font-mono-numbers">
-                Chainlink VRF Oracle
-              </span>
             </div>
           </div>
           

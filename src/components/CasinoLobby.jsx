@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { GAMES, GAME_CATEGORIES } from '../engine';
 import GameCard from './GameCard';
-import LotteryCard from './LotteryCard';
 import { useLottery } from '../context/LotteryContext';
 import { 
   Flame, 
@@ -20,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }) {
-  const { events, loadingEvents, setSelectedEventForModal, setActiveTab, user, setIsAuthModalOpen, showToast, claimDailyBonus } = useLottery();
+  const { claimDailyBonus } = useLottery();
 
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,12 +60,6 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }) {
 
     return list;
   }, [selectedCategory, searchQuery, sortBy]);
-
-  // Active Lottery events
-  const activeLotteryEvents = useMemo(() => {
-    const now = Date.now();
-    return events.filter(e => e.status === 'active' && (!e.drawTime || e.drawTime > now));
-  }, [events]);
 
   const categories = [
     { id: 'all', label: 'All Games', count: GAMES.length },
@@ -128,16 +121,7 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }) {
 
               <button
                 onClick={() => {
-                  if (activeLotteryEvents.length > 0) {
-                    if (!user) {
-                      setIsAuthModalOpen(true);
-                      return;
-                    }
-                    setSelectedEventForModal(activeLotteryEvents[0]);
-                  } else {
-                    const el = document.getElementById('lottery-pools-section');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }
+                  handleGameSelect({ id: 'lottery', slug: 'four-digit-lottery' });
                 }}
                 className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-white border border-[#272A31] hover:border-amber-500/40 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
@@ -181,29 +165,23 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }) {
               </p>
             </div>
 
-            {/* Featured Lottery Quick Status */}
+            {/* Featured Four-Digit Lottery Card */}
             <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-purple-500/10 border border-amber-500/30 flex items-center justify-between">
               <div>
                 <span className="text-[9px] font-mono-numbers text-amber-400 font-bold block">
-                  LIVE 4-DIGIT ROUND
+                  FEATURED LOTTERY
                 </span>
                 <span className="font-mono-numbers text-xs font-extrabold text-white">
-                  {activeLotteryEvents[0]?.id ? `#${activeLotteryEvents[0].id.replace('evt-', '').toUpperCase()}` : '0000–9999'}
+                  0000–9999
                 </span>
               </div>
               <button
                 onClick={() => {
-                  if (activeLotteryEvents[0]) {
-                    if (!user) {
-                      setIsAuthModalOpen(true);
-                      return;
-                    }
-                    setSelectedEventForModal(activeLotteryEvents[0]);
-                  }
+                  handleGameSelect({ id: 'lottery', slug: 'four-digit-lottery' });
                 }}
                 className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[10px] cursor-pointer transition-all"
               >
-                Play 0000-9999
+                Play Now
               </button>
             </div>
 
@@ -286,77 +264,8 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }) {
 
       </section>
 
-      {/* 4. PRESERVED FOUR-DIGIT LOTTERY ACTIVE ROUNDS SECTION */}
-      <section id="lottery-pools-section" className="space-y-6 pt-6 border-t border-[#1F2737]">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-1.5 mb-1">
-              <Ticket className="w-4 h-4 text-amber-400" />
-              <span className="text-[10px] font-mono-numbers text-amber-400 uppercase font-bold tracking-wider">
-                FEATURED GAME 01 · AUTHORITATIVE 0000–9999
-              </span>
-            </div>
-            <h2 className="font-display font-black text-xl xs:text-2xl sm:text-3xl text-white">
-              Active Four-Digit <span className="text-[#F5C451]">Lottery Rounds</span>
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onOpenLotteryRules && onOpenLotteryRules()}
-              className="px-3 py-1.5 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-xs font-bold text-amber-300 border border-amber-500/30 transition-colors cursor-pointer"
-            >
-              Lottery Rules
-            </button>
-            <button
-              onClick={() => {
-                if (!user) {
-                  setIsAuthModalOpen(true);
-                  showToast('Please log in to view lottery results!', 'info');
-                  return;
-                }
-                setActiveTab('results');
-              }}
-              className="px-3 py-1.5 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-xs font-bold text-white border border-[#272A31] transition-colors cursor-pointer"
-            >
-              Concluded Draws
-            </button>
-          </div>
-        </div>
-
-        {/* Lottery Cards Grid */}
-        {loadingEvents ? (
-          <div className="bg-[#111827] rounded-3xl border border-[#1F2737] p-8 text-center text-amber-400 text-xs font-mono-numbers">
-            Loading active lottery pools...
-          </div>
-        ) : activeLotteryEvents.length === 0 ? (
-          <div className="bg-[#111827] rounded-3xl border border-[#1F2737] p-8 text-center space-y-2">
-            <Sparkles className="w-8 h-8 text-amber-400 mx-auto" />
-            <h3 className="font-display font-bold text-base text-white">All Previous Rounds Concluded</h3>
-            <p className="text-xs text-[#94A3B8]">Check Results tab to inspect past winners or await new rounds.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-3 3xl:grid-cols-4 4k:grid-cols-4 gap-4 sm:gap-6">
-            {activeLotteryEvents.map((evt) => (
-              <LotteryCard
-                key={evt.id}
-                event={evt}
-                onSelect={(selected) => {
-                  if (!user) {
-                    setIsAuthModalOpen(true);
-                    showToast('Please log in to purchase lottery tickets!', 'info');
-                    return;
-                  }
-                  setSelectedEventForModal(selected);
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* 5. PROVABLY FAIR & RESPONSIBLE GAMING SHOWCASE */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6">
+      {/* 4. PROVABLY FAIR & RESPONSIBLE GAMING SHOWCASE */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-[#1F2737]">
         <div className="bg-[#111827] p-5 rounded-2xl border border-[#1F2737] space-y-2">
           <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
             <ShieldCheck className="w-5 h-5" />

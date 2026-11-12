@@ -248,10 +248,10 @@ export const GAMES = [
   // --------------------------------------------------------------------------
   {
     id: 'blackjack',
-    name: 'Blackjack 21',
+    name: 'Blackjack',
     shortName: 'Blackjack',
     slug: 'blackjack-21',
-    aliases: ['blackjack'],
+    aliases: ['blackjack', 'blackjack-21'],
     category: GAME_CATEGORIES.CARD,
     badge: 'STRATEGY',
     themeColor: '#10b981',
@@ -281,10 +281,10 @@ export const GAMES = [
   // --------------------------------------------------------------------------
   {
     id: 'slots',
-    name: 'Golden Reels Slot',
-    shortName: 'Slots',
+    name: 'Golden Slot',
+    shortName: 'Golden Slot',
     slug: 'golden-reels-slot',
-    aliases: ['slots', 'golden-reels'],
+    aliases: ['slots', 'golden-reels', 'golden-slot', 'golden-reels-slot'],
     category: GAME_CATEGORIES.SLOTS,
     badge: 'VEGAS',
     themeColor: '#8b5cf6',
