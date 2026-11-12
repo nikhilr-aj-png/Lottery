@@ -1,10 +1,15 @@
 /**
  * ============================================================================
- * LEADERBOARD VIEW — LIVE DATABASE HIGH-ROLLERS & HALL OF FAME
+ * LEADERBOARD VIEW — VIRTUAL WALLET LEADERBOARD & CASINO HIGH ROLLERS
  * ============================================================================
- * Queries Supabase RPC `get_game_leaderboard` for live platform standings.
- * Supports Timeframes (Today, Weekly, All-Time), Metrics (Earnings, Multiplier, Wagered),
- * Game Filters, 3-Person Visual Podium, and User Rank Tracking.
+ * 1. Dedicated Virtual Wallet Leaderboard:
+ *    - Real user rankings sorted by genuine virtual wallet balance (1 FLO = 1 USDT)
+ *    - Queries Supabase RPC `get_virtual_wallet_leaderboard`
+ *    - Exposes public usernames, ranks, and balances without exposing private keys
+ * 2. Casino High Rollers & Hall of Fame:
+ *    - Standings by Net Profit, Multiplier, or Wagered Volume from `get_game_leaderboard`
+ *    - Supports Timeframes (All-time, Weekly, Today) and Game Filters
+ * ============================================================================
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -26,7 +31,10 @@ import {
   RefreshCw,
   Award,
   Layers,
-  ChevronRight
+  ChevronRight,
+  Wallet,
+  Clock,
+  ArrowUpRight
 } from 'lucide-react';
 
 const GAME_OPTIONS = [
@@ -49,17 +57,35 @@ export default function LeaderboardView() {
   const { wallet, profile } = useLottery();
   const { playClick } = useSoundFX();
 
+  // Master Category: 'wallet' (Virtual Wallet Leaderboard) vs 'games' (Casino High Rollers)
+  const [activeLeaderboardType, setActiveLeaderboardType] = useState('wallet');
+
+  // Games Leaderboard Filters
   const [timeFilter, setTimeFilter] = useState('all'); // 'all' | 'weekly' | 'today'
   const [metricFilter, setMetricFilter] = useState('earnings'); // 'earnings' | 'multiplier' | 'wagered'
   const [gameFilter, setGameFilter] = useState('all');
+  
+  // Search & Shared State
   const [searchQuery, setSearchQuery] = useState('');
-  const [dbLeaderboard, setDbLeaderboard] = useState([]);
+  const [walletLeaderboard, setWalletLeaderboard] = useState([]);
+  const [gamesLeaderboard, setGamesLeaderboard] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch live database leaderboard
-  const fetchLeaderboard = async () => {
-    setLoading(true);
+  // Fetch Virtual Wallet Leaderboard from genuine backend RPC
+  const fetchWalletLeaderboard = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_virtual_wallet_leaderboard', { p_limit: 50 });
+      if (!error && Array.isArray(data)) {
+        setWalletLeaderboard(data);
+      }
+    } catch (err) {
+      console.warn('get_virtual_wallet_leaderboard error:', err);
+    }
+  };
+
+  // Fetch Casino High Rollers Leaderboard from database
+  const fetchGamesLeaderboard = async () => {
     try {
       const { data, error } = await supabase.rpc('get_game_leaderboard', {
         p_timeframe: timeFilter,
@@ -67,12 +93,23 @@ export default function LeaderboardView() {
         p_limit: 30,
         p_game_id: gameFilter === 'all' ? null : gameFilter
       });
-
       if (!error && Array.isArray(data)) {
-        setDbLeaderboard(data);
+        setGamesLeaderboard(data);
       }
     } catch (err) {
-      console.warn('get_game_leaderboard fetch error:', err);
+      console.warn('get_game_leaderboard error:', err);
+    }
+  };
+
+  // Combined Fetch
+  const refreshAll = async () => {
+    setLoading(true);
+    try {
+      if (activeLeaderboardType === 'wallet') {
+        await fetchWalletLeaderboard();
+      } else {
+        await fetchGamesLeaderboard();
+      }
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -80,17 +117,32 @@ export default function LeaderboardView() {
   };
 
   useEffect(() => {
-    fetchLeaderboard();
-  }, [timeFilter, metricFilter, gameFilter]);
+    refreshAll();
+  }, [activeLeaderboardType, timeFilter, metricFilter, gameFilter]);
 
-  // Genuine leaderboard data retrieved directly from database
-  const displayList = useMemo(() => {
-    const list = Array.isArray(dbLeaderboard) ? [...dbLeaderboard] : [];
+  // Real-time update subscription when transactions or rounds settle
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime:wallets_leaderboard')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_wallets' }, () => {
+        fetchWalletLeaderboard();
+      })
+      .subscribe();
 
-    return list
-      .filter(p => {
-        const u = (p.username || '').toLowerCase();
-        const a = (p.address || '').toLowerCase();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Filtered Display List
+  const activeList = useMemo(() => {
+    const source = activeLeaderboardType === 'wallet' ? walletLeaderboard : gamesLeaderboard;
+    if (!Array.isArray(source)) return [];
+
+    return source
+      .filter(item => {
+        const u = (item.username || '').toLowerCase();
+        const a = (item.address || item.raw_address || '').toLowerCase();
         const q = searchQuery.toLowerCase();
         return u.includes(q) || a.includes(q);
       })
@@ -98,21 +150,25 @@ export default function LeaderboardView() {
         ...item,
         rank: idx + 1
       }));
-  }, [dbLeaderboard, searchQuery]);
+  }, [activeLeaderboardType, walletLeaderboard, gamesLeaderboard, searchQuery]);
 
-  const top1 = displayList[0];
-  const top2 = displayList[1];
-  const top3 = displayList[2];
+  const top1 = activeList[0];
+  const top2 = activeList[1];
+  const top3 = activeList[2];
 
-  // User's own standing calculation
+  // User's own standing in the active leaderboard
   const myStanding = useMemo(() => {
     if (!wallet?.address) return null;
-    const index = displayList.findIndex(p => p.address?.toLowerCase() === wallet.address?.toLowerCase());
+    const targetAddr = wallet.address.toLowerCase();
+    const index = activeList.findIndex(p => 
+      (p.raw_address && p.raw_address.toLowerCase() === targetAddr) ||
+      (p.address && p.address.toLowerCase() === targetAddr)
+    );
     if (index !== -1) {
-      return { ...displayList[index], rank: index + 1 };
+      return { ...activeList[index], rank: index + 1 };
     }
     return null;
-  }, [displayList, wallet?.address]);
+  }, [activeList, wallet?.address]);
 
   const getVipBadge = (tier) => {
     switch ((tier || '').toLowerCase()) {
@@ -128,25 +184,82 @@ export default function LeaderboardView() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 text-left">
       
-      {/* 1. HEADER & PODIUM */}
+      {/* 1. MASTER LEADERBOARD SWITCHER TABS */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1.5 bg-[#0D111A] border border-[#1F2737] rounded-2xl shadow-inner">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+          <button
+            onClick={() => {
+              playClick();
+              setActiveLeaderboardType('wallet');
+            }}
+            className={`flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              activeLeaderboardType === 'wallet'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
+                : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Wallet className="w-4 h-4" />
+            <span>Virtual Wallet Leaderboard</span>
+          </button>
+
+          <button
+            onClick={() => {
+              playClick();
+              setActiveLeaderboardType('games');
+            }}
+            className={`flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              activeLeaderboardType === 'games'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
+                : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Trophy className="w-4 h-4" />
+            <span>Casino High Rollers</span>
+          </button>
+        </div>
+
+        <div className="flex items-center justify-end px-2 text-xs font-mono-numbers text-[#94A3B8] gap-1.5">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <span>100% Genuine Database Records</span>
+        </div>
+      </div>
+
+      {/* 2. HERO HEADER & 3-PERSON PODIUM */}
       <div className="relative rounded-3xl bg-gradient-to-r from-[#111827] via-[#151C2B] to-[#111827] border border-[#1F2737] p-6 sm:p-8 overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 text-center max-w-2xl mx-auto space-y-2 mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-mono-numbers font-bold">
-            <Trophy className="w-3.5 h-3.5 text-amber-400" />
-            <span>HALL OF FAME & VIP HIGH ROLLERS</span>
+            {activeLeaderboardType === 'wallet' ? (
+              <>
+                <Wallet className="w-3.5 h-3.5 text-amber-400" />
+                <span>TOP VIRTUAL WALLET HOLDINGS (1 FLO = 1 USDT)</span>
+              </>
+            ) : (
+              <>
+                <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                <span>PROVABLY FAIR HIGH ROLLERS & MULTIPLIERS</span>
+              </>
+            )}
           </div>
+
           <h1 className="font-display font-black text-2xl sm:text-3xl text-white tracking-tight">
-            Live Global & Weekly Standings
+            {activeLeaderboardType === 'wallet'
+              ? 'Virtual Wallet Holdings Leaderboard'
+              : 'Casino High Rollers & Top Winners'
+            }
           </h1>
+
           <p className="text-xs sm:text-sm text-[#94A3B8]">
-            Real-time live leaderboard aggregated across all 12 Provably Fair games and Four-Digit Lottery draws.
+            {activeLeaderboardType === 'wallet'
+              ? 'Real-time standings of players ranked by genuine FLO Coin balance stored in the database. 1 FLO Coin = 1 USDT.'
+              : 'Rankings calculated across all 12 Provably Fair games and lottery draws with cryptographic verification.'
+            }
           </p>
         </div>
 
-        {/* 3-PERSON PODIUM */}
-        {displayList.length >= 3 && (
+        {/* 3-PERSON VISUAL PODIUM */}
+        {activeList.length >= 3 && (
           <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-2xl mx-auto items-end pt-4">
             
             {/* Rank 2 (Silver) */}
@@ -167,10 +280,21 @@ export default function LeaderboardView() {
               </div>
 
               <div className="mt-2 pt-2 border-t border-[#1F2737] w-full">
-                <span className="font-mono-numbers font-black text-xs sm:text-sm text-slate-300 block">
-                  {Number(metricFilter === 'multiplier' ? top2.biggest_mult : top2.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
-                </span>
-                <span className="text-[9px] text-[#64748B] uppercase">Top: {top2.biggest_mult}x · {top2.rounds_count} bets</span>
+                {activeLeaderboardType === 'wallet' ? (
+                  <>
+                    <span className="font-mono-numbers font-black text-xs sm:text-sm text-slate-200 block">
+                      {Number(top2.wallet_balance || 0).toLocaleString()} FLO
+                    </span>
+                    <span className="text-[9px] text-[#64748B] uppercase">≈ ${Number(top2.usdt_value || 0).toLocaleString()} USDT</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-mono-numbers font-black text-xs sm:text-sm text-slate-300 block">
+                      {Number(metricFilter === 'multiplier' ? top2.biggest_mult : top2.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
+                    </span>
+                    <span className="text-[9px] text-[#64748B] uppercase">Top: {top2.biggest_mult}x · {top2.rounds_count} bets</span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -196,18 +320,27 @@ export default function LeaderboardView() {
               </div>
 
               <div className="mt-3 pt-2 border-t border-amber-400/30 w-full">
-                <span className="font-mono-numbers font-black text-sm sm:text-base text-amber-300 block">
-                  {Number(metricFilter === 'multiplier' ? top1.biggest_mult : top1.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
-                </span>
-                <span className="text-[10px] text-amber-400/80 uppercase font-bold">
-                  Top: {top1.biggest_mult}x · {top1.rounds_count} bets
-                </span>
+                {activeLeaderboardType === 'wallet' ? (
+                  <>
+                    <span className="font-mono-numbers font-black text-sm sm:text-base text-amber-300 block">
+                      {Number(top1.wallet_balance || 0).toLocaleString()} FLO
+                    </span>
+                    <span className="text-[10px] text-amber-400/80 uppercase font-mono-numbers">≈ ${Number(top1.usdt_value || 0).toLocaleString()} USDT</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-mono-numbers font-black text-sm sm:text-base text-amber-300 block">
+                      {Number(metricFilter === 'multiplier' ? top1.biggest_mult : top1.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
+                    </span>
+                    <span className="text-[9px] text-[#64748B] uppercase">Top: {top1.biggest_mult}x · {top1.rounds_count} bets</span>
+                  </>
+                )}
               </div>
             </div>
 
             {/* Rank 3 (Bronze) */}
-            <div className="rounded-2xl bg-[#0B0F19] border border-amber-700/30 p-3 sm:p-4 text-center flex flex-col items-center shadow-lg relative order-3">
-              <div className="w-8 h-8 rounded-full bg-amber-700/20 border border-amber-600 text-amber-500 flex items-center justify-center font-black text-sm mb-2">
+            <div className="rounded-2xl bg-[#0B0F19] border border-amber-700/40 p-3 sm:p-4 text-center flex flex-col items-center shadow-lg relative order-3">
+              <div className="w-8 h-8 rounded-full bg-amber-700/20 border border-amber-600 text-amber-400 flex items-center justify-center font-black text-sm mb-2">
                 3
               </div>
               <span className="text-2xl mb-1">🥉</span>
@@ -223,10 +356,21 @@ export default function LeaderboardView() {
               </div>
 
               <div className="mt-2 pt-2 border-t border-[#1F2737] w-full">
-                <span className="font-mono-numbers font-black text-xs sm:text-sm text-amber-500 block">
-                  {Number(metricFilter === 'multiplier' ? top3.biggest_mult : top3.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
-                </span>
-                <span className="text-[9px] text-[#64748B] uppercase">Top: {top3.biggest_mult}x · {top3.rounds_count} bets</span>
+                {activeLeaderboardType === 'wallet' ? (
+                  <>
+                    <span className="font-mono-numbers font-black text-xs sm:text-sm text-amber-500 block">
+                      {Number(top3.wallet_balance || 0).toLocaleString()} FLO
+                    </span>
+                    <span className="text-[9px] text-[#64748B] uppercase">≈ ${Number(top3.usdt_value || 0).toLocaleString()} USDT</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-mono-numbers font-black text-xs sm:text-sm text-amber-500 block">
+                      {Number(metricFilter === 'multiplier' ? top3.biggest_mult : top3.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
+                    </span>
+                    <span className="text-[9px] text-[#64748B] uppercase">Top: {top3.biggest_mult}x · {top3.rounds_count} bets</span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -234,7 +378,7 @@ export default function LeaderboardView() {
         )}
       </div>
 
-      {/* 2. USER'S PERSONAL STANDING BANNER (If authenticated) */}
+      {/* 3. USER'S PERSONAL STANDING BANNER */}
       {wallet?.address && (
         <div className="rounded-2xl bg-gradient-to-r from-amber-500/15 via-[#151C2B] to-[#111827] border border-amber-500/30 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
           <div className="flex items-center gap-3">
@@ -249,7 +393,7 @@ export default function LeaderboardView() {
                 </span>
               </div>
               <p className="text-xs text-[#94A3B8]">
-                {wallet.address} · Balance: <strong className="text-amber-300 font-mono-numbers">{Number(wallet.balance || 0).toLocaleString()} FC</strong>
+                {wallet.address} · Available Balance: <strong className="text-amber-300 font-mono-numbers">{Number(wallet.balance || 0).toLocaleString()} FLO (≈ ${Number(wallet.balance || 0).toLocaleString()} USDT)</strong>
               </p>
             </div>
           </div>
@@ -259,10 +403,10 @@ export default function LeaderboardView() {
               onClick={() => {
                 playClick();
                 setIsRefreshing(true);
-                fetchLeaderboard();
+                refreshAll();
               }}
-              className="px-3 py-1.5 rounded-xl bg-[#0B0F19] hover:bg-[#151C2B] border border-[#2D3545] text-amber-400 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-              title="Refresh Leaderboard"
+              className="px-3 py-1.5 rounded-xl bg-[#0B0F19] hover:bg-[#151C2B] border border-[#2D3545] text-amber-400 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Sync with live database"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
               <span>Sync</span>
@@ -271,65 +415,84 @@ export default function LeaderboardView() {
         </div>
       )}
 
-      {/* 3. FILTER CONTROLS (TIMEFRAME, METRIC & GAME) */}
+      {/* 4. FILTER CONTROLS & SEARCH */}
       <div className="space-y-3">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           
-          {/* Timeframe Tabs */}
-          <div className="flex items-center gap-1 bg-[#111827] p-1 rounded-xl border border-[#1F2737]">
-            {[
-              { id: 'all', label: 'All Time' },
-              { id: 'weekly', label: 'Past 7 Days' },
-              { id: 'today', label: 'Today (24H)' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  playClick();
-                  setTimeFilter(tab.id);
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  timeFilter === tab.id
-                    ? 'bg-amber-400 text-black shadow-sm'
-                    : 'text-[#94A3B8] hover:text-white'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          {/* If Games view is active: show Timeframe & Metric tabs */}
+          {activeLeaderboardType === 'games' ? (
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <div className="flex items-center gap-1 bg-[#111827] p-1 rounded-xl border border-[#1F2737]">
+                {[
+                  { id: 'all', label: 'All Time' },
+                  { id: 'weekly', label: 'Past 7 Days' },
+                  { id: 'today', label: 'Today (24H)' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      playClick();
+                      setTimeFilter(tab.id);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      timeFilter === tab.id
+                        ? 'bg-amber-400 text-black shadow-sm'
+                        : 'text-[#94A3B8] hover:text-white'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
-          {/* Metric Selector */}
-          <div className="flex items-center gap-1 bg-[#111827] p-1 rounded-xl border border-[#1F2737]">
-            {[
-              { id: 'earnings', label: 'Most FC Won' },
-              { id: 'multiplier', label: 'Biggest Multiplier' },
-              { id: 'wagered', label: 'Total Wagered' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  playClick();
-                  setMetricFilter(tab.id);
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  metricFilter === tab.id
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-sm'
-                    : 'text-[#94A3B8] hover:text-white'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+              <div className="flex items-center gap-1 bg-[#111827] p-1 rounded-xl border border-[#1F2737]">
+                {[
+                  { id: 'earnings', label: 'Most FC Won' },
+                  { id: 'multiplier', label: 'Top Multiplier' },
+                  { id: 'wagered', label: 'Total Wagered' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      playClick();
+                      setMetricFilter(tab.id);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      metricFilter === tab.id
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-sm'
+                        : 'text-[#94A3B8] hover:text-white'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Virtual Wallet Leaderboard Info Pill */
+            <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
+              <Coins className="w-4 h-4 text-amber-400" />
+              <span>Ranked strictly by verified virtual wallet balance in Supabase database</span>
+            </div>
+          )}
+
+          {/* Search Player Input */}
+          <div className="relative w-full sm:w-56 shrink-0">
+            <Search className="w-3.5 h-3.5 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search username or address..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#111827] border border-[#1F2737] focus:border-amber-400 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-[#64748B] outline-none shadow-sm"
+            />
           </div>
 
         </div>
 
-        {/* Game Filters Strip & Search Input */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
-          
-          {/* Game Selection Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 no-scrollbar text-xs">
+        {/* If Games view is active: show Game selection filter */}
+        {activeLeaderboardType === 'games' && (
+          <div className="flex items-center gap-1.5 overflow-x-auto w-full pb-1 no-scrollbar text-xs">
             {GAME_OPTIONS.map(g => (
               <button
                 key={g.id}
@@ -347,136 +510,189 @@ export default function LeaderboardView() {
               </button>
             ))}
           </div>
-
-          {/* Search Input */}
-          <div className="relative w-full sm:w-48 shrink-0">
-            <Search className="w-3.5 h-3.5 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search player..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#111827] border border-[#1F2737] focus:border-amber-400 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-[#64748B] outline-none"
-            />
-          </div>
-
-        </div>
+        )}
       </div>
 
-      {/* 4. LEADERBOARD DATA TABLE */}
+      {/* 5. LEADERBOARD DATA TABLE */}
       <div className="rounded-3xl bg-[#111827] border border-[#1F2737] overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-[#0B0F19] text-[#94A3B8] font-mono-numbers uppercase text-[10px] tracking-wider border-b border-[#1F2737]">
-              <tr>
-                <th className="py-3 px-4">Rank</th>
-                <th className="py-3 px-4">Player</th>
-                <th className="py-3 px-4">VIP Rank</th>
-                <th className="py-3 px-4 text-right">
-                  {metricFilter === 'multiplier' ? 'Peak Multiplier' : metricFilter === 'wagered' ? 'Total Wagered' : 'Total Net Profit'}
-                </th>
-                <th className="py-3 px-4 text-right">Rounds</th>
-                <th className="py-3 px-4 text-center">Favorite</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#1F2737] font-mono-numbers">
-              {displayList.length === 0 ? (
+              {activeLeaderboardType === 'wallet' ? (
                 <tr>
-                  <td colSpan="6" className="py-12 text-center text-[#94A3B8]">
+                  <th className="py-3.5 px-4">Rank</th>
+                  <th className="py-3.5 px-4">Player</th>
+                  <th className="py-3.5 px-4">VIP Tier</th>
+                  <th className="py-3.5 px-4 text-right">Virtual Balance (FLO)</th>
+                  <th className="py-3.5 px-4 text-right">USDT Value (1:1)</th>
+                  <th className="py-3.5 px-4 text-right">Lifetime Won</th>
+                  <th className="py-3.5 px-4 text-center">Status</th>
+                </tr>
+              ) : (
+                <tr>
+                  <th className="py-3.5 px-4">Rank</th>
+                  <th className="py-3.5 px-4">Player</th>
+                  <th className="py-3.5 px-4">VIP Rank</th>
+                  <th className="py-3.5 px-4 text-right">
+                    {metricFilter === 'multiplier' ? 'Peak Multiplier' : metricFilter === 'wagered' ? 'Total Wagered' : 'Total Net Profit'}
+                  </th>
+                  <th className="py-3.5 px-4 text-right">Rounds</th>
+                  <th className="py-3.5 px-4 text-center">Favorite</th>
+                </tr>
+              )}
+            </thead>
+
+            <tbody className="divide-y divide-[#1F2737] font-mono-numbers">
+              {loading && activeList.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="py-16 text-center text-[#94A3B8]">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <RefreshCw className="w-6 h-6 animate-spin text-amber-400" />
+                      <span className="text-xs">Loading genuine database rankings...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : activeList.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="py-12 text-center text-[#94A3B8]">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <Trophy className="w-8 h-8 text-amber-500/30" />
-                      <span className="font-display font-bold text-sm text-white">No Leaderboard Standings Yet</span>
+                      <span className="font-display font-bold text-sm text-white">No Standings Found</span>
                       <span className="text-xs text-[#64748B] max-w-sm">
-                        Place bets on any of the 12 Provably Fair games or lottery rounds to claim the #1 spot!
+                        {activeLeaderboardType === 'wallet'
+                          ? 'No active virtual wallets matching this search.'
+                          : 'Place bets on any casino game or lottery round to claim the #1 spot!'}
                       </span>
                     </div>
                   </td>
                 </tr>
               ) : (
-                displayList.map((row) => {
-                const isTop1 = row.rank === 1;
-                const isTop2 = row.rank === 2;
-                const isTop3 = row.rank === 3;
-                const isMe = wallet?.address && row.address?.toLowerCase() === wallet.address?.toLowerCase();
-                const vipInfo = getVipBadge(row.vip_tier);
+                activeList.map((row) => {
+                  const isTop1 = row.rank === 1;
+                  const isTop2 = row.rank === 2;
+                  const isTop3 = row.rank === 3;
+                  const targetAddr = wallet?.address?.toLowerCase();
+                  const isMe = targetAddr && (
+                    (row.raw_address && row.raw_address.toLowerCase() === targetAddr) ||
+                    (row.address && row.address.toLowerCase() === targetAddr)
+                  );
+                  const vipInfo = getVipBadge(row.vip_tier);
 
-                return (
-                  <tr
-                    key={row.rank}
-                    className={`transition-colors ${
-                      isMe 
-                        ? 'bg-amber-500/10 hover:bg-amber-500/15' 
-                        : isTop1
-                        ? 'bg-amber-400/5 hover:bg-amber-400/10'
-                        : 'hover:bg-white/5'
-                    }`}
-                  >
-                    {/* Rank */}
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        {isTop1 ? (
-                          <span className="w-6 h-6 rounded-full bg-amber-400 text-black font-black flex items-center justify-center text-xs shadow">1</span>
-                        ) : isTop2 ? (
-                          <span className="w-6 h-6 rounded-full bg-slate-300 text-black font-black flex items-center justify-center text-xs shadow">2</span>
-                        ) : isTop3 ? (
-                          <span className="w-6 h-6 rounded-full bg-amber-700 text-white font-black flex items-center justify-center text-xs shadow">3</span>
-                        ) : (
-                          <span className="text-[#94A3B8] font-bold pl-1.5">#{row.rank}</span>
-                        )}
-                      </div>
-                    </td>
+                  return (
+                    <tr
+                      key={row.rank}
+                      className={`transition-colors ${
+                        isMe 
+                          ? 'bg-amber-500/10 hover:bg-amber-500/15' 
+                          : isTop1
+                          ? 'bg-amber-400/5 hover:bg-amber-400/10'
+                          : 'hover:bg-white/5'
+                      }`}
+                    >
+                      {/* Rank */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          {isTop1 ? (
+                            <span className="w-6 h-6 rounded-full bg-amber-400 text-black font-black flex items-center justify-center text-xs shadow">1</span>
+                          ) : isTop2 ? (
+                            <span className="w-6 h-6 rounded-full bg-slate-300 text-black font-black flex items-center justify-center text-xs shadow">2</span>
+                          ) : isTop3 ? (
+                            <span className="w-6 h-6 rounded-full bg-amber-700 text-white font-black flex items-center justify-center text-xs shadow">3</span>
+                          ) : (
+                            <span className="text-[#94A3B8] font-bold pl-1.5">#{row.rank}</span>
+                          )}
+                        </div>
+                      </td>
 
-                    {/* Player Info */}
-                    <td className="py-3 px-4">
-                      <div className="flex flex-col">
-                        <span className={`font-display font-bold text-xs ${isMe ? 'text-amber-300' : 'text-white'}`}>
-                          @{row.username} {isMe && <span className="text-[10px] text-amber-400 font-bold">(You)</span>}
-                        </span>
-                        <span className="text-[10px] text-[#64748B]">
-                          {row.address ? `${row.address.slice(0, 6)}...${row.address.slice(-4)}` : 'Verified'}
-                        </span>
-                      </div>
-                    </td>
+                      {/* Player Info */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex flex-col">
+                          <span className={`font-display font-bold text-xs ${isMe ? 'text-amber-300' : 'text-white'}`}>
+                            @{row.username} {isMe && <span className="text-[10px] text-amber-400 font-bold">(You)</span>}
+                          </span>
+                          <span className="text-[10px] text-[#64748B]">
+                            {row.address || 'Verified User'}
+                          </span>
+                        </div>
+                      </td>
 
-                    {/* VIP Rank */}
-                    <td className="py-3 px-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${vipInfo.color}`}>
-                        <span>{vipInfo.icon}</span>
-                        <span>{row.vip_tier || 'Bronze'}</span>
-                      </span>
-                    </td>
+                      {/* VIP Rank */}
+                      <td className="py-3.5 px-4">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${vipInfo.color}`}>
+                          <span>{vipInfo.icon}</span>
+                          <span>{row.vip_tier || 'Bronze'}</span>
+                        </span>
+                      </td>
 
-                    {/* Metric Column */}
-                    <td className="py-3 px-4 text-right">
-                      {metricFilter === 'multiplier' ? (
-                        <span className="font-extrabold text-amber-400 text-sm">
-                          {Number(row.biggest_mult || 0).toFixed(2)}x
-                        </span>
-                      ) : metricFilter === 'wagered' ? (
-                        <span className="font-bold text-slate-200 text-xs">
-                          {Number(row.total_wagered || 0).toLocaleString()} <span className="text-[10px] text-amber-400">FC</span>
-                        </span>
+                      {/* Columns depend on activeLeaderboardType */}
+                      {activeLeaderboardType === 'wallet' ? (
+                        <>
+                          {/* Wallet Balance (FLO Coins) */}
+                          <td className="py-3.5 px-4 text-right">
+                            <span className="font-extrabold text-amber-300 text-sm">
+                              {Number(row.wallet_balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>{' '}
+                            <span className="text-[10px] font-bold text-amber-400">FLO</span>
+                          </td>
+
+                          {/* USDT Value */}
+                          <td className="py-3.5 px-4 text-right">
+                            <span className="font-bold text-emerald-400 text-xs">
+                              ${Number(row.usdt_value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>{' '}
+                            <span className="text-[9px] text-white/50">USDT</span>
+                          </td>
+
+                          {/* Lifetime Won */}
+                          <td className="py-3.5 px-4 text-right text-[#94A3B8]">
+                            {Number(row.lifetime_won || 0).toLocaleString()} FC
+                          </td>
+
+                          {/* Verified Status */}
+                          <td className="py-3.5 px-4 text-center">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                              <span>Verified</span>
+                            </span>
+                          </td>
+                        </>
                       ) : (
-                        <span className="font-extrabold text-emerald-400 text-xs">
-                          +{Number(row.total_won_fc || 0).toLocaleString()} <span className="text-[10px] text-amber-400">FC</span>
-                        </span>
+                        <>
+                          {/* Metric Column */}
+                          <td className="py-3.5 px-4 text-right">
+                            {metricFilter === 'multiplier' ? (
+                              <span className="font-extrabold text-amber-400 text-sm">
+                                {Number(row.biggest_mult || 0).toFixed(2)}x
+                              </span>
+                            ) : metricFilter === 'wagered' ? (
+                              <span className="font-bold text-slate-200 text-xs">
+                                {Number(row.total_wagered || 0).toLocaleString()} <span className="text-[10px] text-amber-400">FC</span>
+                              </span>
+                            ) : (
+                              <span className="font-extrabold text-emerald-400 text-xs">
+                                +{Number(row.total_won_fc || 0).toLocaleString()} <span className="text-[10px] text-amber-400">FC</span>
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Rounds Played */}
+                          <td className="py-3.5 px-4 text-right text-[#94A3B8]">
+                            {row.rounds_count}
+                          </td>
+
+                          {/* Fav Game */}
+                          <td className="py-3.5 px-4 text-center">
+                            <span className="px-2 py-0.5 rounded bg-[#0B0F19] text-[#94A3B8] border border-[#1F2737] text-[10px] font-bold uppercase">
+                              {row.fav_game || 'Casino'}
+                            </span>
+                          </td>
+                        </>
                       )}
-                    </td>
 
-                    {/* Rounds Played */}
-                    <td className="py-3 px-4 text-right text-[#94A3B8]">
-                      {row.rounds_count}
-                    </td>
-
-                    {/* Fav Game */}
-                    <td className="py-3 px-4 text-center">
-                      <span className="px-2 py-0.5 rounded bg-[#0B0F19] text-[#94A3B8] border border-[#1F2737] text-[10px] font-bold uppercase">
-                        {row.fav_game || 'Casino'}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              }))}
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

@@ -144,10 +144,10 @@ export default function Sidebar({
   };
 
   const sidebarContent = (
-    <div className="h-full flex flex-col justify-between overflow-y-auto no-scrollbar py-3 px-2 sm:px-2.5 text-left">
+    <div className="h-full flex flex-col overflow-hidden py-3 px-2 sm:px-2.5 text-left relative">
       
-      {/* Top Header / Collapse & Close Controls */}
-      <div className={`flex items-center pb-3 mb-2 border-b border-[#1F2737] ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+      {/* Top Header / Collapse & Close Controls — Fixed Stationary Header */}
+      <div className={`shrink-0 flex items-center pb-3 mb-2 border-b border-[#1F2737] bg-[#0B0F19] z-20 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         {!isCollapsed && (
           <div className="flex items-center gap-2 pl-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_#ffd700]" />
@@ -161,7 +161,7 @@ export default function Sidebar({
         {!isCollapsed ? (
           <button
             onClick={onToggleCollapse}
-            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-amber-300 border border-[#1F2737] hover:border-amber-400/50 transition-all cursor-pointer shadow-sm text-xs font-bold"
+            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-amber-300 border border-[#1F2737] hover:border-amber-400/50 transition-all cursor-pointer shadow-sm text-xs font-bold shrink-0"
             title="Collapse Sidebar"
             aria-label="Collapse Sidebar"
           >
@@ -171,7 +171,7 @@ export default function Sidebar({
         ) : (
           <button
             onClick={onToggleCollapse}
-            className="hidden lg:flex w-9 h-9 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-amber-300 items-center justify-center border border-[#1F2737] hover:border-amber-400/50 transition-all cursor-pointer mx-auto shadow-sm"
+            className="hidden lg:flex w-9 h-9 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-amber-300 items-center justify-center border border-[#1F2737] hover:border-amber-400/50 transition-all cursor-pointer mx-auto shadow-sm shrink-0"
             title="Expand Sidebar"
             aria-label="Expand Sidebar"
           >
@@ -182,7 +182,7 @@ export default function Sidebar({
         {/* Mobile & Tablet Close Button (< 1024px) */}
         <button
           onClick={onClose}
-          className="lg:hidden min-w-[44px] min-h-[44px] rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-rose-400/40 transition-colors cursor-pointer"
+          className="lg:hidden min-w-[44px] min-h-[44px] rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-rose-400/40 transition-colors cursor-pointer shrink-0"
           title="Close Navigation Menu"
           aria-label="Close Navigation Menu"
         >
@@ -190,8 +190,8 @@ export default function Sidebar({
         </button>
       </div>
 
-      {/* Navigation Sections */}
-      <div className="flex-1 space-y-3.5">
+      {/* Navigation Sections — Scrollable Menu Items Area */}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar space-y-3.5 pr-0.5">
         {navSections.map((sec, secIdx) => (
           <div key={secIdx} className="space-y-1">
             {!isCollapsed ? (
@@ -259,8 +259,8 @@ export default function Sidebar({
         ))}
       </div>
 
-      {/* Bottom Balance & Faucet Banner */}
-      <div className="pt-2.5 mt-3 border-t border-[#1F2737]">
+      {/* Bottom Balance & Faucet Banner — Fixed Stationary Footer */}
+      <div className="shrink-0 pt-2.5 mt-auto border-t border-[#1F2737] bg-[#0B0F19] z-20">
         {!isCollapsed ? (
           <div className="bg-[#111827] border border-[#1F2737] p-2.5 rounded-2xl">
             <span className="text-[9px] uppercase font-bold text-[#94A3B8] block">Wallet Balance</span>

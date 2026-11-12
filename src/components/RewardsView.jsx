@@ -106,7 +106,18 @@ const ACHIEVEMENTS = [
 ];
 
 export default function RewardsView() {
-  const { wallet, setWallet, user, claimDailyBonus, showToast, setIsAuthModalOpen, fetchWalletLedger, setActiveTab } = useLottery();
+  const { 
+    wallet, 
+    setWallet, 
+    user, 
+    claimDailyBonus, 
+    claimDailyFloReward,
+    getDailyFloRewardStatus,
+    showToast, 
+    setIsAuthModalOpen, 
+    fetchWalletLedger, 
+    setActiveTab 
+  } = useLottery();
   const { soundFX, playClick, playRouletteSpin, playDialTick, playWinFanfare } = useSoundFX();
 
   // VIP State
@@ -119,10 +130,73 @@ export default function RewardsView() {
   const [wheelCooldownSeconds, setWheelCooldownSeconds] = useState(0);
   const [recentPrize, setRecentPrize] = useState(null);
 
-  // Streak & Achievements
+  // Unified 7-Day Daily Streak State
+  const [dailyRewardStatus, setDailyRewardStatus] = useState({
+    canClaim: true,
+    secondsRemaining: 0,
+    availableReward: 0.10,
+    currentStreak: 1,
+    nextStreak: 2,
+    nextRewardAmount: 0.15,
+    checkinSettings: null
+  });
+  const [isClaimingStreak, setIsClaimingStreak] = useState(false);
+
+  // Achievements
   const [claimedAchievements, setClaimedAchievements] = useState([]);
-  const [isClaimingDaily, setIsClaimingDaily] = useState(false);
-  const currentStreakDay = Math.max(1, Math.min(7, vipData?.streak_days || 1));
+
+  // Fetch Unified Daily Streak Status from Database
+  const refreshDailyRewardStatus = async () => {
+    if (getDailyFloRewardStatus) {
+      const status = await getDailyFloRewardStatus();
+      setDailyRewardStatus(status);
+    }
+  };
+
+  useEffect(() => {
+    refreshDailyRewardStatus();
+  }, [wallet?.address, user?.id]);
+
+  // Tick countdown timer for streak cooldown
+  useEffect(() => {
+    if (dailyRewardStatus.secondsRemaining <= 0) return;
+    const interval = setInterval(() => {
+      setDailyRewardStatus(prev => {
+        if (prev.secondsRemaining <= 1) {
+          refreshDailyRewardStatus();
+          return { ...prev, canClaim: true, secondsRemaining: 0 };
+        }
+        return { ...prev, secondsRemaining: prev.secondsRemaining - 1 };
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [dailyRewardStatus.secondsRemaining]);
+
+  // Claim Unified Daily Reward
+  const handleClaimDailyStreak = async () => {
+    if (isClaimingStreak || !dailyRewardStatus.canClaim) return;
+
+    if (!user || !wallet?.address) {
+      showToast('Please log in with Flow Coins to claim your daily reward!', 'info');
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    setIsClaimingStreak(true);
+    playClick();
+
+    try {
+      const fn = claimDailyFloReward || claimDailyBonus;
+      const res = await fn();
+      if (res?.success) {
+        playWinFanfare('big');
+        await refreshDailyRewardStatus();
+        fetchVipStatus();
+      }
+    } finally {
+      setIsClaimingStreak(false);
+    }
+  };
 
   // Load VIP Status and Cooldowns
   const fetchVipStatus = async () => {
@@ -548,52 +622,86 @@ export default function RewardsView() {
         </div>
       </div>
 
-      {/* 4. 7-DAY STREAK CALENDAR */}
-      <div className="rounded-3xl bg-[#111827] border border-[#1F2737] p-6 space-y-4 shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#1F2737]">
+      {/* 4. UNIFIED 7-DAY STREAK & DAILY BONUS CLAIM */}
+      <div className="rounded-3xl bg-[#111827] border border-[#1F2737] p-6 sm:p-7 space-y-5 shadow-2xl relative overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#1F2737]">
           <div>
-            <h2 className="font-display font-extrabold text-lg text-white flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-amber-400" />
-              <span>7-Day Consecutive Daily Streak</span>
-            </h2>
+            <div className="flex items-center gap-2 mb-1">
+              <h2 className="font-display font-extrabold text-lg sm:text-xl text-white flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-amber-400" />
+                <span>7-Day Daily Check-In & Bonus Faucet</span>
+              </h2>
+              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/20 text-[#ffd700] border border-amber-500/40 uppercase font-bold tracking-wider">
+                1 FLO = 1 USDT
+              </span>
+              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 uppercase font-bold tracking-wider">
+                Day {dailyRewardStatus.currentStreak || 1} of 7
+              </span>
+            </div>
             <p className="text-xs text-[#94A3B8]">
-              Log in every 24 hours to claim your streak gift. Reach Day 7 to unlock the 500 FC Jackpot!
+              {dailyRewardStatus.canClaim
+                ? `Ready to claim! Available today: +${(dailyRewardStatus.availableReward || 0.10).toFixed(2)} FLO (≈ $${(dailyRewardStatus.availableReward || 0.10).toFixed(2)} USDT).`
+                : `Reward claimed for today! Day ${dailyRewardStatus.nextStreak || 2} reward (+${(dailyRewardStatus.nextRewardAmount || 0.15).toFixed(2)} FLO) unlocks in ${formatCooldown(dailyRewardStatus.secondsRemaining)}.`
+              }
             </p>
           </div>
 
+          {/* Unified Authoritative Claim Button */}
           <button
-            onClick={() => {
-              playClick();
-              if (setActiveTab) setActiveTab('wallet');
-            }}
-            className="px-5 py-2.5 rounded-xl btn-gold text-xs font-black flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/20 shrink-0 hover:scale-105 transition-all"
+            onClick={handleClaimDailyStreak}
+            disabled={!dailyRewardStatus.canClaim || isClaimingStreak}
+            className={`px-6 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2.5 shadow-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              dailyRewardStatus.canClaim
+                ? 'btn-gold shadow-amber-500/30 hover:scale-105'
+                : 'bg-[#151C2B] text-[#94A3B8] border border-[#2D3545] cursor-not-allowed shadow-none'
+            }`}
           >
-            <Gift className="w-4 h-4 text-black animate-bounce" />
-            <span>Claim in Wallet</span>
+            {isClaimingStreak ? (
+              <>
+                <RotateCcw className="w-4 h-4 animate-spin text-amber-300" />
+                <span>Crediting Wallet...</span>
+              </>
+            ) : dailyRewardStatus.canClaim ? (
+              <>
+                <Gift className="w-4 h-4 text-black animate-bounce" />
+                <span>Claim Day {dailyRewardStatus.currentStreak || 1} (+{(dailyRewardStatus.availableReward || 0.10).toFixed(2)} FLO)</span>
+              </>
+            ) : (
+              <>
+                <Clock className="w-4 h-4 text-amber-400" />
+                <span>Claimed (Unlocks in {formatCooldown(dailyRewardStatus.secondsRemaining)})</span>
+              </>
+            )}
           </button>
         </div>
 
         {/* 7 Day Blocks Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 pt-2">
-          {STREAK_DAYS.map((s) => {
-            const isCompleted = s.day < currentStreakDay;
-            const isCurrent = s.day === currentStreakDay;
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 pt-1">
+          {[1, 2, 3, 4, 5, 6, 7].map((day) => {
+            const currentDayNum = dailyRewardStatus.currentStreak || 1;
+            const isCompleted = day < currentDayNum || (!dailyRewardStatus.canClaim && day === currentDayNum);
+            const isCurrent = day === currentDayNum && dailyRewardStatus.canClaim;
+            const defaultRewards = [0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 1.00];
+            const rewardVal = dailyRewardStatus.checkinSettings?.streak_rewards?.[`day${day}`] !== undefined 
+              ? Number(dailyRewardStatus.checkinSettings.streak_rewards[`day${day}`]) 
+              : defaultRewards[day - 1];
+            const isJackpot = day === 7;
 
             return (
               <div
-                key={s.day}
+                key={day}
                 className={`rounded-2xl p-4 flex flex-col items-center text-center justify-between border transition-all ${
                   isCurrent
                     ? 'bg-gradient-to-b from-amber-500/20 to-amber-950/40 border-amber-400 shadow-[0_0_20px_rgba(245,196,81,0.25)] scale-105'
                     : isCompleted
                     ? 'bg-[#0B0F19]/90 border-emerald-500/40 text-emerald-300'
-                    : s.isJackpot
+                    : isJackpot
                     ? 'bg-purple-950/30 border-purple-500/30 text-purple-300'
                     : 'bg-[#0B0F19] border-[#1F2737] text-[#94A3B8] opacity-75'
                 }`}
               >
                 <div className="w-full flex items-center justify-between text-[10px] font-mono-numbers font-bold mb-2">
-                  <span>Day {s.day}</span>
+                  <span>Day {day}</span>
                   {isCompleted ? (
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   ) : isCurrent ? (
@@ -604,17 +712,20 @@ export default function RewardsView() {
                 </div>
 
                 <div className="text-3xl my-2">
-                  {s.isJackpot ? '💎' : '🪙'}
+                  {isJackpot ? '💎' : '🪙'}
                 </div>
 
                 <div className="w-full pt-1">
                   <span className={`font-mono-numbers font-black text-sm block ${
                     isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-white'
                   }`}>
-                    +{s.amount} FC
+                    +{rewardVal.toFixed(2)} FLO
                   </span>
-                  <span className="text-[9px] uppercase tracking-wider block opacity-70 mt-0.5">
-                    {isCompleted ? 'Claimed' : isCurrent ? 'Available' : 'Locked'}
+                  <span className="text-[10px] text-white/50 font-mono-numbers block mt-0.5">
+                    ≈ ${rewardVal.toFixed(2)} USDT
+                  </span>
+                  <span className="text-[9px] uppercase tracking-wider block opacity-80 mt-1 font-bold">
+                    {isCompleted ? 'Claimed' : isCurrent ? 'Available' : isJackpot ? 'Jackpot' : 'Locked'}
                   </span>
                 </div>
               </div>
