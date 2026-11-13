@@ -248,7 +248,7 @@ export default function Sidebar({
     <>
       {/* 1. Desktop Persistent Sidebar (68px when collapsed on laptop, 240px expanded on desktop) */}
       <aside 
-        className={`hidden lg:block shrink-0 bg-[#0B0F19] border-r border-[#1F2737] transition-all duration-300 z-30 sticky top-13 xs:top-14 sm:top-16 h-[calc(100vh-3.25rem)] sm:h-[calc(100vh-4rem)] ${
+        className={`hidden lg:flex flex-col shrink-0 bg-[#0B0F19] border-r border-[#1F2737] transition-all duration-300 z-30 h-full ${
           isCollapsed ? 'w-[68px]' : 'w-60'
         }`}
       >

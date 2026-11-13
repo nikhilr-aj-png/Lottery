@@ -1424,7 +1424,7 @@ export function LotteryProvider({ children }) {
     if (effectivePath === '/results' || hash === 'results' || tabParam === 'results') return 'results';
     if (effectivePath === '/tickets' || hash === 'tickets' || tabParam === 'tickets') return 'tickets';
     if (effectivePath === '/wallet' || hash === 'wallet' || tabParam === 'wallet') return 'wallet';
-    if (effectivePath === '/transactions' || hash === 'transactions' || tabParam === 'transactions') return 'transactions';
+    if (effectivePath === '/transactions' || effectivePath === '/transaction-history' || hash === 'transactions' || hash === 'transaction-history' || tabParam === 'transactions' || tabParam === 'transaction-history') return 'transactions';
 
     return 'lotteries';
   };
@@ -1457,8 +1457,8 @@ export function LotteryProvider({ children }) {
     } else if (tabName === 'wallet') {
       targetPath = '/?tab=wallet';
       pageTitle = 'USDT Wallet & 24h Payouts · EarnFlow.In';
-    } else if (tabName === 'transactions') {
-      targetPath = '/?tab=transactions';
+    } else if (tabName === 'transactions' || tabName === 'transaction-history') {
+      targetPath = '/transaction-history';
       pageTitle = 'Transaction History · EarnFlow.In';
     }
 

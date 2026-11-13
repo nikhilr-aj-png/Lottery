@@ -23,6 +23,7 @@ import RewardsView from './components/RewardsView';
 import LeaderboardView from './components/LeaderboardView';
 import SupportView from './components/SupportView';
 import TransactionHistoryView from './components/TransactionHistoryView';
+import TransactionHistoryPage from './pages/TransactionHistoryPage';
 import NotificationsModal from './components/NotificationsModal';
 import TermsPage from './pages/TermsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -123,11 +124,32 @@ function LotteryAppContent() {
     return null;
   };
 
+  const isTransactionHistoryRoute = (path) => {
+    if (!path) return false;
+    const cleanPath = path.toLowerCase().split('?')[0].split('#')[0].replace(/\/+$/, '');
+    return cleanPath === '/transaction-history' || cleanPath === '/transactions';
+  };
+
   const [currentGameRoute, setCurrentGameRoute] = useState(() => {
     if (typeof window !== 'undefined') {
       return parseGameRoute(window.location.pathname);
     }
     return null;
+  });
+
+  const [isTransactionRoute, setIsTransactionRoute] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const search = new URLSearchParams(window.location.search || '');
+      const pParam = search.get('p')?.toLowerCase().replace(/\/+$/, '');
+      const path = window.location.pathname;
+      return isTransactionHistoryRoute(path) || 
+             (pParam && isTransactionHistoryRoute('/' + pParam)) ||
+             window.location.hash === '#transaction-history' || 
+             window.location.hash === '#transactions' ||
+             search.get('tab') === 'transactions' ||
+             search.get('tab') === 'transaction-history';
+    }
+    return false;
   });
 
   // Programmatic navigation for SPA routing
@@ -146,6 +168,16 @@ function LotteryAppContent() {
     } else {
       setIsAdminRoute(false);
     }
+
+    const onTx = isTransactionHistoryRoute(path);
+    setIsTransactionRoute(onTx);
+    if (onTx) {
+      setActiveTab('transactions', false);
+      document.title = 'Transaction History · EarnFlow.In';
+    }
+
+    const mainEl = document.getElementById('main-content');
+    if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   
@@ -192,6 +224,20 @@ function LotteryAppContent() {
 
       const gr = parseGameRoute(window.location.pathname);
       setCurrentGameRoute(gr);
+
+      const search = new URLSearchParams(window.location.search || '');
+      const pParam = search.get('p')?.toLowerCase().replace(/\/+$/, '');
+      const onTx = isTransactionHistoryRoute(window.location.pathname) || 
+                   (pParam && isTransactionHistoryRoute('/' + pParam)) ||
+                   window.location.hash === '#transaction-history' || 
+                   window.location.hash === '#transactions' ||
+                   search.get('tab') === 'transactions' ||
+                   search.get('tab') === 'transaction-history';
+      setIsTransactionRoute(onTx);
+      if (onTx) {
+        setActiveTab('transactions', false);
+        document.title = 'Transaction History · EarnFlow.In';
+      }
     };
 
     window.addEventListener('hashchange', handleLocationChange);
@@ -292,10 +338,13 @@ function LotteryAppContent() {
 
   // Otherwise: Pure Public User Platform
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-[#F8FAFC] flex flex-col font-sans">
+    <div className="h-screen h-[100dvh] bg-[#0B0F19] text-[#F8FAFC] flex flex-col font-sans overflow-hidden">
       {/* Top Navbar */}
       <Navbar 
-        onOpenProfile={() => setActiveTab('profile')} 
+        onOpenProfile={() => {
+          setIsTransactionRoute(false);
+          setActiveTab('profile');
+        }} 
         onToggleSidebar={() => {
           if (typeof window !== 'undefined' && window.innerWidth < 1024) {
             setIsMobileSidebarOpen(prev => !prev);
@@ -307,13 +356,16 @@ function LotteryAppContent() {
       />
 
       {/* Live Bets and High Rollers Realtime Activity Ticker */}
-      <LiveBetsTicker onSelectGame={(gid) => {
-        const g = getGameById(gid);
-        navigate('/games/' + (g?.slug || gid));
-      }} />
+      <div className="shrink-0">
+        <LiveBetsTicker onSelectGame={(gid) => {
+          setIsTransactionRoute(false);
+          const g = getGameById(gid);
+          navigate('/games/' + (g?.slug || gid));
+        }} />
+      </div>
 
       {/* Main Layout: Left Navigation Sidebar + Content Area */}
-      <div className="flex-1 flex overflow-hidden w-full max-w-[2000px] mx-auto min-w-0">
+      <div className="flex-1 min-h-0 flex overflow-hidden w-full max-w-[2000px] mx-auto min-w-0">
         
         {/* Left Navigation Sidebar */}
         <Sidebar
@@ -321,74 +373,78 @@ function LotteryAppContent() {
           onClose={() => setIsMobileSidebarOpen(false)}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
-          activeTab={currentGameRoute ? `game-${currentGameRoute.gameSlug}` : activeTab}
+          activeTab={isTransactionRoute ? 'transactions' : (currentGameRoute ? `game-${currentGameRoute.gameSlug}` : activeTab)}
           onSelectTab={(tab) => {
             if (currentGameRoute) {
               navigate('/');
             }
-            if (tab === 'fairness') {
+            if (tab === 'transactions') {
+              navigate('/transaction-history');
+            } else if (tab === 'fairness') {
               setIsFairnessModalOpen(true);
             } else {
+              setIsTransactionRoute(false);
+              navigate(tab === 'lotteries' ? '/' : `/?tab=${tab}`);
               setActiveTab(tab);
             }
           }}
           onLaunchGame={(gid) => {
+            setIsTransactionRoute(false);
             const g = getGameById(gid);
             navigate('/games/' + (g?.slug || gid));
           }}
         />
 
         {/* Main Content Pane */}
-        <main className="flex-1 min-w-0 overflow-y-auto pb-24 md:pb-12 px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 text-left">
+        <main id="main-content" className="flex-1 min-w-0 h-full overflow-y-auto pb-24 md:pb-12 px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 text-left flex flex-col">
           
-          {/* DEDICATED GAME ROUTE VIEW (LOBBY OR DEDICATED ROOM) */}
-          {currentGameRoute ? (
-            <GamePage
-              gameSlug={currentGameRoute.gameSlug}
-              roomId={currentGameRoute.roomId}
-              onNavigate={(path) => navigate(path)}
-              onBackToHome={() => {
-                navigate('/');
-                setActiveTab('lotteries');
-              }}
-            />
-          ) : (
-            <>
-              {/* VIEW 1: MULTI-GAME CASINO LOBBY & FOUR-DIGIT LOTTERY */}
-              {activeTab === 'lotteries' && (
-                <CasinoLobby 
-                  onLaunchGame={(gid) => {
-                    const g = getGameById(gid);
-                    navigate('/games/' + (g?.slug || gid));
-                  }}
-                  onOpenLotteryRules={() => setIsRulesModalOpen(true)}
-                />
-              )}
+          <div className="flex-1">
+            {/* DEDICATED SEPARATE PAGE: TRANSACTION HISTORY */}
+            {(isTransactionRoute || activeTab === 'transactions') ? (
+              <TransactionHistoryPage 
+                onBackToWallet={() => {
+                  navigate('/?tab=wallet');
+                  setActiveTab('wallet');
+                }}
+                onBackToHome={() => {
+                  navigate('/');
+                  setActiveTab('lotteries');
+                }}
+              />
+            ) : currentGameRoute ? (
+              /* DEDICATED GAME ROUTE VIEW (LOBBY OR DEDICATED ROOM) */
+              <GamePage
+                gameSlug={currentGameRoute.gameSlug}
+                roomId={currentGameRoute.roomId}
+                onNavigate={(path) => navigate(path)}
+                onBackToHome={() => {
+                  navigate('/');
+                  setActiveTab('lotteries');
+                }}
+              />
+            ) : (
+              <>
+                {/* VIEW 1: MULTI-GAME CASINO LOBBY & FOUR-DIGIT LOTTERY */}
+                {activeTab === 'lotteries' && (
+                  <CasinoLobby 
+                    onLaunchGame={(gid) => {
+                      const g = getGameById(gid);
+                      navigate('/games/' + (g?.slug || gid));
+                    }}
+                    onOpenLotteryRules={() => setIsRulesModalOpen(true)}
+                  />
+                )}
 
-              {/* VIEW 2: WALLET & 24H PAYOUTS */}
-              {activeTab === 'wallet' && (user ? (
-                <WalletView onOpenTransactionHistory={() => setActiveTab('transactions')} />
-              ) : (
-                <AuthRequiredPrompt 
-                  title="USDT Wallet & 24h Payouts" 
-                  onLogin={() => setIsAuthModalOpen(true)} 
-                  onHome={() => setActiveTab('lotteries')} 
-                />
-              ))}
-
-              {/* VIEW 2B: DEDICATED TRANSACTION HISTORY PAGE */}
-              {activeTab === 'transactions' && (user ? (
-                <TransactionHistoryView 
-                  onBackToWallet={() => setActiveTab('wallet')}
-                  onBackToHome={() => setActiveTab('lotteries')}
-                />
-              ) : (
-                <AuthRequiredPrompt 
-                  title="Transaction History" 
-                  onLogin={() => setIsAuthModalOpen(true)} 
-                  onHome={() => setActiveTab('lotteries')} 
-                />
-              ))}
+                {/* VIEW 2: WALLET & 24H PAYOUTS */}
+                {activeTab === 'wallet' && (user ? (
+                  <WalletView onOpenTransactionHistory={() => navigate('/transaction-history')} />
+                ) : (
+                  <AuthRequiredPrompt 
+                    title="USDT Wallet & 24h Payouts" 
+                    onLogin={() => setIsAuthModalOpen(true)} 
+                    onHome={() => setActiveTab('lotteries')} 
+                  />
+                ))}
 
               {/* VIEW 3: MY TICKETS */}
               {activeTab === 'tickets' && (user ? (
@@ -460,8 +516,108 @@ function LotteryAppContent() {
               )}
             </>
           )}
+          </div>
 
-      </main>
+          {/* Platform Public Footer — Inside Scrollable Main Container */}
+          <footer className="mt-12 sm:mt-16 border-t border-[rgba(245,196,81,0.15)] bg-[#07090d] py-8 sm:py-10 pb-24 md:pb-10 -mx-2.5 xs:-mx-4 sm:-mx-6 lg:-mx-8 px-2.5 xs:px-4 sm:px-6 lg:px-8">
+            <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
+                <div className="flex items-center gap-2.5 xs:gap-3 text-center sm:text-left">
+                  <img 
+                    src="/logo.png" 
+                    alt="EarnFlow.In" 
+                    className="w-8 xs:w-10 h-8 xs:h-10 rounded-full border border-[#ffd700]/40 object-cover shadow-md shrink-0" 
+                  />
+                  <div>
+                    <span className="font-display font-black text-base xs:text-lg text-white">
+                      EarnFlow<span className="text-[#f5c451]">.In</span>
+                    </span>
+                    <p className="text-[11px] xs:text-xs text-[#9b8f7c]">
+                      Provably Fair Casino & Lottery Platform · Flow Coins (FC)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 xs:gap-4 text-[11px] xs:text-xs text-[#9b8f7c] flex-wrap justify-center">
+                  <span className="flex items-center gap-1 text-[#05d5aa]">
+                    <ShieldCheck className="w-3 xs:w-3.5 h-3 xs:h-3.5" />
+                    CertiK Audited
+                  </span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1 text-[#ffd700]">
+                    24-Hour Payout Guarantee
+                  </span>
+                </div>
+              </div>
+              
+              {/* Legal Navigation Links */}
+              <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-[11px] xs:text-xs text-[#9b8f7c]">
+                <div className="text-center sm:text-left leading-relaxed">
+                  © 2026 EarnFlow.In Platform. All drawings and games are provably fair, verifiable on the public ledger with Flow Coins (FC).
+                </div>
+
+                <div className="flex items-center gap-3 xs:gap-4 font-semibold text-[11px] xs:text-xs shrink-0 flex-wrap justify-center sm:justify-end">
+                  <a
+                    href="/contact"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsTransactionRoute(false);
+                      setActiveTab('contact');
+                      const mainEl = document.getElementById('main-content');
+                      if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="hover:text-[#ffd700] transition-colors cursor-pointer text-[#ffd700]"
+                  >
+                    Contact Support
+                  </a>
+                  <span>•</span>
+                  <a
+                    href="/terms-and-conditions"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsTransactionRoute(false);
+                      setActiveTab('terms');
+                      const mainEl = document.getElementById('main-content');
+                      if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="hover:text-[#ffd700] transition-colors cursor-pointer"
+                  >
+                    Terms & Conditions
+                  </a>
+                  <span>•</span>
+                  <a
+                    href="/privacy-policy"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsTransactionRoute(false);
+                      setActiveTab('privacy');
+                      const mainEl = document.getElementById('main-content');
+                      if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="hover:text-[#05d5aa] transition-colors cursor-pointer"
+                  >
+                    Privacy Policy
+                  </a>
+                  {!isInstalled && (
+                    <>
+                      <span>•</span>
+                      <button
+                        onClick={triggerInstall}
+                        className="hover:text-[#ffd700] transition-colors cursor-pointer text-[#ffd700] flex items-center gap-1 font-bold"
+                      >
+                        <span>📲 Install App</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </footer>
+
+        </main>
 
       </div>
 
@@ -516,96 +672,6 @@ function LotteryAppContent() {
       {/* PWA Add to Screen Prompt & Modal */}
       <PwaInstallBanner />
       <PwaInstallModal />
-
-      {/* Platform Public Footer */}
-      <footer className="mt-auto border-t border-[rgba(245,196,81,0.15)] bg-[#07090d] py-8 sm:py-10 pb-24 md:pb-10">
-        <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
-            <div className="flex items-center gap-2.5 xs:gap-3 text-center sm:text-left">
-              <img 
-                src="/logo.png" 
-                alt="EarnFlow.In" 
-                className="w-8 xs:w-10 h-8 xs:h-10 rounded-full border border-[#ffd700]/40 object-cover shadow-md shrink-0" 
-              />
-              <div>
-                <span className="font-display font-black text-base xs:text-lg text-white">
-                  EarnFlow<span className="text-[#f5c451]">.In</span>
-                </span>
-                <p className="text-[11px] xs:text-xs text-[#9b8f7c]">
-                  Provably Fair Casino & Lottery Platform · Flow Coins (FC)
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2.5 xs:gap-4 text-[11px] xs:text-xs text-[#9b8f7c] flex-wrap justify-center">
-              <span className="flex items-center gap-1 text-[#05d5aa]">
-                <ShieldCheck className="w-3 xs:w-3.5 h-3 xs:h-3.5" />
-                CertiK Audited
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1 text-[#ffd700]">
-                24-Hour Payout Guarantee
-              </span>
-            </div>
-          </div>
-          
-          {/* Legal Navigation Links */}
-          <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-[11px] xs:text-xs text-[#9b8f7c]">
-            <div className="text-center sm:text-left leading-relaxed">
-              © 2026 EarnFlow.In Platform. All drawings and games are provably fair, verifiable on the public ledger with Flow Coins (FC).
-            </div>
-
-            <div className="flex items-center gap-3 xs:gap-4 font-semibold text-[11px] xs:text-xs shrink-0 flex-wrap justify-center sm:justify-end">
-              <a
-                href="/contact"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActiveTab('contact');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="hover:text-[#ffd700] transition-colors cursor-pointer text-[#ffd700]"
-              >
-                Contact Support
-              </a>
-              <span>•</span>
-              <a
-                href="/terms-and-conditions"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActiveTab('terms');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="hover:text-[#ffd700] transition-colors cursor-pointer"
-              >
-                Terms & Conditions
-              </a>
-              <span>•</span>
-              <a
-                href="/privacy-policy"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActiveTab('privacy');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="hover:text-[#05d5aa] transition-colors cursor-pointer"
-              >
-                Privacy Policy
-              </a>
-              {!isInstalled && (
-                <>
-                  <span>•</span>
-                  <button
-                    onClick={triggerInstall}
-                    className="hover:text-[#ffd700] transition-colors cursor-pointer text-[#ffd700] flex items-center gap-1 font-bold"
-                  >
-                    <span>📲 Install App</span>
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
