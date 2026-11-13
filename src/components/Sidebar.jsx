@@ -9,8 +9,6 @@ import {
   Headphones, 
   Gift, 
   FileText, 
-  ChevronRight, 
-  ChevronLeft,
   X,
   Sparkles,
   Rocket,
@@ -23,10 +21,6 @@ import {
   Spade,
   Zap,
   LayoutGrid,
-  Medal,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Menu,
   History
 } from 'lucide-react';
 import { useLottery } from '../context/LotteryContext';
@@ -147,35 +141,8 @@ export default function Sidebar({
   };
 
   const sidebarContent = (
-    <div className="h-full flex flex-col overflow-hidden pt-1.5 pb-2.5 px-2 sm:px-2.5 text-left relative">
+    <div className="h-full flex flex-col overflow-hidden pt-3 pb-3 px-2 sm:px-2.5 text-left relative">
       
-      {/* Top Header / Three-Line (Hamburger) Menu Button — Fixed Stationary Header */}
-      <div className={`shrink-0 flex items-center py-1.5 mb-1.5 border-b border-[#1F2737] bg-[#0B0F19] z-20 ${
-        isCollapsed ? 'justify-center' : 'justify-between px-1'
-      }`}>
-        {/* Desktop Three-Line (Hamburger) Menu Button (>= 1024px) */}
-        <button
-          onClick={onToggleCollapse}
-          className={`hidden lg:flex w-9 h-9 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-white items-center justify-center border border-[#1F2737] hover:border-amber-400/50 transition-all cursor-pointer shadow-sm shrink-0 ${
-            isCollapsed ? 'mx-auto' : 'ml-0.5'
-          }`}
-          title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-        >
-          <Menu className="w-4.5 h-4.5 text-amber-400" />
-        </button>
-
-        {/* Mobile & Tablet Close Button (< 1024px) */}
-        <button
-          onClick={onClose}
-          className="lg:hidden w-9 h-9 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-rose-400/40 transition-colors cursor-pointer shrink-0 ml-auto mr-0.5"
-          title="Close Navigation Menu"
-          aria-label="Close Navigation Menu"
-        >
-          <X className="w-4.5 h-4.5 text-rose-400" />
-        </button>
-      </div>
-
       {/* Navigation Sections — Scrollable Menu Items Area */}
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar space-y-3 pr-0.5">
         {navSections.map((sec, secIdx) => (
@@ -185,7 +152,7 @@ export default function Sidebar({
                 {sec.title}
               </span>
             ) : (
-              <div className="w-6 h-px bg-[#1F2737] mx-auto my-2" />
+              secIdx > 0 ? <div className="w-6 h-px bg-[#1F2737] mx-auto my-2" /> : null
             )}
 
             <div className="space-y-0.5">
@@ -297,8 +264,21 @@ export default function Sidebar({
             className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
           />
           {/* Drawer panel with slide-in animation */}
-          <div className="absolute top-0 bottom-0 left-0 w-64 xs:w-72 max-w-[85vw] bg-[#0B0F19] border-r border-[#1F2737] shadow-2xl animate-in slide-in-from-left duration-250 z-10">
-            {sidebarContent}
+          <div className="absolute top-0 bottom-0 left-0 w-64 xs:w-72 max-w-[85vw] bg-[#0B0F19] border-r border-[#1F2737] shadow-2xl animate-in slide-in-from-left duration-250 z-10 flex flex-col">
+            {/* Mobile Drawer Close Button */}
+            <div className="flex items-center justify-end px-3 py-2 border-b border-[#1F2737] shrink-0">
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-lg bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-rose-400/40 transition-colors cursor-pointer"
+                title="Close Navigation"
+                aria-label="Close Navigation"
+              >
+                <X className="w-4 h-4 text-rose-400" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {sidebarContent}
+            </div>
           </div>
         </div>
       )}
