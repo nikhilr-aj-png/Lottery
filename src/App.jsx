@@ -22,6 +22,7 @@ import Toast from './components/Toast';
 import RewardsView from './components/RewardsView';
 import LeaderboardView from './components/LeaderboardView';
 import SupportView from './components/SupportView';
+import TransactionHistoryView from './components/TransactionHistoryView';
 import NotificationsModal from './components/NotificationsModal';
 import TermsPage from './pages/TermsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -209,14 +210,15 @@ function LotteryAppContent() {
     };
   }, []);
 
-  // Strict Login Gating: unauthenticated visitors cannot access tickets, results, wallet, or profile
+  // Strict Login Gating: unauthenticated visitors cannot access tickets, results, wallet, transactions, or profile
   useEffect(() => {
-    if (!user && (activeTab === 'tickets' || activeTab === 'results' || activeTab === 'wallet' || activeTab === 'profile')) {
+    if (!user && (activeTab === 'tickets' || activeTab === 'results' || activeTab === 'wallet' || activeTab === 'profile' || activeTab === 'transactions')) {
       const tabNames = {
         tickets: 'My Tickets',
         results: 'Draw Results & Past Winners',
         wallet: 'USDT Wallet & 24h Payouts',
-        profile: 'Player Profile & Account Settings'
+        profile: 'Player Profile & Account Settings',
+        transactions: 'Transaction History'
       };
       setActiveTab('lotteries');
       setIsAuthModalOpen(true);
@@ -364,9 +366,25 @@ function LotteryAppContent() {
               )}
 
               {/* VIEW 2: WALLET & 24H PAYOUTS */}
-              {activeTab === 'wallet' && (user ? <WalletView /> : (
+              {activeTab === 'wallet' && (user ? (
+                <WalletView onOpenTransactionHistory={() => setActiveTab('transactions')} />
+              ) : (
                 <AuthRequiredPrompt 
                   title="USDT Wallet & 24h Payouts" 
+                  onLogin={() => setIsAuthModalOpen(true)} 
+                  onHome={() => setActiveTab('lotteries')} 
+                />
+              ))}
+
+              {/* VIEW 2B: DEDICATED TRANSACTION HISTORY PAGE */}
+              {activeTab === 'transactions' && (user ? (
+                <TransactionHistoryView 
+                  onBackToWallet={() => setActiveTab('wallet')}
+                  onBackToHome={() => setActiveTab('lotteries')}
+                />
+              ) : (
+                <AuthRequiredPrompt 
+                  title="Transaction History" 
                   onLogin={() => setIsAuthModalOpen(true)} 
                   onHome={() => setActiveTab('lotteries')} 
                 />

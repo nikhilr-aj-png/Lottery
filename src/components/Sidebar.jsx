@@ -25,7 +25,9 @@ import {
   LayoutGrid,
   Medal,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  Menu,
+  History
 } from 'lucide-react';
 import { useLottery } from '../context/LotteryContext';
 import { GAMES, getGameIconUrl } from '../engine';
@@ -110,6 +112,7 @@ export default function Sidebar({
         { id: 'tickets', label: 'My Tickets', icon: Ticket, requiresAuth: true },
         { id: 'results', label: 'Draw Results', icon: Trophy, requiresAuth: true },
         { id: 'wallet', label: 'Virtual Wallet & Ledger', icon: Wallet, requiresAuth: true },
+        { id: 'transactions', label: 'Transaction History', icon: History, requiresAuth: true },
       ]
     },
     {
@@ -144,54 +147,37 @@ export default function Sidebar({
   };
 
   const sidebarContent = (
-    <div className="h-full flex flex-col overflow-hidden py-3 px-2 sm:px-2.5 text-left relative">
+    <div className="h-full flex flex-col overflow-hidden pt-1.5 pb-2.5 px-2 sm:px-2.5 text-left relative">
       
-      {/* Top Header / Collapse & Close Controls — Fixed Stationary Header */}
-      <div className={`shrink-0 flex items-center pb-3 mb-2 border-b border-[#1F2737] bg-[#0B0F19] z-20 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-        {!isCollapsed && (
-          <div className="flex items-center gap-2 pl-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_#ffd700]" />
-            <span className="font-display font-black text-xs sm:text-sm text-white uppercase tracking-wider">
-              Navigation
-            </span>
-          </div>
-        )}
-
-        {/* Desktop Collapse / Expand Control (>= 1024px) */}
-        {!isCollapsed ? (
-          <button
-            onClick={onToggleCollapse}
-            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-amber-300 border border-[#1F2737] hover:border-amber-400/50 transition-all cursor-pointer shadow-sm text-xs font-bold shrink-0"
-            title="Collapse Sidebar"
-            aria-label="Collapse Sidebar"
-          >
-            <PanelLeftClose className="w-4 h-4 text-amber-400" />
-            <span className="text-[11px] font-medium text-[#E2E8F0]">Collapse</span>
-          </button>
-        ) : (
-          <button
-            onClick={onToggleCollapse}
-            className="hidden lg:flex w-9 h-9 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-amber-300 items-center justify-center border border-[#1F2737] hover:border-amber-400/50 transition-all cursor-pointer mx-auto shadow-sm shrink-0"
-            title="Expand Sidebar"
-            aria-label="Expand Sidebar"
-          >
-            <PanelLeftOpen className="w-4 h-4" />
-          </button>
-        )}
+      {/* Top Header / Three-Line (Hamburger) Menu Button — Fixed Stationary Header */}
+      <div className={`shrink-0 flex items-center py-1.5 mb-1.5 border-b border-[#1F2737] bg-[#0B0F19] z-20 ${
+        isCollapsed ? 'justify-center' : 'justify-between px-1'
+      }`}>
+        {/* Desktop Three-Line (Hamburger) Menu Button (>= 1024px) */}
+        <button
+          onClick={onToggleCollapse}
+          className={`hidden lg:flex w-9 h-9 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-white items-center justify-center border border-[#1F2737] hover:border-amber-400/50 transition-all cursor-pointer shadow-sm shrink-0 ${
+            isCollapsed ? 'mx-auto' : 'ml-0.5'
+          }`}
+          title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        >
+          <Menu className="w-4.5 h-4.5 text-amber-400" />
+        </button>
 
         {/* Mobile & Tablet Close Button (< 1024px) */}
         <button
           onClick={onClose}
-          className="lg:hidden min-w-[44px] min-h-[44px] rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-rose-400/40 transition-colors cursor-pointer shrink-0"
+          className="lg:hidden w-9 h-9 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-rose-400/40 transition-colors cursor-pointer shrink-0 ml-auto mr-0.5"
           title="Close Navigation Menu"
           aria-label="Close Navigation Menu"
         >
-          <X className="w-5 h-5 text-rose-400" />
+          <X className="w-4.5 h-4.5 text-rose-400" />
         </button>
       </div>
 
       {/* Navigation Sections — Scrollable Menu Items Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar space-y-3.5 pr-0.5">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar space-y-3 pr-0.5">
         {navSections.map((sec, secIdx) => (
           <div key={secIdx} className="space-y-1">
             {!isCollapsed ? (

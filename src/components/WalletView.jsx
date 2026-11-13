@@ -21,7 +21,8 @@ import {
   XCircle,
   X,
   Gift,
-  Sparkles
+  Sparkles,
+  History
 } from 'lucide-react';
 
 const PAYMENT_CURRENCIES = [
@@ -34,7 +35,7 @@ const PAYMENT_CURRENCIES = [
   { id: 'ltc', name: 'Litecoin (LTC)', symbol: 'LTC', network: 'Litecoin' }
 ];
 
-export default function WalletView() {
+export default function WalletView({ onOpenDeposit, onOpenWithdraw, onOpenTransactionHistory } = {}) {
   const { 
     wallet, 
     withdrawals, 
@@ -55,7 +56,8 @@ export default function WalletView() {
     claimDailyBonus,
     claimDailyFloReward,
     getDailyFloRewardStatus,
-    calculateDailyFloReward
+    calculateDailyFloReward,
+    setActiveTab: setGlobalActiveTab
   } = useLottery();
 
   const minWithdrawalLimit = typeof platformSettings?.minWithdrawal === 'number' ? platformSettings.minWithdrawal : 5;
@@ -773,430 +775,24 @@ export default function WalletView() {
 
       </div>
 
-      {/* Financial Audit & Transaction Ledger (Deposits & Withdrawals) */}
-      <div className="glass-panel rounded-2xl p-3.5 xs:p-5 sm:p-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 sm:mb-6">
-          <div>
-            <h3 className="font-display font-extrabold text-lg xs:text-xl text-white">
-              Financial Audit & Transaction Ledger
-            </h3>
-            <p className="text-[11px] xs:text-xs text-[#9b8f7c]">
-              Real-time audit trail, instant deposit webhook confirmation & 24h disbursals
-            </p>
-          </div>
-
-          {/* Ledger Switcher Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-[#0b0e14] p-1 rounded-xl border border-[#272a31]">
-            <button
-              type="button"
-              onClick={() => setLedgerTab('ledger')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                ledgerTab === 'ledger'
-                  ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-sm font-extrabold'
-                  : 'text-[#9b8f7c] hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Coins className="w-3.5 h-3.5" />
-              <span>Flow Coin Ledger ({walletLedger.length})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setLedgerTab('deposits')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                ledgerTab === 'deposits'
-                  ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-sm font-extrabold'
-                  : 'text-[#9b8f7c] hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <ArrowDownLeft className="w-3.5 h-3.5" />
-              <span>Deposit Orders ({deposits.length})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setLedgerTab('withdrawals')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                ledgerTab === 'withdrawals'
-                  ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-sm font-extrabold'
-                  : 'text-[#9b8f7c] hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <ArrowUpRight className="w-3.5 h-3.5" />
-              <span>Withdrawal Orders ({withdrawals.length})</span>
-            </button>
-          </div>
-        </div>
-
-        {ledgerTab === 'ledger' ? (
-          /* IMMUTABLE FLOW COIN AUDIT LEDGER */
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-xs text-[#9b8f7c] py-1">
-              <span>Cryptographic Double-Entry Ledger (Immutable Server Records)</span>
-              <button
-                type="button"
-                onClick={() => fetchWalletLedger()}
-                className="hover:text-amber-400 flex items-center gap-1 cursor-pointer transition-colors"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingLedger ? 'animate-spin' : ''}`} />
-                <span>Refresh Audit Records</span>
-              </button>
-            </div>
-
-            <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
-              <table className="w-full min-w-[840px] text-left text-xs">
-                <thead>
-                  <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
-                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Tx ID</th>
-                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Transaction Type</th>
-                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (FLO)</th>
-                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">USDT Value (1:1)</th>
-                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Balance After</th>
-                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status</th>
-                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Description / Reference</th>
-                    <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Timestamp</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#1f2737]">
-                  {walletLedger.length === 0 ? (
-                    <tr>
-                      <td colSpan="8" className="py-8 text-center text-[#9b8f7c] font-mono-numbers">
-                        No transactions recorded in ledger yet. Claim your Daily FLO Coin Reward to start!
-                      </td>
-                    </tr>
-                  ) : (
-                    walletLedger.map((tx) => {
-                      const isCredit = Number(tx.amount) > 0;
-                      const typeConfig = {
-                        welcome_grant: { label: 'WELCOME BONUS', bg: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
-                        daily_reward: { label: 'DAILY FLO REWARD', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
-                        daily_bonus: { label: 'DAILY FLO REWARD', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
-                        ticket_purchase: { label: 'TICKET PURCHASE', bg: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
-                        lottery_win: { label: 'LOTTERY WIN', bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
-                        game_bet: { label: 'GAME WAGER', bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-                        game_win: { label: 'GAME WIN', bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
-                        admin_adjustment: { label: 'ADMIN GRANT', bg: 'bg-blue-500/15 text-blue-300 border-blue-500/30' }
-                      }[tx.transaction_type] || { label: (tx.transaction_type || 'TRANSACTION').toUpperCase(), bg: 'bg-white/10 text-white/80 border-white/20' };
-
-                      return (
-                        <tr key={tx.id} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="py-3 px-2 xs:px-3 font-mono-numbers text-[11px] text-white/70 whitespace-nowrap">
-                            <span className="bg-[#10141f] px-2 py-0.5 rounded border border-[#272a31] text-amber-400/90 font-mono">
-                              #{tx.id ? tx.id.slice(0, 14) : '—'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-2 xs:px-3 whitespace-nowrap">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${typeConfig.bg}`}>
-                              {typeConfig.label}
-                            </span>
-                          </td>
-                          <td className="py-3 px-2 xs:px-3 font-mono-numbers font-black text-sm whitespace-nowrap">
-                            <span className={isCredit ? 'text-emerald-400' : 'text-rose-400'}>
-                              {isCredit ? '+' : ''}{Number(tx.amount).toFixed(2)} FLO
-                            </span>
-                          </td>
-                          <td className="py-3 px-2 xs:px-3 font-mono-numbers font-bold text-xs whitespace-nowrap">
-                            <span className={isCredit ? 'text-emerald-300' : 'text-rose-300'}>
-                              {isCredit ? '+' : '-'}${Math.abs(Number(tx.amount || 0)).toFixed(2)} USDT
-                            </span>
-                          </td>
-                          <td className="py-3 px-2 xs:px-3 font-mono-numbers text-xs text-white/90 whitespace-nowrap">
-                            <span className="text-[#ffd700] font-bold">{Number(tx.balance_after || 0).toFixed(2)} FLO</span>
-                          </td>
-                          <td className="py-3 px-2 xs:px-3 whitespace-nowrap">
-                            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                              <span>Completed</span>
-                            </span>
-                          </td>
-                          <td className="py-3 px-2 xs:px-3 text-xs text-white/80 max-w-[280px] truncate">
-                            <span title={tx.description || tx.reference_id}>
-                              {tx.description || tx.reference_id || 'Virtual Credit Adjustment'}
-                            </span>
-                            {tx.reference_id && (
-                              <span className="block text-[10px] text-[#9b8f7c] font-mono truncate">
-                                Ref: {tx.reference_id}
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 px-2 xs:px-3 text-right text-[11px] font-mono-numbers text-[#9b8f7c] whitespace-nowrap">
-                            {tx.created_at ? new Date(tx.created_at).toLocaleString() : 'Recent'}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ) : ledgerTab === 'deposits' ? (
-          /* DEPOSIT ORDERS LEDGER */
-          <div className="space-y-3">
-            {/* Filter Pills for Deposit Ledger */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 pb-1">
-              {[
-                { id: 'all', label: `All (${deposits.length})` },
-                { id: 'completed', label: `Successful (${deposits.filter(d => d.status === 'finished' || d.status === 'confirmed').length})` },
-                { id: 'waiting', label: `Awaiting (${deposits.filter(d => d.status === 'waiting' && (now - new Date(d.created_at || now).getTime() <= 15 * 60 * 1000)).length})` },
-                { id: 'expired', label: `Unpaid/Expired (${deposits.filter(d => d.status === 'expired' || d.status === 'cancelled' || d.status === 'failed' || (d.status === 'waiting' && now - new Date(d.created_at || now).getTime() > 15 * 60 * 1000)).length})` }
-              ].map(f => (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => setDepositFilter(f.id)}
-                  className={`px-3 py-1 rounded-lg text-xs font-mono-numbers font-bold transition-all cursor-pointer ${
-                    depositFilter === f.id
-                      ? 'bg-amber-500 text-black shadow-sm font-extrabold'
-                      : 'bg-[#10141f] text-[#9b8f7c] hover:text-white border border-[#272a31]'
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
-              <table className="w-full min-w-[620px] text-left text-xs">
-                <thead>
-                  <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
-                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Invoice / Order ID</th>
-                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
-                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Payment Asset</th>
-                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Initiated At</th>
-                    <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status</th>
-                    <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#1f2737]">
-                  {deposits.filter(d => {
-                    if (depositFilter === 'all') return true;
-                    const isFin = d.status === 'finished' || d.status === 'confirmed';
-                    if (depositFilter === 'completed') return isFin;
-                    const createdAt = d.created_at ? new Date(d.created_at).getTime() : now;
-                    const isWait = d.status === 'waiting' && (now - createdAt <= 15 * 60 * 1000);
-                    if (depositFilter === 'waiting') return isWait;
-                    if (depositFilter === 'expired') return !isFin && !isWait;
-                    return true;
-                  }).length === 0 ? (
-                    <tr>
-                      <td colSpan="6" className="py-8 text-center text-[#9b8f7c]">
-                        No deposit orders matching filter.
-                      </td>
-                    </tr>
-                  ) : (
-                    deposits
-                      .filter(d => {
-                        if (depositFilter === 'all') return true;
-                        const isFin = d.status === 'finished' || d.status === 'confirmed';
-                        if (depositFilter === 'completed') return isFin;
-                        const createdAt = d.created_at ? new Date(d.created_at).getTime() : now;
-                        const isWait = d.status === 'waiting' && (now - createdAt <= 15 * 60 * 1000);
-                        if (depositFilter === 'waiting') return isWait;
-                        if (depositFilter === 'expired') return !isFin && !isWait;
-                        return true;
-                      })
-                      .map((order) => {
-                        const isFinished = order.status === 'finished' || order.status === 'confirmed';
-                        const isCancelled = order.status === 'cancelled';
-                        const isExplicitExpired = order.status === 'expired' || order.status === 'failed';
-                        const isWaiting = order.status === 'waiting';
-
-                        const createdAtMs = order.created_at ? new Date(order.created_at).getTime() : now;
-                        const ageMs = now - createdAtMs;
-                        const timeoutMs = 15 * 60 * 1000;
-                        const isTimedOut = isWaiting && ageMs > timeoutMs;
-                        const remainingMs = Math.max(0, timeoutMs - ageMs);
-                        const remMin = Math.floor(remainingMs / 60000);
-                        const remSec = Math.floor((remainingMs % 60000) / 1000);
-
-                        return (
-                          <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
-                            <td className="py-4 px-2 xs:px-3 font-mono-numbers font-bold text-white whitespace-nowrap">
-                              <span title={order.id}>
-                                #{order.invoice_id || (order.id ? order.id.slice(0, 14) : 'DEP')}
-                              </span>
-                            </td>
-                            <td className="py-4 px-2 xs:px-3 font-mono-numbers font-black text-sm text-[#05d5aa] whitespace-nowrap">
-                              +{Number(order.amount || 0).toFixed(2)} USDT
-                            </td>
-                            <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
-                              <span className="px-2.5 py-0.5 rounded bg-[#10131a] text-[#ffd700] border border-[#f5c451]/30 font-mono-numbers font-bold text-[10px] whitespace-nowrap inline-flex items-center tracking-normal">
-                                {(order.pay_currency || 'usdttrc20').toUpperCase()}
-                              </span>
-                            </td>
-                            <td className="py-4 px-2 xs:px-3 font-mono-numbers text-white/80 whitespace-nowrap text-[11px]">
-                              {order.created_at ? new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Just now'}
-                            </td>
-                            <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
-                              {isFinished ? (
-                                <span className="px-2.5 py-1 rounded-md bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold flex items-center gap-1.5 w-max whitespace-nowrap">
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
-                                  Success (+{order.amount} USDT)
-                                </span>
-                              ) : isCancelled ? (
-                                <span className="px-2.5 py-1 rounded-md bg-slate-800 text-slate-400 border border-slate-700 font-bold flex items-center gap-1 w-max whitespace-nowrap text-[11px]">
-                                  <XCircle className="w-3.5 h-3.5 text-slate-400" />
-                                  Cancelled
-                                </span>
-                              ) : (isExplicitExpired || isTimedOut) ? (
-                                <span className="px-2.5 py-1 rounded-md bg-[#161a23] text-[#9b8f7c] border border-[#272a31] font-bold flex items-center gap-1.5 w-max whitespace-nowrap text-[11px]">
-                                  <Clock className="w-3.5 h-3.5 text-[#9b8f7c]" />
-                                  Unpaid (Expired 15m)
-                                </span>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
-                                  <div>
-                                    <span className="text-amber-400 font-bold block whitespace-nowrap text-xs">
-                                      Awaiting Payment
-                                    </span>
-                                    <span className="text-[10px] font-mono-numbers text-amber-200/80 whitespace-nowrap">
-                                      Expires in {remMin}m {remSec < 10 ? '0' : ''}{remSec}s
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                            </td>
-                        <td className="py-4 px-2 xs:px-3 text-right whitespace-nowrap">
-                          {isWaiting && !isTimedOut ? (
-                            <div className="flex items-center justify-end gap-2">
-                              {order.invoice_url && (
-                                <a
-                                  href={order.invoice_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="px-2.5 py-1 rounded-lg bg-[rgba(245,196,81,0.15)] hover:bg-[#f5c451] text-[#ffd700] hover:text-[#0b0e14] text-[11px] font-bold border border-[#f5c451]/30 transition-all inline-flex items-center gap-1 cursor-pointer"
-                                >
-                                  <span>Pay Now</span>
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => cancelDeposit(order.id)}
-                                className="px-2.5 py-1 rounded-lg bg-rose-950/40 hover:bg-rose-600 text-rose-300 hover:text-white text-[11px] font-bold border border-rose-500/30 transition-all cursor-pointer"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : isFinished ? (
-                            <span className="text-[11px] text-[#05d5aa] font-mono-numbers font-bold flex items-center justify-end gap-1">
-                              <Check className="w-3.5 h-3.5" />
-                              Credited
-                            </span>
-                          ) : (
-                            <span className="text-[11px] text-[#6b7280] font-mono-numbers">
-                              Closed
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        ) : (
-          /* WITHDRAWAL ORDERS LEDGER */
-          <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
-            <table className="w-full min-w-[620px] text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Order ID</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Network</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Destination Address</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status / Timer</th>
-                  <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Receipt / Tracking</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1f2737]">
-                {withdrawals.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="py-6 text-center text-[#9b8f7c]">
-                      No withdrawals yet.
-                    </td>
-                  </tr>
-                ) : (
-                  withdrawals.map((order) => {
-                    const isProcessing = order.status === 'processing';
-                    const isCompleted = order.status === 'completed';
-
-                    return (
-                      <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-4 px-2 xs:px-3 font-mono-numbers font-bold text-white whitespace-nowrap">
-                          #{order.id}
-                        </td>
-                        <td className="py-4 px-2 xs:px-3 font-mono-numbers font-black text-sm text-[#ffd700] whitespace-nowrap">
-                          {order.amount.toFixed(2)} USDT
-                          <span className="block text-[10px] text-[#9b8f7c] font-normal">
-                            Net: {order.netDisbursal.toFixed(2)} USDT
-                          </span>
-                        </td>
-                        <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
-                          <span className="px-2.5 py-0.5 rounded bg-[#10131a] text-[#05d5aa] border border-[#05d5aa]/30 font-mono-numbers font-bold text-[10px] whitespace-nowrap inline-flex items-center tracking-normal">
-                            {order.network}
-                          </span>
-                        </td>
-                        <td className="py-4 px-2 xs:px-3 font-mono-numbers text-white/80 whitespace-nowrap">
-                          {order.address.slice(0, 6)}...{order.address.slice(-6)}
-                        </td>
-                        <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
-                          {isProcessing ? (
-                            <div className="flex items-center gap-2">
-                              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
-                              <div>
-                                <span className="text-amber-400 font-bold block whitespace-nowrap">
-                                  In Progress (24 Hours)
-                                </span>
-                                <span className="text-[10px] font-mono-numbers text-amber-200/80 whitespace-nowrap">
-                                  {formatSLATime(order.slaTargetMs)}
-                                </span>
-                              </div>
-                            </div>
-                          ) : isCompleted ? (
-                            <span className="px-2.5 py-1 rounded-md bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold flex items-center gap-1.5 w-max whitespace-nowrap">
-                              <Check className="w-3.5 h-3.5" />
-                              Completed (Disbursed)
-                            </span>
-                          ) : (
-                            <span className="px-2.5 py-1 rounded-md bg-red-950/40 text-red-400 border border-red-500/30 font-bold whitespace-nowrap">
-                              Flagged / Refunded
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-4 px-2 xs:px-3 text-right whitespace-nowrap">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedProofOrder(order)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-mono-numbers transition-all cursor-pointer whitespace-nowrap ${
-                              isCompleted 
-                                ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-[#05d5aa] border border-[#05d5aa]/30 shadow-[0_0_15px_rgba(5,213,170,0.15)]'
-                                : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30'
-                            }`}
-                          >
-                            <FileCheck className="w-3.5 h-3.5" />
-                            <span>{isCompleted ? 'View Receipt' : 'Track Order'}</span>
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {/* Dedicated Transaction History Navigation Button */}
+      <div className="pt-2 pb-6">
+        <button
+          type="button"
+          onClick={() => {
+            if (onOpenTransactionHistory) {
+              onOpenTransactionHistory();
+            } else if (setGlobalActiveTab) {
+              setGlobalActiveTab('transactions');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className="w-full py-4 px-6 rounded-2xl btn-gold text-[#0B0F19] font-display font-extrabold text-sm sm:text-base shadow-xl shadow-amber-500/20 hover:scale-[1.01] active:scale-98 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+        >
+          <History className="w-5 h-5 text-black" />
+          <span>Transaction History</span>
+        </button>
       </div>
-
-      {/* Cryptographic Withdrawal Proof Modal */}
-      {selectedProofOrder && (
-        <WithdrawalProofModal 
-          order={selectedProofOrder} 
-          onClose={() => setSelectedProofOrder(null)} 
-        />
-      )}
 
     </div>
   );
