@@ -251,7 +251,7 @@ CREATE POLICY "wallet_ledger_select_policy" ON public.wallet_ledger
 
 CREATE POLICY "wallet_ledger_insert_policy" ON public.wallet_ledger
   FOR INSERT TO authenticated
-  WITH CHECK ((SELECT public.is_admin()));
+  WITH CHECK ((SELECT auth.uid()) = user_id OR (SELECT public.is_admin()));
 
 -- ----------------------------------------------------------------------------
 -- 12. SECURE DATABASE TRIGGER FUNCTIONS: Revoke API Execution
@@ -287,20 +287,25 @@ ALTER FUNCTION public.admin_disburse_winner_secure(text, numeric, text) SECURITY
 ALTER FUNCTION public.finalize_lottery_draw_secure(text, text, integer) SECURITY INVOKER;
 
 -- ----------------------------------------------------------------------------
--- 14. REVOKE DIRECT API EXECUTION ON INTERNAL BALANCE MANIPULATORS
+-- 14. CORE GAMEPLAY & LEDGER FUNCTIONS: CONVERTED TO SECURITY INVOKER
 -- ----------------------------------------------------------------------------
-REVOKE EXECUTE ON FUNCTION public.credit_virtual_credits(numeric, text, text, text, text, uuid, jsonb) FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.debit_virtual_credits(numeric, text, text, text, text, jsonb) FROM PUBLIC, anon, authenticated;
+ALTER FUNCTION public.credit_virtual_credits(numeric, text, text, text, text, uuid, jsonb) SECURITY INVOKER;
+ALTER FUNCTION public.debit_virtual_credits(numeric, text, text, text, text, jsonb) SECURITY INVOKER;
+ALTER FUNCTION public.buy_lottery_tickets_secure(text, text[], text, text) SECURITY INVOKER;
+ALTER FUNCTION public.claim_daily_bonus(text, uuid) SECURITY INVOKER;
+ALTER FUNCTION public.settle_game_round_secure(text, text, uuid, text, numeric, numeric, numeric, jsonb, text, text, text, integer, jsonb) SECURITY INVOKER;
+ALTER FUNCTION public.spin_lucky_wheel(text, uuid) SECURITY INVOKER;
+
+-- Grant execution to authenticated role
+GRANT EXECUTE ON FUNCTION public.credit_virtual_credits(numeric, text, text, text, text, uuid, jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.debit_virtual_credits(numeric, text, text, text, text, jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.buy_lottery_tickets_secure(text, text[], text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_daily_bonus(text, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.settle_game_round_secure(text, text, uuid, text, numeric, numeric, numeric, jsonb, text, text, text, integer, jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.spin_lucky_wheel(text, uuid) TO authenticated;
 
 -- ----------------------------------------------------------------------------
--- 15. HARDEN SEARCH PATH ON SECURITY DEFINER PROCEDURES
--- ----------------------------------------------------------------------------
-ALTER FUNCTION public.buy_lottery_tickets_secure(text, text[], text, text) SET search_path = public, auth, extensions, pg_temp;
-ALTER FUNCTION public.claim_daily_bonus(text, uuid) SET search_path = public, auth, extensions, pg_temp;
-ALTER FUNCTION public.settle_game_round_secure(text, text, uuid, text, numeric, numeric, numeric, jsonb, text, text, text, integer, jsonb) SET search_path = public, auth, extensions, pg_temp;
-ALTER FUNCTION public.spin_lucky_wheel(text, uuid) SET search_path = public, auth, extensions, pg_temp;
-
--- ----------------------------------------------------------------------------
--- 16. DROP OBSOLETE OVERLOAD (CLEANUP)
+-- 15. DROP OBSOLETE OVERLOAD (CLEANUP)
 -- ----------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.claim_daily_bonus(text);
+
