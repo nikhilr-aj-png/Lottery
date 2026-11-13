@@ -385,44 +385,9 @@ export default function RewardsView() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 text-left">
-      
-      {/* 1. HERO HEADER */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-[#111827] via-[#151C2B] to-[#111827] border border-[#1F2737] p-6 sm:p-8 overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-mono-numbers font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>FREE SOCIAL GAMING FAUCET & VIP CLUB</span>
-            </div>
-            <h1 className="font-display font-black text-2xl sm:text-3xl text-white tracking-tight">
-              Rewards, Lucky Wheel & VIP Club
-            </h1>
-            <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
-              Earn free Flow Coins daily! Spin the 24-hour Lucky Wheel for up to 1,000 FC, progress through VIP tiers for massive faucet multipliers, and unlock milestone rewards with zero financial risk.
-            </p>
-          </div>
 
-          {/* Quick Balance Card */}
-          <div className="bg-[#0B0F19] border border-[#1F2737] rounded-2xl p-4 sm:p-5 flex items-center gap-4 shrink-0 shadow-inner">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl shadow-md">
-              🪙
-            </div>
-            <div>
-              <span className="text-[10px] text-[#94A3B8] uppercase font-mono-numbers font-bold block">
-                Available Flow Coins
-              </span>
-              <span className="font-mono-numbers font-black text-xl text-amber-300">
-                {Number(wallet.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} FC
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. VIP LOYALTY PROGRESSION CARD */}
-      <div className={`rounded-3xl bg-gradient-to-r ${vipTheme.color} border p-6 sm:p-7 shadow-xl ${vipTheme.shadow} transition-all`}>
+      {/* 1. VIP LOYALTY PROGRESSION CARD */}
+      <div className={`rounded-3xl bg-gradient-to-r ${vipTheme.color} border p-4 sm:p-7 shadow-xl ${vipTheme.shadow} transition-all`}>
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           
           <div className="space-y-3 max-w-xl">
@@ -491,8 +456,8 @@ export default function RewardsView() {
         </div>
       </div>
 
-      {/* 3. INTERACTIVE DAILY LUCKY WHEEL MINI-GAME */}
-      <div className="rounded-3xl bg-[#111827] border border-[#1F2737] p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+      {/* 2. INTERACTIVE DAILY LUCKY WHEEL MINI-GAME */}
+      <div className="rounded-3xl bg-[#111827] border border-[#1F2737] p-4 sm:p-8 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
@@ -506,7 +471,7 @@ export default function RewardsView() {
 
             {/* Rotating SVG Wheel */}
             <div 
-              className="w-72 h-72 sm:w-80 sm:h-80 rounded-full border-4 border-amber-400/80 shadow-[0_0_35px_rgba(245,196,81,0.25)] p-1 bg-[#0B0F19]"
+              className="w-64 h-64 xs:w-72 xs:h-72 sm:w-80 sm:h-80 rounded-full border-4 border-amber-400/80 shadow-[0_0_35px_rgba(245,196,81,0.25)] p-1 bg-[#0B0F19]"
             >
               <svg 
                 viewBox="0 0 300 300" 
@@ -622,26 +587,28 @@ export default function RewardsView() {
         </div>
       </div>
 
-      {/* 4. UNIFIED 7-DAY STREAK & DAILY BONUS CLAIM */}
-      <div className="rounded-3xl bg-[#111827] border border-[#1F2737] p-6 sm:p-7 space-y-5 shadow-2xl relative overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#1F2737]">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="font-display font-extrabold text-lg sm:text-xl text-white flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-amber-400" />
-                <span>7-Day Daily Check-In & Bonus Faucet</span>
+      {/* 3. UNIFIED 7-DAY STREAK & DAILY BONUS CLAIM */}
+      <div className="rounded-3xl bg-[#111827] border border-[#1F2737] p-3.5 sm:p-7 space-y-4 sm:space-y-5 shadow-2xl relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 border-b border-[#1F2737]">
+          <div className="space-y-1.5 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="font-display font-extrabold text-base sm:text-xl text-white flex items-center gap-2 whitespace-nowrap shrink-0">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
+                <span className="whitespace-nowrap">Seven-Day Check-In</span>
               </h2>
-              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/20 text-[#ffd700] border border-amber-500/40 uppercase font-bold tracking-wider">
-                1 FLO = 1 USDT
-              </span>
-              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 uppercase font-bold tracking-wider">
-                Day {dailyRewardStatus.currentStreak || 1} of 7
-              </span>
+              <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/20 text-[#ffd700] border border-amber-500/40 uppercase font-bold tracking-wider whitespace-nowrap shrink-0">
+                  1 FLO W = 1 USDT
+                </span>
+                <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 uppercase font-bold tracking-wider whitespace-nowrap shrink-0">
+                  Day {dailyRewardStatus.currentStreak || 1} of 7
+                </span>
+              </div>
             </div>
-            <p className="text-xs text-[#94A3B8]">
+            <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-relaxed">
               {dailyRewardStatus.canClaim
-                ? `Ready to claim! Available today: +${(dailyRewardStatus.availableReward || 0.10).toFixed(2)} FLO (≈ $${(dailyRewardStatus.availableReward || 0.10).toFixed(2)} USDT).`
-                : `Reward claimed for today! Day ${dailyRewardStatus.nextStreak || 2} reward (+${(dailyRewardStatus.nextRewardAmount || 0.15).toFixed(2)} FLO) unlocks in ${formatCooldown(dailyRewardStatus.secondsRemaining)}.`
+                ? `Ready to claim! Available today: +${(dailyRewardStatus.availableReward || 0.10).toFixed(2)} FLO W (≈ $${(dailyRewardStatus.availableReward || 0.10).toFixed(2)} USDT).`
+                : `Reward claimed for today! Day ${dailyRewardStatus.nextStreak || 2} reward (+${(dailyRewardStatus.nextRewardAmount || 0.15).toFixed(2)} FLO W) unlocks in ${formatCooldown(dailyRewardStatus.secondsRemaining)}.`
               }
             </p>
           </div>
@@ -650,33 +617,36 @@ export default function RewardsView() {
           <button
             onClick={handleClaimDailyStreak}
             disabled={!dailyRewardStatus.canClaim || isClaimingStreak}
-            className={`px-6 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2.5 shadow-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+            className={`w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               dailyRewardStatus.canClaim
-                ? 'btn-gold shadow-amber-500/30 hover:scale-105'
+                ? 'btn-gold shadow-amber-500/30 hover:scale-105 active:scale-95'
                 : 'bg-[#151C2B] text-[#94A3B8] border border-[#2D3545] cursor-not-allowed shadow-none'
             }`}
           >
             {isClaimingStreak ? (
               <>
-                <RotateCcw className="w-4 h-4 animate-spin text-amber-300" />
-                <span>Crediting Wallet...</span>
+                <RotateCcw className="w-4 h-4 animate-spin text-amber-300 shrink-0" />
+                <span className="whitespace-nowrap">Crediting Wallet...</span>
               </>
             ) : dailyRewardStatus.canClaim ? (
               <>
-                <Gift className="w-4 h-4 text-black animate-bounce" />
-                <span>Claim Day {dailyRewardStatus.currentStreak || 1} (+{(dailyRewardStatus.availableReward || 0.10).toFixed(2)} FLO)</span>
+                <Gift className="w-4 h-4 text-black animate-bounce shrink-0" />
+                <span className="whitespace-nowrap">Claim Day {dailyRewardStatus.currentStreak || 1} (+{(dailyRewardStatus.availableReward || 0.10).toFixed(2)} FLO W)</span>
               </>
             ) : (
               <>
-                <Clock className="w-4 h-4 text-amber-400" />
-                <span>Claimed (Unlocks in {formatCooldown(dailyRewardStatus.secondsRemaining)})</span>
+                <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="whitespace-nowrap">Claimed (Unlocks in {formatCooldown(dailyRewardStatus.secondsRemaining)})</span>
               </>
             )}
           </button>
         </div>
 
-        {/* 7 Day Blocks Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 pt-1">
+        {/* 7 Day Blocks Grid:
+            Mobile: 3 columns (Days 1-6 in 2 symmetrical rows of 3, Day 7 Jackpot spanning 3 columns).
+            Tablet: sm:grid-cols-4.
+            Desktop: lg:grid-cols-7 (1 row of 7). */}
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 xs:gap-2 sm:gap-3 pt-1">
           {[1, 2, 3, 4, 5, 6, 7].map((day) => {
             const currentDayNum = dailyRewardStatus.currentStreak || 1;
             const isCompleted = day < currentDayNum || (!dailyRewardStatus.canClaim && day === currentDayNum);
@@ -690,55 +660,123 @@ export default function RewardsView() {
             return (
               <div
                 key={day}
-                className={`rounded-2xl p-4 flex flex-col items-center text-center justify-between border transition-all ${
+                className={`rounded-2xl border transition-all ${
+                  isJackpot ? 'col-span-3 sm:col-span-1' : 'col-span-1'
+                } ${
                   isCurrent
-                    ? 'bg-gradient-to-b from-amber-500/20 to-amber-950/40 border-amber-400 shadow-[0_0_20px_rgba(245,196,81,0.25)] scale-105'
+                    ? 'bg-gradient-to-b from-amber-500/20 to-amber-950/40 border-amber-400 shadow-[0_0_20px_rgba(245,196,81,0.25)]'
                     : isCompleted
                     ? 'bg-[#0B0F19]/90 border-emerald-500/40 text-emerald-300'
                     : isJackpot
-                    ? 'bg-purple-950/30 border-purple-500/30 text-purple-300'
+                    ? 'bg-gradient-to-r sm:bg-gradient-to-b from-purple-950/40 via-[#151C2B] to-purple-950/40 border-purple-500/40 text-purple-300'
                     : 'bg-[#0B0F19] border-[#1F2737] text-[#94A3B8] opacity-75'
+                } ${
+                  isJackpot
+                    ? 'p-2.5 sm:p-4'
+                    : 'p-2 sm:p-4 flex flex-col items-center text-center justify-between'
                 }`}
               >
-                <div className="w-full flex items-center justify-between text-[10px] font-mono-numbers font-bold mb-2">
-                  <span>Day {day}</span>
-                  {isCompleted ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  ) : isCurrent ? (
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                  ) : (
-                    <Clock className="w-3 h-3 text-[#64748B]" />
-                  )}
-                </div>
+                {isJackpot ? (
+                  <>
+                    {/* Mobile Day 7 Horizontal Highlight Banner */}
+                    <div className="flex sm:hidden items-center justify-between gap-2.5 w-full">
+                      <div className="flex items-center gap-2">
+                        <div className="text-2xl shrink-0">💎</div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono-numbers font-bold text-xs text-purple-200 whitespace-nowrap">Day 7</span>
+                            <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30 whitespace-nowrap">
+                              Grand Jackpot
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-white/50 block font-mono-numbers whitespace-nowrap">
+                            ≈ ${rewardVal.toFixed(2)} USDT
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className={`font-mono-numbers font-black text-xs xs:text-sm block whitespace-nowrap ${
+                          isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-purple-300'
+                        }`}>
+                          +{rewardVal.toFixed(2)} FLO W
+                        </span>
+                        <span className="text-[9px] uppercase tracking-wider block opacity-80 font-bold whitespace-nowrap">
+                          {isCompleted ? 'Claimed' : isCurrent ? 'Available' : 'Locked'}
+                        </span>
+                      </div>
+                    </div>
 
-                <div className="text-3xl my-2">
-                  {isJackpot ? '💎' : '🪙'}
-                </div>
+                    {/* Tablet & Desktop Day 7 Standard Vertical Card */}
+                    <div className="hidden sm:flex flex-col items-center text-center justify-between h-full">
+                      <div className="w-full flex items-center justify-between text-[10px] font-mono-numbers font-bold mb-2">
+                        <span className="whitespace-nowrap">Day 7</span>
+                        {isCompleted ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        ) : isCurrent ? (
+                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                        ) : (
+                          <Clock className="w-3 h-3 text-[#64748B] shrink-0" />
+                        )}
+                      </div>
 
-                <div className="w-full pt-1">
-                  <span className={`font-mono-numbers font-black text-sm block ${
-                    isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-white'
-                  }`}>
-                    +{rewardVal.toFixed(2)} FLO
-                  </span>
-                  <span className="text-[10px] text-white/50 font-mono-numbers block mt-0.5">
-                    ≈ ${rewardVal.toFixed(2)} USDT
-                  </span>
-                  <span className="text-[9px] uppercase tracking-wider block opacity-80 mt-1 font-bold">
-                    {isCompleted ? 'Claimed' : isCurrent ? 'Available' : isJackpot ? 'Jackpot' : 'Locked'}
-                  </span>
-                </div>
+                      <div className="text-3xl my-2">💎</div>
+
+                      <div className="w-full pt-1">
+                        <span className={`font-mono-numbers font-black text-sm block whitespace-nowrap ${
+                          isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-purple-300'
+                        }`}>
+                          +{rewardVal.toFixed(2)} FLO W
+                        </span>
+                        <span className="text-[10px] text-white/50 font-mono-numbers block mt-0.5 whitespace-nowrap">
+                          ≈ ${rewardVal.toFixed(2)} USDT
+                        </span>
+                        <span className="text-[9px] uppercase tracking-wider block opacity-80 mt-1 font-bold whitespace-nowrap">
+                          {isCompleted ? 'Claimed' : isCurrent ? 'Available' : 'Jackpot'}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-full flex items-center justify-between text-[10px] font-mono-numbers font-bold mb-1 sm:mb-2">
+                      <span className="whitespace-nowrap">Day {day}</span>
+                      {isCompleted ? (
+                        <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400 shrink-0" />
+                      ) : isCurrent ? (
+                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                      ) : (
+                        <Clock className="w-3 h-3 text-[#64748B] shrink-0" />
+                      )}
+                    </div>
+
+                    <div className="text-xl sm:text-3xl my-1 sm:my-2">🪙</div>
+
+                    <div className="w-full pt-0.5 sm:pt-1">
+                      <span className={`font-mono-numbers font-black text-[11px] sm:text-sm block whitespace-nowrap ${
+                        isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-white'
+                      }`}>
+                        +{rewardVal.toFixed(2)} FLO W
+                      </span>
+                      <span className="text-[9px] sm:text-[10px] text-white/50 font-mono-numbers block mt-0.5 whitespace-nowrap">
+                        ≈ ${rewardVal.toFixed(2)}
+                      </span>
+                      <span className="text-[8px] sm:text-[9px] uppercase tracking-wider block opacity-80 mt-0.5 sm:mt-1 font-bold whitespace-nowrap">
+                        {isCompleted ? 'Claimed' : isCurrent ? 'Available' : 'Locked'}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* 5. ACHIEVEMENTS & MILESTONES */}
-      <div className="rounded-3xl bg-[#111827] border border-[#1F2737] p-6 space-y-4 shadow-xl">
+      {/* 4. ACHIEVEMENTS & MILESTONES */}
+      <div className="rounded-3xl bg-[#111827] border border-[#1F2737] p-4 sm:p-6 space-y-4 shadow-xl">
         <div className="pb-3 border-b border-[#1F2737]">
-          <h2 className="font-display font-extrabold text-lg text-white flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-amber-400" />
+          <h2 className="font-display font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-amber-400 shrink-0" />
             <span>Milestone Achievements</span>
           </h2>
           <p className="text-xs text-[#94A3B8]">
@@ -746,34 +784,34 @@ export default function RewardsView() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 pt-1">
           {ACHIEVEMENTS.map((ach) => {
             const isClaimed = claimedAchievements.includes(ach.id);
 
             return (
               <div
                 key={ach.id}
-                className="rounded-2xl bg-[#0B0F19] border border-[#1F2737] p-4 flex items-center justify-between gap-4 hover:border-amber-500/30 transition-all shadow-md"
+                className="rounded-2xl bg-[#0B0F19] border border-[#1F2737] p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:border-amber-500/30 transition-all shadow-md"
               >
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-[#151C2B] border border-[#2A374A] flex items-center justify-center text-2xl shadow-inner shrink-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#151C2B] border border-[#2A374A] flex items-center justify-center text-xl sm:text-2xl shadow-inner shrink-0">
                     {ach.icon}
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-display font-bold text-sm text-white">
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                      <h3 className="font-display font-bold text-xs sm:text-sm text-white truncate">
                         {ach.title}
                       </h3>
-                      <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 font-bold">
+                      <span className="text-[10px] font-mono-numbers px-1.5 sm:px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 font-bold whitespace-nowrap shrink-0">
                         +{ach.reward} FC
                       </span>
                     </div>
-                    <p className="text-xs text-[#94A3B8] leading-snug">
+                    <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-snug line-clamp-2">
                       {ach.description}
                     </p>
 
                     {/* Progress Bar */}
-                    <div className="w-36 h-1.5 bg-[#1F2737] rounded-full overflow-hidden mt-1">
+                    <div className="w-full sm:w-36 h-1.5 bg-[#1F2737] rounded-full overflow-hidden mt-1">
                       <div 
                         className={`h-full rounded-full transition-all ${ach.unlocked ? 'bg-emerald-400' : 'bg-amber-400'}`}
                         style={{ width: `${ach.progress}%` }}
@@ -782,21 +820,24 @@ export default function RewardsView() {
                   </div>
                 </div>
 
-                <div>
+                <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t border-[#1F2737]/60 sm:border-0 shrink-0">
+                  <span className="text-[10px] font-mono-numbers text-[#64748B] sm:hidden">
+                    Progress: {ach.progress}%
+                  </span>
                   {isClaimed ? (
-                    <span className="text-xs font-mono-numbers text-emerald-400 font-bold flex items-center gap-1">
-                      <CheckCircle2 className="w-4 h-4" />
+                    <span className="text-xs font-mono-numbers text-emerald-400 font-bold flex items-center gap-1 whitespace-nowrap">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
                       Claimed
                     </span>
                   ) : ach.unlocked ? (
                     <button
                       onClick={() => handleClaimAchievement(ach)}
-                      className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-black font-extrabold text-xs shadow-md shadow-emerald-500/20 cursor-pointer"
+                      className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-black font-extrabold text-xs shadow-md shadow-emerald-500/20 cursor-pointer whitespace-nowrap active:scale-95 transition-transform"
                     >
                       Claim
                     </button>
                   ) : (
-                    <span className="text-xs font-mono-numbers text-[#64748B]">
+                    <span className="text-xs font-mono-numbers text-[#64748B] hidden sm:inline whitespace-nowrap">
                       {ach.progress}%
                     </span>
                   )}

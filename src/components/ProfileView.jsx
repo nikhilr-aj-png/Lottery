@@ -214,8 +214,8 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }) {
         </div>
       )}
 
-      {/* Overview Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* Overview Stats Cards — Hidden on Mobile (320px, 375px, 425px) and Visible on Tablet (768px+) & Desktop */}
+      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         
         {/* Stat 1: Available USDT Balance */}
         <div className="glass-panel p-4 sm:p-5 rounded-2xl border-l-4 border-l-[#ffd700] relative overflow-hidden">
@@ -620,8 +620,8 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }) {
         <div className="lg:col-span-5 space-y-6">
 
 
-          {/* CARD 4: Platform Quick Navigation */}
-          <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-[#272a31] space-y-4">
+          {/* CARD 4: Platform Quick Navigation — Hidden on Mobile (320px, 375px, 425px) and Visible on Tablet (768px+) & Desktop */}
+          <div className="hidden md:block glass-panel rounded-2xl p-5 sm:p-6 border border-[#272a31] space-y-4">
             <h3 className="font-display font-bold text-base text-white">
               Platform Quick Access
             </h3>

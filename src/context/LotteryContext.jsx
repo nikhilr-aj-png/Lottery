@@ -543,7 +543,7 @@ export function LotteryProvider({ children }) {
 
       if (data && data.success) {
         const bonusAmount = parseFloat(data.bonus_amount || 0);
-        showToast(`🎉 Day ${data.current_streak} Claimed! +${bonusAmount.toFixed(2)} FLO (≈ $${bonusAmount.toFixed(2)} USDT)`, 'success');
+        showToast(`🎉 Day ${data.current_streak} Claimed! +${bonusAmount.toFixed(2)} FLO W (≈ $${bonusAmount.toFixed(2)} USDT)`, 'success');
         confetti({
           particleCount: 80,
           spread: 80,
