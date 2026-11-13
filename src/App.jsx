@@ -35,6 +35,52 @@ import PwaInstallBanner from './components/PwaInstallBanner';
 import PwaInstallModal from './components/PwaInstallModal';
 import { ShieldCheck, Flame, Trophy, Sparkles, ShieldAlert, Lock, LogIn } from 'lucide-react';
 
+class GlobalErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Application Runtime Error Caught by GlobalErrorBoundary:', error, errorInfo);
+  }
+
+  handleReload = () => {
+    window.location.href = '/';
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#0B0F19] text-[#F8FAFC] flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-[#111827] border border-amber-500/30 rounded-2xl p-6 text-center space-y-4 shadow-2xl shadow-black/80">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400 shadow-[0_0_25px_rgba(245,196,81,0.2)]">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+            <h2 className="font-display font-extrabold text-xl text-white">
+              Application Refresh Notice
+            </h2>
+            <p className="text-xs text-[#94A3B8] leading-relaxed">
+              An unexpected render issue occurred while loading this view. Click below to reload the platform cleanly.
+            </p>
+            <button
+              onClick={this.handleReload}
+              className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-lg shadow-amber-500/20"
+            >
+              Reload Platform
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function AuthRequiredPrompt({ title, onLogin, onHome }) {
   return (
     <div className="max-w-md mx-auto px-4 py-20 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
@@ -668,10 +714,12 @@ function LotteryAppContent() {
 
 export default function App() {
   return (
-    <PwaProvider>
-      <LotteryProvider>
-        <LotteryAppContent />
-      </LotteryProvider>
-    </PwaProvider>
+    <GlobalErrorBoundary>
+      <PwaProvider>
+        <LotteryProvider>
+          <LotteryAppContent />
+        </LotteryProvider>
+      </PwaProvider>
+    </GlobalErrorBoundary>
   );
 }

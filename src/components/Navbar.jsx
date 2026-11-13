@@ -13,7 +13,11 @@ import {
   Sparkles,
   Volume2,
   VolumeX,
-  Volume1
+  Volume1,
+  Flame,
+  Ticket,
+  Lock,
+  Trophy
 } from 'lucide-react';
 
 export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotifications }) {
