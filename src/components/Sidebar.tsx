@@ -90,7 +90,7 @@ export default function Sidebar({
 
   const navSections = [
     {
-      title: 'Casino Lobby',
+      title: '', // Removed 'Casino Lobby' heading to eliminate expansion downward layout shift
       items: [
         { id: 'lotteries', label: 'Home', icon: LayoutGrid, isLobby: true },
         { id: 'lottery-game', label: 'Four-Digit Lottery', icon: Ticket, image: getGameIconUrl('lottery'), isLottery: true },
@@ -154,16 +154,20 @@ export default function Sidebar({
     <div className="h-full flex flex-col overflow-hidden pt-3 pb-3 px-2 sm:px-2.5 text-left relative">
 
       {/* Navigation Sections — Scrollable Menu Items Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar space-y-3 pr-0.5">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar space-y-2 pr-0.5">
         {navSections.map((sec, secIdx) => (
-          <div key={secIdx} className="space-y-1">
-            {!isCollapsed ? (
-              <span className="text-[10px] font-mono-numbers font-bold uppercase tracking-wider text-[#94A3B8] px-2.5 block">
-                {sec.title}
-              </span>
-            ) : (
-              secIdx > 0 ? <div className="w-6 h-px bg-[#1F2737] mx-auto my-2" /> : null
-            )}
+          <div key={secIdx} className="space-y-0.5">
+            {sec.title ? (
+              <div className="h-5 flex items-center px-2.5 overflow-hidden">
+                {!isCollapsed ? (
+                  <span className="text-[10px] font-mono-numbers font-bold uppercase tracking-wider text-[#94A3B8] truncate transition-opacity duration-200">
+                    {sec.title}
+                  </span>
+                ) : (
+                  <div className="w-6 h-px bg-[#1F2737] mx-auto" />
+                )}
+              </div>
+            ) : null}
 
             <div className="space-y-0.5">
               {sec.items.map((item) => {
@@ -173,11 +177,13 @@ export default function Sidebar({
                   <button
                     key={item.id}
                     onClick={() => handleItemClick(item)}
-                    className={`w-full min-h-[44px] flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer group ${isCollapsed ? 'justify-center px-0' : 'justify-between'
-                      } ${isActive
+                    className={`w-full h-11 flex items-center gap-2.5 rounded-xl text-xs font-semibold transition-colors duration-150 cursor-pointer group overflow-hidden ${
+                      isCollapsed ? 'justify-center px-0' : 'justify-between px-2.5'
+                    } ${
+                      isActive
                         ? 'bg-amber-500 text-black font-extrabold shadow-md shadow-amber-500/20'
                         : 'text-[#94A3B8] hover:text-white hover:bg-[#151C2B]'
-                      }`}
+                    }`}
                     title={item.label}
                     aria-label={item.label}
                   >
@@ -202,13 +208,14 @@ export default function Sidebar({
                         <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-black' : 'text-amber-400 group-hover:scale-110 transition-transform'}`} />
                       )}
                       {!isCollapsed && (
-                        <span className="truncate">{item.label}</span>
+                        <span className="truncate whitespace-nowrap">{item.label}</span>
                       )}
                     </div>
 
                     {!isCollapsed && item.badge && (
-                      <span className={`text-[9px] font-mono-numbers px-1.5 py-0.2 rounded font-black shrink-0 ${isActive ? 'bg-black text-amber-300' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                        }`}>
+                      <span className={`text-[9px] font-mono-numbers px-1.5 py-0.2 rounded font-black shrink-0 whitespace-nowrap ${
+                        isActive ? 'bg-black text-amber-300' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                      }`}>
                         {item.badge}
                       </span>
                     )}
@@ -256,8 +263,9 @@ export default function Sidebar({
     <>
       {/* 1. Desktop Persistent Sidebar (68px when collapsed on laptop, 240px expanded on desktop) */}
       <aside
-        className={`hidden lg:flex flex-col shrink-0 bg-[#0B0F19] border-r border-[#1F2737] transition-all duration-300 z-30 h-full ${isCollapsed ? 'w-[68px]' : 'w-60'
-          }`}
+        className={`hidden lg:flex flex-col shrink-0 bg-[#0B0F19] border-r border-[#1F2737] transition-[width] duration-250 ease-in-out will-change-[width] z-30 h-full ${
+          isCollapsed ? 'w-[68px]' : 'w-60'
+        }`}
       >
         {sidebarContent}
       </aside>
@@ -272,17 +280,43 @@ export default function Sidebar({
           />
           {/* Drawer panel with slide-in animation */}
           <div className="absolute top-0 bottom-0 left-0 w-64 xs:w-72 max-w-[85vw] bg-[#0B0F19] border-r border-[#1F2737] shadow-2xl animate-in slide-in-from-left duration-250 z-10 flex flex-col">
-            {/* Mobile Drawer Close Button */}
-            <div className="flex items-center justify-end px-3 py-2 border-b border-[#1F2737] shrink-0">
+            {/* Mobile Drawer Top Branded Header — Always displays Logo & Platform Name */}
+            <div className="flex items-center justify-between px-3 h-13 xs:h-14 border-b border-[#1F2737] shrink-0 bg-[#0B0F19]">
+              <div 
+                onClick={() => {
+                  onSelectTab('lotteries');
+                  if (onClose) onClose();
+                }}
+                className="flex items-center gap-2 cursor-pointer group select-none shrink-0"
+              >
+                <div className="w-7.5 h-7.5 xs:w-8 xs:h-8 rounded-full p-0.5 shadow-[0_0_10px_rgba(245,196,81,0.3)] flex items-center justify-center shrink-0">
+                  <img 
+                    src="/logo.png" 
+                    alt="EarnFlow.In" 
+                    className="w-full h-full rounded-full object-cover border border-[#ffd700]/40" 
+                  />
+                </div>
+                <div className="flex flex-col justify-center shrink-0">
+                  <span className="font-display font-extrabold text-sm xs:text-base tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-tight whitespace-nowrap">
+                    EarnFlow<span className="text-[#F5C451]">.In</span>
+                  </span>
+                  <span className="text-[9px] text-[#94A3B8] font-medium leading-none mt-0.5 whitespace-nowrap">
+                    Casino & Games
+                  </span>
+                </div>
+              </div>
+
+              {/* Mobile Drawer Close Button */}
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-lg bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-rose-400/40 transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-lg bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-rose-400/40 transition-colors cursor-pointer shrink-0"
                 title="Close Navigation"
                 aria-label="Close Navigation"
               >
                 <X className="w-4 h-4 text-rose-400" />
               </button>
             </div>
+
             <div className="flex-1 min-h-0 overflow-hidden">
               {sidebarContent}
             </div>

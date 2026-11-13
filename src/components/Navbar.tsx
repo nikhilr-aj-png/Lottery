@@ -97,7 +97,7 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
           <div className="flex items-center justify-between h-13 xs:h-14 sm:h-16">
             
             {/* LEFT: Sidebar Toggle & EarnFlow.In Branding */}
-            <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
+            <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 shrink-0">
               
               {/* Sidebar Drawer Toggle (Mobile / Tablet / Desktop) */}
               <button
@@ -109,12 +109,12 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                 <Menu className="w-4 h-4 xs:w-4.5 xs:h-4.5" />
               </button>
 
-              {/* Brand Logo & Clean Name (No duplicate 'Flow' tag) */}
+              {/* Brand Logo & Clean Name (Always visible together across all viewports) */}
               <div 
                 onClick={() => handleNavClick('lotteries')}
                 className="flex items-center gap-1.5 xs:gap-2 sm:gap-2.5 cursor-pointer group shrink-0 select-none"
               >
-                <div className="w-7.5 h-7.5 xs:w-8 xs:h-8 sm:w-9.5 sm:h-9.5 rounded-full p-0.5 shadow-[0_0_12px_rgba(245,196,81,0.3)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-9.5 sm:h-9.5 rounded-full p-0.5 shadow-[0_0_12px_rgba(245,196,81,0.3)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
                   <img 
                     src="/logo.png" 
                     alt="EarnFlow.In" 
@@ -122,12 +122,12 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                   />
                 </div>
                 
-                <div className="flex flex-col justify-center">
-                  <span className="font-display font-extrabold text-sm xs:text-base sm:text-lg lg:text-xl tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-tight">
+                <div className="flex flex-col justify-center shrink-0">
+                  <span className="font-display font-extrabold text-[13px] xs:text-base sm:text-lg lg:text-xl tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-tight whitespace-nowrap shrink-0">
                     EarnFlow<span className="text-[#F5C451]">.In</span>
                   </span>
                   {/* Subtitle visible ONLY on xl (1280px+) where ample space exists */}
-                  <span className="text-[10px] text-[#94A3B8] font-medium hidden xl:block leading-none mt-0.5">
+                  <span className="text-[10px] text-[#94A3B8] font-medium hidden xl:block leading-none mt-0.5 whitespace-nowrap">
                     Casino & Multi-Game Platform
                   </span>
                 </div>
@@ -135,7 +135,7 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
             </div>
 
             {/* RIGHT: Desktop Controls (Wallet + Notifications + Profile) / Mobile Icons */}
-            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2.5 shrink-0">
               
               {/* Optional Android APK direct download (hidden on small/medium displays) */}
               {!isNativeApp && (
@@ -163,7 +163,7 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                     e.preventDefault();
                     setShowVolumeSlider(prev => !prev);
                   }}
-                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center transition-all cursor-pointer relative shrink-0 shadow-sm ${
+                  className={`w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center transition-all cursor-pointer relative shrink-0 shadow-sm ${
                     soundEnabled 
                       ? 'bg-[#10131A] hover:bg-[#151C2B] text-amber-400 border-[#2D3545] hover:border-amber-400/50 hover:shadow-[0_0_12px_rgba(245,196,81,0.2)]' 
                       : 'bg-[#10131A] text-[#64748B] border-[#2D3545] hover:text-[#94A3B8] hover:border-slate-600'
@@ -255,7 +255,7 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                   {/* User Profile Pill: Compact icon-only on mobile (< 640px), full pill on sm+ */}
                   <button
                     onClick={() => handleNavClick('profile')}
-                    className={`flex items-center gap-1.5 text-xs font-mono-numbers p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border transition-all cursor-pointer shrink-0 shadow-sm ${
+                    className={`flex items-center gap-1.5 text-xs font-mono-numbers p-1 xs:p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border transition-all cursor-pointer shrink-0 shadow-sm ${
                       activeTab === 'profile'
                         ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] border-[#fff2a3] font-bold'
                         : 'bg-[#151C2B] text-[#E1E2EB] border-[#2D3545] hover:border-[#F5C451]/50'
@@ -283,7 +283,7 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                 /* Login / Sign Up Button when unauthenticated */
                 <button
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="btn-gold px-2.5 xs:px-3.5 sm:px-4.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 sm:gap-1.5 shadow-md cursor-pointer whitespace-nowrap shrink-0"
+                  className="btn-gold px-2 xs:px-3 sm:px-4.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 sm:gap-1.5 shadow-md cursor-pointer whitespace-nowrap shrink-0"
                 >
                   <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Login</span>
