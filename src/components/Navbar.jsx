@@ -3,17 +3,11 @@ import { useLottery } from '../context/LotteryContext';
 import { useSoundFX } from '../hooks/useSoundFX';
 import { 
   Wallet, 
-  Ticket, 
-  Trophy, 
-  Flame, 
   Menu, 
   ChevronDown,
   User,
   LogIn,
-  Lock,
-  Headphones,
   Download,
-  Gift,
   Coins,
   Bell,
   Sparkles,
@@ -77,20 +71,6 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Adaptive responsive navigation links:
-  // - Tablet (md: 768px): Primary 4 links (Home, Tickets, Results, Wallet) in compact pill
-  // - Laptop (lg: 1024px): Primary + Rewards (5 links)
-  // - Desktop (xl: 1280px+): All 6 links including Support
-  const navItems = [
-    { id: 'lotteries', label: 'Home', icon: Flame, minScreen: 'md' },
-    { id: 'tickets', label: 'My Tickets', icon: Ticket, requiresAuth: true, minScreen: 'md' },
-    { id: 'results', label: 'Results', icon: Trophy, requiresAuth: true, minScreen: 'md' },
-    { id: 'wallet', label: 'Wallet', icon: Wallet, requiresAuth: true, minScreen: 'md' },
-    { id: 'rewards', label: 'Rewards', icon: Gift, minScreen: 'lg' },
-    { id: 'leaderboard', label: 'Leaderboard', icon: Trophy, minScreen: 'xl' },
-    { id: 'contact', label: 'Support', icon: Headphones, minScreen: '2xl' },
-  ];
-
   const usernameDisplay = profile?.username 
     ? `@${profile.username}` 
     : (user?.user_metadata?.username 
@@ -143,43 +123,6 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
                 </div>
               </div>
             </div>
-
-            {/* CENTER: Adaptive Navigation Links (md: 768px compact, lg: 1024px expanded, xl: 1280px+ full) */}
-            <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 bg-[#10131A]/90 p-1 rounded-xl border border-[rgba(245,196,81,0.15)] shadow-inner">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                const isLocked = !isLoggedIn && item.requiresAuth;
-                
-                // Visibility:
-                // 'xl' items appear only on xl: (1280px+)
-                // 'lg' items appear on lg: (1024px+)
-                // 'md' items appear on md: (768px+)
-                const screenVisibilityClass = item.minScreen === 'xl'
-                  ? 'hidden xl:flex'
-                  : item.minScreen === 'lg'
-                    ? 'hidden lg:flex'
-                    : 'flex';
-
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavClick(item.id)}
-                    className={`${screenVisibilityClass} px-2 lg:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
-                      isActive
-                        ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-sm font-bold'
-                        : 'text-[#d2c5b0] hover:text-[#ffd700] hover:bg-white/5'
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5 shrink-0" />
-                    <span>{item.label}</span>
-                    {isLocked && (
-                      <Lock className="w-2.5 h-2.5 text-[#9b8f7c] opacity-60 ml-0.5 shrink-0" />
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
 
             {/* RIGHT: Desktop Controls (Wallet + Notifications + Profile) / Mobile Icons */}
             <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">

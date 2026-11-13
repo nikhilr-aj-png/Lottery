@@ -82,7 +82,7 @@ export default function Sidebar({
     {
       title: 'Casino Lobby',
       items: [
-        { id: 'lotteries', label: 'All Games Lobby', icon: LayoutGrid, isLobby: true },
+        { id: 'lotteries', label: 'Home', icon: LayoutGrid, isLobby: true },
         { id: 'lottery-game', label: 'Four-Digit Lottery', icon: Ticket, image: getGameIconUrl('lottery'), isLottery: true },
       ]
     },
@@ -104,8 +104,8 @@ export default function Sidebar({
         { id: 'rewards', label: 'Daily Bonus & Rewards', icon: Gift },
         { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
         { id: 'tickets', label: 'My Tickets', icon: Ticket, requiresAuth: true },
-        { id: 'results', label: 'Draw Results', icon: Trophy, requiresAuth: true },
-        { id: 'wallet', label: 'Virtual Wallet & Ledger', icon: Wallet, requiresAuth: true },
+        { id: 'results', label: 'Result', icon: Trophy, requiresAuth: true },
+        { id: 'wallet', label: 'Wallet', icon: Wallet, requiresAuth: true },
         { id: 'transactions', label: 'Transaction History', icon: History, requiresAuth: true },
       ]
     },

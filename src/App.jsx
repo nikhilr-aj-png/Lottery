@@ -3,7 +3,6 @@ import { LotteryProvider, useLottery } from './context/LotteryContext';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import CasinoLobby from './components/CasinoLobby';
-import LiveBetsTicker from './components/LiveBetsTicker';
 import GameModal from './components/GameModal';
 import ProvablyFairModal from './components/ProvablyFairModal';
 import HeroBanner from './components/HeroBanner';
@@ -354,15 +353,6 @@ function LotteryAppContent() {
         }}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
       />
-
-      {/* Live Bets and High Rollers Realtime Activity Ticker */}
-      <div className="shrink-0">
-        <LiveBetsTicker onSelectGame={(gid) => {
-          setIsTransactionRoute(false);
-          const g = getGameById(gid);
-          navigate('/games/' + (g?.slug || gid));
-        }} />
-      </div>
 
       {/* Main Layout: Left Navigation Sidebar + Content Area */}
       <div className="flex-1 min-h-0 flex overflow-hidden w-full max-w-[2000px] mx-auto min-w-0">
