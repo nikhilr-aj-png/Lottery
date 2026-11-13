@@ -20,7 +20,8 @@ import {
   Calendar,
   Layers,
   Award,
-  Hash
+  Hash,
+  ArrowLeft
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundFX } from '../engine/SoundFXService';
@@ -258,68 +259,61 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
   }, [event.drawTime]);
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-200 text-left">
+    <div className="space-y-3 sm:space-y-4 animate-in fade-in duration-200 text-left">
       
-      {/* 1. ROOM BANNER & DRAW METRICS */}
-      <div className="glass-panel rounded-2xl sm:rounded-3xl p-5 sm:p-7 border border-amber-500/30 bg-gradient-to-br from-[#151C2B] via-[#0F1420] to-[#0B0F19] shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* 1. COMPACT IN-ROOM BANNER & DRAW METRICS */}
+      <div className="glass-panel rounded-xl sm:rounded-2xl p-2.5 sm:px-4 sm:py-3 border border-amber-500/30 bg-gradient-to-r from-[#151C2B] via-[#0F1420] to-[#0B0F19] shadow-lg flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 sm:gap-4 shrink-0">
+        
+        {/* Left: Back to Lobby + Room Name + Draw Badge */}
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          {onBackToLobby && (
+            <button
+              onClick={onBackToLobby}
+              className="px-2.5 py-1 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-[#9b8f7c] hover:text-white border border-[#272a31] text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+              title="Return to Lottery Lobby"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden xs:inline">Lobby</span>
+            </button>
+          )}
 
-        <div className="relative z-10 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6">
-          
-          <div className="space-y-2.5 max-w-2xl min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-mono-numbers px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold uppercase tracking-wider">
-                {room.drawId || 'DRAW #' + event.id}
-              </span>
-              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-[#141924] text-emerald-400 border border-[#272a31] font-bold uppercase flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                {event.status === 'completed' ? 'CONCLUDED' : 'ENTRY ACTIVE'}
-              </span>
-              <span className="text-[11px] text-[#9b8f7c]">
-                Closing: <strong className="text-white font-mono-numbers">{closingDateStr}</strong>
-              </span>
-            </div>
-
-            <h2 className="font-display font-black text-xl sm:text-2xl text-white tracking-tight">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+            <h2 className="font-display font-extrabold text-sm sm:text-base text-white truncate">
               {room.name}
             </h2>
-
-            <p className="text-xs text-[#94A3B8] leading-relaxed">
-              {room.description}
-            </p>
+            <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold uppercase shrink-0">
+              {room.drawId || 'DRAW #' + event.id}
+            </span>
+            <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-[#141924] text-emerald-400 border border-[#272a31] font-bold uppercase flex items-center gap-1 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              {event.status === 'completed' ? 'CONCLUDED' : 'ACTIVE'}
+            </span>
           </div>
-
-          {/* Key Metrics Columns */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            <div className="bg-[#0b0e14]/90 p-3 rounded-xl border border-[#272a31] text-center min-w-[90px]">
-              <span className="text-[9px] text-[#8b92a2] uppercase font-bold block">Ticket Price</span>
-              <span className="text-base font-mono-numbers font-black text-amber-400">{event.ticketPrice} FC</span>
-            </div>
-
-            <div className="bg-[#0b0e14]/90 p-3 rounded-xl border border-[#272a31] text-center min-w-[90px]">
-              <span className="text-[9px] text-[#8b92a2] uppercase font-bold block">Prize Pool</span>
-              <span className="text-base font-mono-numbers font-black text-emerald-400">
-                {Number(event.poolPrize || 5000).toLocaleString()} FC
-              </span>
-            </div>
-
-            <div className="bg-[#0b0e14]/90 p-3 rounded-xl border border-[#272a31] text-center min-w-[90px]">
-              <span className="text-[9px] text-[#8b92a2] uppercase font-bold block">Participants</span>
-              <span className="text-base font-mono-numbers font-black text-purple-300">
-                {event.participantsCount || room.currentPlayers || 18}
-              </span>
-            </div>
-
-            <div className="bg-[#0b0e14]/90 p-3 rounded-xl border border-[#272a31] text-center min-w-[90px]">
-              <span className="text-[9px] text-[#8b92a2] uppercase font-bold block">Time Left</span>
-              <span className="text-base font-mono-numbers font-black text-amber-300 flex items-center justify-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>{timeLeft.hours}h {timeLeft.minutes}m</span>
-              </span>
-            </div>
-          </div>
-
         </div>
+
+        {/* Right: Inline Compact Metrics Strip (Price, Pool, Players, Time) */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 text-[11px] sm:text-xs font-mono-numbers overflow-x-auto no-scrollbar shrink-0">
+          <div className="bg-[#0b0e14] px-2.5 py-1 rounded-lg border border-[#272a31] flex items-center gap-1 shrink-0">
+            <span className="text-[#8b92a2]">Price:</span>
+            <strong className="text-amber-400 font-bold">{event.ticketPrice} FC</strong>
+          </div>
+
+          <div className="bg-[#0b0e14] px-2.5 py-1 rounded-lg border border-[#272a31] flex items-center gap-1 shrink-0">
+            <span className="text-[#8b92a2]">Pool:</span>
+            <strong className="text-emerald-400 font-bold">{Number(event.poolPrize || 5000).toLocaleString()} FC</strong>
+          </div>
+
+          <div className="bg-[#0b0e14] px-2.5 py-1 rounded-lg border border-[#272a31] flex items-center gap-1 shrink-0">
+            <span className="text-[#8b92a2]">Players:</span>
+            <strong className="text-purple-300 font-bold">{event.participantsCount || room.currentPlayers || 18}</strong>
+          </div>
+
+          <div className="bg-[#0b0e14] px-2.5 py-1 rounded-lg border border-[#272a31] flex items-center gap-1 text-amber-300 font-bold shrink-0">
+            <Clock className="w-3 h-3 text-amber-400" />
+            <span>{timeLeft.hours}h {timeLeft.minutes}m</span>
+          </div>
+        </div>
+
       </div>
 
       {/* 2. MAIN 2-COLUMN WORKSTATION: DIALS & ORDER STAGING */}
@@ -535,8 +529,8 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
             )}
           </div>
 
-          {/* Order Summary & Balance Check */}
-          <div className="p-3.5 rounded-xl bg-[#0b0e14] border border-[#272a31] space-y-2.5 text-xs font-mono-numbers">
+          {/* Order Summary */}
+          <div className="p-3.5 rounded-xl bg-[#0b0e14] border border-[#272a31] space-y-2 text-xs font-mono-numbers">
             <div className="flex items-center justify-between text-[#8b92a2]">
               <span>Tickets Selected:</span>
               <strong className="text-white">{stagedTickets.length}</strong>
@@ -550,13 +544,6 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
             <div className="flex items-center justify-between pt-2 border-t border-[#1f2737] text-sm">
               <span className="font-bold text-white font-sans">Total Cost:</span>
               <strong className="font-black text-amber-400 font-mono-numbers text-base">{totalCost} FC</strong>
-            </div>
-
-            <div className="flex items-center justify-between pt-1 text-[11px] text-[#8b92a2]">
-              <span>Your FC Balance:</span>
-              <strong className={Number(wallet.balance || 0) >= totalCost ? 'text-emerald-400' : 'text-red-400'}>
-                {Number(wallet.balance || 0).toLocaleString()} FC
-              </strong>
             </div>
           </div>
 
@@ -588,50 +575,90 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
 
       </div>
 
-      {/* 3. MY ENTRIES IN THIS ROOM */}
-      <section className="glass-panel rounded-2xl p-5 sm:p-6 border border-[#272a31] space-y-4">
+      {/* 3. MY ENTRIES IN THIS ROOM (Fixed-Height Scroll Container) */}
+      <section className="glass-panel rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-[#272a31] space-y-3">
         <div className="flex items-center justify-between pb-2 border-b border-[#1f2737]">
           <div className="flex items-center gap-2">
             <Award className="w-4 h-4 text-amber-400" />
-            <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
+            <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
               My Tickets in {room.name}
             </h3>
           </div>
-          <span className="text-[11px] font-mono-numbers px-2.5 py-0.5 rounded bg-[#141924] text-amber-300 border border-[#272a31]">
+          <span className="text-[10px] font-mono-numbers px-2.5 py-0.5 rounded bg-[#141924] text-amber-300 border border-[#272a31]">
             {myTicketsInThisRoom.length} Registered
           </span>
         </div>
 
         {myTicketsInThisRoom.length === 0 ? (
-          <p className="text-xs text-[#9b8f7c] py-4 text-center">
+          <p className="text-xs text-[#9b8f7c] py-3 text-center">
             You haven't purchased any tickets in this specific draw yet. Select combinations above to participate!
           </p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 pt-2">
-            {myTicketsInThisRoom.map((tkt, idx) => (
-              <div
-                key={idx}
-                className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] text-center space-y-1"
-              >
-                <span className="text-[10px] text-[#8b92a2] font-mono-numbers block">
-                  #{tkt.id?.slice(-6) || idx + 1}
-                </span>
-                <span className="font-mono-numbers font-black text-lg text-amber-300 tracking-wider block">
-                  #{tkt.ticket_number || tkt.ticketNumber}
-                </span>
-                <span className={`text-[9px] font-mono-numbers font-bold px-1.5 py-0.5 rounded uppercase block ${
-                  tkt.status === 'won' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-[#141924] text-[#8b92a2]'
-                }`}>
-                  {tkt.status || 'Active'}
-                </span>
-              </div>
-            ))}
+          <div className="max-h-40 sm:max-h-48 overflow-y-auto no-scrollbar pr-1">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+              {myTicketsInThisRoom.map((tkt, idx) => (
+                <div
+                  key={idx}
+                  className="p-2.5 rounded-xl bg-[#0b0e14] border border-[#272a31] text-center space-y-1"
+                >
+                  <span className="text-[10px] text-[#8b92a2] font-mono-numbers block">
+                    #{tkt.id?.slice(-6) || idx + 1}
+                  </span>
+                  <span className="font-mono-numbers font-black text-base text-amber-300 tracking-wider block">
+                    #{tkt.ticket_number || tkt.ticketNumber}
+                  </span>
+                  <span className={`text-[9px] font-mono-numbers font-bold px-1.5 py-0.2 rounded uppercase block ${
+                    tkt.status === 'won' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-[#141924] text-[#8b92a2]'
+                  }`}>
+                    {tkt.status || 'Active'}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </section>
 
-      {/* 4. PROVABLY FAIR VERIFICATION DRAWER */}
-      <div className="p-4 rounded-xl bg-[#0b0e14] border border-[#272a31] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-[#9b8f7c]">
+      {/* 4. RECENT RESULTS & LIVE ACTIVITY IN THIS ROOM (Fixed-Height Scroll Container) */}
+      <section className="glass-panel rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-[#272a31] space-y-3">
+        <div className="flex items-center justify-between pb-2 border-b border-[#1f2737]">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-amber-400" />
+            <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
+              Recent Concluded Draws & Winning Digits
+            </h3>
+          </div>
+          <span className="text-[10px] text-[#8b92a2] font-mono-numbers">
+            Provably Fair SHA-256
+          </span>
+        </div>
+
+        <div className="max-h-36 overflow-y-auto no-scrollbar space-y-1.5">
+          {events.filter(e => e.status === 'completed' || e.winningNumber).length === 0 ? (
+            <div className="text-center py-3 text-[#9b8f7c] text-xs">
+              Next draw closes in {timeLeft.hours}h {timeLeft.minutes}m. Winning digits will be posted here immediately upon draw conclusion.
+            </div>
+          ) : (
+            events.filter(e => e.status === 'completed' || e.winningNumber).slice(0, 5).map((evt, idx) => (
+              <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-[#0b0e14] border border-[#1f2737] text-xs font-mono-numbers">
+                <div className="flex items-center gap-2">
+                  <span className="text-amber-400 font-bold">#{evt.id?.replace('evt-', '').toUpperCase()}</span>
+                  <span className="text-[#9b8f7c] text-[11px] truncate max-w-[120px] sm:max-w-none">{evt.title}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-[#8b92a2] hidden xs:inline">Winning Digits:</span>
+                  <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-black tracking-widest border border-amber-500/40">
+                    #{evt.winningNumber || evt.winning_number || '7429'}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      {/* 5. PROVABLY FAIR VERIFICATION DRAWER */}
+      <div className="p-3 sm:p-4 rounded-xl bg-[#0b0e14] border border-[#272a31] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs text-[#9b8f7c]">
         <div className="flex items-center gap-2 min-w-0">
           <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
           <div className="min-w-0">

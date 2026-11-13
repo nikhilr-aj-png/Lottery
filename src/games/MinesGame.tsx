@@ -314,7 +314,6 @@ export default function MinesGame({ room }) {
             <div>
               <div className="flex items-center justify-between text-xs mb-1.5 font-bold font-mono-numbers">
                 <span className="text-[#94A3B8]">Bet Amount:</span>
-                <span className="text-amber-300">Balance: {walletBalance.toLocaleString()} FC</span>
               </div>
               <div className="flex items-center bg-[#0B0F19] border border-[#1F2737] focus-within:border-amber-500/50 rounded-xl p-1.5">
                 <input

@@ -10,7 +10,6 @@ import {
 } from '../engine';
 import { supabase } from '../lib/supabase';
 import ProvablyFairModal from '../components/ProvablyFairModal';
-import RoomChatDrawer from '../components/RoomChatDrawer';
 import { useLottery } from '../context/LotteryContext';
 import { 
   ArrowLeft, 
@@ -114,10 +113,6 @@ export default function GamePage({
   const [customClientSeed, setCustomClientSeed] = useState('');
   const [isRotatingSeeds, setIsRotatingSeeds] = useState(false);
   const [copiedKey, setCopiedKey] = useState<any>(null);
-
-  // Live Room Chat & Presence State
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [unreadChatCount, setUnreadChatCount] = useState(0);
 
   // Sound Engine
   const { enabled: soundEnabled, volume: soundVolume, toggleSound, playClick } = useSoundFX();
@@ -282,201 +277,33 @@ export default function GamePage({
   // --------------------------------------------------------------------------
   if (selectedRoom) {
     return (
-      <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-200">
+      <div className="space-y-3 sm:space-y-4 animate-in fade-in duration-200">
         
-        {/* Top Control Bar */}
-        <div className="glass-panel rounded-2xl p-3 sm:p-4 border border-[#272a31] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <button
-              onClick={handleBackToLobby}
-              className="p-2 sm:p-2.5 rounded-xl bg-[#141924] hover:bg-[#1f2737] text-[#9b8f7c] hover:text-white border border-[#272a31] transition-all cursor-pointer shrink-0 flex items-center gap-1.5 text-xs font-bold"
-              title="Return to Game Lobby"
-            >
-              <ArrowLeft className="w-4 h-4 text-amber-400" />
-              <span className="hidden xs:inline">Lobby</span>
-            </button>
-
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#141924] border border-amber-500/30 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-              <img 
-                src={getGameIconUrl(game.id) || game.icon || game.image} 
-                alt={game.name} 
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  const next = e.currentTarget.nextSibling as HTMLElement | null;
-                  if (next && next.style) {
-                    next.style.display = 'inline';
-                  }
-                }}
-              />
-              <span className="hidden text-lg sm:text-xl">
-                {game.id === 'crash' ? '🚀' : 
-                 game.id === 'dice' ? '🎲' : 
-                 game.id === 'mines' ? '💣' : 
-                 game.id === 'plinko' ? '🎯' : 
-                 game.id === 'roulette' ? '🎡' : 
-                 game.id === 'coinflip' ? '🪙' : 
-                 game.id === 'blackjack' ? '🃏' : 
-                 game.id === 'slots' ? '🎰' : 
-                 game.id === 'poker' ? '♠️' : 
-                 game.id === 'keno' ? '🎱' : 
-                 game.id === 'limbo' ? '⚡' : '🎟️'}
-              </span>
-            </div>
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="font-display font-black text-sm sm:text-base text-white truncate">
+        {/* Compact In-Room Bar (Modular Games: Quick Return to Lobby & Room Limits) */}
+        {game.id !== 'lottery' && (
+          <div className="flex items-center justify-between gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-[#0B0F19]/90 border border-[#1F2737] shrink-0 text-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                onClick={handleBackToLobby}
+                className="px-2.5 py-1 rounded-lg bg-[#141924] hover:bg-[#1f2737] text-[#9b8f7c] hover:text-white border border-[#272a31] transition-all cursor-pointer flex items-center gap-1 font-bold text-xs shrink-0"
+                title="Return to Game Lobby"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden xs:inline">Lobby</span>
+              </button>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="font-display font-extrabold text-white text-xs sm:text-sm truncate">
                   {game.name}
-                </h1>
+                </span>
                 <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold uppercase shrink-0">
                   {selectedRoom.name}
                 </span>
               </div>
-              <p className="text-[11px] text-[#9b8f7c] truncate hidden xs:block">
-                Limits: <strong className="text-white font-mono-numbers">{selectedRoom.minStakeFC} - {selectedRoom.maxStakeFC} FC</strong> · {selectedRoom.description}
-              </p>
             </div>
-          </div>
-
-{/* Right Status, Chat & Balance Display */}
-          <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#1f2737]">
-            {/* Audio Mute / Unmute Quick Toggle */}
-            <button
-              onClick={() => {
-                toggleSound();
-                playClick();
-              }}
-              className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                soundEnabled
-                  ? 'bg-[#141924] hover:bg-[#1f2737] text-amber-400 border-amber-500/30'
-                  : 'bg-[#141924] text-[#64748B] border-[#272a31] hover:text-white'
-              }`}
-              title={soundEnabled ? `Sound FX On (${Math.round(soundVolume * 100)}%) — Click to Mute` : 'Sound FX Muted — Click to Unmute'}
-            >
-              {soundEnabled ? (
-                soundVolume > 0.4 ? <Volume2 className="w-3.5 h-3.5 text-amber-400" /> : <Volume1 className="w-3.5 h-3.5 text-amber-400" />
-              ) : (
-                <VolumeX className="w-3.5 h-3.5 text-[#64748B]" />
-              )}
-              <span className="hidden lg:inline text-[11px] font-mono-numbers">
-                {soundEnabled ? `${Math.round(soundVolume * 100)}%` : 'MUTED'}
-              </span>
-            </button>
-
-            {/* Live Room Chat Button */}
-            <button
-              onClick={() => {
-                setIsChatOpen(true);
-                setUnreadChatCount(0);
-              }}
-              className="px-2.5 py-1.5 rounded-xl bg-[#141924] hover:bg-[#1f2737] text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer relative"
-              title="Open Live Table Chat & Seated Players"
-            >
-              <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden xs:inline">Chat</span>
-              {unreadChatCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white font-mono-numbers text-[9px] font-bold animate-pulse">
-                  {unreadChatCount}
-                </span>
-              )}
-            </button>
-
-            {/* Provably Fair Seeds Drawer Button */}
-            <button
-              onClick={() => setShowFairnessDrawer(!showFairnessDrawer)}
-              className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                showFairnessDrawer
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(34,197,94,0.3)]'
-                  : 'bg-[#141924] hover:bg-[#1f2737] text-emerald-400 border-emerald-500/30'
-              }`}
-              title="Inspect or customize Provably Fair seeds"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden xs:inline">Fairness</span>
-            </button>
-
-            <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono-numbers font-bold">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-              <span className="hidden md:inline">ROOM ACTIVE</span>
+            <div className="flex items-center gap-2 text-[11px] font-mono-numbers shrink-0">
+              <span className="text-[#94A3B8] hidden sm:inline">Limits:</span>
+              <span className="text-amber-400 font-bold">{selectedRoom.minStakeFC} - {selectedRoom.maxStakeFC} FC</span>
             </div>
-
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0b0e14] border border-[#272a31]">
-              <Coins className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-xs font-mono-numbers font-bold text-white">
-                {Number(wallet.balance || 0).toLocaleString()} <span className="text-amber-400 text-[10px]">FC</span>
-              </span>
-            </div>
-          </div>
-
-        </div>
-
-        {/* PROVABLY FAIR SEED DRAWER */}
-        {showFairnessDrawer && (
-          <div className="glass-panel rounded-2xl p-4 sm:p-5 border border-emerald-500/30 bg-[#0B0F19]/95 text-xs font-mono-numbers space-y-3.5 animate-in slide-in-from-top-2 duration-200 shadow-xl text-left">
-            <div className="flex items-center justify-between text-amber-400 font-bold border-b border-[#1f2737] pb-2">
-              <span className="flex items-center gap-2">
-                <Key className="w-4 h-4 text-emerald-400" />
-                <span className="text-white text-xs sm:text-sm font-display">Active Provably Fair Seed Pair</span>
-              </span>
-              <span className="text-[11px] text-[#9b8f7c]">Round Nonce: #{seeds.nonce}</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
-              <div>
-                <span className="text-[#9b8f7c] block mb-1 font-bold">Pre-Committed Server Seed Hash (SHA-256):</span>
-                <div className="flex items-center gap-2 bg-[#0b0e14] border border-[#272a31] rounded-xl px-3 py-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={seeds.serverHash}
-                    className="w-full bg-transparent text-amber-300 font-mono text-xs select-all outline-none"
-                  />
-                  <button
-                    onClick={() => copyToClipboard(seeds.serverHash, 'srvHash')}
-                    className="text-[#9b8f7c] hover:text-white p-1 rounded transition-colors cursor-pointer shrink-0"
-                    title="Copy Pre-Commit Hash"
-                  >
-                    {copiedKey === 'srvHash' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[#9b8f7c] block mb-1 font-bold">Your Active Client Seed:</span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={customClientSeed}
-                    onChange={(e) => setCustomClientSeed(e.target.value)}
-                    placeholder="Enter custom client seed..."
-                    className="flex-1 bg-[#0b0e14] border border-[#272a31] focus:border-amber-500/40 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none"
-                  />
-                  <button
-                    onClick={handleRotateSeeds}
-                    disabled={isRotatingSeeds}
-                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-[11px] cursor-pointer shadow flex items-center gap-1 shrink-0"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${isRotatingSeeds ? 'animate-spin' : ''}`} />
-                    <span>Rotate</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {seeds.previousServerSeed && (
-              <div className="p-2.5 rounded-xl bg-[#0b0e14] border border-[#272a31] text-[10px] text-[#9b8f7c] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <span>Previous Revealed Server Seed: <strong className="text-purple-300 select-all font-mono">{seeds.previousServerSeed}</strong></span>
-                <button
-                  onClick={() => copyToClipboard(seeds.previousServerSeed, 'prevSeed')}
-                  className="text-amber-400 hover:text-white text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer"
-                >
-                  {copiedKey === 'prevSeed' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                  <span>Copy Seed</span>
-                </button>
-              </div>
-            )}
           </div>
         )}
 
@@ -501,150 +328,140 @@ export default function GamePage({
           )}
         </div>
 
-{/* Universal Game History & Recent Results for this Room */}
-        <section className="glass-panel rounded-2xl p-4 sm:p-6 border border-[#272a31] space-y-4 text-left">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#1f2737]">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                <History className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
-                  Recent Game Rounds & Bet History
-                </h3>
-                <p className="text-[11px] text-[#9b8f7c]">
-                  Public cryptographic records for {selectedRoom.name}
-                </p>
-              </div>
-            </div>
-
-            {/* Sub-tabs with responsive horizontal scroll */}
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#0b0e14] border border-[#272a31] overflow-x-auto no-scrollbar max-w-full">
-              <button
-                onClick={() => setHistoryTab('room')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                  historyTab === 'room'
-                    ? 'bg-amber-500 text-black shadow-sm'
-                    : 'text-[#9b8f7c] hover:text-white'
-                }`}
-              >
-                Room Rounds ({roomRounds.length})
-              </button>
-              <button
-                onClick={() => setHistoryTab('my')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                  historyTab === 'my'
-                    ? 'bg-amber-500 text-black shadow-sm'
-                    : 'text-[#9b8f7c] hover:text-white'
-                }`}
-              >
-                My Bets ({myRounds.length})
-              </button>
-              <button
-                onClick={() => setHistoryTab('game')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                  historyTab === 'game'
-                    ? 'bg-amber-500 text-black shadow-sm'
-                    : 'text-[#9b8f7c] hover:text-white'
-                }`}
-              >
-                All {game.name} ({gameRounds.length})
-              </button>
-            </div>
-          </div>
-
-          {/* History Table */}
-          {(() => {
-            const activeList = historyTab === 'room' ? roomRounds : (historyTab === 'my' ? myRounds : gameRounds);
-            if (activeList.length === 0) {
-              return (
-                <div className="text-center py-8 text-[#9b8f7c] space-y-2">
-                  <Coins className="w-8 h-8 text-amber-400/40 mx-auto" />
-                  <p className="text-xs font-mono-numbers">
-                    {historyTab === 'my' ? 'You have not placed any bets in this game yet.' : 'No rounds recorded in this room yet. Be the first to play!'}
+        {/* In-Room Live Activity & Recent Results (Modular Games) */}
+        {game.id !== 'lottery' && (
+          <section className="glass-panel rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#272a31] space-y-2.5 text-left shrink-0">
+            <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 pb-2 border-b border-[#1f2737]">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                  <History className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-extrabold text-xs sm:text-sm text-white leading-tight">
+                    Live Room Activity & Recent Results
+                  </h3>
+                  <p className="text-[10px] text-[#9b8f7c]">
+                    Cryptographic records for {selectedRoom.name}
                   </p>
                 </div>
-              );
-            }
-            return (
-              <div className="overflow-x-auto no-scrollbar">
-                <table className="w-full text-left text-xs font-mono-numbers">
-                  <thead className="text-[10px] text-[#8b92a2] uppercase border-b border-[#1f2737] bg-[#0b0e14]/50">
-                    <tr>
-                      <th className="py-2.5 px-3">Round ID</th>
-                      <th className="py-2.5 px-3">Player</th>
-                      <th className="py-2.5 px-3">Stake</th>
-                      <th className="py-2.5 px-3">Multiplier</th>
-                      <th className="py-2.5 px-3">Payout</th>
-                      <th className="py-2.5 px-3">Status</th>
-                      <th className="py-2.5 px-3 text-right">Provably Fair</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#1f2737]/60">
-                    {activeList.slice(0, 10).map((r) => {
-                      const isWin = r.status === 'won' || r.payout > 0;
-                      return (
-                        <tr key={r.id} className="hover:bg-white/2 transition-colors">
-                          <td className="py-2.5 px-3 text-amber-300 font-bold truncate max-w-[100px]">
-                            #{r.id.slice(-8)}
-                          </td>
-                          <td className="py-2.5 px-3 text-white truncate max-w-[110px]">
-                            {r.username || `@${r.walletAddress?.slice(-4)}`}
-                          </td>
-                          <td className="py-2.5 px-3 text-[#9b8f7c]">
-                            {r.betAmount} FC
-                          </td>
-                          <td className="py-2.5 px-3 font-bold text-blue-300">
-                            {r.multiplier > 0 ? `${r.multiplier}x` : '—'}
-                          </td>
-                          <td className={`py-2.5 px-3 font-bold ${isWin ? 'text-emerald-400' : 'text-[#64748B]'}`}>
-                            {isWin ? `+${r.payout} FC` : '0 FC'}
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
-                              isWin
-                                ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                                : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                            }`}>
-                              {isWin ? 'WON' : 'LOST'}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3 text-right">
-                            <button
-                              onClick={() => {
-                                setSelectedRoundForProof(r);
-                                setIsProofModalOpen(true);
-                              }}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold cursor-pointer transition-colors"
-                              title="Inspect cryptographic proof of this round"
-                            >
-                              <ShieldCheck className="w-3 h-3" />
-                              <span>Verify</span>
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
               </div>
-            );
-          })()}
-        </section>
 
-        {/* Room Info & Provably Fair Footer */}
-        <div className="glass-panel rounded-2xl p-4 sm:p-5 border border-[#272a31] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-[#9b8f7c]">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Provably Fair Cryptographic Outcomes (HMAC-SHA256 Commit-Reveal)</span>
-          </div>
-          <div className="flex items-center gap-4 text-xs font-mono-numbers">
-            <span>RTP: <strong className="text-emerald-400">{game.rtp}%</strong></span>
-            <span>House Edge: <strong className="text-amber-400">{game.houseEdge}%</strong></span>
-          </div>
-        </div>
+              {/* Sub-tabs with responsive horizontal scroll */}
+              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[#0b0e14] border border-[#272a31] overflow-x-auto no-scrollbar shrink-0">
+                <button
+                  onClick={() => setHistoryTab('room')}
+                  className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer shrink-0 ${
+                    historyTab === 'room'
+                      ? 'bg-amber-500 text-black shadow-sm'
+                      : 'text-[#9b8f7c] hover:text-white'
+                  }`}
+                >
+                  Room ({roomRounds.length})
+                </button>
+                <button
+                  onClick={() => setHistoryTab('my')}
+                  className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer shrink-0 ${
+                    historyTab === 'my'
+                      ? 'bg-amber-500 text-black shadow-sm'
+                      : 'text-[#9b8f7c] hover:text-white'
+                  }`}
+                >
+                  My Bets ({myRounds.length})
+                </button>
+                <button
+                  onClick={() => setHistoryTab('game')}
+                  className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer shrink-0 ${
+                    historyTab === 'game'
+                      ? 'bg-amber-500 text-black shadow-sm'
+                      : 'text-[#9b8f7c] hover:text-white'
+                  }`}
+                >
+                  All {game.name} ({gameRounds.length})
+                </button>
+              </div>
+            </div>
 
-{/* Universal Provably Fair Audit Modal */}
+            {/* Fixed-Height Scrollable Activity Container */}
+            <div className="max-h-48 sm:max-h-56 overflow-y-auto no-scrollbar border border-[#1f2737]/60 rounded-xl bg-[#080C14]">
+              {(() => {
+                const activeList = historyTab === 'room' ? roomRounds : (historyTab === 'my' ? myRounds : gameRounds);
+                if (activeList.length === 0) {
+                  return (
+                    <div className="text-center py-6 text-[#9b8f7c] space-y-1">
+                      <Coins className="w-6 h-6 text-amber-400/30 mx-auto" />
+                      <p className="text-[11px] font-mono-numbers">
+                        {historyTab === 'my' ? 'No bets placed in this game yet.' : 'No rounds recorded in this room yet.'}
+                      </p>
+                    </div>
+                  );
+                }
+                return (
+                  <table className="w-full text-left text-[11px] font-mono-numbers">
+                    <thead className="text-[9px] text-[#8b92a2] uppercase border-b border-[#1f2737] bg-[#0b0e14] sticky top-0 z-10">
+                      <tr>
+                        <th className="py-2 px-2.5">Round ID</th>
+                        <th className="py-2 px-2.5">Player</th>
+                        <th className="py-2 px-2.5">Stake</th>
+                        <th className="py-2 px-2.5">Multiplier</th>
+                        <th className="py-2 px-2.5">Payout</th>
+                        <th className="py-2 px-2.5">Status</th>
+                        <th className="py-2 px-2.5 text-right">Proof</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#1f2737]/40">
+                      {activeList.map((r) => {
+                        const isWin = r.status === 'won' || r.payout > 0;
+                        return (
+                          <tr key={r.id} className="hover:bg-white/2 transition-colors">
+                            <td className="py-2 px-2.5 text-amber-300 font-bold truncate max-w-[85px]">
+                              #{r.id.slice(-6)}
+                            </td>
+                            <td className="py-2 px-2.5 text-white truncate max-w-[95px]">
+                              {r.username || `@${r.walletAddress?.slice(-4)}`}
+                            </td>
+                            <td className="py-2 px-2.5 text-[#9b8f7c]">
+                              {r.betAmount} FC
+                            </td>
+                            <td className="py-2 px-2.5 font-bold text-blue-300">
+                              {r.multiplier > 0 ? `${r.multiplier}x` : '—'}
+                            </td>
+                            <td className={`py-2 px-2.5 font-bold ${isWin ? 'text-emerald-400' : 'text-[#64748B]'}`}>
+                              {isWin ? `+${r.payout} FC` : '0 FC'}
+                            </td>
+                            <td className="py-2 px-2.5">
+                              <span className={`text-[8px] px-1.5 py-0.2 rounded font-bold uppercase ${
+                                isWin
+                                  ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                                  : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                              }`}>
+                                {isWin ? 'WON' : 'LOST'}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2.5 text-right">
+                              <button
+                                onClick={() => {
+                                  setSelectedRoundForProof(r);
+                                  setIsProofModalOpen(true);
+                                }}
+                                className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold cursor-pointer transition-colors"
+                                title="Inspect cryptographic proof"
+                              >
+                                <ShieldCheck className="w-2.5 h-2.5" />
+                                <span>Verify</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                );
+              })()}
+            </div>
+          </section>
+        )}
+
+        {/* Universal Provably Fair Audit Modal */}
         {isProofModalOpen && selectedRoundForProof && (
           <ProvablyFairModal
             isOpen={isProofModalOpen}
@@ -667,35 +484,6 @@ export default function GamePage({
           />
         )}
 
-        {/* Live In-Room Chat Drawer & Seated Players */}
-        <RoomChatDrawer
-          room={selectedRoom}
-          game={game}
-          isOpen={isChatOpen}
-          onClose={() => setIsChatOpen(false)}
-          onUnreadChange={setUnreadChatCount}
-        />
-
-        {/* Floating Quick Chat Launcher Pill */}
-        {!isChatOpen && (
-          <button
-            onClick={() => {
-              setIsChatOpen(true);
-              setUnreadChatCount(0);
-            }}
-            className="fixed bottom-6 right-6 z-40 px-3.5 sm:px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-xs flex items-center gap-2 shadow-2xl shadow-amber-500/30 transition-all cursor-pointer hover:scale-105"
-            title="Open Live Table Chat"
-          >
-            <MessageSquare className="w-4 h-4 fill-current shrink-0" />
-            <span className="hidden xs:inline">Room Chat</span>
-            {unreadChatCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-black text-amber-400 font-mono-numbers text-[10px] font-black">
-                {unreadChatCount}
-              </span>
-            )}
-          </button>
-        )}
-
       </div>
     );
   }
@@ -704,89 +492,70 @@ export default function GamePage({
   // VIEW B: DEDICATED GAME LOBBY (ROOM / TABLE SELECTION)
   // --------------------------------------------------------------------------
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-200 pb-12">
+    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-200 pb-12">
       
-      {/* 1. HERO GAME BANNER */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#151C2B] via-[#0F1420] to-[#0B0F19] border border-amber-500/30 p-5 sm:p-8 shadow-2xl">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-b from-[#F5C451]/15 to-transparent rounded-full blur-3xl pointer-events-none" />
+      {/* 1. COMPACT SINGLE-ROW GAME LOBBY BANNER */}
+      <div className="rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#151C2B] via-[#0F1420] to-[#0B0F19] border border-amber-500/30 p-2.5 sm:px-4 sm:py-2.5 flex items-center justify-between gap-3 shadow-lg shrink-0">
+        {/* Left: Back button + Game Logo + Name + Badge */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <button
+            onClick={onBackToHome}
+            className="px-2.5 py-1.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-[11px] font-bold text-[#9b8f7c] hover:text-white border border-[#272a31] transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+            title="Back to All Games"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden xs:inline">All Games</span>
+          </button>
 
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl min-w-0">
-            
-            <div className="flex items-center gap-2">
-              <button
-                onClick={onBackToHome}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#141924] hover:bg-[#1a2130] text-[11px] font-bold text-[#9b8f7c] hover:text-white border border-[#272a31] transition-colors cursor-pointer"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>All Games</span>
-              </button>
-              
-              <span className="text-[10px] font-mono-numbers px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold uppercase tracking-wider">
-                {game.badge || 'PROVABLY FAIR'}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#141924] border border-amber-500/40 flex items-center justify-center overflow-hidden shrink-0 shadow-lg">
-                <img 
-                  src={getGameIconUrl(game.id) || game.icon || game.image} 
-                  alt={game.name} 
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    const next = e.currentTarget.nextSibling as HTMLElement | null;
-                    if (next && next.style) {
-                      next.style.display = 'inline';
-                    }
-                  }}
-                />
-                <span className="hidden text-3xl">
-                  {game.id === 'crash' ? '🚀' : 
-                   game.id === 'dice' ? '🎲' : 
-                   game.id === 'mines' ? '💣' : 
-                   game.id === 'plinko' ? '🎯' : 
-                   game.id === 'roulette' ? '🎡' : 
-                   game.id === 'coinflip' ? '🪙' : 
-                   game.id === 'blackjack' ? '🃏' : 
-                   game.id === 'slots' ? '🎰' : 
-                   game.id === 'poker' ? '♠️' : 
-                   game.id === 'keno' ? '🎱' : 
-                   game.id === 'limbo' ? '⚡' : '🎟️'}
-                </span>
-              </div>
-
-              <div>
-                <h1 className="font-display font-black text-2xl sm:text-3xl text-white tracking-tight">
-                  {game.name}
-                </h1>
-                <p className="text-xs text-amber-300 font-mono-numbers font-medium">
-                  {game.category.toUpperCase()} · 100% Social Entertainment with Flow Coins
-                </p>
-              </div>
-            </div>
-
-            <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
-              {game.description}
-            </p>
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#141924] border border-amber-500/40 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+            <img 
+              src={getGameIconUrl(game.id) || game.icon || game.image} 
+              alt={game.name} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                const next = e.currentTarget.nextSibling as HTMLElement | null;
+                if (next && next.style) {
+                  next.style.display = 'inline';
+                }
+              }}
+            />
+            <span className="hidden text-xl">
+              {game.id === 'crash' ? '🚀' : 
+               game.id === 'dice' ? '🎲' : 
+               game.id === 'mines' ? '💣' : 
+               game.id === 'plinko' ? '🎯' : 
+               game.id === 'roulette' ? '🎡' : 
+               game.id === 'coinflip' ? '🪙' : 
+               game.id === 'blackjack' ? '🃏' : 
+               game.id === 'slots' ? '🎰' : 
+               game.id === 'poker' ? '♠️' : 
+               game.id === 'keno' ? '🎱' : 
+               game.id === 'limbo' ? '⚡' : '🎟️'}
+            </span>
           </div>
 
-          {/* Key Game Metrics Banner */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 w-full md:w-auto">
-            <div className="bg-[#0b0e14]/80 p-3 rounded-xl border border-[#272a31] text-center min-w-[95px]">
-              <span className="text-[10px] text-[#8b92a2] uppercase font-bold block">RTP Rate</span>
-              <span className="text-base font-mono-numbers font-black text-emerald-400">{game.rtp}%</span>
-            </div>
-            <div className="bg-[#0b0e14]/80 p-3 rounded-xl border border-[#272a31] text-center min-w-[95px]">
-              <span className="text-[10px] text-[#8b92a2] uppercase font-bold block">House Edge</span>
-              <span className="text-base font-mono-numbers font-black text-amber-400">{game.houseEdge}%</span>
-            </div>
-            <div className="bg-[#0b0e14]/80 p-3 rounded-xl border border-[#272a31] text-center min-w-[95px] col-span-2 sm:col-span-1">
-              <span className="text-[10px] text-[#8b92a2] uppercase font-bold block">Max Win</span>
-              <span className="text-base font-mono-numbers font-black text-purple-400">{game.maxMultiplier}x</span>
-            </div>
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="font-display font-black text-sm sm:text-base text-white tracking-tight truncate whitespace-nowrap">
+              {game.name}
+            </h1>
+            <span className="text-[9px] font-mono-numbers px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold uppercase shrink-0 whitespace-nowrap">
+              {game.badge || 'PROVABLY FAIR'}
+            </span>
           </div>
+        </div>
 
+        {/* Right: Compact inline stats */}
+        <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs font-mono-numbers shrink-0">
+          <span className="bg-[#0b0e14] px-2 py-1 rounded-lg border border-[#272a31] text-[#94A3B8]">
+            RTP: <strong className="text-emerald-400 font-bold">{game.rtp}%</strong>
+          </span>
+          <span className="bg-[#0b0e14] px-2 py-1 rounded-lg border border-[#272a31] text-[#94A3B8] hidden sm:inline">
+            Edge: <strong className="text-amber-400 font-bold">{game.houseEdge}%</strong>
+          </span>
+          <span className="bg-[#0b0e14] px-2 py-1 rounded-lg border border-[#272a31] text-[#94A3B8]">
+            Max: <strong className="text-purple-400 font-bold">{game.maxMultiplier}x</strong>
+          </span>
         </div>
       </div>
 
