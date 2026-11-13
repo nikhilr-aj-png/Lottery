@@ -108,7 +108,7 @@ export default function Sidebar({
       title: 'Player Hub',
       items: [
         { id: 'rewards', label: 'Daily Bonus & Rewards', icon: Gift },
-        { id: 'leaderboard', label: 'High Rollers Podium', icon: Medal },
+        { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
         { id: 'tickets', label: 'My Tickets', icon: Ticket, requiresAuth: true },
         { id: 'results', label: 'Draw Results', icon: Trophy, requiresAuth: true },
         { id: 'wallet', label: 'Virtual Wallet & Ledger', icon: Wallet, requiresAuth: true },

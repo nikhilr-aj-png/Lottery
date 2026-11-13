@@ -1,12 +1,12 @@
 /**
  * ============================================================================
- * LEADERBOARD VIEW — VIRTUAL WALLET LEADERBOARD & CASINO HIGH ROLLERS
+ * LEADERBOARD VIEW — TOP BALANCES & TOP GAME WINNERS
  * ============================================================================
- * 1. Dedicated Virtual Wallet Leaderboard:
- *    - Real user rankings sorted by genuine virtual wallet balance (1 FLO = 1 USDT)
+ * 1. Top Balances:
+ *    - Real user rankings sorted by genuine virtual wallet balance (1 FLO W = 1 USDT)
  *    - Queries Supabase RPC `get_virtual_wallet_leaderboard`
  *    - Exposes public usernames, ranks, and balances without exposing private keys
- * 2. Casino High Rollers & Hall of Fame:
+ * 2. Top Winners:
  *    - Standings by Net Profit, Multiplier, or Wagered Volume from `get_game_leaderboard`
  *    - Supports Timeframes (All-time, Weekly, Today) and Game Filters
  * ============================================================================
@@ -22,12 +22,10 @@ import {
   Medal, 
   Sparkles, 
   TrendingUp, 
-  Search, 
   ShieldCheck, 
   Coins, 
   Zap,
   Filter,
-  UserCheck,
   RefreshCw,
   Award,
   Layers,
@@ -54,10 +52,10 @@ const GAME_OPTIONS = [
 ];
 
 export default function LeaderboardView() {
-  const { wallet, profile } = useLottery();
+  const { wallet } = useLottery();
   const { playClick } = useSoundFX();
 
-  // Master Category: 'wallet' (Virtual Wallet Leaderboard) vs 'games' (Casino High Rollers)
+  // Category: 'wallet' (Top Balances) vs 'games' (Top Winners)
   const [activeLeaderboardType, setActiveLeaderboardType] = useState('wallet');
 
   // Games Leaderboard Filters
@@ -65,8 +63,7 @@ export default function LeaderboardView() {
   const [metricFilter, setMetricFilter] = useState('earnings'); // 'earnings' | 'multiplier' | 'wagered'
   const [gameFilter, setGameFilter] = useState('all');
   
-  // Search & Shared State
-  const [searchQuery, setSearchQuery] = useState('');
+  // Data State
   const [walletLeaderboard, setWalletLeaderboard] = useState([]);
   const [gamesLeaderboard, setGamesLeaderboard] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -84,7 +81,7 @@ export default function LeaderboardView() {
     }
   };
 
-  // Fetch Casino High Rollers Leaderboard from database
+  // Fetch Top Game Winners from database
   const fetchGamesLeaderboard = async () => {
     try {
       const { data, error } = await supabase.rpc('get_game_leaderboard', {
@@ -134,41 +131,20 @@ export default function LeaderboardView() {
     };
   }, []);
 
-  // Filtered Display List
+  // Display List with 1-based ranks
   const activeList = useMemo(() => {
     const source = activeLeaderboardType === 'wallet' ? walletLeaderboard : gamesLeaderboard;
     if (!Array.isArray(source)) return [];
 
-    return source
-      .filter(item => {
-        const u = (item.username || '').toLowerCase();
-        const a = (item.address || item.raw_address || '').toLowerCase();
-        const q = searchQuery.toLowerCase();
-        return u.includes(q) || a.includes(q);
-      })
-      .map((item, idx) => ({
-        ...item,
-        rank: idx + 1
-      }));
-  }, [activeLeaderboardType, walletLeaderboard, gamesLeaderboard, searchQuery]);
+    return source.map((item, idx) => ({
+      ...item,
+      rank: idx + 1
+    }));
+  }, [activeLeaderboardType, walletLeaderboard, gamesLeaderboard]);
 
   const top1 = activeList[0];
   const top2 = activeList[1];
   const top3 = activeList[2];
-
-  // User's own standing in the active leaderboard
-  const myStanding = useMemo(() => {
-    if (!wallet?.address) return null;
-    const targetAddr = wallet.address.toLowerCase();
-    const index = activeList.findIndex(p => 
-      (p.raw_address && p.raw_address.toLowerCase() === targetAddr) ||
-      (p.address && p.address.toLowerCase() === targetAddr)
-    );
-    if (index !== -1) {
-      return { ...activeList[index], rank: index + 1 };
-    }
-    return null;
-  }, [activeList, wallet?.address]);
 
   const getVipBadge = (tier) => {
     switch ((tier || '').toLowerCase()) {
@@ -182,88 +158,107 @@ export default function LeaderboardView() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 text-left">
+    <div className="max-w-6xl mx-auto space-y-5 sm:space-y-6 text-left">
       
       {/* 1. MASTER LEADERBOARD SWITCHER TABS */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-1.5 bg-[#0D111A] border border-[#1F2737] rounded-2xl shadow-inner">
         <div className="flex items-center gap-1.5 w-full sm:w-auto">
+          {/* Tab 1: Top Balances */}
           <button
             onClick={() => {
               playClick();
               setActiveLeaderboardType('wallet');
             }}
-            className={`flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
               activeLeaderboardType === 'wallet'
                 ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
                 : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
             }`}
           >
             <Wallet className="w-4 h-4" />
-            <span>Virtual Wallet Leaderboard</span>
+            <span>Top Balances</span>
           </button>
 
+          {/* Tab 2: Top Winners */}
           <button
             onClick={() => {
               playClick();
               setActiveLeaderboardType('games');
             }}
-            className={`flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
               activeLeaderboardType === 'games'
                 ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
                 : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
             }`}
           >
             <Trophy className="w-4 h-4" />
-            <span>Casino High Rollers</span>
+            <span>Top Winners</span>
           </button>
         </div>
 
-        <div className="flex items-center justify-end px-2 text-xs font-mono-numbers text-[#94A3B8] gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>100% Genuine Database Records</span>
+        <div className="flex items-center justify-between sm:justify-end px-2 text-xs font-mono-numbers text-[#94A3B8] gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span>100% Genuine Database Records</span>
+          </div>
+
+          <button
+            onClick={() => {
+              playClick();
+              setIsRefreshing(true);
+              refreshAll();
+            }}
+            className="sm:hidden px-2.5 py-1 rounded-lg bg-[#111827] text-amber-400 text-[11px] font-bold flex items-center gap-1 border border-[#1F2737]"
+            title="Refresh rankings"
+          >
+            <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>Sync</span>
+          </button>
         </div>
       </div>
 
       {/* 2. HERO HEADER & 3-PERSON PODIUM */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-[#111827] via-[#151C2B] to-[#111827] border border-[#1F2737] p-6 sm:p-8 overflow-hidden shadow-2xl">
+      <div className="relative rounded-3xl bg-gradient-to-r from-[#111827] via-[#151C2B] to-[#111827] border border-[#1F2737] p-4 sm:p-8 overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 text-center max-w-2xl mx-auto space-y-2 mb-8">
+        <div className="relative z-10 text-center max-w-2xl mx-auto space-y-2 mb-6 sm:mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-mono-numbers font-bold">
             {activeLeaderboardType === 'wallet' ? (
               <>
-                <Wallet className="w-3.5 h-3.5 text-amber-400" />
-                <span>TOP VIRTUAL WALLET HOLDINGS (1 FLO = 1 USDT)</span>
+                <Wallet className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>TOP WALLET BALANCES (1 FLO W = 1 USDT)</span>
               </>
             ) : (
               <>
-                <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                <span>PROVABLY FAIR HIGH ROLLERS & MULTIPLIERS</span>
+                <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>TOP GAME WINNERS</span>
               </>
             )}
           </div>
 
-          <h1 className="font-display font-black text-2xl sm:text-3xl text-white tracking-tight">
+          <h1 className="font-display font-black text-xl sm:text-3xl text-white tracking-tight">
             {activeLeaderboardType === 'wallet'
-              ? 'Virtual Wallet Holdings Leaderboard'
-              : 'Casino High Rollers & Top Winners'
+              ? 'Top Balances Leaderboard'
+              : 'Top Game Winners Leaderboard'
             }
           </h1>
 
           <p className="text-xs sm:text-sm text-[#94A3B8]">
             {activeLeaderboardType === 'wallet'
-              ? 'Real-time standings of players ranked by genuine FLO Coin balance stored in the database. 1 FLO Coin = 1 USDT.'
-              : 'Rankings calculated across all 12 Provably Fair games and lottery draws with cryptographic verification.'
+              ? 'Real-time standings of players with the highest FLO Coin balances. 1 FLO W = 1 USDT.'
+              : 'Rankings of top winning players across all games, verified cryptographically.'
             }
           </p>
         </div>
 
-        {/* 3-PERSON VISUAL PODIUM */}
+        {/* ============================================================== */}
+        {/* DESKTOP & TABLET PODIUM (>= sm: 640px)                          */}
+        {/* ============================================================== */}
         {activeList.length >= 3 && (
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-2xl mx-auto items-end pt-4">
+          <div className="hidden sm:grid grid-cols-3 gap-3 sm:gap-4 max-w-2xl mx-auto items-end pt-4">
             
             {/* Rank 2 (Silver) */}
-            <div className="rounded-2xl bg-[#0B0F19] border border-slate-400/30 p-3 sm:p-4 text-center flex flex-col items-center shadow-lg relative order-1">
+            <div className="rounded-2xl bg-[#0B0F19] border border-slate-400/30 p-3.5 sm:p-4 text-center flex flex-col items-center shadow-lg relative order-1">
               <div className="w-8 h-8 rounded-full bg-slate-400/20 border border-slate-300 text-slate-200 flex items-center justify-center font-black text-sm mb-2">
                 2
               </div>
@@ -283,7 +278,7 @@ export default function LeaderboardView() {
                 {activeLeaderboardType === 'wallet' ? (
                   <>
                     <span className="font-mono-numbers font-black text-xs sm:text-sm text-slate-200 block">
-                      {Number(top2.wallet_balance || 0).toLocaleString()} FLO
+                      {Number(top2.wallet_balance || 0).toLocaleString()} FLO W
                     </span>
                     <span className="text-[9px] text-[#64748B] uppercase">≈ ${Number(top2.usdt_value || 0).toLocaleString()} USDT</span>
                   </>
@@ -323,7 +318,7 @@ export default function LeaderboardView() {
                 {activeLeaderboardType === 'wallet' ? (
                   <>
                     <span className="font-mono-numbers font-black text-sm sm:text-base text-amber-300 block">
-                      {Number(top1.wallet_balance || 0).toLocaleString()} FLO
+                      {Number(top1.wallet_balance || 0).toLocaleString()} FLO W
                     </span>
                     <span className="text-[10px] text-amber-400/80 uppercase font-mono-numbers">≈ ${Number(top1.usdt_value || 0).toLocaleString()} USDT</span>
                   </>
@@ -339,7 +334,7 @@ export default function LeaderboardView() {
             </div>
 
             {/* Rank 3 (Bronze) */}
-            <div className="rounded-2xl bg-[#0B0F19] border border-amber-700/40 p-3 sm:p-4 text-center flex flex-col items-center shadow-lg relative order-3">
+            <div className="rounded-2xl bg-[#0B0F19] border border-amber-700/40 p-3.5 sm:p-4 text-center flex flex-col items-center shadow-lg relative order-3">
               <div className="w-8 h-8 rounded-full bg-amber-700/20 border border-amber-600 text-amber-400 flex items-center justify-center font-black text-sm mb-2">
                 3
               </div>
@@ -359,7 +354,7 @@ export default function LeaderboardView() {
                 {activeLeaderboardType === 'wallet' ? (
                   <>
                     <span className="font-mono-numbers font-black text-xs sm:text-sm text-amber-500 block">
-                      {Number(top3.wallet_balance || 0).toLocaleString()} FLO
+                      {Number(top3.wallet_balance || 0).toLocaleString()} FLO W
                     </span>
                     <span className="text-[9px] text-[#64748B] uppercase">≈ ${Number(top3.usdt_value || 0).toLocaleString()} USDT</span>
                   </>
@@ -376,48 +371,171 @@ export default function LeaderboardView() {
 
           </div>
         )}
+
+        {/* ============================================================== */}
+        {/* MOBILE OPTIMIZED PODIUM (< sm: 640px, e.g. 320px, 375px, 425px)*/}
+        {/* ============================================================== */}
+        {activeList.length >= 3 && (
+          <div className="flex flex-col gap-2.5 sm:hidden pt-1">
+            
+            {/* Rank 1 (Gold Champion Featured Card) */}
+            <div className="rounded-2xl bg-gradient-to-r from-amber-500/20 via-[#151C2B] to-[#0B0F19] border-2 border-amber-400 p-3 xs:p-3.5 shadow-[0_0_25px_rgba(245,196,81,0.2)] relative">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 xs:w-8 xs:h-8 rounded-full bg-amber-400 text-black flex items-center justify-center font-black text-xs shrink-0 shadow">
+                    1
+                  </div>
+                  <span className="text-xl shrink-0">👑</span>
+                  <div className="min-w-0">
+                    <span className="font-display font-black text-xs xs:text-sm text-amber-300 truncate block">
+                      @{top1.username}
+                    </span>
+                    <span className="text-[9px] text-amber-400/70 font-mono-numbers truncate block">
+                      {top1.address}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span className="px-2 py-0.5 rounded-full bg-amber-400 text-black font-extrabold text-[8px] xs:text-[9px] tracking-wider uppercase">
+                    Champion
+                  </span>
+                  <span className={`text-[8px] xs:text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full border ${getVipBadge(top1.vip_tier).color}`}>
+                    {getVipBadge(top1.vip_tier).icon} {top1.vip_tier || 'Diamond'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-amber-400/30 text-xs">
+                <span className="text-[10px] text-white/60 font-mono-numbers uppercase tracking-wider">
+                  {activeLeaderboardType === 'wallet' ? 'Balance' : 'Score'}
+                </span>
+                <div className="text-right">
+                  {activeLeaderboardType === 'wallet' ? (
+                    <>
+                      <span className="font-mono-numbers font-black text-xs xs:text-sm text-amber-300 block whitespace-nowrap">
+                        {Number(top1.wallet_balance || 0).toLocaleString()} FLO W
+                      </span>
+                      <span className="text-[9px] text-amber-400/80 font-mono-numbers block whitespace-nowrap">
+                        ≈ ${Number(top1.usdt_value || 0).toLocaleString()} USDT
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-mono-numbers font-black text-xs xs:text-sm text-amber-300 block whitespace-nowrap">
+                        {Number(metricFilter === 'multiplier' ? top1.biggest_mult : top1.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
+                      </span>
+                      <span className="text-[9px] text-[#64748B] block whitespace-nowrap">
+                        Top: {top1.biggest_mult}x · {top1.rounds_count} bets
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Rank 2 & Rank 3 Symmetrical 2-Column Grid */}
+            <div className="grid grid-cols-2 gap-2 xs:gap-2.5">
+              
+              {/* Rank 2 (Silver) */}
+              <div className="rounded-2xl bg-[#0B0F19] border border-slate-400/35 p-2.5 xs:p-3 text-center flex flex-col justify-between shadow-md">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="w-5 h-5 xs:w-6 xs:h-6 rounded-full bg-slate-400/20 border border-slate-300 text-slate-200 flex items-center justify-center font-black text-[10px] xs:text-xs">
+                      2
+                    </span>
+                    <span className="text-lg">🥈</span>
+                  </div>
+                  <span className="font-display font-extrabold text-[11px] xs:text-xs text-white truncate block">
+                    @{top2.username}
+                  </span>
+                  <span className="text-[9px] text-[#94A3B8] font-mono-numbers truncate block">
+                    {top2.address}
+                  </span>
+                  <div className="mt-1">
+                    <span className={`text-[8px] font-mono font-bold px-1.5 py-0.2 rounded-full border inline-block ${getVipBadge(top2.vip_tier).color}`}>
+                      {getVipBadge(top2.vip_tier).icon} {top2.vip_tier || 'Bronze'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-2 pt-2 border-t border-[#1F2737] w-full">
+                  {activeLeaderboardType === 'wallet' ? (
+                    <>
+                      <span className="font-mono-numbers font-black text-[11px] xs:text-xs text-slate-200 block truncate">
+                        {Number(top2.wallet_balance || 0).toLocaleString()} FLO W
+                      </span>
+                      <span className="text-[8px] xs:text-[9px] text-[#64748B] block truncate">
+                        ≈ ${Number(top2.usdt_value || 0).toLocaleString()} USDT
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-mono-numbers font-black text-[11px] xs:text-xs text-slate-300 block truncate">
+                        {Number(metricFilter === 'multiplier' ? top2.biggest_mult : top2.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
+                      </span>
+                      <span className="text-[8px] text-[#64748B] block truncate">
+                        {top2.biggest_mult}x · {top2.rounds_count} bets
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Rank 3 (Bronze) */}
+              <div className="rounded-2xl bg-[#0B0F19] border border-amber-700/45 p-2.5 xs:p-3 text-center flex flex-col justify-between shadow-md">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="w-5 h-5 xs:w-6 xs:h-6 rounded-full bg-amber-700/20 border border-amber-600 text-amber-400 flex items-center justify-center font-black text-[10px] xs:text-xs">
+                      3
+                    </span>
+                    <span className="text-lg">🥉</span>
+                  </div>
+                  <span className="font-display font-extrabold text-[11px] xs:text-xs text-white truncate block">
+                    @{top3.username}
+                  </span>
+                  <span className="text-[9px] text-[#94A3B8] font-mono-numbers truncate block">
+                    {top3.address}
+                  </span>
+                  <div className="mt-1">
+                    <span className={`text-[8px] font-mono font-bold px-1.5 py-0.2 rounded-full border inline-block ${getVipBadge(top3.vip_tier).color}`}>
+                      {getVipBadge(top3.vip_tier).icon} {top3.vip_tier || 'Gold'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-2 pt-2 border-t border-[#1F2737] w-full">
+                  {activeLeaderboardType === 'wallet' ? (
+                    <>
+                      <span className="font-mono-numbers font-black text-[11px] xs:text-xs text-amber-500 block truncate">
+                        {Number(top3.wallet_balance || 0).toLocaleString()} FLO W
+                      </span>
+                      <span className="text-[8px] xs:text-[9px] text-[#64748B] block truncate">
+                        ≈ ${Number(top3.usdt_value || 0).toLocaleString()} USDT
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-mono-numbers font-black text-[11px] xs:text-xs text-amber-500 block truncate">
+                        {Number(metricFilter === 'multiplier' ? top3.biggest_mult : top3.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
+                      </span>
+                      <span className="text-[8px] text-[#64748B] block truncate">
+                        {top3.biggest_mult}x · {top3.rounds_count} bets
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        )}
       </div>
 
-      {/* 3. USER'S PERSONAL STANDING BANNER */}
-      {wallet?.address && (
-        <div className="rounded-2xl bg-gradient-to-r from-amber-500/15 via-[#151C2B] to-[#111827] border border-amber-500/30 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-400 flex items-center justify-center font-bold text-lg">
-              <UserCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-white font-display font-extrabold text-sm">Your Platform Standing</span>
-                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono font-bold border border-amber-500/30">
-                  {myStanding ? `Rank #${myStanding.rank}` : 'Top 50'}
-                </span>
-              </div>
-              <p className="text-xs text-[#94A3B8]">
-                {wallet.address} · Available Balance: <strong className="text-amber-300 font-mono-numbers">{Number(wallet.balance || 0).toLocaleString()} FLO (≈ ${Number(wallet.balance || 0).toLocaleString()} USDT)</strong>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 self-end sm:self-auto">
-            <button
-              onClick={() => {
-                playClick();
-                setIsRefreshing(true);
-                refreshAll();
-              }}
-              className="px-3 py-1.5 rounded-xl bg-[#0B0F19] hover:bg-[#151C2B] border border-[#2D3545] text-amber-400 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
-              title="Sync with live database"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span>Sync</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 4. FILTER CONTROLS & SEARCH */}
+      {/* 3. FILTER CONTROLS & LIVE SYNC */}
       <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           
           {/* If Games view is active: show Timeframe & Metric tabs */}
           {activeLeaderboardType === 'games' ? (
@@ -469,24 +587,26 @@ export default function LeaderboardView() {
               </div>
             </div>
           ) : (
-            /* Virtual Wallet Leaderboard Info Pill */
+            /* Top Balances Info Pill */
             <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
-              <Coins className="w-4 h-4 text-amber-400" />
-              <span>Ranked strictly by verified virtual wallet balance in Supabase database</span>
+              <Coins className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Ranked strictly by verified wallet balance in Supabase database</span>
             </div>
           )}
 
-          {/* Search Player Input */}
-          <div className="relative w-full sm:w-56 shrink-0">
-            <Search className="w-3.5 h-3.5 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search username or address..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#111827] border border-[#1F2737] focus:border-amber-400 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-[#64748B] outline-none shadow-sm"
-            />
-          </div>
+          {/* Sync / Refresh Button */}
+          <button
+            onClick={() => {
+              playClick();
+              setIsRefreshing(true);
+              refreshAll();
+            }}
+            className="hidden sm:flex px-3.5 py-2 rounded-xl bg-[#111827] hover:bg-[#151C2B] border border-[#1F2737] hover:border-amber-400/50 text-amber-400 text-xs font-bold items-center gap-2 cursor-pointer shadow-sm transition-all shrink-0 ml-auto"
+            title="Refresh rankings"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>Sync Rankings</span>
+          </button>
 
         </div>
 
@@ -513,31 +633,31 @@ export default function LeaderboardView() {
         )}
       </div>
 
-      {/* 5. LEADERBOARD DATA TABLE */}
+      {/* 4. LEADERBOARD DATA TABLE */}
       <div className="rounded-3xl bg-[#111827] border border-[#1F2737] overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto -mx-0">
+          <table className="w-full text-left text-xs min-w-[640px]">
             <thead className="bg-[#0B0F19] text-[#94A3B8] font-mono-numbers uppercase text-[10px] tracking-wider border-b border-[#1F2737]">
               {activeLeaderboardType === 'wallet' ? (
                 <tr>
-                  <th className="py-3.5 px-4">Rank</th>
-                  <th className="py-3.5 px-4">Player</th>
-                  <th className="py-3.5 px-4">VIP Tier</th>
-                  <th className="py-3.5 px-4 text-right">Virtual Balance (FLO)</th>
-                  <th className="py-3.5 px-4 text-right">USDT Value (1:1)</th>
-                  <th className="py-3.5 px-4 text-right">Lifetime Won</th>
-                  <th className="py-3.5 px-4 text-center">Status</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Rank</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Player</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">VIP Tier</th>
+                  <th className="py-3.5 px-4 text-right whitespace-nowrap">Balance (FLO W)</th>
+                  <th className="py-3.5 px-4 text-right whitespace-nowrap">USDT Value (1:1)</th>
+                  <th className="py-3.5 px-4 text-right whitespace-nowrap">Lifetime Won</th>
+                  <th className="py-3.5 px-4 text-center whitespace-nowrap">Status</th>
                 </tr>
               ) : (
                 <tr>
-                  <th className="py-3.5 px-4">Rank</th>
-                  <th className="py-3.5 px-4">Player</th>
-                  <th className="py-3.5 px-4">VIP Rank</th>
-                  <th className="py-3.5 px-4 text-right">
+                  <th className="py-3.5 px-4 whitespace-nowrap">Rank</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Player</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">VIP Rank</th>
+                  <th className="py-3.5 px-4 text-right whitespace-nowrap">
                     {metricFilter === 'multiplier' ? 'Peak Multiplier' : metricFilter === 'wagered' ? 'Total Wagered' : 'Total Net Profit'}
                   </th>
-                  <th className="py-3.5 px-4 text-right">Rounds</th>
-                  <th className="py-3.5 px-4 text-center">Favorite</th>
+                  <th className="py-3.5 px-4 text-right whitespace-nowrap">Rounds</th>
+                  <th className="py-3.5 px-4 text-center whitespace-nowrap">Favorite</th>
                 </tr>
               )}
             </thead>
@@ -560,7 +680,7 @@ export default function LeaderboardView() {
                       <span className="font-display font-bold text-sm text-white">No Standings Found</span>
                       <span className="text-xs text-[#64748B] max-w-sm">
                         {activeLeaderboardType === 'wallet'
-                          ? 'No active virtual wallets matching this search.'
+                          ? 'No active wallets found in database.'
                           : 'Place bets on any casino game or lottery round to claim the #1 spot!'}
                       </span>
                     </div>
@@ -590,7 +710,7 @@ export default function LeaderboardView() {
                       }`}
                     >
                       {/* Rank */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           {isTop1 ? (
                             <span className="w-6 h-6 rounded-full bg-amber-400 text-black font-black flex items-center justify-center text-xs shadow">1</span>
@@ -605,7 +725,7 @@ export default function LeaderboardView() {
                       </td>
 
                       {/* Player Info */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <div className="flex flex-col">
                           <span className={`font-display font-bold text-xs ${isMe ? 'text-amber-300' : 'text-white'}`}>
                             @{row.username} {isMe && <span className="text-[10px] text-amber-400 font-bold">(You)</span>}
@@ -617,7 +737,7 @@ export default function LeaderboardView() {
                       </td>
 
                       {/* VIP Rank */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${vipInfo.color}`}>
                           <span>{vipInfo.icon}</span>
                           <span>{row.vip_tier || 'Bronze'}</span>
@@ -627,16 +747,16 @@ export default function LeaderboardView() {
                       {/* Columns depend on activeLeaderboardType */}
                       {activeLeaderboardType === 'wallet' ? (
                         <>
-                          {/* Wallet Balance (FLO Coins) */}
-                          <td className="py-3.5 px-4 text-right">
+                          {/* Wallet Balance (FLO W) */}
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
                             <span className="font-extrabold text-amber-300 text-sm">
                               {Number(row.wallet_balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>{' '}
-                            <span className="text-[10px] font-bold text-amber-400">FLO</span>
+                            <span className="text-[10px] font-bold text-amber-400">FLO W</span>
                           </td>
 
                           {/* USDT Value */}
-                          <td className="py-3.5 px-4 text-right">
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
                             <span className="font-bold text-emerald-400 text-xs">
                               ${Number(row.usdt_value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>{' '}
@@ -644,12 +764,12 @@ export default function LeaderboardView() {
                           </td>
 
                           {/* Lifetime Won */}
-                          <td className="py-3.5 px-4 text-right text-[#94A3B8]">
+                          <td className="py-3.5 px-4 text-right text-[#94A3B8] whitespace-nowrap">
                             {Number(row.lifetime_won || 0).toLocaleString()} FC
                           </td>
 
                           {/* Verified Status */}
-                          <td className="py-3.5 px-4 text-center">
+                          <td className="py-3.5 px-4 text-center whitespace-nowrap">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
                               <ShieldCheck className="w-3 h-3 text-emerald-400" />
                               <span>Verified</span>
@@ -659,7 +779,7 @@ export default function LeaderboardView() {
                       ) : (
                         <>
                           {/* Metric Column */}
-                          <td className="py-3.5 px-4 text-right">
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
                             {metricFilter === 'multiplier' ? (
                               <span className="font-extrabold text-amber-400 text-sm">
                                 {Number(row.biggest_mult || 0).toFixed(2)}x
@@ -676,12 +796,12 @@ export default function LeaderboardView() {
                           </td>
 
                           {/* Rounds Played */}
-                          <td className="py-3.5 px-4 text-right text-[#94A3B8]">
+                          <td className="py-3.5 px-4 text-right text-[#94A3B8] whitespace-nowrap">
                             {row.rounds_count}
                           </td>
 
                           {/* Fav Game */}
-                          <td className="py-3.5 px-4 text-center">
+                          <td className="py-3.5 px-4 text-center whitespace-nowrap">
                             <span className="px-2 py-0.5 rounded bg-[#0B0F19] text-[#94A3B8] border border-[#1F2737] text-[10px] font-bold uppercase">
                               {row.fav_game || 'Casino'}
                             </span>
