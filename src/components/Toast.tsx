@@ -33,3 +33,4 @@ export default function Toast(): React.JSX.Element | null {
     </div>
   );
 }
+

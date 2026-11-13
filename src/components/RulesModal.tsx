@@ -107,3 +107,4 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps): React.
     </div>
   );
 }
+

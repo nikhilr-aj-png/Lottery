@@ -89,3 +89,4 @@ export default function WinnerCelebrationModal(): React.JSX.Element | null {
     </div>
   );
 }
+

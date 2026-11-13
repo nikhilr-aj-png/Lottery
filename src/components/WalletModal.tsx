@@ -14,3 +14,4 @@ export default function WalletModal(): null {
 
   return null;
 }
+

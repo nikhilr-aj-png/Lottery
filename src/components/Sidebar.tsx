@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
-import { 
-  Flame, 
-  Gamepad2, 
-  Ticket, 
-  Trophy, 
-  Wallet, 
-  ShieldCheck, 
-  Headphones, 
-  Gift, 
-  FileText, 
+import {
+  Flame,
+  Gamepad2,
+  Ticket,
+  Trophy,
+  Wallet,
+  ShieldCheck,
+  Headphones,
+  Gift,
+  FileText,
   X,
   Sparkles,
   Rocket,
@@ -36,14 +36,14 @@ interface SidebarProps {
   onLaunchGame?: (gameId: string) => void;
 }
 
-export default function Sidebar({ 
-  isOpen, 
-  onClose, 
-  isCollapsed, 
-  onToggleCollapse, 
-  activeTab, 
+export default function Sidebar({
+  isOpen,
+  onClose,
+  isCollapsed,
+  onToggleCollapse,
+  activeTab,
   onSelectTab,
-  onLaunchGame 
+  onLaunchGame
 }: SidebarProps) {
   const { wallet, user } = useLottery();
 
@@ -152,7 +152,7 @@ export default function Sidebar({
 
   const sidebarContent = (
     <div className="h-full flex flex-col overflow-hidden pt-3 pb-3 px-2 sm:px-2.5 text-left relative">
-      
+
       {/* Navigation Sections — Scrollable Menu Items Area */}
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar space-y-3 pr-0.5">
         {navSections.map((sec, secIdx) => (
@@ -173,21 +173,19 @@ export default function Sidebar({
                   <button
                     key={item.id}
                     onClick={() => handleItemClick(item)}
-                    className={`w-full min-h-[44px] flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer group ${
-                      isCollapsed ? 'justify-center px-0' : 'justify-between'
-                    } ${
-                      isActive 
-                        ? 'bg-amber-500 text-black font-extrabold shadow-md shadow-amber-500/20' 
+                    className={`w-full min-h-[44px] flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer group ${isCollapsed ? 'justify-center px-0' : 'justify-between'
+                      } ${isActive
+                        ? 'bg-amber-500 text-black font-extrabold shadow-md shadow-amber-500/20'
                         : 'text-[#94A3B8] hover:text-white hover:bg-[#151C2B]'
-                    }`}
+                      }`}
                     title={item.label}
                     aria-label={item.label}
                   >
                     <div className={`flex items-center gap-2.5 min-w-0 ${isCollapsed ? 'justify-center' : ''}`}>
                       {item.image ? (
                         <div className="w-5 h-5 rounded-md overflow-hidden shrink-0 border border-[#272A31] bg-[#0B0F19] flex items-center justify-center">
-                          <img 
-                            src={item.image} 
+                          <img
+                            src={item.image}
                             alt=""
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -209,9 +207,8 @@ export default function Sidebar({
                     </div>
 
                     {!isCollapsed && item.badge && (
-                      <span className={`text-[9px] font-mono-numbers px-1.5 py-0.2 rounded font-black shrink-0 ${
-                        isActive ? 'bg-black text-amber-300' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                      }`}>
+                      <span className={`text-[9px] font-mono-numbers px-1.5 py-0.2 rounded font-black shrink-0 ${isActive ? 'bg-black text-amber-300' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                        }`}>
                         {item.badge}
                       </span>
                     )}
@@ -258,10 +255,9 @@ export default function Sidebar({
   return (
     <>
       {/* 1. Desktop Persistent Sidebar (68px when collapsed on laptop, 240px expanded on desktop) */}
-      <aside 
-        className={`hidden lg:flex flex-col shrink-0 bg-[#0B0F19] border-r border-[#1F2737] transition-all duration-300 z-30 h-full ${
-          isCollapsed ? 'w-[68px]' : 'w-60'
-        }`}
+      <aside
+        className={`hidden lg:flex flex-col shrink-0 bg-[#0B0F19] border-r border-[#1F2737] transition-all duration-300 z-30 h-full ${isCollapsed ? 'w-[68px]' : 'w-60'
+          }`}
       >
         {sidebarContent}
       </aside>
@@ -270,7 +266,7 @@ export default function Sidebar({
       {isOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           {/* Backdrop with click-to-dismiss */}
-          <div 
+          <div
             onClick={onClose}
             className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
           />
