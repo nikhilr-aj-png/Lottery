@@ -1,0 +1,430 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { useLottery } from '../context/LotteryContext';
+import { 
+  Sparkles, 
+  ShieldCheck, 
+  Clock, 
+  Flame, 
+  Trophy, 
+  Users, 
+  Ticket, 
+  ChevronRight, 
+  Activity,
+  ArrowRight
+} from 'lucide-react';
+
+interface HeroBannerProps {
+  onPlayNowClick?: (event?: any) => void;
+  onRulesClick?: () => void;
+  onShowResultClick?: (event?: any) => void;
+}
+
+export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultClick }: HeroBannerProps) {
+  const { events, getSoldTicketsForEvent, user, profile, wallet } = useLottery();
+  
+  // Find top trending active lottery (highest prize or first active event)
+  const grandEvent = useMemo(() => {
+    const active = events.filter(e => e.status === 'active');
+    if (active.length === 0) return events[0];
+    return [...active].sort((a, b) => (b.poolPrize || 0) - (a.poolPrize || 0))[0];
+  }, [events]);
+
+  // Live countdown timer state
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [isTimedOut, setIsTimedOut] = useState(false);
+
+  useEffect(() => {
+    const updateClock = () => {
+      if (!grandEvent) return;
+      const diff = (grandEvent.drawTime || 0) - Date.now();
+      if (diff <= 0 || grandEvent.status === 'completed') {
+        setIsTimedOut(true);
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      } else {
+        setIsTimedOut(false);
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const m = Math.floor((diff / (1000 * 60)) % 60);
+        const s = Math.floor((diff / 1000) % 60);
+        setTimeLeft({ days: d, hours: h, minutes: m, seconds: s });
+      }
+    };
+
+    updateClock();
+    const interval = setInterval(updateClock, 1000);
+    return () => clearInterval(interval);
+  }, [grandEvent]);
+
+  // 100% Real Tickets Sold Feed from Supabase database (No hardcoded/mock seed buyers)
+  const ticketsFeed = useMemo(() => {
+    if (!grandEvent) return [];
+    const real = getSoldTicketsForEvent ? getSoldTicketsForEvent(grandEvent.id) : [];
+
+    return real.map((t, idx) => {
+      const isMine = user && (
+        (profile?.username && (t.username === `@${profile.username}` || t.username === profile.username)) ||
+        (wallet?.address && t.userAddress && t.userAddress.toLowerCase() === wallet.address.toLowerCase()) ||
+        (user.id && t.userId && t.userId === user.id)
+      );
+
+      // Relative elapsed time formatting
+      let timeStr = 'Just now';
+      if (t.purchaseTime) {
+        const diffMs = Math.max(0, Date.now() - t.purchaseTime);
+        const diffSecs = Math.floor(diffMs / 1000);
+        const diffMins = Math.floor(diffSecs / 60);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        if (diffDays > 0) timeStr = `${diffDays}d ago`;
+        else if (diffHours > 0) timeStr = `${diffHours}h ago`;
+        else if (diffMins > 0) timeStr = `${diffMins}m ago`;
+        else if (diffSecs > 10) timeStr = `${diffSecs}s ago`;
+        else timeStr = 'Just now';
+      }
+
+      // Display username: formatted with @ handle
+      let displayUser = t.username || '';
+      if (!displayUser && t.userAddress) {
+        displayUser = `${t.userAddress.slice(0, 6)}...${t.userAddress.slice(-4)}`;
+      }
+      if (!displayUser) {
+        displayUser = isMine ? `@${profile?.username || 'You'}` : 'Player';
+      }
+      if (!displayUser.startsWith('@') && !displayUser.startsWith('0x') && !displayUser.startsWith('T')) {
+        displayUser = `@${displayUser}`;
+      }
+
+      return {
+        id: t.id || `real-${idx}`,
+        num: String(t.ticketNumber).padStart(4, '0'),
+        user: displayUser,
+        amount: 1,
+        time: timeStr,
+        isUser: Boolean(isMine)
+      };
+    });
+  }, [grandEvent, getSoldTicketsForEvent, user, profile, wallet?.address]);
+
+  if (!grandEvent) return null;
+
+  const winnerCount = grandEvent.winnerCount || 1;
+
+  return (
+    <div className="relative overflow-hidden pt-4 pb-8">
+      {/* Background Ambient Glows */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[360px] bg-gradient-to-r from-amber-500/10 via-[#00f2fe]/5 to-emerald-500/10 blur-[130px] pointer-events-none rounded-full" />
+      
+      <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 relative z-10">
+        
+        {/* Top Badges Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3 sm:mb-5">
+          <div className="flex items-center gap-1.5 xs:gap-2">
+            <div className="badge-gold px-2.5 xs:px-3 py-1 rounded-full text-[10px] xs:text-[11px] font-bold flex items-center gap-1.5 uppercase tracking-wider">
+              <Flame className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-[#f5c451]" />
+              {grandEvent.badge || 'FEATURED JACKPOT'}
+            </div>
+            <div className="badge-provably-fair px-2.5 xs:px-3 py-1 rounded-full text-[10px] xs:text-[11px] font-bold flex items-center gap-1.5">
+              <ShieldCheck className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-[#05d5aa]" />
+              100% VERIFIED FAIR
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-mono-numbers">
+            <span className="text-[#9b8f7c]">Round ID:</span>
+            <span className="text-white font-bold bg-[#141924] px-1.5 xs:px-2 py-0.5 rounded border border-[#272a31]">
+              #{grandEvent.id.replace('evt-', '').toUpperCase()}
+            </span>
+          </div>
+        </div>
+
+        {/* CLASSIC 2-HALF SPLIT CONTAINER */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch">
+          
+          {/* LEFT HALF: Trending / Active Lottery (Prize, Timer, Action) */}
+          <div className="lg:col-span-7 glass-panel rounded-2xl p-3.5 xs:p-5 sm:p-7 border border-amber-500/30 flex flex-col justify-between relative overflow-hidden shadow-[0_0_40px_rgba(245,196,81,0.12)]">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#ffd700] to-transparent" />
+
+            <div>
+              {/* Status and Title */}
+              <div className="flex flex-wrap items-center justify-between gap-1.5 xs:gap-2 mb-2">
+                <span className="text-[10px] xs:text-[11px] font-mono-numbers text-amber-400 font-extrabold tracking-wider uppercase flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${isTimedOut ? 'bg-red-400' : 'bg-[#05d5aa] animate-ping'}`} />
+                  {isTimedOut ? 'DRAW CLOSED · TIME EXPIRED' : 'TRENDING ACTIVE LOTTERY'}
+                </span>
+
+                <div className="flex items-center gap-1.5 xs:gap-2">
+                  <span className="font-mono-numbers text-[10px] xs:text-[11px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/40 px-2 xs:px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="text-[#9b8f7c] font-normal text-[9px] xs:text-[10px]">ROUND:</span>
+                    <span>#{grandEvent.id.replace('evt-', '').toUpperCase()}</span>
+                  </span>
+                  <span className="text-[9px] xs:text-[10px] text-[#05d5aa] font-semibold bg-[#05d5aa]/10 px-2 xs:px-2.5 py-0.5 rounded-full border border-[#05d5aa]/20">
+                    {winnerCount > 1 ? `${winnerCount} Lucky Winners` : 'Lucky Winner Pot'}
+                  </span>
+                </div>
+              </div>
+
+              <h2 className="font-display font-extrabold text-xl xs:text-2xl sm:text-3xl text-white tracking-tight mb-3 sm:mb-4">
+                {grandEvent.title}
+              </h2>
+
+              {/* Prize Highlight Box */}
+              <div className="p-3 xs:p-4 rounded-xl bg-[#07090e]/80 border border-[#272a31] mb-3.5 sm:mb-5">
+                <div className="flex items-center justify-between text-[11px] xs:text-xs text-[#9b8f7c] mb-1">
+                  <span className="uppercase font-bold tracking-wider text-amber-400">
+                    {grandEvent.minPrize && grandEvent.maxPrize ? 'GUARANTEED PRIZE RANGE' : 'WIN UP TO GRAND JACKPOT'}
+                  </span>
+                  <span className="text-[9px] xs:text-[10px] font-mono-numbers text-amber-400">
+                    Flow Coin Virtual Settlement
+                  </span>
+                </div>
+
+                <div className="flex items-baseline gap-1.5 xs:gap-2">
+                  <span className="text-gold-gradient font-display font-black text-2xl xs:text-3xl sm:text-4xl lg:text-5xl tracking-tight">
+                    {grandEvent.minPrize && grandEvent.maxPrize
+                      ? `${grandEvent.minPrize} – ${grandEvent.maxPrize}`
+                      : grandEvent.poolPrize.toLocaleString()}
+                  </span>
+                  <span className="font-display font-black text-base xs:text-xl sm:text-2xl text-amber-400 font-mono-numbers">
+                    FC
+                  </span>
+                </div>
+
+                <p className="text-[10px] xs:text-[11px] text-[#9b8f7c] mt-1.5 sm:mt-2 leading-relaxed">
+                  {winnerCount > 1 
+                    ? `Prize pool is shared equally among ${winnerCount} lucky winners selected by provably fair luck. Winnings go directly to your Flow Coin wallet.`
+                    : 'Lucky ticket combination wins the jackpot pool! Provably fair draw with automated Flow Coin payouts.'}
+                </p>
+              </div>
+
+              {/* Quick Metrics */}
+              <div className="grid grid-cols-3 gap-1.5 xs:gap-2 sm:gap-3 mb-3.5 sm:mb-5 text-[10px] xs:text-xs">
+                <div className="bg-[#10131a] p-2 xs:p-2.5 rounded-lg xs:rounded-xl border border-[#272a31]">
+                  <span className="text-[#9b8f7c] block mb-0.5 flex items-center gap-1 text-[9px] xs:text-[10px] sm:text-[11px] truncate">
+                    <Ticket className="w-2.5 xs:w-3 h-2.5 xs:h-3 text-[#f5c451] shrink-0" />
+                    Entry Price
+                  </span>
+                  <span className="font-mono-numbers font-bold text-white text-xs xs:text-sm truncate block">
+                    {grandEvent.ticketPrice} FC
+                  </span>
+                </div>
+
+                <div className="bg-[#10131a] p-2 xs:p-2.5 rounded-lg xs:rounded-xl border border-[#272a31]">
+                  <span className="text-[#9b8f7c] block mb-0.5 flex items-center gap-1 text-[9px] xs:text-[10px] sm:text-[11px] truncate">
+                    <Users className="w-2.5 xs:w-3 h-2.5 xs:h-3 text-[#00f2fe] shrink-0" />
+                    Tickets Sold
+                  </span>
+                  <span className="font-mono-numbers font-bold text-white text-xs xs:text-sm truncate block">
+                    {grandEvent.ticketsSold.toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="bg-[#10131a] p-2 xs:p-2.5 rounded-lg xs:rounded-xl border border-[#272a31]">
+                  <span className="text-[#9b8f7c] block mb-0.5 flex items-center gap-1 text-[9px] xs:text-[10px] sm:text-[11px] truncate">
+                    <Trophy className="w-2.5 xs:w-3 h-2.5 xs:h-3 text-[#05d5aa] shrink-0" />
+                    Winners Count
+                  </span>
+                  <span className="font-mono-numbers font-bold text-white text-xs xs:text-sm truncate block">
+                    {winnerCount} {winnerCount > 1 ? 'Winners' : 'Winner'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Countdown Clock */}
+              <div className="p-2.5 xs:p-3.5 rounded-xl bg-[#0d1117] border border-[#272a31] mb-3.5 sm:mb-5">
+                <div className="flex items-center justify-between mb-1.5 xs:mb-2 text-[11px] xs:text-xs">
+                  <span className="text-[#9b8f7c] flex items-center gap-1.5 font-medium">
+                    <Clock className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-[#00f2fe]" />
+                    {isTimedOut ? 'Draw Time Expired:' : 'Scheduled Draw Countdown:'}
+                  </span>
+                  <span className={`text-[9px] xs:text-[10px] font-bold uppercase font-mono-numbers ${isTimedOut ? 'text-red-400' : 'text-emerald-400'}`}>
+                    {isTimedOut ? 'Closed for Entries' : 'Tickets Active'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-4 gap-1 xs:gap-2 text-center">
+                  <div className="bg-[#07090e] border border-[#272a31] rounded-lg p-1.5 xs:p-2">
+                    <div className="font-mono-numbers font-black text-base xs:text-lg sm:text-xl text-white">
+                      {String(timeLeft.days).padStart(2, '0')}
+                    </div>
+                    <div className="text-[8px] xs:text-[9px] text-[#9b8f7c] uppercase font-bold">Days</div>
+                  </div>
+                  <div className="bg-[#07090e] border border-[#272a31] rounded-lg p-1.5 xs:p-2">
+                    <div className="font-mono-numbers font-black text-base xs:text-lg sm:text-xl text-white">
+                      {String(timeLeft.hours).padStart(2, '0')}
+                    </div>
+                    <div className="text-[8px] xs:text-[9px] text-[#9b8f7c] uppercase font-bold">Hours</div>
+                  </div>
+                  <div className="bg-[#07090e] border border-[#272a31] rounded-lg p-1.5 xs:p-2">
+                    <div className="font-mono-numbers font-black text-base xs:text-lg sm:text-xl text-white">
+                      {String(timeLeft.minutes).padStart(2, '0')}
+                    </div>
+                    <div className="text-[8px] xs:text-[9px] text-[#9b8f7c] uppercase font-bold">Mins</div>
+                  </div>
+                  <div className="bg-[#07090e] border border-[#272a31] rounded-lg p-1.5 xs:p-2">
+                    <div className={`font-mono-numbers font-black text-base xs:text-lg sm:text-xl ${isTimedOut ? 'text-slate-500' : 'text-[#ffd700]'}`}>
+                      {String(timeLeft.seconds).padStart(2, '0')}
+                    </div>
+                    <div className="text-[8px] xs:text-[9px] text-[#9b8f7c] uppercase font-bold">Secs</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CTAs: Strictly changes to "Show Result" when timed out */}
+            <div className="pt-2">
+              {isTimedOut ? (
+                <button
+                  onClick={() => onShowResultClick ? onShowResultClick(grandEvent) : onPlayNowClick?.(grandEvent)}
+                  className="w-full py-3 xs:py-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-[#05d5aa] text-black font-extrabold text-xs xs:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:brightness-110 transition-all"
+                >
+                  <Trophy className="w-4 xs:w-5 h-4 xs:h-5 text-black" />
+                  <span>Show Result · View Draw Proof</span>
+                  <ArrowRight className="w-3.5 xs:w-4 h-3.5 xs:h-4 ml-1" />
+                </button>
+              ) : (
+                <div className="flex flex-col sm:flex-row items-center gap-2 xs:gap-3">
+                  <button
+                    onClick={() => onPlayNowClick?.(grandEvent)}
+                    className="btn-gold flex-1 w-full py-3 xs:py-3.5 rounded-xl text-xs xs:text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                  >
+                    <Sparkles className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
+                    <span>Buy Lucky Ticket ({grandEvent.ticketPrice} FC)</span>
+                    <ArrowRight className="w-3.5 xs:w-4 h-3.5 xs:h-4 ml-1" />
+                  </button>
+
+                  <button
+                    onClick={onRulesClick}
+                    className="btn-ghost-gold w-full sm:w-auto px-4 xs:px-5 py-3 xs:py-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    <span>Draw Rules</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* RIGHT HALF: Live Tickets Sold & Buyers Feed */}
+          <div className="lg:col-span-5 glass-panel rounded-2xl p-3.5 xs:p-5 sm:p-6 border border-[#272a31] flex flex-col justify-between shadow-lg">
+            
+            {/* Header */}
+            <div>
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#272a31]">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <h3 className="font-display font-bold text-base text-white flex items-center gap-1.5">
+                    <Activity className="w-4 h-4 text-emerald-400" />
+                    <span>Tickets Sold Feed</span>
+                  </h3>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-md bg-[#141924] text-amber-400 border border-amber-500/30 font-bold flex items-center gap-1">
+                    <span>ROUND</span>
+                    <span className="text-white">#{grandEvent.id.replace('evt-', '').toUpperCase()}</span>
+                  </span>
+                  <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                    {ticketsFeed.length} SOLD
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-[#9b8f7c] mb-3 px-1">
+                <span className="truncate pr-2">Live Entries for <strong className="text-white font-medium">{grandEvent.title}</strong></span>
+                <span className="font-mono-numbers text-white font-medium shrink-0">
+                  Total Collected: {(ticketsFeed.length * grandEvent.ticketPrice).toLocaleString()} USDT
+                </span>
+              </div>
+
+              {/* Scrollable Feed List */}
+              <div className="space-y-2 max-h-[260px] xs:max-h-[300px] sm:max-h-[360px] overflow-y-auto pr-1">
+                {ticketsFeed.length === 0 ? (
+                  <div className="py-12 px-4 text-center space-y-2.5">
+                    <div className="w-10 h-10 mx-auto rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-amber-400">
+                      <Ticket className="w-5 h-5 text-amber-400/70" />
+                    </div>
+                    <div className="text-xs font-bold text-white">No Tickets Purchased Yet</div>
+                    <p className="text-[11px] text-[#9b8f7c] max-w-xs mx-auto leading-relaxed">
+                      0 entries so far. Be the very first player to grab a lucky number for this round!
+                    </p>
+                  </div>
+                ) : (
+                  ticketsFeed.map((item) => (
+                    <div 
+                      key={item.id}
+                      className={`p-2 xs:p-2.5 rounded-xl border flex items-center justify-between transition-all ${
+                        item.isUser 
+                          ? 'bg-amber-500/10 border-amber-500/40 shadow-sm' 
+                          : 'bg-[#10131a] border-[#272a31]/80 hover:border-[#32353c]'
+                      }`}
+                    >
+                      {/* Ticket Number & Buyer User */}
+                      <div className="flex items-center gap-2 xs:gap-2.5 min-w-0">
+                        <span className="font-mono-numbers font-black text-[11px] xs:text-xs text-amber-300 bg-black/60 px-2 xs:px-2.5 py-0.5 xs:py-1 rounded-lg border border-amber-500/30 shrink-0">
+                          #{item.num}
+                        </span>
+                        
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-white font-semibold truncate">
+                              {item.user}
+                            </span>
+                            {item.isUser && (
+                              <span className="text-[9px] bg-amber-500 text-black px-1.5 py-0.2 rounded font-extrabold uppercase">
+                                YOU
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[9px] xs:text-[10px] text-[#9b8f7c]">
+                            {item.amount} {item.amount > 1 ? 'Tickets' : 'Ticket'} · {grandEvent.ticketPrice * item.amount} USDT
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Time pill */}
+                      <span className="text-[9px] xs:text-[10px] font-mono-numbers text-[#9b8f7c] shrink-0 ml-2">
+                        {item.time}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Bottom info note */}
+            <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-[#272a31] flex items-center justify-between text-[10px] xs:text-[11px] text-[#9b8f7c]">
+              <span className="flex items-center gap-1 text-emerald-400 font-medium">
+                <CheckCircle2Icon className="w-3 h-3 text-emerald-400 shrink-0" />
+                All combinations registered
+              </span>
+              <span className="font-mono-numbers text-amber-400/90 text-[9px] xs:text-[10px]">
+                {winnerCount > 1 ? `${winnerCount} Lucky Winners` : 'Single Pot Draw'}
+              </span>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+function CheckCircle2Icon(props) {
+  return (
+    <svg 
+      {...props} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="10"/>
+      <path d="m9 12 2 2 4-4"/>
+    </svg>
+  );
+}
