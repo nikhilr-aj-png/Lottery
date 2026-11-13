@@ -16,7 +16,13 @@ import {
 import confetti from 'canvas-confetti';
 import { soundFX } from '../engine/SoundFXService';
 
-export default function MinesGame({ room }) {
+export default function MinesGame({ 
+  room, 
+  activityBox 
+}: { 
+  room?: any; 
+  activityBox?: React.ReactNode; 
+}) {
   const {
     game,
     betAmount,
@@ -272,17 +278,17 @@ export default function MinesGame({ room }) {
   };
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full h-full flex flex-col min-h-0 overflow-hidden text-left space-y-1.5">
       {/* 1. RECENT ROUNDS STRIP */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-mono-numbers no-scrollbar">
-        <span className="text-[#94A3B8] text-[11px] uppercase tracking-wider flex items-center gap-1 font-bold pl-1">
-          <History className="w-3.5 h-3.5 text-amber-400" />
+      <div className="flex items-center gap-2 overflow-x-auto pb-0.5 text-xs font-mono-numbers no-scrollbar shrink-0">
+        <span className="text-[#94A3B8] text-[10px] uppercase tracking-wider flex items-center gap-1 font-bold pl-1 shrink-0">
+          <History className="w-3 h-3 text-amber-400" />
           Recent:
         </span>
         {recentRounds.map((r, idx) => (
           <span
             key={idx}
-            className={`px-2.5 py-1 rounded-lg border font-bold flex items-center gap-1 shrink-0 ${
+            className={`px-1.5 py-0.2 rounded text-[10px] border font-bold flex items-center gap-1 shrink-0 ${
               r.won
                 ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
                 : 'bg-rose-950/40 border-rose-500/30 text-rose-300'
@@ -290,12 +296,12 @@ export default function MinesGame({ room }) {
           >
             {r.won ? (
               <>
-                <Gem className="w-3 h-3 text-emerald-400" />
+                <Gem className="w-2.5 h-2.5 text-emerald-400" />
                 {r.multiplier.toFixed(2)}x
               </>
             ) : (
               <>
-                <Bomb className="w-3 h-3 text-rose-400" />
+                <Bomb className="w-2.5 h-2.5 text-rose-400" />
                 0.00x
               </>
             )}
@@ -304,18 +310,18 @@ export default function MinesGame({ room }) {
       </div>
 
       {/* 2. MAIN GRID & CONTROLS CONTAINER */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 overflow-hidden">
         
-        {/* Controls Column (Left) */}
-        <div className="lg:col-span-4 bg-[#111827] border border-[#1F2737] rounded-2xl p-4 sm:p-5 space-y-4 flex flex-col justify-between">
-          <div className="space-y-4">
+        {/* Controls Column (Landscape: Left / Portrait: Middle & Bottom) */}
+        <div className="order-2 lg:order-1 lg:col-span-4 bg-[#111827] border border-[#1F2737] rounded-xl p-2.5 sm:p-3 flex flex-col justify-between overflow-hidden h-full min-h-0 gap-2">
+          <div className="space-y-2 shrink-0">
             
             {/* Stake Input */}
             <div>
-              <div className="flex items-center justify-between text-xs mb-1.5 font-bold font-mono-numbers">
+              <div className="flex items-center justify-between text-xs mb-1 font-bold font-mono-numbers">
                 <span className="text-[#94A3B8]">Bet Amount:</span>
               </div>
-              <div className="flex items-center bg-[#0B0F19] border border-[#1F2737] focus-within:border-amber-500/50 rounded-xl p-1.5">
+              <div className="flex items-center bg-[#0B0F19] border border-[#1F2737] focus-within:border-amber-500/50 rounded-lg p-1">
                 <input
                   type="number"
                   min="1"
@@ -323,19 +329,19 @@ export default function MinesGame({ room }) {
                   value={betAmount}
                   onChange={(e) => setBetAmount(Math.max(1, parseFloat(e.target.value) || 0))}
                   disabled={gameState === 'playing'}
-                  className="flex-1 bg-transparent px-2.5 text-white font-mono-numbers font-black text-base outline-none disabled:opacity-50"
+                  className="flex-1 bg-transparent px-2 text-white font-mono-numbers font-black text-sm outline-none disabled:opacity-50"
                 />
                 <span className="text-amber-400 font-black text-xs px-2 font-mono-numbers">FC</span>
               </div>
             </div>
 
             {/* Quick Stake Adjusters */}
-            <div className="grid grid-cols-4 gap-1.5 text-xs font-mono-numbers font-bold">
+            <div className="grid grid-cols-4 gap-1 text-xs font-mono-numbers font-bold">
               <button
                 type="button"
                 onClick={halveBet}
                 disabled={gameState === 'playing'}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50 text-[11px]"
               >
                 ½
               </button>
@@ -343,7 +349,7 @@ export default function MinesGame({ room }) {
                 type="button"
                 onClick={doubleBet}
                 disabled={gameState === 'playing'}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50 text-[11px]"
               >
                 2x
               </button>
@@ -351,7 +357,7 @@ export default function MinesGame({ room }) {
                 type="button"
                 onClick={setMinBet}
                 disabled={gameState === 'playing'}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50 text-[11px]"
               >
                 Min
               </button>
@@ -359,7 +365,7 @@ export default function MinesGame({ room }) {
                 type="button"
                 onClick={setMaxBet}
                 disabled={gameState === 'playing'}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-amber-400 border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-amber-400 border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50 text-[11px]"
               >
                 Max
               </button>
@@ -367,21 +373,21 @@ export default function MinesGame({ room }) {
 
             {/* Mine Count Selector */}
             <div>
-              <div className="flex items-center justify-between text-xs mb-1.5 font-bold font-mono-numbers">
-                <span className="text-[#94A3B8] flex items-center gap-1">
-                  <Bomb className="w-3.5 h-3.5 text-rose-400" />
+              <div className="flex items-center justify-between text-xs mb-1 font-bold font-mono-numbers">
+                <span className="text-[#94A3B8] flex items-center gap-1 text-[11px]">
+                  <Bomb className="w-3 h-3 text-rose-400" />
                   Mines Count:
                 </span>
-                <span className="text-rose-400 font-black">{mineCount} / 24</span>
+                <span className="text-rose-400 font-black text-[11px]">{mineCount} / 24</span>
               </div>
-              <div className="grid grid-cols-4 gap-1.5 text-xs font-mono-numbers font-bold">
+              <div className="grid grid-cols-4 gap-1 text-xs font-mono-numbers font-bold">
                 {[1, 3, 5, 10].map(cnt => (
                   <button
                     key={cnt}
                     type="button"
                     onClick={() => setMineCount(cnt)}
                     disabled={gameState === 'playing'}
-                    className={`py-1.5 rounded-lg border transition-all cursor-pointer disabled:opacity-50 ${
+                    className={`py-0.5 rounded border transition-all cursor-pointer disabled:opacity-50 text-[11px] ${
                       mineCount === cnt
                         ? 'bg-rose-500/20 border-rose-500 text-rose-300 font-black'
                         : 'bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] border-[#1F2737]'
@@ -398,52 +404,45 @@ export default function MinesGame({ room }) {
                 value={mineCount}
                 onChange={(e) => setMineCount(parseInt(e.target.value, 10))}
                 disabled={gameState === 'playing'}
-                className="w-full mt-2 accent-rose-500 h-1.5 bg-[#0B0F19] rounded-lg cursor-pointer disabled:opacity-50"
+                className="w-full mt-1.5 accent-rose-500 h-1 bg-[#0B0F19] rounded cursor-pointer disabled:opacity-50"
               />
             </div>
 
             {/* Odds & Multipliers Card */}
-            <div className="bg-[#0B0F19] border border-[#1F2737] rounded-xl p-3 space-y-2 text-xs font-mono-numbers">
-              <div className="flex items-center justify-between text-[#94A3B8]">
-                <span>Gems Remaining:</span>
+            <div className="bg-[#0B0F19] border border-[#1F2737] rounded-lg p-2 space-y-1 text-xs font-mono-numbers">
+              <div className="flex items-center justify-between text-[#94A3B8] text-[11px]">
+                <span>Gems Left:</span>
                 <span className="text-emerald-400 font-bold">
                   {gameState === 'playing' ? (25 - mineCount - uncoveredGems) : (25 - mineCount)}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[#94A3B8]">
-                <span>Current Multiplier:</span>
-                <span className="text-amber-300 font-black text-sm">
+              <div className="flex items-center justify-between text-[#94A3B8] text-[11px]">
+                <span>Multiplier:</span>
+                <span className="text-amber-300 font-black text-xs">
                   {uncoveredGems > 0 ? `${currentCalc.multiplier}x` : '1.00x'}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[#94A3B8]">
-                <span>Next Gem Multiplier:</span>
-                <span className="text-emerald-300 font-bold">
-                  {nextCalc.multiplier}x (+{nextPayout} FC)
-                </span>
-              </div>
             </div>
-
           </div>
 
-          {/* Action Button: Start Game OR Cashout */}
-          <div className="pt-2">
+          {/* Action Button: Start vs Cashout */}
+          <div className="shrink-0">
             {gameState === 'playing' ? (
               <button
                 type="button"
                 onClick={handleCashout}
                 disabled={uncoveredGems === 0 || loading}
-                className={`w-full py-3.5 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer ${
+                className={`w-full py-2.5 sm:py-3 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   uncoveredGems > 0
-                    ? 'bg-gradient-to-r from-emerald-500 to-[#05D5AA] text-black shadow-emerald-500/20 hover:scale-[1.02] active:scale-95'
-                    : 'bg-[#1F2737] text-[#94A3B8] cursor-not-allowed opacity-60'
+                    ? 'bg-gradient-to-r from-emerald-500 to-[#05D5AA] hover:from-emerald-400 hover:to-[#05D5AA] text-black shadow-md shadow-emerald-500/20 animate-pulse'
+                    : 'bg-[#151C2B] border border-[#272A31] text-[#94A3B8] cursor-not-allowed opacity-60'
                 }`}
               >
                 <Coins className="w-4 h-4" />
                 <span>
                   {uncoveredGems > 0 
                     ? `Cashout ${currentPayout.toLocaleString()} FC` 
-                    : 'Select a Tile'}
+                    : 'Pick a Tile'}
                 </span>
               </button>
             ) : (
@@ -451,7 +450,7 @@ export default function MinesGame({ room }) {
                 type="button"
                 onClick={handleStartGame}
                 disabled={loading}
-                className="w-full py-3.5 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black shadow-lg shadow-amber-500/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+                className="w-full py-2.5 sm:py-3 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black shadow-md shadow-amber-500/20 transition-all cursor-pointer"
               >
                 {loading ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -464,15 +463,18 @@ export default function MinesGame({ room }) {
               </button>
             )}
           </div>
+
+          {/* Dedicated In-Room Activity Box */}
+          {activityBox}
         </div>
 
-        {/* 5x5 Mines Grid Stage (Right) */}
-        <div className="lg:col-span-8 bg-[#07090E] border border-[#1F2737] rounded-2xl p-4 sm:p-6 flex flex-col justify-between items-center relative overflow-hidden min-h-[420px]">
+        {/* 5x5 Mines Grid Stage (Landscape: Right / Portrait: Top) */}
+        <div className="order-1 lg:order-2 lg:col-span-8 bg-[#07090E] border border-[#1F2737] rounded-xl p-2 sm:p-3 flex flex-col justify-between items-center relative overflow-hidden h-full min-h-[180px] lg:min-h-0">
           <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
           {/* Grid Top Status Banner */}
-          <div className="w-full flex items-center justify-between text-xs text-[#94A3B8] font-mono-numbers pb-3 border-b border-[#1F2737]">
-            <div className="flex items-center gap-2">
+          <div className="w-full flex items-center justify-between text-xs text-[#94A3B8] font-mono-numbers pb-2 border-b border-[#1F2737] shrink-0">
+            <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
               <span>Grid: <strong className="text-white">5x5 (25 Tiles)</strong></span>
             </div>
@@ -489,8 +491,8 @@ export default function MinesGame({ room }) {
           </div>
 
           {/* 5x5 Interactive Tile Grid */}
-          <div className="my-auto py-4 w-full flex justify-center">
-            <div className="grid grid-cols-5 gap-1.5 xs:gap-2 sm:gap-3 w-full max-w-[270px] xs:max-w-[320px] sm:max-w-[380px] md:max-w-[420px]">
+          <div className="my-auto py-2 w-full flex flex-col items-center justify-center">
+            <div className="grid grid-cols-5 gap-1.5 xs:gap-2 w-full max-w-[240px] xs:max-w-[280px] sm:max-w-[340px]">
               {tiles.map((tile) => {
                 const isGem = tile.state === 'gem';
                 const isMine = tile.state === 'mine';
@@ -503,7 +505,7 @@ export default function MinesGame({ room }) {
                     type="button"
                     onClick={() => handleTileClick(tile.index)}
                     disabled={gameState !== 'playing' || tile.isRevealed}
-                    className={`aspect-square rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl transition-all duration-300 font-bold select-none cursor-pointer ${
+                    className={`aspect-square rounded-lg sm:rounded-xl flex items-center justify-center text-lg sm:text-xl transition-all duration-300 font-bold select-none cursor-pointer ${
                       // 1. Revealed GEM
                       isGem
                         ? 'bg-gradient-to-br from-emerald-500/30 to-emerald-700/40 border-2 border-emerald-400 text-emerald-300 shadow-[0_0_15px_rgba(34,197,94,0.35)] scale-[1.02]'
@@ -522,20 +524,20 @@ export default function MinesGame({ room }) {
                         :
                       // 5. UNOPENED TILE
                       gameState === 'playing'
-                        ? 'bg-[#151C2B] hover:bg-[#1E293B] border border-[#2A374A] hover:border-amber-500/60 hover:scale-105 active:scale-95 shadow-md'
+                        ? 'bg-[#151C2B] hover:bg-[#1E293B] border border-[#2A374A] hover:border-amber-500/60 hover:scale-105 active:scale-95 shadow-sm'
                         : 'bg-[#111827] border border-[#1F2737] hover:border-[#2A374A] opacity-75'
                     }`}
                   >
                     {isGem ? (
-                      <Gem className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-300 animate-in zoom-in-75 fill-emerald-400/20" />
+                      <Gem className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-300 animate-in zoom-in-75 fill-emerald-400/20" />
                     ) : isExploded ? (
-                      <Bomb className="w-7 h-7 sm:w-9 sm:h-9 text-white animate-in zoom-in fill-white/20" />
+                      <Bomb className="w-5 h-5 sm:w-7 sm:h-7 text-white animate-in zoom-in fill-white/20" />
                     ) : isMine ? (
-                      <Bomb className="w-5 h-5 sm:w-7 sm:h-7 text-rose-400" />
+                      <Bomb className="w-4 h-4 sm:w-5 sm:h-5 text-rose-400" />
                     ) : isMissedGem ? (
-                      <Gem className="w-4 h-4 text-emerald-600/40" />
+                      <Gem className="w-3.5 h-3.5 text-emerald-600/40" />
                     ) : (
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#2A374A]/60" />
+                      <span className="w-2 h-2 rounded-full bg-[#2A374A]/60" />
                     )}
                   </button>
                 );
@@ -544,27 +546,27 @@ export default function MinesGame({ room }) {
 
             {/* Result Announcement Overlay Banner */}
             {lastPayout && gameState === 'cashed_out' && (
-              <div className="mt-4 bg-emerald-950/80 border border-emerald-500/50 rounded-xl px-4 py-2 text-center text-emerald-300 font-mono-numbers animate-in zoom-in-95">
-                <span className="text-xs uppercase tracking-wider block font-bold text-emerald-400">Round Won</span>
-                <span className="text-lg font-black">
+              <div className="mt-2 bg-emerald-950/80 border border-emerald-500/50 rounded-lg px-3 py-1 text-center text-emerald-300 font-mono-numbers animate-in zoom-in-95">
+                <span className="text-[10px] uppercase tracking-wider block font-bold text-emerald-400">Round Won</span>
+                <span className="text-sm font-black">
                   +{lastPayout.payout.toLocaleString()} FC ({lastPayout.multiplier}x)
                 </span>
               </div>
             )}
 
             {gameState === 'exploded' && (
-              <div className="mt-4 bg-rose-950/80 border border-rose-500/50 rounded-xl px-4 py-2 text-center text-rose-300 font-mono-numbers animate-in zoom-in-95">
-                <span className="text-xs uppercase tracking-wider block font-bold text-rose-400">Mine Exploded!</span>
-                <span className="text-sm font-semibold">Stake lost. Select new bet to retry.</span>
+              <div className="mt-2 bg-rose-950/80 border border-rose-500/50 rounded-lg px-3 py-1 text-center text-rose-300 font-mono-numbers animate-in zoom-in-95">
+                <span className="text-[10px] uppercase tracking-wider block font-bold text-rose-400">Mine Exploded!</span>
+                <span className="text-xs font-semibold">Stake lost. Select new bet to retry.</span>
               </div>
             )}
           </div>
 
           {/* Stage Footer: Provably Fair Note */}
-          <div className="w-full flex items-center justify-between pt-3 border-t border-[#1F2737] text-[11px] text-[#94A3B8]">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Provably Fair: Shuffled via HMAC-SHA256</span>
+          <div className="w-full flex items-center justify-between pt-2 border-t border-[#1F2737] text-[10px] text-[#94A3B8] shrink-0">
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+              <span>Provably Fair HMAC-SHA256</span>
             </span>
             <span className="text-amber-400 font-mono-numbers font-bold">
               House Edge: 1.0%

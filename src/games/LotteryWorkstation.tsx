@@ -26,7 +26,7 @@ import {
 import confetti from 'canvas-confetti';
 import { soundFX } from '../engine/SoundFXService';
 
-export default function LotteryWorkstation({ room, onBackToLobby }) {
+export default function LotteryWorkstation({ room, onBackToLobby, activityBox }: { room?: any; onBackToLobby?: () => void; activityBox?: React.ReactNode; }) {
   const { 
     user, 
     wallet, 
@@ -259,32 +259,32 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
   }, [event.drawTime]);
 
   return (
-    <div className="space-y-3 sm:space-y-4 animate-in fade-in duration-200 text-left">
+    <div className="w-full h-full flex flex-col min-h-0 overflow-hidden text-left space-y-1.5 sm:space-y-2">
       
       {/* 1. COMPACT IN-ROOM BANNER & DRAW METRICS */}
-      <div className="glass-panel rounded-xl sm:rounded-2xl p-2.5 sm:px-4 sm:py-3 border border-amber-500/30 bg-gradient-to-r from-[#151C2B] via-[#0F1420] to-[#0B0F19] shadow-lg flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 sm:gap-4 shrink-0">
+      <div className="glass-panel rounded-xl p-2 sm:px-3 sm:py-2 border border-amber-500/30 bg-gradient-to-r from-[#151C2B] via-[#0F1420] to-[#0B0F19] shadow-md flex flex-col md:flex-row items-stretch md:items-center justify-between gap-1.5 sm:gap-3 shrink-0">
         
         {/* Left: Back to Lobby + Room Name + Draw Badge */}
-        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           {onBackToLobby && (
             <button
               onClick={onBackToLobby}
-              className="px-2.5 py-1 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-[#9b8f7c] hover:text-white border border-[#272a31] text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+              className="px-2 py-0.5 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-[#9b8f7c] hover:text-white border border-[#272a31] text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
               title="Return to Lottery Lobby"
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
+              <ArrowLeft className="w-3 h-3 text-amber-400" />
               <span className="hidden xs:inline">Lobby</span>
             </button>
           )}
 
-          <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <h2 className="font-display font-extrabold text-sm sm:text-base text-white truncate">
+          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+            <h2 className="font-display font-extrabold text-xs sm:text-sm text-white truncate">
               {room.name}
             </h2>
-            <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold uppercase shrink-0">
+            <span className="text-[9px] font-mono-numbers px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold uppercase shrink-0">
               {room.drawId || 'DRAW #' + event.id}
             </span>
-            <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-[#141924] text-emerald-400 border border-[#272a31] font-bold uppercase flex items-center gap-1 shrink-0">
+            <span className="text-[9px] font-mono-numbers px-1.5 py-0.2 rounded bg-[#141924] text-emerald-400 border border-[#272a31] font-bold uppercase flex items-center gap-1 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               {event.status === 'completed' ? 'CONCLUDED' : 'ACTIVE'}
             </span>
@@ -292,23 +292,23 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
         </div>
 
         {/* Right: Inline Compact Metrics Strip (Price, Pool, Players, Time) */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 text-[11px] sm:text-xs font-mono-numbers overflow-x-auto no-scrollbar shrink-0">
-          <div className="bg-[#0b0e14] px-2.5 py-1 rounded-lg border border-[#272a31] flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono-numbers overflow-x-auto no-scrollbar shrink-0">
+          <div className="bg-[#0b0e14] px-2 py-0.5 rounded border border-[#272a31] flex items-center gap-1 shrink-0">
             <span className="text-[#8b92a2]">Price:</span>
             <strong className="text-amber-400 font-bold">{event.ticketPrice} FC</strong>
           </div>
 
-          <div className="bg-[#0b0e14] px-2.5 py-1 rounded-lg border border-[#272a31] flex items-center gap-1 shrink-0">
+          <div className="bg-[#0b0e14] px-2 py-0.5 rounded border border-[#272a31] flex items-center gap-1 shrink-0">
             <span className="text-[#8b92a2]">Pool:</span>
             <strong className="text-emerald-400 font-bold">{Number(event.poolPrize || 5000).toLocaleString()} FC</strong>
           </div>
 
-          <div className="bg-[#0b0e14] px-2.5 py-1 rounded-lg border border-[#272a31] flex items-center gap-1 shrink-0">
+          <div className="bg-[#0b0e14] px-2 py-0.5 rounded border border-[#272a31] flex items-center gap-1 shrink-0">
             <span className="text-[#8b92a2]">Players:</span>
             <strong className="text-purple-300 font-bold">{event.participantsCount || room.currentPlayers || 18}</strong>
           </div>
 
-          <div className="bg-[#0b0e14] px-2.5 py-1 rounded-lg border border-[#272a31] flex items-center gap-1 text-amber-300 font-bold shrink-0">
+          <div className="bg-[#0b0e14] px-2 py-0.5 rounded border border-[#272a31] flex items-center gap-1 text-amber-300 font-bold shrink-0">
             <Clock className="w-3 h-3 text-amber-400" />
             <span>{timeLeft.hours}h {timeLeft.minutes}m</span>
           </div>
@@ -317,49 +317,50 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
       </div>
 
       {/* 2. MAIN 2-COLUMN WORKSTATION: DIALS & ORDER STAGING */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 overflow-hidden">
         
         {/* LEFT COLUMN: 4-Digit Dials & Keypad (7 Cols) */}
-        <div className="lg:col-span-7 glass-panel rounded-2xl p-4 sm:p-6 space-y-5 border border-[#272a31]">
+        <div className="order-1 lg:col-span-7 bg-[#111827] border border-[#1F2737] rounded-xl p-2 sm:p-2.5 flex flex-col justify-between overflow-hidden h-full min-h-0 gap-1.5">
           
-          <div className="flex items-center justify-between pb-3 border-b border-[#1f2737]">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
-                Select Your 4-Digit Combination (0000 – 9999)
+          <div className="flex items-center justify-between pb-1 border-b border-[#1f2737] shrink-0">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
+                Select Your 4-Digit Combination (0000–9999)
               </h3>
             </div>
             
             <button
+              type="button"
               onClick={handleQuickPickCurrent}
-              className="px-2.5 py-1 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-amber-300 hover:text-white border border-[#272a31] text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+              className="px-2 py-0.5 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-amber-300 hover:text-white border border-[#272a31] text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
             >
-              <Dices className="w-3.5 h-3.5" />
+              <Dices className="w-3 h-3" />
               <span>Quick RNG</span>
             </button>
           </div>
 
           {/* 4 Mechanical Dials */}
-          <div className="py-2">
-            <div className="grid grid-cols-4 gap-2 xs:gap-3 sm:gap-4 max-w-sm sm:max-w-md mx-auto">
+          <div className="py-1 shrink-0">
+            <div className="grid grid-cols-4 gap-1.5 xs:gap-2 max-w-[280px] xs:max-w-[320px] mx-auto">
               {digits.map((digit, idx) => {
                 const isSelected = activeSlot === idx;
                 return (
-                  <div key={idx} className="flex flex-col items-center gap-1.5">
+                  <div key={idx} className="flex flex-col items-center gap-1">
                     <button
                       type="button"
                       onClick={() => incrementDigit(idx)}
-                      className="w-full py-1.5 rounded-lg bg-[#141924] hover:bg-[#1f2737] text-[#9b8f7c] hover:text-white border border-[#272a31] flex items-center justify-center cursor-pointer transition-colors"
+                      className="w-full py-1 rounded bg-[#141924] hover:bg-[#1f2737] text-[#9b8f7c] hover:text-white border border-[#272a31] flex items-center justify-center cursor-pointer transition-colors"
                       title="Increment"
                     >
-                      <ChevronUp className="w-4 h-4" />
+                      <ChevronUp className="w-3.5 h-3.5" />
                     </button>
 
                     <div
                       onClick={() => setActiveSlot(idx)}
-                      className={`w-full aspect-[4/5] rounded-2xl flex items-center justify-center font-mono-numbers font-black text-3xl sm:text-4xl cursor-pointer select-none transition-all shadow-inner border-2 ${
+                      className={`w-full aspect-[4/5] rounded-xl flex items-center justify-center font-mono-numbers font-black text-2xl sm:text-3xl cursor-pointer select-none transition-all shadow-inner border-2 ${
                         isSelected 
-                          ? 'bg-[#1e2638] text-amber-400 border-amber-400 shadow-[0_0_20px_rgba(245,196,81,0.3)] scale-105' 
+                          ? 'bg-[#1e2638] text-amber-400 border-amber-400 shadow-[0_0_15px_rgba(245,196,81,0.3)] scale-105' 
                           : 'bg-[#0b0e14] text-white border-[#272a31] hover:border-amber-500/40'
                       }`}
                     >
@@ -369,10 +370,10 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
                     <button
                       type="button"
                       onClick={() => decrementDigit(idx)}
-                      className="w-full py-1.5 rounded-lg bg-[#141924] hover:bg-[#1f2737] text-[#9b8f7c] hover:text-white border border-[#272a31] flex items-center justify-center cursor-pointer transition-colors"
+                      className="w-full py-1 rounded bg-[#141924] hover:bg-[#1f2737] text-[#9b8f7c] hover:text-white border border-[#272a31] flex items-center justify-center cursor-pointer transition-colors"
                       title="Decrement"
                     >
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 );
@@ -380,35 +381,35 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
             </div>
 
             {/* Availability Indicator */}
-            <div className="text-center pt-3">
+            <div className="text-center pt-1.5">
               {isCurrentSold ? (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-bold">
-                  <AlertCircle className="w-3.5 h-3.5" />
+                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 text-[10px] font-bold">
+                  <AlertCircle className="w-3 h-3" />
                   <span>#{currentNumberStr} is SOLD OUT in this round</span>
                 </div>
               ) : isAlreadyStaged ? (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 text-xs font-bold">
-                  <Check className="w-3.5 h-3.5" />
-                  <span>#{currentNumberStr} is already staged below</span>
+                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 text-[10px] font-bold">
+                  <Check className="w-3 h-3" />
+                  <span>#{currentNumberStr} is already staged</span>
                 </div>
               ) : (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>#{currentNumberStr} is Available to Buy</span>
+                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span>#{currentNumberStr} is Available</span>
                 </div>
               )}
             </div>
           </div>
 
           {/* Virtual Numeric Keypad (0–9) */}
-          <div className="max-w-sm mx-auto space-y-2 pt-1">
-            <div className="grid grid-cols-3 gap-2">
+          <div className="max-w-[280px] xs:max-w-[320px] mx-auto space-y-1 w-full shrink-0">
+            <div className="grid grid-cols-3 gap-1">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((val) => (
                 <button
                   key={val}
                   type="button"
                   onClick={() => handleKeypadPress(val)}
-                  className="py-3 rounded-xl bg-[#0b0e14] hover:bg-[#151c2b] text-white hover:text-amber-300 font-mono-numbers font-extrabold text-base border border-[#272a31] active:scale-95 transition-all cursor-pointer"
+                  className="py-1.5 rounded-lg bg-[#0b0e14] hover:bg-[#151c2b] text-white hover:text-amber-300 font-mono-numbers font-extrabold text-xs border border-[#272a31] active:scale-95 transition-all cursor-pointer"
                 >
                   {val}
                 </button>
@@ -416,50 +417,50 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
               <button
                 type="button"
                 onClick={handleBackspace}
-                className="py-3 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-[#9b8f7c] hover:text-white font-bold text-xs border border-[#272a31] transition-colors cursor-pointer flex items-center justify-center"
+                className="py-1.5 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-[#9b8f7c] hover:text-white font-bold text-[10px] border border-[#272a31] transition-colors cursor-pointer flex items-center justify-center"
               >
                 Clear
               </button>
               <button
                 type="button"
                 onClick={() => handleKeypadPress(0)}
-                className="py-3 rounded-xl bg-[#0b0e14] hover:bg-[#151c2b] text-white hover:text-amber-300 font-mono-numbers font-extrabold text-base border border-[#272a31] active:scale-95 transition-all cursor-pointer"
+                className="py-1.5 rounded-lg bg-[#0b0e14] hover:bg-[#151c2b] text-white hover:text-amber-300 font-mono-numbers font-extrabold text-xs border border-[#272a31] active:scale-95 transition-all cursor-pointer"
               >
                 0
               </button>
               <button
                 type="button"
                 onClick={handleQuickPickCurrent}
-                className="py-3 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-amber-400 font-bold text-xs border border-amber-500/30 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                className="py-1.5 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-amber-400 font-bold text-[10px] border border-amber-500/30 transition-colors cursor-pointer flex items-center justify-center gap-1"
               >
-                <Dices className="w-3.5 h-3.5" />
+                <Dices className="w-3 h-3" />
                 <span>RNG</span>
               </button>
             </div>
 
             {/* Action Buttons: Add Current & Quick Bulk Picks */}
-            <div className="pt-2 space-y-2">
+            <div className="pt-1 space-y-1">
               <button
                 type="button"
                 onClick={handleAddCurrentTicket}
                 disabled={isCurrentSold || isAlreadyStaged}
-                className="w-full py-3 rounded-xl btn-gold font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2 rounded-lg btn-gold font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
                 <span>Add #{currentNumberStr} to Order ({event.ticketPrice} FC)</span>
               </button>
 
-              <div className="flex items-center justify-between gap-2 pt-1 text-xs">
-                <span className="text-[#8b92a2] text-[11px]">Quick Bulk Add:</span>
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between gap-1 pt-0.5 text-[10px]">
+                <span className="text-[#8b92a2]">Quick Add:</span>
+                <div className="flex items-center gap-1">
                   {[1, 5, 10].map(cnt => (
                     <button
                       key={cnt}
                       type="button"
                       onClick={() => handleBulkAdd(cnt)}
-                      className="px-2.5 py-1 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-[11px] font-mono-numbers text-amber-300 border border-[#272a31] cursor-pointer"
+                      className="px-2 py-0.5 rounded bg-[#141924] hover:bg-[#1a2130] text-[10px] font-mono-numbers text-amber-300 border border-[#272a31] cursor-pointer"
                     >
-                      +{cnt} Tickets
+                      +{cnt}
                     </button>
                   ))}
                 </div>
@@ -470,20 +471,21 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
         </div>
 
         {/* RIGHT COLUMN: Staged Tickets & Review Order (5 Cols) */}
-        <div className="lg:col-span-5 glass-panel rounded-2xl p-4 sm:p-6 space-y-4 border border-[#272a31]">
+        <div className="order-2 lg:col-span-5 bg-[#111827] border border-[#1F2737] rounded-xl p-2 sm:p-2.5 flex flex-col justify-between overflow-hidden h-full min-h-0 gap-1.5">
           
-          <div className="flex items-center justify-between pb-3 border-b border-[#1f2737]">
-            <div className="flex items-center gap-2">
-              <Ticket className="w-4 h-4 text-amber-400" />
-              <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
+          <div className="flex items-center justify-between pb-1 border-b border-[#1f2737] shrink-0">
+            <div className="flex items-center gap-1.5">
+              <Ticket className="w-3.5 h-3.5 text-amber-400" />
+              <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
                 Selected Tickets ({stagedTickets.length})
               </h3>
             </div>
 
             {stagedTickets.length > 0 && (
               <button
+                type="button"
                 onClick={() => setStagedTickets([])}
-                className="text-[11px] text-red-400 hover:text-red-300 flex items-center gap-1 cursor-pointer"
+                className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-0.5 cursor-pointer"
               >
                 <Trash2 className="w-3 h-3" />
                 <span>Clear All</span>
@@ -492,24 +494,23 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
           </div>
 
           {/* Staged Tickets List */}
-          <div className="min-h-[160px] max-h-[260px] overflow-y-auto space-y-2 pr-1 no-scrollbar">
+          <div className="max-h-[90px] xs:max-h-[110px] overflow-y-auto space-y-1 pr-1 no-scrollbar shrink-0">
             {stagedTickets.length === 0 ? (
-              <div className="h-40 flex flex-col items-center justify-center text-center p-4 rounded-xl border border-dashed border-[#272a31] text-[#9b8f7c] space-y-2">
-                <Ticket className="w-8 h-8 opacity-40 text-amber-400" />
-                <p className="text-xs">No tickets selected yet.</p>
-                <p className="text-[11px] text-[#64748b]">Pick digits on the keypad or click Quick Bulk Add.</p>
+              <div className="py-2.5 flex flex-col items-center justify-center text-center p-2 rounded-lg border border-dashed border-[#272a31] text-[#9b8f7c]">
+                <p className="text-[11px]">No tickets selected yet.</p>
+                <p className="text-[10px] text-[#64748b]">Pick digits on keypad or click Quick Add.</p>
               </div>
             ) : (
               stagedTickets.map((tkt, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-[#0b0e14] border border-[#1f2737] text-xs font-mono-numbers"
+                  className="flex items-center justify-between p-1.5 rounded-lg bg-[#0b0e14] border border-[#1f2737] text-xs font-mono-numbers"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-md bg-amber-500/15 text-amber-400 text-[10px] font-bold flex items-center justify-center">
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 rounded bg-amber-500/15 text-amber-400 text-[10px] font-bold flex items-center justify-center">
                       {idx + 1}
                     </span>
-                    <span className="font-black text-sm text-white tracking-widest">
+                    <span className="font-black text-xs text-white tracking-widest">
                       #{tkt}
                     </span>
                     <span className="text-[10px] text-[#8b92a2]">
@@ -518,56 +519,40 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
                   </div>
 
                   <button
+                    type="button"
                     onClick={() => handleRemoveStaged(idx)}
-                    className="p-1 rounded text-[#9b8f7c] hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                    className="p-0.5 rounded text-[#9b8f7c] hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
                     title="Remove"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
               ))
             )}
           </div>
 
-          {/* Order Summary */}
-          <div className="p-3.5 rounded-xl bg-[#0b0e14] border border-[#272a31] space-y-2 text-xs font-mono-numbers">
-            <div className="flex items-center justify-between text-[#8b92a2]">
-              <span>Tickets Selected:</span>
-              <strong className="text-white">{stagedTickets.length}</strong>
+          {/* Order Summary & Submit Button */}
+          <div className="space-y-1.5 shrink-0">
+            <div className="p-1.5 rounded-lg bg-[#0b0e14] border border-[#272a31] flex items-center justify-between text-[11px] font-mono-numbers">
+              <span className="text-[#8b92a2]">Total ({stagedTickets.length} tkts):</span>
+              <strong className="font-black text-amber-400 font-mono-numbers text-xs sm:text-sm">{totalCost} FC</strong>
             </div>
 
-            <div className="flex items-center justify-between text-[#8b92a2]">
-              <span>Price Per Ticket:</span>
-              <strong className="text-white">{event.ticketPrice} FC</strong>
-            </div>
-
-            <div className="flex items-center justify-between pt-2 border-t border-[#1f2737] text-sm">
-              <span className="font-bold text-white font-sans">Total Cost:</span>
-              <strong className="font-black text-amber-400 font-mono-numbers text-base">{totalCost} FC</strong>
-            </div>
+            <button
+              type="button"
+              onClick={handleCheckout}
+              disabled={stagedTickets.length === 0 || !hasEnoughBalance || isTimedOut}
+              className="w-full py-2.5 rounded-xl btn-gold font-display font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <Coins className="w-3.5 h-3.5" />
+              <span>Submit Entry ({totalCost} Flow Coins)</span>
+            </button>
           </div>
 
-          {/* Final Submit Button */}
-          <button
-            type="button"
-            onClick={handleCheckout}
-            disabled={stagedTickets.length === 0 || !hasEnoughBalance || isTimedOut}
-            className="w-full py-3.5 rounded-xl btn-gold font-display font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-          >
-            <Coins className="w-4 h-4" />
-            <span>Submit Entry ({totalCost} Flow Coins)</span>
-          </button>
-
-          {/* Recent Entry Confirmation */}
-          {recentPurchase && (
-            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs space-y-1">
-              <div className="flex items-center gap-1.5 font-bold">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Entry Confirmed at {recentPurchase.time}</span>
-              </div>
-              <p className="text-[11px] text-[#8b92a2]">
-                Registered {recentPurchase.tickets.length} ticket(s) in {recentPurchase.drawId}.
-              </p>
+          {/* Dedicated In-Room Live Activity Box */}
+          {activityBox && (
+            <div className="flex-1 min-h-[120px] max-h-[160px] xs:max-h-[180px] lg:max-h-[220px] overflow-hidden">
+              {activityBox}
             </div>
           )}
 
@@ -575,101 +560,15 @@ export default function LotteryWorkstation({ room, onBackToLobby }) {
 
       </div>
 
-      {/* 3. MY ENTRIES IN THIS ROOM (Fixed-Height Scroll Container) */}
-      <section className="glass-panel rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-[#272a31] space-y-3">
-        <div className="flex items-center justify-between pb-2 border-b border-[#1f2737]">
-          <div className="flex items-center gap-2">
-            <Award className="w-4 h-4 text-amber-400" />
-            <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
-              My Tickets in {room.name}
-            </h3>
-          </div>
-          <span className="text-[10px] font-mono-numbers px-2.5 py-0.5 rounded bg-[#141924] text-amber-300 border border-[#272a31]">
-            {myTicketsInThisRoom.length} Registered
-          </span>
+      {/* 3. PROVABLY FAIR VERIFICATION BAR */}
+      <div className="px-2.5 py-1 rounded-lg bg-[#0b0e14] border border-[#272a31] flex items-center justify-between text-[10px] text-[#9b8f7c] shrink-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
+          <span className="text-white font-bold truncate">Provably Fair Oracle:</span>
+          <span className="font-mono text-[#8b92a2] truncate">{event.sha256Seed || '0x4f88e1...'}</span>
         </div>
 
-        {myTicketsInThisRoom.length === 0 ? (
-          <p className="text-xs text-[#9b8f7c] py-3 text-center">
-            You haven't purchased any tickets in this specific draw yet. Select combinations above to participate!
-          </p>
-        ) : (
-          <div className="max-h-40 sm:max-h-48 overflow-y-auto no-scrollbar pr-1">
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
-              {myTicketsInThisRoom.map((tkt, idx) => (
-                <div
-                  key={idx}
-                  className="p-2.5 rounded-xl bg-[#0b0e14] border border-[#272a31] text-center space-y-1"
-                >
-                  <span className="text-[10px] text-[#8b92a2] font-mono-numbers block">
-                    #{tkt.id?.slice(-6) || idx + 1}
-                  </span>
-                  <span className="font-mono-numbers font-black text-base text-amber-300 tracking-wider block">
-                    #{tkt.ticket_number || tkt.ticketNumber}
-                  </span>
-                  <span className={`text-[9px] font-mono-numbers font-bold px-1.5 py-0.2 rounded uppercase block ${
-                    tkt.status === 'won' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-[#141924] text-[#8b92a2]'
-                  }`}>
-                    {tkt.status || 'Active'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* 4. RECENT RESULTS & LIVE ACTIVITY IN THIS ROOM (Fixed-Height Scroll Container) */}
-      <section className="glass-panel rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-[#272a31] space-y-3">
-        <div className="flex items-center justify-between pb-2 border-b border-[#1f2737]">
-          <div className="flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-amber-400" />
-            <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
-              Recent Concluded Draws & Winning Digits
-            </h3>
-          </div>
-          <span className="text-[10px] text-[#8b92a2] font-mono-numbers">
-            Provably Fair SHA-256
-          </span>
-        </div>
-
-        <div className="max-h-36 overflow-y-auto no-scrollbar space-y-1.5">
-          {events.filter(e => e.status === 'completed' || e.winningNumber).length === 0 ? (
-            <div className="text-center py-3 text-[#9b8f7c] text-xs">
-              Next draw closes in {timeLeft.hours}h {timeLeft.minutes}m. Winning digits will be posted here immediately upon draw conclusion.
-            </div>
-          ) : (
-            events.filter(e => e.status === 'completed' || e.winningNumber).slice(0, 5).map((evt, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-[#0b0e14] border border-[#1f2737] text-xs font-mono-numbers">
-                <div className="flex items-center gap-2">
-                  <span className="text-amber-400 font-bold">#{evt.id?.replace('evt-', '').toUpperCase()}</span>
-                  <span className="text-[#9b8f7c] text-[11px] truncate max-w-[120px] sm:max-w-none">{evt.title}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-[#8b92a2] hidden xs:inline">Winning Digits:</span>
-                  <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-black tracking-widest border border-amber-500/40">
-                    #{evt.winningNumber || evt.winning_number || '7429'}
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* 5. PROVABLY FAIR VERIFICATION DRAWER */}
-      <div className="p-3 sm:p-4 rounded-xl bg-[#0b0e14] border border-[#272a31] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs text-[#9b8f7c]">
-        <div className="flex items-center gap-2 min-w-0">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-          <div className="min-w-0">
-            <span className="text-white font-bold block">Provably Fair Draw Oracle</span>
-            <span className="text-[11px] font-mono text-[#8b92a2] truncate block">
-              Commit: {event.sha256Seed || event.sha256_seed || '0x4f88e1...'}
-            </span>
-          </div>
-        </div>
-
-        <div className="text-[11px] font-mono-numbers text-amber-400 font-bold shrink-0">
+        <div className="text-[10px] font-mono-numbers text-amber-400 font-bold shrink-0">
           100% Cryptographic Verification
         </div>
       </div>

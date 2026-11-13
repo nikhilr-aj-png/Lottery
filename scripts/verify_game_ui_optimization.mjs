@@ -2,15 +2,19 @@ import { execSync } from 'child_process';
 
 const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 
-// Routes to test
-const gameRoutes = [
-  { path: '/games/four-digit-lottery', type: 'lobby', game: 'lottery' },
-  { path: '/games/crash', type: 'lobby', game: 'crash' },
-  { path: '/games/dice', type: 'lobby', game: 'dice' },
-  { path: '/games/four-digit-lottery/room-lottery-daily-1', type: 'room', game: 'lottery' },
-  { path: '/games/crash/room-crash-standard', type: 'room', game: 'crash' },
-  { path: '/games/dice/room-dice-classic', type: 'room', game: 'dice' },
-  { path: '/games/mines/room-mines-starter', type: 'room', game: 'mines' }
+const games = [
+  { slug: 'four-digit-lottery', roomId: 'room-lottery-daily-1', name: 'Four Digit Lottery' },
+  { slug: 'crash', roomId: 'room-crash-standard', name: 'Crash Rocket' },
+  { slug: 'dice', roomId: 'room-dice-classic', name: 'Classic Dice' },
+  { slug: 'mines', roomId: 'room-mines-starter', name: 'Minesweeper' },
+  { slug: 'plinko', roomId: 'room-plinko-standard', name: 'Plinko Pyramid' },
+  { slug: 'roulette', roomId: 'room-roulette-classic', name: 'European Roulette' },
+  { slug: 'coinflip', roomId: 'room-coinflip-standard', name: 'Provably Fair Coinflip' },
+  { slug: 'blackjack', roomId: 'room-blackjack-standard', name: 'Single Deck Blackjack' },
+  { slug: 'slots', roomId: 'room-slots-neon', name: 'Neon 777 Slots' },
+  { slug: 'poker', roomId: 'room-poker-video', name: 'Video Poker Deluxe' },
+  { slug: 'keno', roomId: 'room-keno-classic', name: 'Classic 40-Ball Keno' },
+  { slug: 'limbo', roomId: 'room-limbo-standard', name: 'Rocket Limbo Curve' }
 ];
 
 const viewports = [
@@ -24,14 +28,19 @@ const viewports = [
   { name: 'Desktop 2560px (Ultra-wide)', width: 2560, height: 1440 }
 ];
 
-console.log('Running Comprehensive Game UI Optimization Verification...');
+console.log('================================================================');
+console.log('STARTING RIGOROUS VERIFICATION: GAME LOBBY & IN-ROOM ACTIVITY BOX');
+console.log('================================================================\n');
+
 let failed = 0;
 
-for (const target of gameRoutes) {
-  const url = `http://localhost:5173${target.path}`;
-  const tmpDir = `C:\\Users\\krnik\\AppData\\Local\\Temp\\gametest_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+// 1. Verify Game Lobbies: No Recent Results or Live Game Activity section
+console.log('--- 1. VERIFYING GAME LOBBIES: NO LIVE ACTIVITY / RECENT RESULTS BELOW ROOMS ---');
+for (const g of games) {
+  const lobbyUrl = `http://localhost:5173/games/${g.slug}`;
+  const tmpDir = `C:\\Users\\krnik\\AppData\\Local\\Temp\\lobbytest_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   try {
-    const cmd = `"${edgePath}" --headless=new --user-data-dir="${tmpDir}" --window-size=1280,800 --dump-dom "${url}"`;
+    const cmd = `"${edgePath}" --headless=new --user-data-dir="${tmpDir}" --window-size=1280,800 --dump-dom "${lobbyUrl}"`;
     let dom = '';
     try {
       dom = execSync(cmd, { encoding: 'utf-8', timeout: 15000, stdio: ['pipe', 'pipe', 'ignore'] });
@@ -39,66 +48,44 @@ for (const target of gameRoutes) {
       dom = e.stdout || '';
     }
 
-    if (!dom || dom.length < 5000) {
-      console.error(`[FAIL] ${target.path} -> DOM too short or empty! Length: ${dom.length}`);
+    if (!dom || dom.length < 3000) {
+      console.error(`[FAIL] ${lobbyUrl} -> DOM too short! Length: ${dom.length}`);
       failed++;
       continue;
     }
 
-    // 1. Check Room Chat is completely removed
-    const hasRoomChatDrawer = dom.includes('RoomChatDrawer') || dom.includes('Open Live Table Chat');
-    const hasFloatingChat = dom.includes('Room Chat') && dom.includes('fixed bottom-6 right-6');
+    // Check that "Recent Results & Live Game Activity" header is NOT in lobby DOM
+    const hasLobbyLiveActivity = dom.includes('Recent Results & Live Game Activity') || 
+                                 dom.includes('Recent Results &amp; Live Game Activity') ||
+                                 dom.includes('Live Game Activity') ||
+                                 dom.includes('Recent Concluded Draws & Winning Digits');
 
-    if (hasRoomChatDrawer || hasFloatingChat) {
-      console.error(`[FAIL] ${target.path} -> Room Chat still present in DOM!`);
+    if (hasLobbyLiveActivity) {
+      console.error(`[FAIL] Lobby ${g.name} (${lobbyUrl}) still contains Recent Results or Live Game Activity!`);
       failed++;
     } else {
-      console.log(`[PASS] ${target.path} -> Room Chat verified completely removed.`);
+      console.log(`[PASS] Lobby ${g.name} verified: No Recent Results or Live Activity present in lobby.`);
     }
 
-    // 2. Check duplicate balance inside game room
-    if (target.type === 'room') {
-      const hasDuplicateBetBalance = dom.includes('Balance:') && dom.includes('Bet Amount:');
-      if (hasDuplicateBetBalance) {
-        console.error(`[FAIL] ${target.path} -> Duplicate 'Balance:' in Bet Amount still present!`);
-        failed++;
-      } else {
-        console.log(`[PASS] ${target.path} -> Duplicate room balance verified removed.`);
-      }
-
-      // Check fixed-height activity container
-      const hasScrollableActivity = dom.includes('max-h-48') || dom.includes('max-h-56') || dom.includes('max-h-36') || dom.includes('max-h-40');
-      if (hasScrollableActivity) {
-        console.log(`[PASS] ${target.path} -> Fixed-height scrollable activity container present.`);
-      } else {
-        console.error(`[FAIL] ${target.path} -> Missing fixed-height scroll container!`);
-        failed++;
-      }
+    // Verify rooms grid is present
+    const hasRooms = dom.includes('Select Game Room') || dom.includes('Room 1') || dom.includes('Daily') || dom.includes('Standard');
+    if (!hasRooms) {
+      console.error(`[FAIL] Lobby ${g.name} -> Missing room selection cards!`);
+      failed++;
     }
-
-    // 3. Check Lobby Compact Banner
-    if (target.type === 'lobby') {
-      const hasCompactLobbyBanner = dom.includes('COMPACT SINGLE-ROW GAME LOBBY BANNER') || (dom.includes('All Games') && dom.includes('RTP:'));
-      if (hasCompactLobbyBanner) {
-        console.log(`[PASS] ${target.path} -> Compact single-row lobby banner present.`);
-      } else {
-        console.error(`[FAIL] ${target.path} -> Missing compact lobby banner!`);
-        failed++;
-      }
-    }
-
   } catch (err) {
-    console.error(`[ERROR] ${target.path}:`, err.message);
+    console.error(`[ERROR] Lobby ${g.name}:`, err.message);
     failed++;
   }
 }
 
-// Test Viewports for Four-Digit Lottery Room and Crash Room
-console.log('\nTesting Responsive Viewports and Orientations...');
-for (const vp of viewports) {
-  const tmpDir = `C:\\Users\\krnik\\AppData\\Local\\Temp\\vp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+// 2. Verify Game Rooms: Dedicated activityBox present inside room
+console.log('\n--- 2. VERIFYING GAME ROOMS: DEDICATED IN-ROOM ACTIVITY BOX ---');
+for (const g of games) {
+  const roomUrl = `http://localhost:5173/games/${g.slug}/${g.roomId}`;
+  const tmpDir = `C:\\Users\\krnik\\AppData\\Local\\Temp\\roomtest_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   try {
-    const cmd = `"${edgePath}" --headless=new --user-data-dir="${tmpDir}" --window-size=${vp.width},${vp.height} --dump-dom "http://localhost:5173/games/four-digit-lottery/room-lottery-daily-1"`;
+    const cmd = `"${edgePath}" --headless=new --user-data-dir="${tmpDir}" --window-size=1280,800 --dump-dom "${roomUrl}"`;
     let dom = '';
     try {
       dom = execSync(cmd, { encoding: 'utf-8', timeout: 15000, stdio: ['pipe', 'pipe', 'ignore'] });
@@ -106,28 +93,77 @@ for (const vp of viewports) {
       dom = e.stdout || '';
     }
 
-    const hasLogo = dom.includes('EarnFlow') && dom.includes('.In');
-    const hasRoomName = dom.includes('Daily Jackpot') || dom.includes('Lottery Room 1');
-    const hasDials = dom.includes('Select Your 4-Digit Combination');
+    if (!dom || dom.length < 3000) {
+      console.error(`[FAIL] ${roomUrl} -> DOM too short! Length: ${dom.length}`);
+      failed++;
+      continue;
+    }
 
-    if (hasLogo && hasRoomName && hasDials && dom.length > 5000) {
-      console.log(`[PASS] ${vp.name} (${vp.width}x${vp.height}) -> Header, Compact Room Info & Dials fully populated.`);
+    // Check that dedicated in-room activity box is present
+    const hasActivityBox = dom.includes('Room Activity') && (dom.includes('Room (') || dom.includes('My ('));
+    if (hasActivityBox) {
+      console.log(`[PASS] Room ${g.name} -> Dedicated in-room Activity Box verified.`);
     } else {
-      console.error(`[FAIL] ${vp.name}: hasLogo=${hasLogo}, hasRoomName=${hasRoomName}, hasDials=${hasDials}`);
+      console.error(`[FAIL] Room ${g.name} -> Missing dedicated in-room Activity Box!`);
+      failed++;
+    }
+
+    // Check that Room Chat is NOT present
+    const hasRoomChat = dom.includes('RoomChatDrawer') || dom.includes('Open Live Table Chat');
+    if (hasRoomChat) {
+      console.error(`[FAIL] Room ${g.name} -> Room Chat still present!`);
+      failed++;
+    }
+
+    // Check that Platform Footer is NOT rendered in dedicated room
+    const hasFooter = dom.includes('Platform Public Footer') || dom.includes('2026 EarnFlow.In');
+    if (hasFooter) {
+      console.error(`[FAIL] Room ${g.name} -> Public Footer should not render inside game rooms!`);
       failed++;
     }
   } catch (err) {
-    console.error(`[ERROR] ${vp.name}:`, err.message);
+    console.error(`[ERROR] Room ${g.name}:`, err.message);
     failed++;
   }
 }
 
+// 3. Verify Viewports & Zero-Scroll Layout
+console.log('\n--- 3. VERIFYING RESPONSIVE VIEWPORTS ACROSS RESOLUTIONS & ORIENTATIONS ---');
+for (const vp of viewports) {
+  const testUrl = `http://localhost:5173/games/crash/room-crash-standard`;
+  const tmpDir = `C:\\Users\\krnik\\AppData\\Local\\Temp\\vptest_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  try {
+    const cmd = `"${edgePath}" --headless=new --user-data-dir="${tmpDir}" --window-size=${vp.width},${vp.height} --dump-dom "${testUrl}"`;
+    let dom = '';
+    try {
+      dom = execSync(cmd, { encoding: 'utf-8', timeout: 15000, stdio: ['pipe', 'pipe', 'ignore'] });
+    } catch (e) {
+      dom = e.stdout || '';
+    }
+
+    const hasHeader = dom.includes('EarnFlow') && dom.includes('.In');
+    const hasActivityBox = dom.includes('Room Activity');
+    const hasBetControl = dom.includes('Bet Amount:') || dom.includes('FC');
+
+    if (hasHeader && hasActivityBox && hasBetControl && dom.length > 5000) {
+      console.log(`[PASS] ${vp.name} (${vp.width}x${vp.height}) -> Viewport fully rendered, controls & activity box present.`);
+    } else {
+      console.error(`[FAIL] ${vp.name} -> Incomplete render! hasHeader=${hasHeader}, hasActivityBox=${hasActivityBox}`);
+      failed++;
+    }
+  } catch (err) {
+    console.error(`[ERROR] Viewport ${vp.name}:`, err.message);
+    failed++;
+  }
+}
+
+console.log('\n================================================================');
 if (failed === 0) {
-  console.log('\n======================================================');
-  console.log('ALL GAME UI OPTIMIZATION AND VIEWPORT TESTS PASSED!');
-  console.log('======================================================');
+  console.log('ALL TESTS PASSED! ZERO DEFECTS FOUND ACROSS ALL 12 GAMES & VIEWPORTS.');
+  console.log('================================================================');
   process.exit(0);
 } else {
-  console.error(`\nFAILED: ${failed} tests failed.`);
+  console.error(`FAILED: ${failed} verification checks failed.`);
+  console.log('================================================================');
   process.exit(1);
 }

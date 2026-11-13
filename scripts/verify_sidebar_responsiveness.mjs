@@ -24,11 +24,11 @@ for (const vp of viewports) {
     } catch (e) {
       dom = e.stdout || '';
     }
-    
+
     // Check for EarnFlow.In
     const hasLogo = dom.includes('/logo.png');
     const hasBrandName = dom.includes('EarnFlow') && dom.includes('.In');
-    
+
     // Check that 'Casino Lobby' is NOT present in DOM
     const hasCasinoLobbyHeading = dom.includes('Casino Lobby');
 

@@ -17,7 +17,7 @@ import {
 import confetti from 'canvas-confetti';
 import { soundFX } from '../engine/SoundFXService';
 
-export default function KenoGame({ room }) {
+export default function KenoGame({ room, activityBox }: { room?: any; activityBox?: React.ReactNode; }) {
   const {
     game,
     betAmount,
@@ -191,40 +191,40 @@ export default function KenoGame({ room }) {
   };
 
   return (
-    <div className="w-full space-y-4">
-      {/* 1. RECENT DRAWS STRIP */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-mono-numbers no-scrollbar">
-        <span className="text-[#94A3B8] text-[11px] uppercase tracking-wider flex items-center gap-1 font-bold pl-1">
-          <History className="w-3.5 h-3.5 text-amber-400" />
+    <div className="w-full h-full flex flex-col min-h-0 overflow-hidden text-left space-y-1.5">
+      {/* 1. COMPACT RECENT DRAWS STRIP */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-[11px] font-mono-numbers no-scrollbar shrink-0">
+        <span className="text-[#94A3B8] text-[10px] uppercase tracking-wider flex items-center gap-1 font-bold pl-1 shrink-0">
+          <History className="w-3 h-3 text-amber-400" />
           Recent:
         </span>
         {recentDraws.map((d, idx) => (
           <span
             key={idx}
-            className={`px-2.5 py-1 rounded-lg border font-bold flex items-center gap-1 shrink-0 ${
+            className={`px-2 py-0.5 rounded border text-[10px] font-bold flex items-center gap-1 shrink-0 ${
               d.multiplier > 0
                 ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
                 : 'bg-rose-950/40 border-rose-500/30 text-rose-300'
             }`}
           >
-            {d.hits}/{d.picks} Hits ({d.multiplier}x)
+            {d.hits}/{d.picks} ({d.multiplier}x)
           </span>
         ))}
       </div>
 
       {/* 2. MAIN GRID & CONTROLS CONTAINER */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 overflow-hidden">
         
-        {/* Controls Column (Left) */}
-        <div className="lg:col-span-4 bg-[#111827] border border-[#1F2737] rounded-2xl p-4 sm:p-5 space-y-4 flex flex-col justify-between">
-          <div className="space-y-4">
+        {/* Controls Column (order-2 on mobile, order-1 on desktop) */}
+        <div className="order-2 lg:order-1 lg:col-span-4 bg-[#111827] border border-[#1F2737] rounded-xl p-2.5 sm:p-3 flex flex-col justify-between overflow-hidden h-full min-h-0 gap-2">
+          <div className="space-y-2 shrink-0">
             
             {/* Stake Input */}
             <div>
-              <div className="flex items-center justify-between text-xs mb-1.5 font-bold font-mono-numbers">
+              <div className="flex items-center justify-between text-[11px] mb-1 font-bold font-mono-numbers">
                 <span className="text-[#94A3B8]">Bet Amount:</span>
               </div>
-              <div className="flex items-center bg-[#0B0F19] border border-[#1F2737] focus-within:border-amber-500/50 rounded-xl p-1.5">
+              <div className="flex items-center bg-[#0B0F19] border border-[#1F2737] focus-within:border-amber-500/50 rounded-lg p-1">
                 <input
                   type="number"
                   min="1"
@@ -232,19 +232,19 @@ export default function KenoGame({ room }) {
                   value={betAmount}
                   onChange={(e) => setBetAmount(Math.max(1, parseFloat(e.target.value) || 0))}
                   disabled={isDrawing}
-                  className="flex-1 bg-transparent px-2.5 text-white font-mono-numbers font-black text-base outline-none disabled:opacity-50"
+                  className="flex-1 bg-transparent px-2 text-white font-mono-numbers font-black text-sm outline-none disabled:opacity-50"
                 />
                 <span className="text-amber-400 font-black text-xs px-2 font-mono-numbers">FC</span>
               </div>
             </div>
 
             {/* Quick Stake Adjusters */}
-            <div className="grid grid-cols-4 gap-1.5 text-xs font-mono-numbers font-bold">
+            <div className="grid grid-cols-4 gap-1 text-[11px] font-mono-numbers font-bold">
               <button
                 type="button"
                 onClick={halveBet}
                 disabled={isDrawing}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
               >
                 ½
               </button>
@@ -252,7 +252,7 @@ export default function KenoGame({ room }) {
                 type="button"
                 onClick={doubleBet}
                 disabled={isDrawing}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
               >
                 2x
               </button>
@@ -260,7 +260,7 @@ export default function KenoGame({ room }) {
                 type="button"
                 onClick={setMinBet}
                 disabled={isDrawing}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
               >
                 Min
               </button>
@@ -268,7 +268,7 @@ export default function KenoGame({ room }) {
                 type="button"
                 onClick={setMaxBet}
                 disabled={isDrawing}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-amber-400 border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-amber-400 border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
               >
                 Max
               </button>
@@ -276,49 +276,49 @@ export default function KenoGame({ room }) {
 
             {/* Pick Counters & Helpers */}
             <div>
-              <div className="flex items-center justify-between text-xs mb-1.5 font-bold font-mono-numbers">
-                <span className="text-[#94A3B8]">Selected Numbers:</span>
+              <div className="flex items-center justify-between text-[11px] mb-1 font-bold font-mono-numbers">
+                <span className="text-[#94A3B8]">Selected:</span>
                 <span className="text-amber-400 font-black">{selectedNumbers.length} / 10 Max</span>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs font-bold font-mono-numbers">
+              <div className="grid grid-cols-2 gap-1.5 text-[11px] font-bold font-mono-numbers">
                 <button
                   type="button"
                   onClick={handleAutoPick}
                   disabled={isDrawing}
-                  className="py-2 rounded-xl bg-[#0B0F19] hover:bg-[#151C2B] border border-[#1F2737] hover:border-amber-500/40 text-amber-300 flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                  className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] border border-[#1F2737] hover:border-amber-500/40 text-amber-300 flex items-center justify-center gap-1 transition-all cursor-pointer disabled:opacity-50"
                 >
-                  <Shuffle className="w-3.5 h-3.5" />
+                  <Shuffle className="w-3 h-3" />
                   Auto Pick 10
                 </button>
                 <button
                   type="button"
                   onClick={handleClear}
                   disabled={isDrawing || selectedNumbers.length === 0}
-                  className="py-2 rounded-xl bg-[#0B0F19] hover:bg-[#151C2B] border border-[#1F2737] text-rose-400 flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                  className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] border border-[#1F2737] text-rose-400 flex items-center justify-center gap-1 transition-all cursor-pointer disabled:opacity-50"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-3 h-3" />
                   Clear Board
                 </button>
               </div>
             </div>
 
             {/* Dynamic Paytable For Current Pick Count */}
-            <div className="bg-[#0B0F19] border border-[#1F2737] rounded-xl p-3 space-y-1.5 text-xs font-mono-numbers">
-              <span className="text-[10px] text-[#94A3B8] uppercase tracking-wider block font-bold border-b border-[#1F2737] pb-1">
-                Payout Multipliers ({selectedNumbers.length} Picks):
+            <div className="bg-[#0B0F19] border border-[#1F2737] rounded-lg p-2 space-y-1 text-[11px] font-mono-numbers">
+              <span className="text-[10px] text-[#94A3B8] uppercase tracking-wider block font-bold border-b border-[#1F2737] pb-0.5">
+                Multipliers ({selectedNumbers.length} Picks):
               </span>
               {Object.keys(paytable).length > 0 ? (
-                <div className="grid grid-cols-2 gap-1.5 pt-1">
+                <div className="grid grid-cols-3 gap-1 pt-0.5 max-h-[60px] overflow-y-auto no-scrollbar">
                   {Object.entries(paytable).map(([hitCount, mult]) => (
-                    <div key={hitCount} className="flex items-center justify-between bg-[#151C2B] px-2 py-1 rounded">
-                      <span className="text-[#94A3B8]">{hitCount} Hits:</span>
+                    <div key={hitCount} className="flex items-center justify-between bg-[#151C2B] px-1.5 py-0.5 rounded text-[10px]">
+                      <span className="text-[#94A3B8]">{hitCount}H:</span>
                       <span className="text-amber-300 font-bold">{mult}x</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <span className="text-[11px] text-[#64748B] italic block pt-1">
-                  Select at least 1 number on the board to view paytable.
+                <span className="text-[10px] text-[#64748B] italic block pt-0.5">
+                  Pick at least 1 number to view paytable.
                 </span>
               )}
             </div>
@@ -326,38 +326,45 @@ export default function KenoGame({ room }) {
           </div>
 
           {/* Action Button: Draw Keno Balls */}
-          <div className="pt-2">
+          <div className="shrink-0 pt-1">
             <button
               type="button"
               onClick={handlePlayKeno}
               disabled={isDrawing || selectedNumbers.length === 0 || loading}
-              className="w-full py-3.5 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black shadow-lg shadow-amber-500/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:opacity-60"
+              className="w-full py-2.5 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black shadow-lg shadow-amber-500/20 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer disabled:opacity-60"
             >
               {loading || isDrawing ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  <Play className="w-4 h-4 fill-current" />
+                  <Play className="w-3.5 h-3.5 fill-current" />
                   <span>Draw 10 Balls ({betAmount} FC)</span>
                 </>
               )}
             </button>
           </div>
+
+          {/* Dedicated In-Room Live Activity Box */}
+          {activityBox && (
+            <div className="flex-1 min-h-[120px] max-h-[160px] xs:max-h-[180px] lg:max-h-[220px] overflow-hidden">
+              {activityBox}
+            </div>
+          )}
         </div>
 
-        {/* 40-Number Keno Grid Stage (Right) */}
-        <div className="lg:col-span-8 bg-[#07090E] border border-[#1F2737] rounded-2xl p-4 sm:p-6 flex flex-col justify-between items-center text-center relative overflow-hidden min-h-[440px]">
+        {/* 40-Number Keno Grid Stage (order-1 on mobile, order-2 on desktop) */}
+        <div className="order-1 lg:order-2 lg:col-span-8 bg-[#07090E] border border-[#1F2737] rounded-xl p-2 sm:p-3 flex flex-col justify-between items-center text-center relative overflow-hidden h-full min-h-[200px] lg:min-h-0">
           <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
           {/* Top Status */}
-          <div className="w-full flex items-center justify-between text-xs text-[#94A3B8] font-mono-numbers pb-3 border-b border-[#1F2737]">
+          <div className="w-full flex items-center justify-between text-xs text-[#94A3B8] font-mono-numbers pb-1.5 border-b border-[#1F2737] shrink-0">
             <span>Picks: <strong className="text-white font-bold">{selectedNumbers.length} Numbers</strong></span>
             <span>Hits: <strong className="text-emerald-400 font-bold">{hits} Matched</strong></span>
           </div>
 
           {/* 40-Number Interactive Grid */}
-          <div className="my-auto py-3 w-full max-w-[500px]">
-            <div className="grid grid-cols-8 sm:grid-cols-10 gap-1 xs:gap-1.5 sm:gap-2">
+          <div className="my-auto py-2 w-full max-w-[440px]">
+            <div className="grid grid-cols-8 sm:grid-cols-10 gap-1 xs:gap-1.5">
               {Array.from({ length: 40 }, (_, i) => i + 1).map((num) => {
                 const isSelected = selectedNumbers.includes(num);
                 const isDrawn = drawnNumbers.includes(num);
@@ -369,9 +376,9 @@ export default function KenoGame({ room }) {
                     type="button"
                     onClick={() => toggleNumber(num)}
                     disabled={isDrawing}
-                    className={`aspect-square rounded-xl font-mono-numbers font-black text-xs sm:text-sm flex items-center justify-center transition-all cursor-pointer select-none ${
+                    className={`aspect-square rounded-lg font-mono-numbers font-black text-[11px] sm:text-xs flex items-center justify-center transition-all cursor-pointer select-none ${
                       isMatch
-                        ? 'bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-2 border-emerald-300 shadow-[0_0_15px_rgba(34,197,94,0.7)] scale-110 z-10 animate-bounce'
+                        ? 'bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-2 border-emerald-300 shadow-[0_0_12px_rgba(34,197,94,0.7)] scale-110 z-10 animate-bounce'
                         : isDrawn
                         ? 'bg-purple-950/80 border border-purple-500/50 text-purple-300'
                         : isSelected
@@ -387,12 +394,12 @@ export default function KenoGame({ room }) {
 
             {/* Announcement Banner */}
             {lastWin && (
-              <div className={`mt-4 rounded-xl px-4 py-2 text-center font-mono-numbers animate-in zoom-in-95 ${
+              <div className={`mt-2 rounded-lg px-3 py-1.5 text-center font-mono-numbers animate-in zoom-in-95 ${
                 lastWin.payout > 0
                   ? 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-300'
                   : 'bg-rose-950/80 border border-rose-500/50 text-rose-300'
               }`}>
-                <span className="text-sm font-black">
+                <span className="text-xs font-black">
                   {lastWin.payout > 0 
                     ? `Matched ${lastWin.hits}/${lastWin.picks}! Won +${lastWin.payout.toLocaleString()} FC (${lastWin.multiplier}x)` 
                     : `Matched ${lastWin.hits}/${lastWin.picks} — No hit. Better luck next draw!`}
@@ -402,9 +409,9 @@ export default function KenoGame({ room }) {
           </div>
 
           {/* Stage Footer: Provably Fair Note */}
-          <div className="w-full flex items-center justify-between pt-3 border-t border-[#1F2737] text-[11px] text-[#94A3B8]">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="w-full flex items-center justify-between pt-1.5 border-t border-[#1F2737] text-[10px] text-[#94A3B8] shrink-0">
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-emerald-400" />
               <span>Provably Fair: HMAC-SHA256 10-Ball Blower</span>
             </span>
             <span className="text-amber-400 font-mono-numbers font-bold">

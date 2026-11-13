@@ -16,7 +16,13 @@ import {
 import confetti from 'canvas-confetti';
 import { soundFX } from '../engine/SoundFXService';
 
-export default function DiceGame({ room }) {
+export default function DiceGame({ 
+  room, 
+  activityBox 
+}: { 
+  room?: any; 
+  activityBox?: React.ReactNode; 
+}) {
   const {
     game,
     betAmount,
@@ -146,10 +152,10 @@ export default function DiceGame({ room }) {
   };
 
   return (
-    <div className="w-full space-y-4 text-left">
+    <div className="w-full h-full flex flex-col min-h-0 overflow-hidden text-left space-y-1.5">
       
       {/* 1. RECENT ROLLS BAR */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5 shrink-0">
         <span className="text-[10px] font-mono-numbers uppercase tracking-wider text-[#94A3B8] flex items-center gap-1 shrink-0">
           <History className="w-3 h-3 text-amber-400" />
           <span>History:</span>
@@ -157,7 +163,7 @@ export default function DiceGame({ room }) {
         {recentRolls.map((r, idx) => (
           <span
             key={idx}
-            className={`px-2 py-0.5 rounded-lg text-xs font-mono-numbers font-black shrink-0 border ${
+            className={`px-1.5 py-0.2 rounded text-[10px] font-mono-numbers font-black shrink-0 border ${
               r.isWin
                 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
                 : 'bg-red-500/10 text-red-400 border-red-500/20'
@@ -169,18 +175,18 @@ export default function DiceGame({ room }) {
       </div>
 
       {/* 2. MAIN STAGE & CONTROLS GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 overflow-hidden">
         
-        {/* Controls Column (Left) */}
-        <div className="lg:col-span-4 bg-[#111827] border border-[#1F2737] rounded-2xl p-4 sm:p-5 space-y-4 flex flex-col justify-between">
+        {/* Controls Column (Landscape: Left / Portrait: Middle & Bottom) */}
+        <div className="order-2 lg:order-1 lg:col-span-4 bg-[#111827] border border-[#1F2737] rounded-xl p-2.5 sm:p-3 flex flex-col justify-between overflow-hidden h-full min-h-0 gap-2">
           
-          <div className="space-y-4">
+          <div className="space-y-2 shrink-0">
             {/* Stake Input */}
             <div>
-              <div className="flex items-center justify-between text-xs mb-1.5 font-bold font-mono-numbers">
+              <div className="flex items-center justify-between text-xs mb-1 font-bold font-mono-numbers">
                 <span className="text-[#94A3B8]">Bet Amount:</span>
               </div>
-              <div className="flex items-center bg-[#0B0F19] border border-[#1F2737] focus-within:border-amber-500/50 rounded-xl p-1.5">
+              <div className="flex items-center bg-[#0B0F19] border border-[#1F2737] focus-within:border-amber-500/50 rounded-lg p-1">
                 <input
                   type="number"
                   min="1"
@@ -188,19 +194,19 @@ export default function DiceGame({ room }) {
                   value={betAmount}
                   onChange={(e) => setBetAmount(Math.max(1, parseFloat(e.target.value) || 0))}
                   disabled={isRolling}
-                  className="flex-1 bg-transparent px-2.5 text-white font-mono-numbers font-black text-base outline-none disabled:opacity-50"
+                  className="flex-1 bg-transparent px-2 text-white font-mono-numbers font-black text-sm outline-none disabled:opacity-50"
                 />
                 <span className="text-amber-400 font-black text-xs px-2 font-mono-numbers">FC</span>
               </div>
             </div>
 
             {/* Quick Stake Adjusters */}
-            <div className="grid grid-cols-4 gap-1.5 text-xs font-mono-numbers font-bold">
+            <div className="grid grid-cols-4 gap-1 text-xs font-mono-numbers font-bold">
               <button
                 type="button"
                 onClick={halveBet}
                 disabled={isRolling}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50 text-[11px]"
               >
                 ½
               </button>
@@ -208,7 +214,7 @@ export default function DiceGame({ room }) {
                 type="button"
                 onClick={doubleBet}
                 disabled={isRolling}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50 text-[11px]"
               >
                 2x
               </button>
@@ -216,7 +222,7 @@ export default function DiceGame({ room }) {
                 type="button"
                 onClick={setMinBet}
                 disabled={isRolling}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50 text-[11px]"
               >
                 Min
               </button>
@@ -224,82 +230,85 @@ export default function DiceGame({ room }) {
                 type="button"
                 onClick={setMaxBet}
                 disabled={isRolling}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-amber-400 border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-amber-400 border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50 text-[11px]"
               >
                 Max
               </button>
             </div>
 
             {/* Odds & Payout Dashboard */}
-            <div className="grid grid-cols-2 gap-2 text-xs font-mono-numbers pt-2 border-t border-[#1F2737]">
-              <div className="bg-[#0B0F19] p-2.5 rounded-xl border border-[#1F2737]">
-                <span className="text-[10px] text-[#94A3B8] block">Multiplier</span>
-                <span className="font-black text-base text-amber-300">{calc.multiplier}x</span>
+            <div className="grid grid-cols-2 gap-1.5 text-xs font-mono-numbers pt-1.5 border-t border-[#1F2737]">
+              <div className="bg-[#0B0F19] p-2 rounded-lg border border-[#1F2737]">
+                <span className="text-[9px] text-[#94A3B8] block">Multiplier</span>
+                <span className="font-black text-sm text-amber-300">{calc.multiplier}x</span>
               </div>
 
-              <div className="bg-[#0B0F19] p-2.5 rounded-xl border border-[#1F2737]">
-                <span className="text-[10px] text-[#94A3B8] block">Win Chance</span>
-                <span className="font-black text-base text-emerald-400">{calc.winChance}%</span>
+              <div className="bg-[#0B0F19] p-2 rounded-lg border border-[#1F2737]">
+                <span className="text-[9px] text-[#94A3B8] block">Win Chance</span>
+                <span className="font-black text-sm text-emerald-400">{calc.winChance}%</span>
               </div>
             </div>
 
             {/* Profit on Win */}
-            <div className="bg-[#0B0F19] p-2.5 rounded-xl border border-[#1F2737] text-xs font-mono-numbers flex items-center justify-between">
-              <span className="text-[#94A3B8]">Profit on Win:</span>
-              <span className="font-black text-emerald-300">
+            <div className="bg-[#0B0F19] p-1.5 rounded-lg border border-[#1F2737] text-xs font-mono-numbers flex items-center justify-between">
+              <span className="text-[#94A3B8] text-[11px]">Profit:</span>
+              <span className="font-black text-emerald-300 text-xs">
                 +{(betAmount * calc.multiplier - betAmount).toFixed(2)} FC
               </span>
             </div>
           </div>
 
           {/* Roll Button */}
-          <div className="pt-4">
+          <div className="shrink-0">
             <button
               type="button"
               onClick={handleRoll}
               disabled={isRolling || loading}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-black text-base flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xl shadow-blue-500/25 disabled:opacity-50"
+              className="w-full py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-md shadow-blue-500/25 disabled:opacity-50"
             >
-              <Dices className={`w-5 h-5 ${isRolling ? 'animate-spin' : ''}`} />
+              <Dices className={`w-4 h-4 ${isRolling ? 'animate-spin' : ''}`} />
               <span>{isRolling ? 'Rolling...' : `Roll Dice (${betAmount} FC)`}</span>
             </button>
           </div>
 
+          {/* Dedicated In-Room Activity Box */}
+          {activityBox}
+
         </div>
 
-        {/* Dice Interactive Stage (Right) */}
-        <div className="lg:col-span-8 bg-[#07090E] border border-[#1F2737] rounded-2xl p-6 flex flex-col justify-between items-center relative min-h-[380px]">
+        {/* Dice Interactive Stage (Landscape: Right / Portrait: Top) */}
+        <div className="order-1 lg:order-2 lg:col-span-8 bg-[#07090E] border border-[#1F2737] rounded-xl p-3 sm:p-4 flex flex-col justify-between items-center relative overflow-hidden h-full min-h-[160px] lg:min-h-0">
           
           {/* Top Stage Header: Mode Toggle */}
-          <div className="w-full flex items-center justify-between pb-3 border-b border-[#1F2737]">
+          <div className="w-full flex items-center justify-between pb-2 border-b border-[#1F2737] shrink-0">
             <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-              <Dices className="w-4 h-4 text-blue-400" />
-              <span>100-Sided Provably Fair Die</span>
+              <Dices className="w-3.5 h-3.5 text-blue-400" />
+              <span>100-Sided Die</span>
             </span>
 
             <button
               onClick={toggleRollMode}
               disabled={isRolling}
-              className="px-3 py-1.5 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-300 border border-amber-500/30 text-xs font-mono-numbers font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+              className="px-2.5 py-1 rounded-lg bg-[#111827] hover:bg-[#151C2B] text-amber-300 border border-amber-500/30 text-xs font-mono-numbers font-bold flex items-center gap-1 cursor-pointer transition-colors"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Mode: {rollMode === 'over' ? 'Roll Over' : 'Roll Under'}</span>
+              <RotateCcw className="w-3 h-3" />
+              <span>Mode: {rollMode === 'over' ? 'Over' : 'Under'}</span>
             </button>
           </div>
 
           {/* Central Digital Roll Counter */}
-          <div className="my-auto py-6 text-center space-y-3">
-            <div className={`w-36 sm:w-44 h-36 sm:h-44 rounded-3xl mx-auto flex flex-col items-center justify-center border-2 shadow-2xl transition-all duration-300 ${
+          <div className="my-auto py-2 sm:py-4 text-center space-y-2">
+            <div className={`w-28 sm:w-36 h-28 sm:h-36 rounded-2xl mx-auto flex flex-col items-center justify-center border-2 shadow-xl transition-all duration-300 ${
               lastOutcome === 'won'
                 ? 'bg-emerald-950/60 border-emerald-400 text-emerald-300 shadow-[0_0_35px_rgba(34,197,94,0.35)]'
                 : lastOutcome === 'lost'
                 ? 'bg-red-950/60 border-red-500 text-red-400 shadow-[0_0_25px_rgba(239,68,68,0.35)]'
                 : 'bg-[#111827] border-blue-500/40 text-white shadow-[0_0_25px_rgba(59,130,246,0.2)]'
             }`}>
-              <span className="font-display font-black text-4xl sm:text-5xl tracking-tight font-mono-numbers">
+              <span className="font-display font-black text-3xl sm:text-4xl tracking-tight font-mono-numbers">
                 {lastRoll !== null ? lastRoll.toFixed(2) : '50.00'}
               </span>
-              <span className="text-[10px] uppercase font-mono-numbers font-bold text-[#94A3B8] mt-1">
+              <span className="text-[9px] uppercase font-mono-numbers font-bold text-[#94A3B8]">
                 {isRolling ? 'Rolling...' : (lastOutcome ? lastOutcome.toUpperCase() : 'Ready')}
               </span>
             </div>
@@ -308,7 +317,7 @@ export default function DiceGame({ room }) {
               <div className="text-xs font-mono-numbers font-extrabold animate-in fade-in">
                 {lastOutcome === 'won' ? (
                   <span className="text-emerald-400">
-                    Target Met! Won +{(betAmount * calc.multiplier).toFixed(2)} FC
+                    Won +{(betAmount * calc.multiplier).toFixed(2)} FC
                   </span>
                 ) : (
                   <span className="text-red-400">
@@ -320,10 +329,10 @@ export default function DiceGame({ room }) {
           </div>
 
           {/* Interactive Range Slider (00.00 to 99.99) */}
-          <div className="w-full space-y-3 pt-4 border-t border-[#1F2737]">
+          <div className="w-full space-y-2 pt-2 border-t border-[#1F2737] shrink-0">
             <div className="flex items-center justify-between text-xs font-mono-numbers font-bold">
               <span className="text-[#94A3B8]">0.00</span>
-              <span className="text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/30">
+              <span className="text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/30 text-xs">
                 Target: {rollMode === 'over' ? `> ${targetNumber.toFixed(2)}` : `< ${targetNumber.toFixed(2)}`}
               </span>
               <span className="text-[#94A3B8]">99.99</span>
@@ -338,13 +347,13 @@ export default function DiceGame({ room }) {
                 value={targetNumber}
                 onChange={handleSliderChange}
                 disabled={isRolling}
-                className="w-full h-3 bg-gradient-to-r from-red-500/40 via-amber-500/40 to-emerald-500/40 rounded-lg appearance-none cursor-pointer accent-amber-400 outline-none"
+                className="w-full h-2.5 bg-gradient-to-r from-red-500/40 via-amber-500/40 to-emerald-500/40 rounded-lg appearance-none cursor-pointer accent-amber-400 outline-none"
               />
             </div>
 
-            <div className="flex items-center justify-between text-[10px] text-[#94A3B8] font-mono-numbers">
+            <div className="flex items-center justify-between text-[9px] text-[#94A3B8] font-mono-numbers">
               <span>Provably Fair 1% House Edge</span>
-              <span>Stake Range: 1 - 2,000 FC</span>
+              <span>Stake: 1 - 2,000 FC</span>
             </div>
           </div>
 

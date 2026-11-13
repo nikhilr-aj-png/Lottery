@@ -441,9 +441,16 @@ function LotteryAppContent() {
         />
 
         {/* Main Content Pane */}
-        <main id="main-content" className="flex-1 min-w-0 h-full overflow-y-auto pb-24 md:pb-12 px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 text-left flex flex-col">
+        <main 
+          id="main-content" 
+          className={`flex-1 min-w-0 h-full text-left flex flex-col ${
+            currentGameRoute?.roomId 
+              ? 'overflow-hidden p-1 xs:p-1.5 sm:p-2' 
+              : 'overflow-y-auto pb-24 md:pb-12 px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6'
+          }`}
+        >
           
-          <div className="flex-1">
+          <div className={`flex-1 min-h-0 flex flex-col ${currentGameRoute?.roomId ? 'overflow-hidden h-full' : ''}`}>
             {/* DEDICATED SEPARATE PAGE: TRANSACTION HISTORY */}
             {(isTransactionRoute || activeTab === 'transactions') ? (
               <TransactionHistoryPage 
@@ -563,104 +570,106 @@ function LotteryAppContent() {
           )}
           </div>
 
-          {/* Platform Public Footer — Inside Scrollable Main Container */}
-          <footer className="mt-12 sm:mt-16 border-t border-[rgba(245,196,81,0.15)] bg-[#07090d] py-8 sm:py-10 pb-24 md:pb-10 -mx-2.5 xs:-mx-4 sm:-mx-6 lg:-mx-8 px-2.5 xs:px-4 sm:px-6 lg:px-8">
-            <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
-                <div className="flex items-center gap-2.5 xs:gap-3 text-center sm:text-left">
-                  <img 
-                    src="/logo.png" 
-                    alt="EarnFlow.In" 
-                    className="w-8 xs:w-10 h-8 xs:h-10 rounded-full border border-[#ffd700]/40 object-cover shadow-md shrink-0" 
-                  />
-                  <div>
-                    <span className="font-display font-black text-base xs:text-lg text-white">
-                      EarnFlow<span className="text-[#f5c451]">.In</span>
+          {/* Platform Public Footer — Hidden in Active Dedicated Game Rooms */}
+          {!currentGameRoute?.roomId && (
+            <footer className="mt-12 sm:mt-16 border-t border-[rgba(245,196,81,0.15)] bg-[#07090d] py-8 sm:py-10 pb-24 md:pb-10 -mx-2.5 xs:-mx-4 sm:-mx-6 lg:-mx-8 px-2.5 xs:px-4 sm:px-6 lg:px-8">
+              <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
+                  <div className="flex items-center gap-2.5 xs:gap-3 text-center sm:text-left">
+                    <img 
+                      src="/logo.png" 
+                      alt="EarnFlow.In" 
+                      className="w-8 xs:w-10 h-8 xs:h-10 rounded-full border border-[#ffd700]/40 object-cover shadow-md shrink-0" 
+                    />
+                    <div>
+                      <span className="font-display font-black text-base xs:text-lg text-white">
+                        EarnFlow<span className="text-[#f5c451]">.In</span>
+                      </span>
+                      <p className="text-[11px] xs:text-xs text-[#9b8f7c]">
+                        Provably Fair Casino & Lottery Platform · Flow Coins (FC)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 xs:gap-4 text-[11px] xs:text-xs text-[#9b8f7c] flex-wrap justify-center">
+                    <span className="flex items-center gap-1 text-[#05d5aa]">
+                      <ShieldCheck className="w-3 xs:w-3.5 h-3 xs:h-3.5" />
+                      CertiK Audited
                     </span>
-                    <p className="text-[11px] xs:text-xs text-[#9b8f7c]">
-                      Provably Fair Casino & Lottery Platform · Flow Coins (FC)
-                    </p>
+                    <span>•</span>
+                    <span className="flex items-center gap-1 text-[#ffd700]">
+                      24-Hour Payout Guarantee
+                    </span>
                   </div>
                 </div>
+                
+                {/* Legal Navigation Links */}
+                <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-[11px] xs:text-xs text-[#9b8f7c]">
+                  <div className="text-center sm:text-left leading-relaxed">
+                    © 2026 EarnFlow.In Platform. All drawings and games are provably fair, verifiable on the public ledger with Flow Coins (FC).
+                  </div>
 
-                <div className="flex items-center gap-2.5 xs:gap-4 text-[11px] xs:text-xs text-[#9b8f7c] flex-wrap justify-center">
-                  <span className="flex items-center gap-1 text-[#05d5aa]">
-                    <ShieldCheck className="w-3 xs:w-3.5 h-3 xs:h-3.5" />
-                    CertiK Audited
-                  </span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1 text-[#ffd700]">
-                    24-Hour Payout Guarantee
-                  </span>
+                  <div className="flex items-center gap-3 xs:gap-4 font-semibold text-[11px] xs:text-xs shrink-0 flex-wrap justify-center sm:justify-end">
+                    <a
+                      href="/contact"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setIsTransactionRoute(false);
+                        setActiveTab('contact');
+                        const mainEl = document.getElementById('main-content');
+                        if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="hover:text-[#ffd700] transition-colors cursor-pointer text-[#ffd700]"
+                    >
+                      Contact Support
+                    </a>
+                    <span>•</span>
+                    <a
+                      href="/terms-and-conditions"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setIsTransactionRoute(false);
+                        setActiveTab('terms');
+                        const mainEl = document.getElementById('main-content');
+                        if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="hover:text-[#ffd700] transition-colors cursor-pointer"
+                    >
+                      Terms & Conditions
+                    </a>
+                    <span>•</span>
+                    <a
+                      href="/privacy-policy"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setIsTransactionRoute(false);
+                        setActiveTab('privacy');
+                        const mainEl = document.getElementById('main-content');
+                        if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="hover:text-[#05d5aa] transition-colors cursor-pointer"
+                    >
+                      Privacy Policy
+                    </a>
+                    {!isInstalled && (
+                      <>
+                        <span>•</span>
+                        <button
+                          onClick={triggerInstall}
+                          className="hover:text-[#ffd700] transition-colors cursor-pointer text-[#ffd700] flex items-center gap-1 font-bold"
+                        >
+                          <span>📲 Install App</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-              
-              {/* Legal Navigation Links */}
-              <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-[11px] xs:text-xs text-[#9b8f7c]">
-                <div className="text-center sm:text-left leading-relaxed">
-                  © 2026 EarnFlow.In Platform. All drawings and games are provably fair, verifiable on the public ledger with Flow Coins (FC).
-                </div>
-
-                <div className="flex items-center gap-3 xs:gap-4 font-semibold text-[11px] xs:text-xs shrink-0 flex-wrap justify-center sm:justify-end">
-                  <a
-                    href="/contact"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setIsTransactionRoute(false);
-                      setActiveTab('contact');
-                      const mainEl = document.getElementById('main-content');
-                      if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="hover:text-[#ffd700] transition-colors cursor-pointer text-[#ffd700]"
-                  >
-                    Contact Support
-                  </a>
-                  <span>•</span>
-                  <a
-                    href="/terms-and-conditions"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setIsTransactionRoute(false);
-                      setActiveTab('terms');
-                      const mainEl = document.getElementById('main-content');
-                      if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="hover:text-[#ffd700] transition-colors cursor-pointer"
-                  >
-                    Terms & Conditions
-                  </a>
-                  <span>•</span>
-                  <a
-                    href="/privacy-policy"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setIsTransactionRoute(false);
-                      setActiveTab('privacy');
-                      const mainEl = document.getElementById('main-content');
-                      if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="hover:text-[#05d5aa] transition-colors cursor-pointer"
-                  >
-                    Privacy Policy
-                  </a>
-                  {!isInstalled && (
-                    <>
-                      <span>•</span>
-                      <button
-                        onClick={triggerInstall}
-                        className="hover:text-[#ffd700] transition-colors cursor-pointer text-[#ffd700] flex items-center gap-1 font-bold"
-                      >
-                        <span>📲 Install App</span>
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </footer>
+            </footer>
+          )}
 
         </main>
 

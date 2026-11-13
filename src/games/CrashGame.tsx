@@ -15,7 +15,13 @@ import {
 import confetti from 'canvas-confetti';
 import { soundFX } from '../engine/SoundFXService';
 
-export default function CrashGame({ room }) {
+export default function CrashGame({ 
+  room, 
+  activityBox 
+}: { 
+  room?: any; 
+  activityBox?: React.ReactNode; 
+}) {
   const {
     game,
     betAmount,
@@ -291,10 +297,10 @@ export default function CrashGame({ room }) {
   };
 
   return (
-    <div className="w-full space-y-4 text-left">
+    <div className="w-full h-full flex flex-col min-h-0 overflow-hidden text-left space-y-1.5">
       
       {/* 1. RECENT CRASH ROUNDS BAR */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5 shrink-0">
         <span className="text-[10px] font-mono-numbers uppercase tracking-wider text-[#94A3B8] flex items-center gap-1 shrink-0">
           <History className="w-3 h-3 text-amber-400" />
           <span>History:</span>
@@ -302,7 +308,7 @@ export default function CrashGame({ room }) {
         {recentCrashes.map((r, idx) => (
           <span
             key={idx}
-            className={`px-2 py-0.5 rounded-lg text-xs font-mono-numbers font-black shrink-0 border ${
+            className={`px-1.5 py-0.2 rounded text-[10px] font-mono-numbers font-black shrink-0 border ${
               r.point >= 2.0
                 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
                 : 'bg-red-500/10 text-red-400 border-red-500/20'
@@ -314,18 +320,18 @@ export default function CrashGame({ room }) {
       </div>
 
       {/* 2. MAIN STAGE & CONTROLS GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 overflow-hidden">
         
-        {/* Controls Column (Left) */}
-        <div className="lg:col-span-4 bg-[#111827] border border-[#1F2737] rounded-2xl p-4 sm:p-5 space-y-4 flex flex-col justify-between">
+        {/* Controls Column (Landscape: Left / Portrait: Middle & Bottom) */}
+        <div className="order-2 lg:order-1 lg:col-span-4 bg-[#111827] border border-[#1F2737] rounded-xl p-2.5 sm:p-3 flex flex-col justify-between overflow-hidden h-full min-h-0 gap-2">
           
-          <div className="space-y-4">
+          <div className="space-y-2 shrink-0">
             {/* Stake Input */}
             <div>
-              <div className="flex items-center justify-between text-xs mb-1.5 font-bold font-mono-numbers">
+              <div className="flex items-center justify-between text-xs mb-1 font-bold font-mono-numbers">
                 <span className="text-[#94A3B8]">Bet Amount:</span>
               </div>
-              <div className="flex items-center bg-[#0B0F19] border border-[#1F2737] focus-within:border-amber-500/50 rounded-xl p-1.5">
+              <div className="flex items-center bg-[#0B0F19] border border-[#1F2737] focus-within:border-amber-500/50 rounded-lg p-1">
                 <input
                   type="number"
                   min="1"
@@ -333,19 +339,19 @@ export default function CrashGame({ room }) {
                   value={betAmount}
                   onChange={(e) => setBetAmount(Math.max(1, parseFloat(e.target.value) || 0))}
                   disabled={gameState === 'flying' || gameState === 'countdown'}
-                  className="flex-1 bg-transparent px-2.5 text-white font-mono-numbers font-black text-base outline-none disabled:opacity-50"
+                  className="flex-1 bg-transparent px-2 text-white font-mono-numbers font-black text-sm outline-none disabled:opacity-50"
                 />
                 <span className="text-amber-400 font-black text-xs px-2 font-mono-numbers">FC</span>
               </div>
             </div>
 
             {/* Quick Stake Adjusters */}
-            <div className="grid grid-cols-4 gap-1.5 text-xs font-mono-numbers font-bold">
+            <div className="grid grid-cols-4 gap-1 text-xs font-mono-numbers font-bold">
               <button
                 type="button"
                 onClick={halveBet}
                 disabled={gameState === 'flying' || gameState === 'countdown'}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50 text-[11px]"
               >
                 ½
               </button>
@@ -353,7 +359,7 @@ export default function CrashGame({ room }) {
                 type="button"
                 onClick={doubleBet}
                 disabled={gameState === 'flying' || gameState === 'countdown'}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50 text-[11px]"
               >
                 2x
               </button>
@@ -361,7 +367,7 @@ export default function CrashGame({ room }) {
                 type="button"
                 onClick={setMinBet}
                 disabled={gameState === 'flying' || gameState === 'countdown'}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50 text-[11px]"
               >
                 Min
               </button>
@@ -369,28 +375,28 @@ export default function CrashGame({ room }) {
                 type="button"
                 onClick={setMaxBet}
                 disabled={gameState === 'flying' || gameState === 'countdown'}
-                className="py-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#151C2B] text-amber-400 border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50"
+                className="py-1 rounded bg-[#0B0F19] hover:bg-[#151C2B] text-amber-400 border border-[#1F2737] transition-colors cursor-pointer disabled:opacity-50 text-[11px]"
               >
                 Max
               </button>
             </div>
 
             {/* Auto-Cashout Config */}
-            <div className="pt-2 border-t border-[#1F2737] space-y-2">
+            <div className="pt-1.5 border-t border-[#1F2737] space-y-1.5">
               <div className="flex items-center justify-between text-xs font-mono-numbers">
-                <label className="flex items-center gap-2 cursor-pointer text-[#94A3B8] font-bold">
+                <label className="flex items-center gap-1.5 cursor-pointer text-[#94A3B8] font-bold text-[11px]">
                   <input
                     type="checkbox"
                     checked={isAutoCashoutEnabled}
                     onChange={(e) => setIsAutoCashoutEnabled(e.target.checked)}
-                    className="accent-amber-500 rounded cursor-pointer"
+                    className="accent-amber-500 rounded cursor-pointer w-3.5 h-3.5"
                   />
                   <span>Auto Cashout Target</span>
                 </label>
               </div>
 
               {isAutoCashoutEnabled && (
-                <div className="flex items-center bg-[#0B0F19] border border-[#1F2737] rounded-xl p-1.5">
+                <div className="flex items-center bg-[#0B0F19] border border-[#1F2737] rounded-lg p-1">
                   <input
                     type="number"
                     step="0.1"
@@ -399,7 +405,7 @@ export default function CrashGame({ room }) {
                     value={autoCashout}
                     onChange={(e) => setAutoCashout(e.target.value)}
                     disabled={gameState === 'flying'}
-                    className="flex-1 bg-transparent px-2.5 text-white font-mono-numbers font-black text-sm outline-none"
+                    className="flex-1 bg-transparent px-2 text-white font-mono-numbers font-black text-xs outline-none"
                     placeholder="2.00"
                   />
                   <span className="text-amber-400 font-bold text-xs px-2 font-mono-numbers">x</span>
@@ -409,19 +415,19 @@ export default function CrashGame({ room }) {
           </div>
 
           {/* Action Button: Launch vs Cashout */}
-          <div className="pt-4">
+          <div className="shrink-0">
             {gameState === 'flying' ? (
               <button
                 type="button"
                 onClick={() => handleCashout()}
                 disabled={!!cashedOutAt}
-                className={`w-full py-4 rounded-2xl font-black text-base flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xl ${
+                className={`w-full py-2.5 sm:py-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-md ${
                   cashedOutAt
                     ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 cursor-default'
                     : 'bg-gradient-to-r from-emerald-500 to-[#05D5AA] hover:from-emerald-400 hover:to-[#05D5AA] text-black shadow-emerald-500/30 animate-pulse'
                 }`}
               >
-                <Coins className="w-5 h-5 fill-current" />
+                <Coins className="w-4 h-4 fill-current" />
                 <span>
                   {cashedOutAt
                     ? `Cashed Out @ ${cashedOutAt.toFixed(2)}x (+${(betAmount * cashedOutAt).toFixed(2)} FC)`
@@ -434,13 +440,13 @@ export default function CrashGame({ room }) {
                 type="button"
                 onClick={handleLaunch}
                 disabled={loading || gameState === 'countdown'}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-base flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xl shadow-amber-500/20 disabled:opacity-50"
+                className="w-full py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-md shadow-amber-500/20 disabled:opacity-50"
               >
                 {gameState === 'countdown' ? (
                   <span className="animate-pulse">Launching in 1s...</span>
                 ) : (
                   <>
-                    <Rocket className="w-5 h-5 fill-current" />
+                    <Rocket className="w-4 h-4 fill-current" />
                     <span>Launch Rocket ({betAmount} FC)</span>
                   </>
                 )}
@@ -448,43 +454,46 @@ export default function CrashGame({ room }) {
             )}
           </div>
 
+          {/* Dedicated In-Room Activity Box */}
+          {activityBox}
+
         </div>
 
-        {/* Canvas Stage (Right) */}
-        <div className="lg:col-span-8 bg-[#07090E] border border-[#1F2737] rounded-2xl p-4 sm:p-6 flex flex-col justify-between items-center relative min-h-[380px] overflow-hidden">
+        {/* Canvas Stage (Landscape: Right / Portrait: Top) */}
+        <div className="order-1 lg:order-2 lg:col-span-8 bg-[#07090E] border border-[#1F2737] rounded-xl p-2 sm:p-3 flex flex-col justify-between items-center relative overflow-hidden h-full min-h-[160px] lg:min-h-0">
           
           {/* Multiplier Central Overlay */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
             {gameState === 'crashed' ? (
               <div className="text-center space-y-1 animate-in zoom-in-90 duration-150">
-                <span className="font-display font-black text-4xl sm:text-6xl text-red-500 tracking-tight drop-shadow-[0_0_25px_rgba(239,68,68,0.5)] font-mono-numbers">
+                <span className="font-display font-black text-3xl sm:text-5xl text-red-500 tracking-tight drop-shadow-[0_0_25px_rgba(239,68,68,0.5)] font-mono-numbers">
                   {currentMultiplier.toFixed(2)}x
                 </span>
-                <span className="block text-xs font-mono-numbers uppercase tracking-widest text-red-400 font-extrabold bg-red-950/60 border border-red-500/40 px-3 py-1 rounded-full">
+                <span className="block text-[10px] font-mono-numbers uppercase tracking-widest text-red-400 font-extrabold bg-red-950/60 border border-red-500/40 px-2.5 py-0.5 rounded-full">
                   Crashed!
                 </span>
               </div>
             ) : gameState === 'flying' ? (
               <div className="text-center space-y-1">
-                <span className="font-display font-black text-5xl sm:text-7xl text-white tracking-tight drop-shadow-[0_0_30px_rgba(245,196,81,0.35)] font-mono-numbers">
+                <span className="font-display font-black text-4xl sm:text-6xl text-white tracking-tight drop-shadow-[0_0_30px_rgba(245,196,81,0.35)] font-mono-numbers">
                   {currentMultiplier.toFixed(2)}x
                 </span>
                 {cashedOutAt && (
-                  <span className="block text-xs font-mono-numbers uppercase tracking-widest text-emerald-300 font-extrabold bg-emerald-950/60 border border-emerald-500/40 px-3 py-1 rounded-full animate-in fade-in">
+                  <span className="block text-[10px] font-mono-numbers uppercase tracking-widest text-emerald-300 font-extrabold bg-emerald-950/60 border border-emerald-500/40 px-2.5 py-0.5 rounded-full animate-in fade-in">
                     Locked @ {cashedOutAt.toFixed(2)}x
                   </span>
                 )}
               </div>
             ) : gameState === 'countdown' ? (
-              <div className="text-center space-y-2">
-                <Rocket className="w-12 h-12 text-amber-400 animate-bounce mx-auto" />
-                <span className="font-display font-extrabold text-lg text-white">Preparing Launch...</span>
+              <div className="text-center space-y-1">
+                <Rocket className="w-8 h-8 text-amber-400 animate-bounce mx-auto" />
+                <span className="font-display font-extrabold text-sm text-white">Preparing Launch...</span>
               </div>
             ) : (
-              <div className="text-center space-y-2">
-                <Rocket className="w-12 h-12 text-amber-400/50 mx-auto" />
-                <span className="font-display font-black text-lg sm:text-xl text-white">Ready to Launch</span>
-                <p className="text-xs text-[#94A3B8]">Set stake and press Launch to start flight.</p>
+              <div className="text-center space-y-1">
+                <Rocket className="w-8 h-8 text-amber-400/50 mx-auto" />
+                <span className="font-display font-black text-sm sm:text-base text-white">Ready to Launch</span>
+                <p className="text-[10px] text-[#94A3B8]">Set stake and press Launch to start flight.</p>
               </div>
             )}
           </div>
@@ -494,11 +503,11 @@ export default function CrashGame({ room }) {
             ref={canvasRef}
             width={600}
             height={340}
-            className="w-full h-full max-h-[340px] block"
+            className="w-full flex-1 min-h-0 block object-contain"
           />
 
           {/* Footer note */}
-          <div className="w-full flex items-center justify-between pt-2 border-t border-[#1F2737] text-[10px] text-[#94A3B8] font-mono-numbers">
+          <div className="w-full flex items-center justify-between pt-1.5 border-t border-[#1F2737] text-[9px] text-[#94A3B8] font-mono-numbers shrink-0">
             <span>Provably Fair 1% House Edge</span>
             <span>Multiplier Cap: 1,000x</span>
           </div>
