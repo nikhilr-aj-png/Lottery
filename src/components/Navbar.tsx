@@ -72,8 +72,8 @@ export default function Navbar({
   const isLoggedIn = !!user;
 
   const handleNavClick = (tabId) => {
-    // Unauthenticated visitors are allowed on public tabs: lotteries, contact, terms, privacy, rewards
-    const publicTabs = ['lotteries', 'contact', 'terms', 'privacy', 'rewards', 'leaderboard'];
+    // Public tabs where unauthenticated visitors can freely navigate:
+    const publicTabs = ['lotteries', 'contact', 'terms', 'privacy', 'rewards', 'leaderboard', 'profile', 'wallet'];
     if (!isLoggedIn && !publicTabs.includes(tabId)) {
       setIsAuthModalOpen(true);
       const tabNames = {
@@ -89,6 +89,13 @@ export default function Navbar({
     if (tabId === 'lotteries') {
       if (onGoHome) {
         onGoHome();
+        return;
+      }
+    }
+
+    if (tabId === 'profile') {
+      if (onOpenProfile) {
+        onOpenProfile();
         return;
       }
     }
@@ -181,8 +188,8 @@ export default function Navbar({
                 </a>
               )}
 
-              {/* Master Audio FX Toggle & Volume Popover (Mobile & Desktop) */}
-              <div className="relative flex items-center" ref={volumeMenuRef}>
+              {/* Master Audio FX Toggle & Volume Popover (Desktop / Tablet sm+ ONLY) */}
+              <div className="relative hidden sm:flex items-center" ref={volumeMenuRef}>
                 <button
                   onClick={() => {
                     toggleSound();
@@ -266,10 +273,10 @@ export default function Navbar({
                     </span>
                   </div>
 
-                  {/* Realtime Notifications Bell (Mobile & Desktop) */}
+                  {/* Realtime Notifications Bell (Desktop / Tablet sm+ ONLY) */}
                   <button
                     onClick={onOpenNotifications}
-                    className="w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-9 sm:h-9 rounded-xl bg-[#10131A] hover:bg-[#151C2B] border border-[#2D3545] hover:border-amber-400/50 flex items-center justify-center text-[#94A3B8] hover:text-amber-300 transition-colors cursor-pointer relative shrink-0 shadow-sm"
+                    className="hidden sm:flex w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-9 sm:h-9 rounded-xl bg-[#10131A] hover:bg-[#151C2B] border border-[#2D3545] hover:border-amber-400/50 items-center justify-center text-[#94A3B8] hover:text-amber-300 transition-colors cursor-pointer relative shrink-0 shadow-sm"
                     title={unreadNotificationsCount > 0 ? `${unreadNotificationsCount} unread notification(s)` : 'View Notifications'}
                     aria-label="View Notifications"
                   >
@@ -281,10 +288,13 @@ export default function Navbar({
                     )}
                   </button>
 
-                  {/* User Profile Pill: Compact icon-only on mobile (< 640px), full pill on sm+ */}
+                  {/* User Profile Pill: Desktop / Tablet sm+ ONLY */}
                   <button
-                    onClick={() => handleNavClick('profile')}
-                    className={`flex items-center gap-1.5 text-xs font-mono-numbers p-1 xs:p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border transition-all cursor-pointer shrink-0 shadow-sm ${
+                    onClick={() => {
+                      if (onOpenProfile) onOpenProfile();
+                      else handleNavClick('profile');
+                    }}
+                    className={`hidden sm:flex items-center gap-1.5 text-xs font-mono-numbers px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer shrink-0 shadow-sm ${
                       activeTab === 'profile'
                         ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] border-[#fff2a3] font-bold'
                         : 'bg-[#151C2B] text-[#E1E2EB] border-[#2D3545] hover:border-[#F5C451]/50'
@@ -297,13 +307,12 @@ export default function Navbar({
                     }`}>
                       <User className="w-3 h-3" />
                     </div>
-                    {/* Username hidden on mobile (< 640px) to prevent clutter & clipping */}
-                    <span className={`hidden sm:inline truncate max-w-[95px] lg:max-w-[120px] font-bold text-xs ${
+                    <span className={`truncate max-w-[95px] lg:max-w-[120px] font-bold text-xs ${
                       activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-white'
                     }`}>
                       {usernameDisplay}
                     </span>
-                    <ChevronDown className={`w-3 h-3 hidden sm:inline shrink-0 ${
+                    <ChevronDown className={`w-3 h-3 shrink-0 ${
                       activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-[#94A3B8]'
                     }`} />
                   </button>
@@ -312,7 +321,7 @@ export default function Navbar({
                 /* Login / Sign Up Button when unauthenticated */
                 <button
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="btn-gold px-2 xs:px-3 sm:px-4.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 sm:gap-1.5 shadow-md cursor-pointer whitespace-nowrap shrink-0"
+                  className="btn-gold px-2.5 xs:px-3 sm:px-4.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 sm:gap-1.5 shadow-md cursor-pointer whitespace-nowrap shrink-0"
                 >
                   <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Login</span>
@@ -323,143 +332,68 @@ export default function Navbar({
 
           </div>
         </div>
-
-        {/* ======================================================== */}
-        {/* MOBILE HEADER — ROW 2: Dedicated Flow Coin Balance Row    */}
-        {/* Visible only on mobile (< 640px), prevents any overlap   */}
-        {/* ======================================================== */}
-        {isLoggedIn && (
-          <div className="sm:hidden border-t border-[rgba(245,196,81,0.12)] bg-[#07090D]/90 px-2.5 xs:px-3 py-1.5">
-            <div className="w-full flex items-center justify-between gap-2">
-              {/* Balance Card: Full-width flexible row */}
-              <div 
-                onClick={() => handleNavClick('wallet')}
-                title="Tap to open Flow Coin Virtual Wallet (1 FLO = 1 USDT)"
-                className="w-full bg-[#10131A] active:bg-[#151C2B] border border-[rgba(245,196,81,0.25)] rounded-xl px-3 py-1.5 flex items-center justify-between transition-colors cursor-pointer shadow-inner"
-              >
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <Coins className="w-3.5 h-3.5 text-[#ffd700] shrink-0" />
-                  <span className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider shrink-0">
-                    FLO
-                  </span>
-                  <span className="font-mono-numbers font-bold text-xs text-[#ffd700] truncate">
-                    {Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                  </span>
-                  <span className="text-[10px] text-[#94A3B8] font-mono-numbers ml-1 truncate hidden xs:inline">
-                    (≈ ${Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} USDT)
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 shrink-0">
-                  <Wallet className="w-3 h-3 text-amber-400" />
-                  <span>Wallet</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </header>
 
       {/* ======================================================== */}
       {/* 2. REFINED BOTTOM MOBILE NAV BAR (< 768px)                */}
+      {/* Three items only: 1. Home, 2. Wallet, 3. Profile          */}
       {/* ======================================================== */}
       <nav 
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B0F19]/95 backdrop-blur-xl border-t border-[rgba(245,196,81,0.18)] px-1 xs:px-2 py-1 safe-area-pb shadow-[0_-5px_25px_rgba(0,0,0,0.85)]"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B0F19]/95 backdrop-blur-xl border-t border-[rgba(245,196,81,0.18)] px-2 py-1 safe-area-pb shadow-[0_-5px_25px_rgba(0,0,0,0.85)]"
         aria-label="Mobile Bottom Navigation"
       >
-        <div className="flex items-center justify-around max-w-md mx-auto">
+        <div className="grid grid-cols-3 max-w-md mx-auto items-center">
           
           {/* 1. Home */}
           <button
-            onClick={() => handleNavClick('lotteries')}
-            className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all cursor-pointer ${
+            onClick={() => {
+              if (onGoHome) onGoHome();
+              else handleNavClick('lotteries');
+            }}
+            className={`min-h-[48px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${
               activeTab === 'lotteries' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
             }`}
           >
-            <div className={`p-1 rounded-lg ${activeTab === 'lotteries' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
-              <Flame className="w-4 h-4" />
+            <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'lotteries' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
+              <Flame className="w-5 h-5" />
             </div>
-            <span className={`text-[10px] tracking-tight mt-0.5 leading-none ${activeTab === 'lotteries' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
+            <span className={`text-[11px] tracking-tight mt-0.5 leading-none ${activeTab === 'lotteries' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
               Home
             </span>
           </button>
 
-          {/* 2. My Tickets */}
-          <button
-            onClick={() => handleNavClick('tickets')}
-            className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all cursor-pointer relative ${
-              activeTab === 'tickets' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
-            }`}
-          >
-            <div className={`p-1 rounded-lg ${activeTab === 'tickets' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
-              <Ticket className="w-4 h-4" />
-            </div>
-            <span className={`text-[10px] tracking-tight mt-0.5 leading-none flex items-center gap-0.5 ${activeTab === 'tickets' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
-              <span>Tickets</span>
-              {!isLoggedIn && <Lock className="w-2 h-2 text-[#94A3B8] opacity-70" />}
-            </span>
-          </button>
-
-          {/* 3. Results */}
-          <button
-            onClick={() => handleNavClick('results')}
-            className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all cursor-pointer relative ${
-              activeTab === 'results' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
-            }`}
-          >
-            <div className={`p-1 rounded-lg ${activeTab === 'results' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
-              <Trophy className="w-4 h-4" />
-            </div>
-            <span className={`text-[10px] tracking-tight mt-0.5 leading-none flex items-center gap-0.5 ${activeTab === 'results' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
-              <span>Results</span>
-              {!isLoggedIn && <Lock className="w-2 h-2 text-[#94A3B8] opacity-70" />}
-            </span>
-          </button>
-
-          {/* 4. Virtual Wallet */}
+          {/* 2. Virtual Wallet */}
           <button
             onClick={() => handleNavClick('wallet')}
-            className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all cursor-pointer relative ${
+            className={`min-h-[48px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${
               activeTab === 'wallet' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
             }`}
           >
-            <div className={`p-1 rounded-lg ${activeTab === 'wallet' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
-              <Wallet className="w-4 h-4" />
+            <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'wallet' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
+              <Wallet className="w-5 h-5" />
             </div>
-            <span className={`text-[10px] tracking-tight mt-0.5 leading-none flex items-center gap-0.5 ${activeTab === 'wallet' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
-              <span>Wallet</span>
-              {!isLoggedIn && <Lock className="w-2 h-2 text-[#94A3B8] opacity-70" />}
+            <span className={`text-[11px] tracking-tight mt-0.5 leading-none ${activeTab === 'wallet' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
+              Wallet
             </span>
           </button>
 
-          {/* 5. Profile or Login */}
-          {isLoggedIn ? (
-            <button
-              onClick={() => handleNavClick('profile')}
-              className={`min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all cursor-pointer ${
-                activeTab === 'profile' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
-              }`}
-            >
-              <div className={`p-1 rounded-lg ${activeTab === 'profile' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
-                <User className="w-4 h-4" />
-              </div>
-              <span className={`text-[10px] tracking-tight mt-0.5 leading-none ${activeTab === 'profile' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
-                Profile
-              </span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setIsAuthModalOpen(true)}
-              className="min-h-[44px] min-w-[48px] flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all cursor-pointer text-amber-400 hover:text-white"
-            >
-              <div className="p-1 rounded-lg bg-amber-500/15 text-[#ffd700]">
-                <LogIn className="w-4 h-4" />
-              </div>
-              <span className="text-[10px] tracking-tight mt-0.5 leading-none font-bold">
-                Login
-              </span>
-            </button>
-          )}
+          {/* 3. Player Profile */}
+          <button
+            onClick={() => {
+              if (onOpenProfile) onOpenProfile();
+              else handleNavClick('profile');
+            }}
+            className={`min-h-[48px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'profile' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
+            }`}
+          >
+            <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'profile' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
+              <User className="w-5 h-5" />
+            </div>
+            <span className={`text-[11px] tracking-tight mt-0.5 leading-none ${activeTab === 'profile' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
+              Profile
+            </span>
+          </button>
 
         </div>
       </nav>

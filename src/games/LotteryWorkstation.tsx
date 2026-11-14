@@ -15,13 +15,14 @@ import {
   Users, 
   CheckCircle2, 
   ChevronUp, 
-  ChevronDown,
-  Ticket,
-  Calendar,
-  Layers,
-  Award,
-  Hash,
-  ArrowLeft
+  ChevronDown, 
+  Ticket, 
+  Calendar, 
+  Layers, 
+  Award, 
+  Hash, 
+  ArrowLeft,
+  Play
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundFX } from '../engine/SoundFXService';
@@ -258,6 +259,13 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
     });
   }, [event.drawTime]);
 
+  const [workstationTab, setWorkstationTab] = useState<'entry' | 'tickets' | 'results'>('entry');
+  const winDigits = event.winningDigits || event.targetWinningDigits || '7429';
+
+  const completedLotteryEvents = useMemo(() => {
+    return events.filter(e => e.status === 'completed' || (e.drawTime && e.drawTime <= Date.now()));
+  }, [events]);
+
   return (
     <div className="w-full h-full flex flex-col min-h-0 overflow-hidden text-left space-y-1.5 sm:space-y-2">
       
@@ -286,7 +294,7 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
             </span>
             <span className="text-[9px] font-mono-numbers px-1.5 py-0.2 rounded bg-[#141924] text-emerald-400 border border-[#272a31] font-bold uppercase flex items-center gap-1 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              {event.status === 'completed' ? 'CONCLUDED' : 'ACTIVE'}
+              {isTimedOut ? 'CONCLUDED' : 'ACTIVE'}
             </span>
           </div>
         </div>
@@ -310,14 +318,336 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
 
           <div className="bg-[#0b0e14] px-2 py-0.5 rounded border border-[#272a31] flex items-center gap-1 text-amber-300 font-bold shrink-0">
             <Clock className="w-3 h-3 text-amber-400" />
-            <span>{timeLeft.hours}h {timeLeft.minutes}m</span>
+            <span>{isTimedOut ? 'Ended' : `${timeLeft.hours}h ${timeLeft.minutes}m`}</span>
           </div>
         </div>
 
       </div>
 
-      {/* 2. MAIN 2-COLUMN WORKSTATION: DIALS & ORDER STAGING */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 overflow-hidden">
+      {/* In-Room Sub-Navigation Tabs: Play/Result, My Tickets, Past Results */}
+      <div className="flex items-center justify-between gap-2 px-2 py-1 rounded-xl bg-[#0B0F19]/90 border border-[#1F2737] shrink-0 text-xs">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setWorkstationTab('entry')}
+            className={`px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors ${
+              workstationTab === 'entry'
+                ? 'bg-amber-500 text-black shadow-sm'
+                : 'text-[#9b8f7c] hover:text-white hover:bg-[#141924]'
+            }`}
+          >
+            {isTimedOut ? <Trophy className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
+            <span>{isTimedOut ? 'Official Draw Result' : 'Play & Enter Digits'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setWorkstationTab('tickets')}
+            className={`px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors ${
+              workstationTab === 'tickets'
+                ? 'bg-amber-500 text-black shadow-sm'
+                : 'text-[#9b8f7c] hover:text-white hover:bg-[#141924]'
+            }`}
+          >
+            <Ticket className="w-3.5 h-3.5" />
+            <span>My Tickets ({myTicketsInThisRoom.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setWorkstationTab('results')}
+            className={`px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors ${
+              workstationTab === 'results'
+                ? 'bg-amber-500 text-black shadow-sm'
+                : 'text-[#9b8f7c] hover:text-white hover:bg-[#141924]'
+            }`}
+          >
+            <Award className="w-3.5 h-3.5" />
+            <span>Past Results</span>
+          </button>
+        </div>
+
+        {isTimedOut && (
+          <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold uppercase hidden sm:inline">
+            Draw Concluded · Results Below
+          </span>
+        )}
+      </div>
+
+      {/* 2. MAIN WORKSTATION VIEWS (ENTRY / CONCLUDED RESULT / MY TICKETS / PAST RESULTS) */}
+      {workstationTab === 'tickets' ? (
+        /* IN-ROOM MY TICKETS VIEW */
+        <div className="flex-1 min-h-0 bg-[#111827] border border-[#1F2737] rounded-xl p-3 sm:p-4 flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#1f2737] shrink-0">
+            <div className="flex items-center gap-2">
+              <Ticket className="w-4 h-4 text-amber-400" />
+              <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
+                My Lottery Tickets ({tickets?.length || 0})
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setWorkstationTab('entry')}
+              className="text-xs font-bold text-amber-400 hover:text-white flex items-center gap-1 cursor-pointer"
+            >
+              <span>← Back to {isTimedOut ? 'Result' : 'Entry'}</span>
+            </button>
+          </div>
+
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1 no-scrollbar">
+            {(!tickets || tickets.length === 0) ? (
+              <div className="py-12 text-center text-[#9b8f7c] space-y-2">
+                <Ticket className="w-10 h-10 text-[#9b8f7c]/40 mx-auto" />
+                <p className="text-xs">No lottery tickets purchased yet.</p>
+                {!isTimedOut && (
+                  <button
+                    type="button"
+                    onClick={() => setWorkstationTab('entry')}
+                    className="btn-gold px-3.5 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-md"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Enter 4 Digits Now</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {tickets.map((tkt: any) => {
+                  const isForThisDraw = tkt.eventId === event.id || tkt.event_id === event.id;
+                  const isWin = tkt.status === 'won' || tkt.ticketNumber === winDigits;
+                  return (
+                    <div
+                      key={tkt.id}
+                      className={`p-3 rounded-xl border flex flex-col justify-between transition-all ${
+                        isForThisDraw
+                          ? 'bg-[#151C2B] border-amber-500/40 shadow-sm'
+                          : 'bg-[#0b0e14] border-[#272a31]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-[10px] text-[#9b8f7c] mb-1.5">
+                        <span className="font-mono-numbers font-bold">#{tkt.id.slice(-6)}</span>
+                        <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[9px] ${
+                          isWin
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                            : isForThisDraw
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                            : 'bg-[#141924] text-[#8b92a2] border border-[#272a31]'
+                        }`}>
+                          {isWin ? '🏆 WINNER' : isForThisDraw ? 'THIS DRAW' : (tkt.status || 'PAST')}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-center gap-1.5 my-2">
+                        {String(tkt.ticketNumber || '0000').split('').map((char: string, dIdx: number) => (
+                          <div
+                            key={dIdx}
+                            className={`w-8 h-9 rounded-lg flex items-center justify-center font-display font-black text-base shadow-inner border ${
+                              isWin
+                                ? 'bg-emerald-950/40 border-emerald-400 text-emerald-300'
+                                : 'bg-[#07090e] border-[#272a31] text-amber-400'
+                            }`}
+                          >
+                            {char}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="pt-2 border-t border-[#1f2737] flex items-center justify-between text-[10px] font-mono-numbers">
+                        <span className="text-[#8b92a2] truncate max-w-[120px]">{tkt.eventTitle || event.title}</span>
+                        <strong className="text-white">{tkt.price || event.ticketPrice} FC</strong>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : workstationTab === 'results' ? (
+        /* IN-ROOM PAST RESULTS VIEW */
+        <div className="flex-1 min-h-0 bg-[#111827] border border-[#1F2737] rounded-xl p-3 sm:p-4 flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#1f2737] shrink-0">
+            <div className="flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-emerald-400" />
+              <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
+                Lottery Draw Results ({completedLotteryEvents.length})
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setWorkstationTab('entry')}
+              className="text-xs font-bold text-amber-400 hover:text-white flex items-center gap-1 cursor-pointer"
+            >
+              <span>← Back to {isTimedOut ? 'Result' : 'Entry'}</span>
+            </button>
+          </div>
+
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1 no-scrollbar">
+            {completedLotteryEvents.length === 0 ? (
+              <div className="py-12 text-center text-[#9b8f7c] space-y-2">
+                <Trophy className="w-10 h-10 text-[#9b8f7c]/40 mx-auto" />
+                <p className="text-xs">No lottery rounds have concluded yet.</p>
+              </div>
+            ) : (
+              completedLotteryEvents.map((ce: any) => {
+                const cWinDigits = ce.winningDigits || ce.targetWinningDigits || '7429';
+                return (
+                  <div
+                    key={ce.id}
+                    className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] hover:border-amber-500/40 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                  >
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono-numbers font-bold text-[10px] text-amber-400 bg-[#141924] px-1.5 py-0.5 rounded border border-amber-500/30">
+                          ROUND #{ce.id.replace('evt-', '').toUpperCase()}
+                        </span>
+                        <span className="text-[10px] text-[#8b92a2] flex items-center gap-1 font-mono-numbers">
+                          <Calendar className="w-3 h-3" />
+                          {ce.drawTime ? new Date(ce.drawTime).toLocaleDateString() : 'Recent'}
+                        </span>
+                      </div>
+                      <h4 className="font-display font-bold text-xs sm:text-sm text-white truncate">
+                        {ce.title}
+                      </h4>
+                      <div className="text-[10px] text-[#9b8f7c] flex items-center gap-2">
+                        <span>Pool: <strong className="text-emerald-400 font-mono-numbers">{Number(ce.poolPrize || 5000).toLocaleString()} FC</strong></span>
+                        <span>•</span>
+                        <span>Winners: <strong className="text-purple-300 font-mono-numbers">{ce.winners?.length || 1}</strong></span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {cWinDigits.split('').map((char: string, idx: number) => (
+                        <div
+                          key={idx}
+                          className="w-8 h-9 sm:w-9 sm:h-10 rounded-lg bg-gradient-to-b from-[#192233] to-[#0c0f17] border border-emerald-400 flex items-center justify-center font-display font-black text-base text-emerald-400 shadow-[0_0_10px_rgba(5,213,170,0.25)]"
+                        >
+                          {char}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      ) : isTimedOut ? (
+        /* CONCLUDED EVENT RESULT VIEW (Automatic transition when draw expires) */
+        <div className="flex-1 min-h-0 bg-[#111827] border border-[#1F2737] rounded-xl p-3 sm:p-4 flex flex-col justify-between overflow-hidden">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between pb-2 border-b border-[#1f2737]">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,196,81,0.6)]" />
+                <span className="font-display font-extrabold text-xs sm:text-sm text-white">
+                  Official Drawn Winning Combination
+                </span>
+              </div>
+              <span className="text-[10px] font-mono-numbers px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold uppercase">
+                Round Concluded
+              </span>
+            </div>
+
+            {/* Big Glowing Drawn 4-Digit Balls */}
+            <div className="text-center py-2 sm:py-3">
+              <span className="text-[10px] text-[#8b92a2] uppercase font-bold tracking-wider block mb-2">
+                Winning 4-Digit Number
+              </span>
+              <div className="flex items-center justify-center gap-2 sm:gap-3">
+                {winDigits.split('').map((digit: string, idx: number) => (
+                  <div
+                    key={idx}
+                    className="w-12 h-14 sm:w-16 sm:h-18 rounded-2xl bg-gradient-to-b from-[#192233] to-[#0c0f17] border-2 border-emerald-400 flex items-center justify-center font-display font-black text-2xl sm:text-3xl text-emerald-300 shadow-[0_0_20px_rgba(5,213,170,0.35)]"
+                  >
+                    {digit}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Pool & Winner Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-mono-numbers">
+              <div className="bg-[#0b0e14] p-2.5 rounded-xl border border-[#272a31]">
+                <span className="text-[#8b92a2] text-[10px] block">Total Prize Pool</span>
+                <strong className="text-amber-400 text-sm font-black">{Number(event.poolPrize || 5000).toLocaleString()} FC</strong>
+              </div>
+              <div className="bg-[#0b0e14] p-2.5 rounded-xl border border-[#272a31]">
+                <span className="text-[#8b92a2] text-[10px] block">Winning Digits</span>
+                <strong className="text-emerald-400 text-sm font-black">#{winDigits}</strong>
+              </div>
+              <div className="bg-[#0b0e14] p-2.5 rounded-xl border border-[#272a31] col-span-2 sm:col-span-1">
+                <span className="text-[#8b92a2] text-[10px] block">Winners</span>
+                <strong className="text-purple-300 text-sm font-bold">{event.winners?.length || 1} Winner(s)</strong>
+              </div>
+            </div>
+
+            {/* User's tickets in this concluded draw */}
+            <div className="pt-2 border-t border-[#1f2737] space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <Ticket className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Your Tickets in this Round ({myTicketsInThisRoom.length})</span>
+                </span>
+              </div>
+
+              {myTicketsInThisRoom.length === 0 ? (
+                <div className="p-2 rounded-lg bg-[#0b0e14] border border-[#272a31] text-center text-xs text-[#9b8f7c]">
+                  You did not purchase tickets in this concluded round.
+                </div>
+              ) : (
+                <div className="space-y-1 max-h-28 overflow-y-auto pr-1 no-scrollbar">
+                  {myTicketsInThisRoom.map((t: any, idx: number) => {
+                    const isWin = t.ticketNumber === winDigits || t.status === 'won';
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-2 rounded-xl flex items-center justify-between text-xs font-mono-numbers border ${
+                          isWin
+                            ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-300'
+                            : 'bg-[#0b0e14] border-[#272a31] text-[#9b8f7c]'
+                        }`}
+                      >
+                        <span className="font-bold text-white">#{t.ticketNumber}</span>
+                        {isWin ? (
+                          <span className="text-emerald-400 font-extrabold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>WINNER ({t.wonAmount || event.poolPrize} FC)</span>
+                          </span>
+                        ) : (
+                          <span className="text-[#64748b]">Unmatched</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* CTAs */}
+          <div className="pt-2 flex flex-col xs:flex-row gap-2 shrink-0">
+            {onBackToLobby && (
+              <button
+                type="button"
+                onClick={onBackToLobby}
+                className="btn-gold flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Browse Active Lottery Pools</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setWorkstationTab('tickets')}
+              className="px-3 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] cursor-pointer"
+            >
+              All My Tickets
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* ACTIVE ENTRY WORKSTATION (2 Columns) */
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 overflow-hidden">
         
         {/* LEFT COLUMN: 4-Digit Dials & Keypad (7 Cols) */}
         <div className="order-1 lg:col-span-7 bg-[#111827] border border-[#1F2737] rounded-xl p-2 sm:p-2.5 flex flex-col justify-between overflow-hidden h-full min-h-0 gap-1.5">
@@ -559,6 +889,7 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
         </div>
 
       </div>
+      )}
 
       {/* 3. PROVABLY FAIR VERIFICATION BAR */}
       <div className="px-2.5 py-1 rounded-lg bg-[#0b0e14] border border-[#272a31] flex items-center justify-between text-[10px] text-[#9b8f7c] shrink-0">

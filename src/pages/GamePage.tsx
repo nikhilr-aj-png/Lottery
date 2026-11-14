@@ -21,6 +21,7 @@ import {
   Info,
   Clock,
   Trophy,
+  Ticket,
   RotateCcw,
   Flame,
   ChevronRight,
@@ -43,6 +44,8 @@ import {
   Volume1
 } from 'lucide-react';
 import { useSoundFX } from '../hooks/useSoundFX';
+import MyTicketsView from '../components/MyTicketsView';
+import ResultsView from '../components/ResultsView';
 import {
   LotteryWorkstation,
   CrashGame,
@@ -71,7 +74,10 @@ export default function GamePage({
   onNavigate,
   onBackToHome
 }: GamePageProps) {
-  const { wallet, user, setIsAuthModalOpen, showToast, events, setSelectedEventForModal } = useLottery();
+  const { wallet, user, setIsAuthModalOpen, showToast, events, tickets, setSelectedEventForModal } = useLottery();
+
+  // Tab state when browsing Lottery Lobby (Rooms vs My Tickets vs Draw Results)
+  const [lotteryLobbyTab, setLotteryLobbyTab] = useState<'rooms' | 'tickets' | 'results'>('rooms');
 
   // Resolve game metadata
   const game = useMemo(() => getGameById(gameSlug), [gameSlug]);
@@ -518,26 +524,81 @@ export default function GamePage({
         </div>
       </div>
 
-      {/* 2. AVAILABLE ROOMS / TABLES / SESSIONS */}
-      <section className="space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-2 border-b border-[#1f2737]">
-          <div>
-            <h2 className="font-display font-extrabold text-lg sm:text-xl text-white flex items-center gap-2">
-              <Layers className="w-5 h-5 text-amber-400" />
-              <span>Available Game Rooms & Tables</span>
-            </h2>
-            <p className="text-xs text-[#9b8f7c]">
-              Select a room matching your desired Flow Coin stake boundaries and table volatility
-            </p>
-          </div>
+      {/* LOTTERY SPECIFIC SUB-NAVIGATION TABS (Pools & Rooms vs My Tickets vs Draw Results) */}
+      {game.id === 'lottery' && (
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#0B0F19]/90 border border-[#1F2737] shrink-0 text-xs">
+          <button
+            type="button"
+            onClick={() => setLotteryLobbyTab('rooms')}
+            className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              lotteryLobbyTab === 'rooms'
+                ? 'bg-amber-500 text-black shadow-sm'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#141924]'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Available Pools & Rooms</span>
+          </button>
 
-          <span className="text-[11px] font-mono-numbers px-2.5 py-1 rounded bg-[#141924] text-[#9b8f7c] border border-[#272a31]">
-            {rooms.length} Active {rooms.length === 1 ? 'Room' : 'Rooms'}
-          </span>
+          <button
+            type="button"
+            onClick={() => setLotteryLobbyTab('tickets')}
+            className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              lotteryLobbyTab === 'tickets'
+                ? 'bg-amber-500 text-black shadow-sm'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#141924]'
+            }`}
+          >
+            <Ticket className="w-3.5 h-3.5" />
+            <span>My Tickets ({tickets?.length || 0})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setLotteryLobbyTab('results')}
+            className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              lotteryLobbyTab === 'results'
+                ? 'bg-amber-500 text-black shadow-sm'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#141924]'
+            }`}
+          >
+            <Trophy className="w-3.5 h-3.5" />
+            <span>Draw Results</span>
+          </button>
         </div>
+      )}
 
-        {/* Room Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Conditionally render content based on lotteryLobbyTab if game is lottery */}
+      {game.id === 'lottery' && lotteryLobbyTab === 'tickets' ? (
+        <div className="space-y-4">
+          <MyTicketsView onOpenPicker={() => setLotteryLobbyTab('rooms')} />
+        </div>
+      ) : game.id === 'lottery' && lotteryLobbyTab === 'results' ? (
+        <div className="space-y-4">
+          <ResultsView />
+        </div>
+      ) : (
+        <>
+          {/* 2. AVAILABLE ROOMS / TABLES / SESSIONS */}
+          <section className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-2 border-b border-[#1f2737]">
+              <div>
+                <h2 className="font-display font-extrabold text-lg sm:text-xl text-white flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-amber-400" />
+                  <span>Available Game Rooms & Tables</span>
+                </h2>
+                <p className="text-xs text-[#9b8f7c]">
+                  Select a room matching your desired Flow Coin stake boundaries and table volatility
+                </p>
+              </div>
+
+              <span className="text-[11px] font-mono-numbers px-2.5 py-1 rounded bg-[#141924] text-[#9b8f7c] border border-[#272a31]">
+                {rooms.length} Active {rooms.length === 1 ? 'Room' : 'Rooms'}
+              </span>
+            </div>
+
+            {/* Room Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {rooms.map((room: any) => {
             const isVip = room.type === ROOM_TYPES.VIP || room.type === ROOM_TYPES.HIGH_ROLLER;
             return (
@@ -1048,7 +1109,7 @@ export default function GamePage({
                     className="w-full py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>{game.id === 'lottery' ? `Enter ${room.name.split(':')[0]}` : `Enter ${room.name.split(':')[0]}`}</span>
+                    <span>{game.id === 'lottery' ? (room.status === 'completed' ? `View Result (${room.name.split(':')[0]})` : `Enter ${room.name.split(':')[0]}`) : `Enter ${room.name.split(':')[0]}`}</span>
                   </button>
                 </div>
 
@@ -1096,6 +1157,8 @@ export default function GamePage({
           </div>
         </div>
       </section>
+      </>
+      )}
 
       {/* Universal Provably Fair Audit Modal */}
       {isProofModalOpen && selectedRoundForProof && (

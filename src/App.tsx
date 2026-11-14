@@ -230,6 +230,12 @@ function LotteryAppContent() {
       document.title = 'Transaction History · EarnFlow.In';
     } else if (path === '/' || path === '') {
       setActiveTab('lotteries', false);
+    } else if (path === '/profile' || path.includes('tab=profile')) {
+      setActiveTab('profile', false);
+      document.title = 'Player Profile & Settings · EarnFlow.In';
+    } else if (path === '/wallet' || path.includes('tab=wallet')) {
+      setActiveTab('wallet', false);
+      document.title = 'USDT Wallet & 24h Payouts · EarnFlow.In';
     }
 
     const mainEl = document.getElementById('main-content');
@@ -321,8 +327,8 @@ function LotteryAppContent() {
       if (onTx) {
         setActiveTab('transactions', false);
         document.title = 'Transaction History · EarnFlow.In';
-      } else if (!gr && (window.location.pathname === '/' || window.location.pathname === '')) {
-        const tab = search.get('tab');
+      } else if (!gr && (window.location.pathname === '/' || window.location.pathname === '' || window.location.pathname === '/profile' || window.location.pathname === '/wallet')) {
+        const tab = search.get('tab') || (window.location.pathname === '/profile' ? 'profile' : window.location.pathname === '/wallet' ? 'wallet' : null);
         if (tab) {
           setActiveTab(tab, false);
         } else {
@@ -347,14 +353,12 @@ function LotteryAppContent() {
     };
   }, []);
 
-  // Strict Login Gating: unauthenticated visitors cannot access tickets, results, wallet, transactions, or profile
+  // Strict Login Gating for sensitive direct modals/actions
   useEffect(() => {
-    if (!user && (activeTab === 'tickets' || activeTab === 'results' || activeTab === 'wallet' || activeTab === 'profile' || activeTab === 'transactions')) {
+    if (!user && (activeTab === 'tickets' || activeTab === 'results' || activeTab === 'transactions')) {
       const tabNames = {
         tickets: 'My Tickets',
         results: 'Draw Results & Past Winners',
-        wallet: 'USDT Wallet & 24h Payouts',
-        profile: 'Player Profile & Account Settings',
         transactions: 'Transaction History'
       };
       setActiveTab('lotteries');

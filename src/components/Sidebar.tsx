@@ -113,8 +113,6 @@ export default function Sidebar({
       items: [
         { id: 'rewards', label: 'Daily Bonus & Rewards', icon: Gift },
         { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
-        { id: 'tickets', label: 'My Tickets', icon: Ticket, requiresAuth: true },
-        { id: 'results', label: 'Result', icon: Trophy, requiresAuth: true },
         { id: 'wallet', label: 'Wallet', icon: Wallet, requiresAuth: true },
         { id: 'transactions', label: 'Transaction History', icon: History, requiresAuth: true },
       ]
