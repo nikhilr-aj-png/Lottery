@@ -80,7 +80,7 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: Casino
   };
 
   return (
-    <div className="space-y-8 sm:space-y-12 pb-12">
+    <div className="space-y-6 sm:space-y-8 pb-2 sm:pb-3">
       
       {/* 1. HERO FEATURE CAROUSEL & BALANCED SHOWCASE */}
       <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#151C2B] via-[#0F1420] to-[#0B0F19] border border-amber-500/30 p-4 xs:p-5 sm:p-7 lg:p-9 shadow-2xl">

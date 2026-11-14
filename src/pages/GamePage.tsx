@@ -451,7 +451,7 @@ export default function GamePage({
   // VIEW B: DEDICATED GAME LOBBY (ROOM / TABLE SELECTION)
   // --------------------------------------------------------------------------
   return (
-    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-200 pb-12">
+    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-200 pb-2 sm:pb-3">
 
       {/* 1. COMPACT SINGLE-ROW GAME LOBBY BANNER */}
       <div className="rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#151C2B] via-[#0F1420] to-[#0B0F19] border border-amber-500/30 p-2.5 sm:px-4 sm:py-2.5 flex items-center justify-between gap-3 shadow-lg shrink-0">

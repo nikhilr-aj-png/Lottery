@@ -446,7 +446,7 @@ function LotteryAppContent() {
           className={`flex-1 min-w-0 h-full text-left flex flex-col ${
             currentGameRoute?.roomId 
               ? 'overflow-hidden p-1 xs:p-1.5 sm:p-2' 
-              : 'overflow-y-auto pb-24 md:pb-12 px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6'
+              : 'overflow-y-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 pb-0'
           }`}
         >
           
@@ -572,9 +572,9 @@ function LotteryAppContent() {
 
           {/* Platform Public Footer — Hidden in Active Dedicated Game Rooms */}
           {!currentGameRoute?.roomId && (
-            <footer className="mt-12 sm:mt-16 border-t border-[rgba(245,196,81,0.15)] bg-[#07090d] py-8 sm:py-10 pb-24 md:pb-10 -mx-2.5 xs:-mx-4 sm:-mx-6 lg:-mx-8 px-2.5 xs:px-4 sm:px-6 lg:px-8">
+            <footer className="mt-5 sm:mt-7 border-t border-[rgba(245,196,81,0.15)] bg-[#07090d] pt-4 sm:pt-5 pb-16 md:pb-4 -mx-2.5 xs:-mx-4 sm:-mx-6 lg:-mx-8 px-2.5 xs:px-4 sm:px-6 lg:px-8">
               <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-5">
                   <div className="flex items-center gap-2.5 xs:gap-3 text-center sm:text-left">
                     <img 
                       src="/logo.png" 
@@ -604,7 +604,7 @@ function LotteryAppContent() {
                 </div>
                 
                 {/* Legal Navigation Links */}
-                <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-[11px] xs:text-xs text-[#9b8f7c]">
+                <div className="mt-3.5 sm:mt-4 pt-3 sm:pt-3.5 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4 text-[11px] xs:text-xs text-[#9b8f7c]">
                   <div className="text-center sm:text-left leading-relaxed">
                     © 2026 EarnFlow.In Platform. All drawings and games are provably fair, verifiable on the public ledger with Flow Coins (FC).
                   </div>
