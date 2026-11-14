@@ -207,7 +207,7 @@ function LotteryAppContent() {
   });
 
   // Programmatic navigation for SPA routing
-  const navigate = (path) => {
+  const navigate = (path: string) => {
     try {
       window.history.pushState(null, '', path);
     } catch (e) {}
@@ -228,11 +228,41 @@ function LotteryAppContent() {
     if (onTx) {
       setActiveTab('transactions', false);
       document.title = 'Transaction History · EarnFlow.In';
+    } else if (path === '/' || path === '') {
+      setActiveTab('lotteries', false);
     }
 
     const mainEl = document.getElementById('main-content');
     if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleGoHome = () => {
+    setIsTransactionRoute(false);
+    setCurrentGameRoute(null);
+    setIsAdminRoute(false);
+    setActiveGameId(null);
+    setActiveTab('lotteries', false);
+    navigate('/');
+  };
+
+  const handleSelectTab = (tab: string) => {
+    if (tab === 'lotteries') {
+      handleGoHome();
+      return;
+    }
+    setCurrentGameRoute(null);
+    setActiveGameId(null);
+
+    if (tab === 'transactions') {
+      navigate('/transaction-history');
+    } else if (tab === 'fairness') {
+      setIsFairnessModalOpen(true);
+    } else {
+      setIsTransactionRoute(false);
+      navigate(`/?tab=${tab}`);
+      setActiveTab(tab);
+    }
   };
   
   // Dedicated check for isolated Admin Route
@@ -291,6 +321,13 @@ function LotteryAppContent() {
       if (onTx) {
         setActiveTab('transactions', false);
         document.title = 'Transaction History · EarnFlow.In';
+      } else if (!gr && (window.location.pathname === '/' || window.location.pathname === '')) {
+        const tab = search.get('tab');
+        if (tab) {
+          setActiveTab(tab, false);
+        } else {
+          setActiveTab('lotteries', false);
+        }
       }
     };
 
@@ -395,9 +432,10 @@ function LotteryAppContent() {
     <div className="h-screen h-[100dvh] bg-[#0B0F19] text-[#F8FAFC] flex flex-col font-sans overflow-hidden">
       {/* Top Navbar */}
       <Navbar 
+        onGoHome={handleGoHome}
+        onSelectTab={handleSelectTab}
         onOpenProfile={() => {
-          setIsTransactionRoute(false);
-          setActiveTab('profile');
+          handleSelectTab('profile');
         }} 
         onToggleSidebar={() => {
           if (typeof window !== 'undefined' && window.innerWidth < 1024) {
@@ -419,20 +457,7 @@ function LotteryAppContent() {
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
           activeTab={isTransactionRoute ? 'transactions' : (currentGameRoute ? `game-${currentGameRoute.gameSlug}` : activeTab)}
-          onSelectTab={(tab) => {
-            if (currentGameRoute) {
-              navigate('/');
-            }
-            if (tab === 'transactions') {
-              navigate('/transaction-history');
-            } else if (tab === 'fairness') {
-              setIsFairnessModalOpen(true);
-            } else {
-              setIsTransactionRoute(false);
-              navigate(tab === 'lotteries' ? '/' : `/?tab=${tab}`);
-              setActiveTab(tab);
-            }
-          }}
+          onSelectTab={handleSelectTab}
           onLaunchGame={(gid) => {
             setIsTransactionRoute(false);
             const g = getGameById(gid);
@@ -455,24 +480,18 @@ function LotteryAppContent() {
             {(isTransactionRoute || activeTab === 'transactions') ? (
               <TransactionHistoryPage 
                 onBackToWallet={() => {
-                  navigate('/?tab=wallet');
-                  setActiveTab('wallet');
+                  handleSelectTab('wallet');
                 }}
-                onBackToHome={() => {
-                  navigate('/');
-                  setActiveTab('lotteries');
-                }}
+                onBackToHome={handleGoHome}
               />
             ) : currentGameRoute ? (
               /* DEDICATED GAME ROUTE VIEW (LOBBY OR DEDICATED ROOM) */
               <GamePage
+                key={`${currentGameRoute.gameSlug}-${currentGameRoute.roomId || 'lobby'}`}
                 gameSlug={currentGameRoute.gameSlug}
                 roomId={currentGameRoute.roomId}
                 onNavigate={(path) => navigate(path)}
-                onBackToHome={() => {
-                  navigate('/');
-                  setActiveTab('lotteries');
-                }}
+                onBackToHome={handleGoHome}
               />
             ) : (
               <>
@@ -575,11 +594,17 @@ function LotteryAppContent() {
             <footer className="mt-5 sm:mt-7 border-t border-[rgba(245,196,81,0.15)] bg-[#07090d] pt-4 sm:pt-5 pb-16 md:pb-4 -mx-2.5 xs:-mx-4 sm:-mx-6 lg:-mx-8 px-2.5 xs:px-4 sm:px-6 lg:px-8">
               <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-5">
-                  <div className="flex items-center gap-2.5 xs:gap-3 text-center sm:text-left">
+                  <div 
+                    onClick={handleGoHome}
+                    className="flex items-center gap-2.5 xs:gap-3 text-center sm:text-left cursor-pointer group select-none"
+                    role="button"
+                    tabIndex={0}
+                    title="Return to EarnFlow Home Page"
+                  >
                     <img 
                       src="/logo.png" 
                       alt="EarnFlow.In" 
-                      className="w-8 xs:w-10 h-8 xs:h-10 rounded-full border border-[#ffd700]/40 object-cover shadow-md shrink-0" 
+                      className="w-8 xs:w-10 h-8 xs:h-10 rounded-full border border-[#ffd700]/40 object-cover shadow-md shrink-0 group-hover:scale-105 transition-transform" 
                     />
                     <div>
                       <span className="font-display font-black text-base xs:text-lg text-white">

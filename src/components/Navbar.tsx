@@ -24,9 +24,17 @@ interface NavbarProps {
   onOpenProfile?: () => void;
   onToggleSidebar?: () => void;
   onOpenNotifications?: () => void;
+  onGoHome?: () => void;
+  onSelectTab?: (tabId: string) => void;
 }
 
-export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotifications }: NavbarProps) {
+export default function Navbar({ 
+  onOpenProfile, 
+  onToggleSidebar, 
+  onOpenNotifications,
+  onGoHome,
+  onSelectTab 
+}: NavbarProps) {
   const {
     user,
     profile,
@@ -77,8 +85,20 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
       showToast(`Please log in to access ${tabNames[tabId] || 'this section'}!`, 'info');
       return;
     }
-    setActiveTab(tabId);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (tabId === 'lotteries') {
+      if (onGoHome) {
+        onGoHome();
+        return;
+      }
+    }
+
+    if (onSelectTab) {
+      onSelectTab(tabId);
+    } else {
+      setActiveTab(tabId);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const usernameDisplay = profile?.username 
@@ -111,8 +131,17 @@ export default function Navbar({ onOpenProfile, onToggleSidebar, onOpenNotificat
 
               {/* Brand Logo & Clean Name (Always visible together across all viewports) */}
               <div 
-                onClick={() => handleNavClick('lotteries')}
+                onClick={() => {
+                  if (onGoHome) {
+                    onGoHome();
+                  } else {
+                    handleNavClick('lotteries');
+                  }
+                }}
                 className="flex items-center gap-1.5 xs:gap-2 sm:gap-2.5 cursor-pointer group shrink-0 select-none"
+                role="button"
+                tabIndex={0}
+                title="Return to EarnFlow Home Page"
               >
                 <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-9.5 sm:h-9.5 rounded-full p-0.5 shadow-[0_0_12px_rgba(245,196,81,0.3)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
                   <img 

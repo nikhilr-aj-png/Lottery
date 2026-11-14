@@ -1470,6 +1470,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       if (currentLoc !== targetPath) {
         try {
           window.history.pushState({ tab: tabName }, pageTitle, targetPath);
+          window.dispatchEvent(new PopStateEvent('popstate'));
         } catch (e) {
           // ignore
         }
