@@ -450,7 +450,7 @@ function LotteryAppContent() {
           }`}
         >
           
-          <div className={`flex-1 min-h-0 flex flex-col ${currentGameRoute?.roomId ? 'overflow-hidden h-full' : ''}`}>
+          <div className={currentGameRoute?.roomId ? 'flex-1 min-h-0 flex flex-col overflow-hidden h-full' : 'flex-1 w-full'}>
             {/* DEDICATED SEPARATE PAGE: TRANSACTION HISTORY */}
             {(isTransactionRoute || activeTab === 'transactions') ? (
               <TransactionHistoryPage 
