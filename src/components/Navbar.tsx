@@ -188,8 +188,8 @@ export default function Navbar({
                 </a>
               )}
 
-              {/* Master Audio FX Toggle & Volume Popover (Desktop / Tablet sm+ ONLY) */}
-              <div className="relative hidden sm:flex items-center" ref={volumeMenuRef}>
+              {/* Master Audio FX Toggle & Volume Popover (Mobile & Desktop) */}
+              <div className="relative flex items-center" ref={volumeMenuRef}>
                 <button
                   onClick={() => {
                     toggleSound();
@@ -273,10 +273,10 @@ export default function Navbar({
                     </span>
                   </div>
 
-                  {/* Realtime Notifications Bell (Desktop / Tablet sm+ ONLY) */}
+                  {/* Realtime Notifications Bell (Mobile & Desktop) */}
                   <button
                     onClick={onOpenNotifications}
-                    className="hidden sm:flex w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-9 sm:h-9 rounded-xl bg-[#10131A] hover:bg-[#151C2B] border border-[#2D3545] hover:border-amber-400/50 items-center justify-center text-[#94A3B8] hover:text-amber-300 transition-colors cursor-pointer relative shrink-0 shadow-sm"
+                    className="flex w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-9 sm:h-9 rounded-xl bg-[#10131A] hover:bg-[#151C2B] border border-[#2D3545] hover:border-amber-400/50 items-center justify-center text-[#94A3B8] hover:text-amber-300 transition-colors cursor-pointer relative shrink-0 shadow-sm"
                     title={unreadNotificationsCount > 0 ? `${unreadNotificationsCount} unread notification(s)` : 'View Notifications'}
                     aria-label="View Notifications"
                   >
