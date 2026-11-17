@@ -447,6 +447,7 @@ function LotteryAppContent() {
       <Navbar 
         onGoHome={handleGoHome}
         onSelectTab={handleSelectTab}
+        isInGameRoom={Boolean(currentGameRoute?.roomId)}
         onOpenProfile={() => {
           handleSelectTab('profile');
         }} 
@@ -484,11 +485,11 @@ function LotteryAppContent() {
           className={`flex-1 min-w-0 h-full text-left flex flex-col ${
             currentGameRoute?.roomId 
               ? 'overflow-hidden p-1 xs:p-1.5 sm:p-2' 
-              : 'overflow-y-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 pb-0'
+              : 'overflow-y-auto pt-2.5 sm:pt-3.5 pb-0'
           }`}
         >
           
-          <div className={currentGameRoute?.roomId ? 'flex-1 min-h-0 flex flex-col overflow-hidden h-full' : 'flex-1 w-full'}>
+          <div className={currentGameRoute?.roomId ? 'flex-1 min-h-0 flex flex-col overflow-hidden h-full' : 'w-full flex-grow shrink-0 px-2.5 xs:px-4 sm:px-6 lg:px-8'}>
             {/* DEDICATED SEPARATE PAGE: TRANSACTION HISTORY */}
             {(isTransactionRoute || activeTab === 'transactions') ? (
               <TransactionHistoryPage 
@@ -604,12 +605,12 @@ function LotteryAppContent() {
 
           {/* Platform Public Footer — Hidden in Active Dedicated Game Rooms */}
           {!currentGameRoute?.roomId && (
-            <footer className="mt-5 sm:mt-7 border-t border-[rgba(245,196,81,0.15)] bg-[#07090d] pt-4 sm:pt-5 pb-16 md:pb-4 -mx-2.5 xs:-mx-4 sm:-mx-6 lg:-mx-8 px-2.5 xs:px-4 sm:px-6 lg:px-8">
+            <footer className="shrink-0 w-full mt-auto border-t border-[rgba(245,196,81,0.15)] bg-[#07090d] pt-2.5 sm:pt-3 pb-14 md:pb-2.5 px-2.5 xs:px-4 sm:px-6 lg:px-8">
               <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-5">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
                   <div 
                     onClick={handleGoHome}
-                    className="flex items-center gap-2.5 xs:gap-3 text-center sm:text-left cursor-pointer group select-none"
+                    className="flex items-center gap-2 xs:gap-2.5 text-center sm:text-left cursor-pointer group select-none"
                     role="button"
                     tabIndex={0}
                     title="Return to EarnFlow Home Page"
@@ -617,19 +618,19 @@ function LotteryAppContent() {
                     <img 
                       src="/logo.png" 
                       alt="EarnFlow.In" 
-                      className="w-8 xs:w-10 h-8 xs:h-10 rounded-full border border-[#ffd700]/40 object-cover shadow-md shrink-0 group-hover:scale-105 transition-transform" 
+                      className="w-7 xs:w-8 h-7 xs:h-8 rounded-full border border-[#ffd700]/40 object-cover shadow-md shrink-0 group-hover:scale-105 transition-transform" 
                     />
                     <div>
-                      <span className="font-display font-black text-base xs:text-lg text-white">
+                      <span className="font-display font-black text-sm xs:text-base text-white">
                         EarnFlow<span className="text-[#f5c451]">.In</span>
                       </span>
-                      <p className="text-[11px] xs:text-xs text-[#9b8f7c]">
+                      <p className="text-[10px] xs:text-[11px] text-[#9b8f7c]">
                         Provably Fair Casino & Lottery Platform · Flow Coins (FC)
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2.5 xs:gap-4 text-[11px] xs:text-xs text-[#9b8f7c] flex-wrap justify-center">
+                  <div className="flex items-center gap-2 xs:gap-3 text-[10px] xs:text-[11px] text-[#9b8f7c] flex-wrap justify-center">
                     <span className="flex items-center gap-1 text-[#05d5aa]">
                       <ShieldCheck className="w-3 xs:w-3.5 h-3 xs:h-3.5" />
                       CertiK Audited
@@ -642,12 +643,12 @@ function LotteryAppContent() {
                 </div>
                 
                 {/* Legal Navigation Links */}
-                <div className="mt-3.5 sm:mt-4 pt-3 sm:pt-3.5 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4 text-[11px] xs:text-xs text-[#9b8f7c]">
+                <div className="mt-2 sm:mt-2.5 pt-1.5 sm:pt-2 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 text-[10px] xs:text-[11px] text-[#9b8f7c]">
                   <div className="text-center sm:text-left leading-relaxed">
                     © 2026 EarnFlow.In Platform. All drawings and games are provably fair, verifiable on the public ledger with Flow Coins (FC).
                   </div>
 
-                  <div className="flex items-center gap-3 xs:gap-4 font-semibold text-[11px] xs:text-xs shrink-0 flex-wrap justify-center sm:justify-end">
+                  <div className="flex items-center gap-2.5 xs:gap-3.5 font-semibold text-[10px] xs:text-[11px] shrink-0 flex-wrap justify-center sm:justify-end">
                     <a
                       href="/contact"
                       onClick={(e) => {
@@ -761,8 +762,8 @@ function LotteryAppContent() {
       />
       <Toast />
       
-      {/* PWA Add to Screen Prompt & Modal */}
-      <PwaInstallBanner />
+      {/* PWA Add to Screen Prompt & Modal (Hidden in dedicated active game rooms) */}
+      {!currentGameRoute?.roomId && <PwaInstallBanner />}
       <PwaInstallModal />
     </div>
   );
