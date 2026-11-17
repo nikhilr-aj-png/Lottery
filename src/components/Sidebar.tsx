@@ -45,7 +45,19 @@ export default function Sidebar({
   onSelectTab,
   onLaunchGame
 }: SidebarProps) {
-  const { wallet, user } = useLottery();
+  const { wallet, user, games: dynamicGames } = useLottery();
+
+  // Dynamic games from Supabase (Single Source of Truth) — strictly excludes deleted/disabled games
+  const activeGamesList = useMemo(() => {
+    if (Array.isArray(dynamicGames) && dynamicGames.length > 0) {
+      return dynamicGames.filter(g => g.isEnabled && g.status !== 'deleted');
+    }
+    return GAMES;
+  }, [dynamicGames]);
+
+  const isLotteryActive = useMemo(() => {
+    return activeGamesList.some(g => g.id === 'lottery');
+  }, [activeGamesList]);
 
   // Prevent background scrolling when mobile drawer is open
   useEffect(() => {
@@ -93,12 +105,12 @@ export default function Sidebar({
       title: '', // Removed 'Casino Lobby' heading to eliminate expansion downward layout shift
       items: [
         { id: 'lotteries', label: 'Home', icon: LayoutGrid, isLobby: true },
-        { id: 'lottery-game', label: 'Four-Digit Lottery', icon: Ticket, image: getGameIconUrl('lottery'), isLottery: true },
+        ...(isLotteryActive ? [{ id: 'lottery-game', label: 'Four-Digit Lottery', icon: Ticket, image: getGameIconUrl('lottery'), isLottery: true }] : []),
       ]
     },
     {
       title: 'Originals & Instant',
-      items: GAMES.filter(g => g.id !== 'lottery').map(g => ({
+      items: activeGamesList.filter(g => g.id !== 'lottery').map(g => ({
         id: `game-${g.id}`,
         gameId: g.id,
         label: g.name,

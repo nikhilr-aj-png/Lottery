@@ -95,11 +95,46 @@ export default function GamePage({
     }
   }, [game?.id]);
 
+  // For Four-Digit Lottery: rooms are 100% database-driven from active lottery_events
+  const lotteryRooms = useMemo(() => {
+    if (game?.id !== 'lottery') return [];
+    return events.map((evt, idx) => ({
+      id: evt.id,
+      gameId: 'lottery',
+      drawId: evt.id,
+      name: evt.roomName || evt.title || `Room ${idx + 1}`,
+      type: evt.badge?.toLowerCase().includes('vip') ? ROOM_TYPES.VIP : (evt.badge?.toLowerCase().includes('high') ? ROOM_TYPES.HIGH_ROLLER : ROOM_TYPES.STANDARD),
+      status: evt.status === 'completed' ? ROOM_STATUSES.COMPLETED : ROOM_STATUSES.ACTIVE,
+      description: evt.description || `Pick 4 lucky digits from 0000 to 9999. Payouts distributed in ${evt.currency || 'FLO'}.`,
+      minStakeFC: evt.ticketPrice || 10,
+      maxStakeFC: evt.ticketPrice || 10,
+      currency: evt.currency || 'FLO',
+      playerCapacity: evt.maxTotalTickets || 1000,
+      currentPlayers: evt.participantsCount || 0,
+      ticketsSold: evt.ticketsSold || 0,
+      drawDurationHours: evt.durationValue || 24,
+      poolPrize: evt.poolPrize,
+      minPrize: evt.minPrize,
+      maxPrize: evt.maxPrize,
+      jackpotMode: evt.jackpotMode,
+      drawTime: evt.drawTime,
+      winningDigits: evt.winningDigits,
+      sortOrder: idx + 1,
+      event: evt
+    }));
+  }, [game?.id, events]);
+
+  // Active rooms strictly based on real database records
+  const activeRooms = useMemo(() => {
+    if (game?.id === 'lottery') return lotteryRooms;
+    return rooms;
+  }, [game?.id, lotteryRooms, rooms]);
+
   // Selected room
   const selectedRoom = useMemo(() => {
     if (!roomId) return null;
-    return rooms.find(r => r.id === roomId) || rooms[0] || null;
-  }, [rooms, roomId]);
+    return activeRooms.find(r => r.id === roomId) || activeRooms[0] || null;
+  }, [activeRooms, roomId]);
 
   // State for active lottery event if game is lottery
   const activeLotteryEvent = useMemo(() => {
@@ -593,16 +628,31 @@ export default function GamePage({
               </div>
 
               <span className="text-[11px] font-mono-numbers px-2.5 py-1 rounded bg-[#141924] text-[#9b8f7c] border border-[#272a31]">
-                {rooms.length} Active {rooms.length === 1 ? 'Room' : 'Rooms'}
+                {activeRooms.length} Active {activeRooms.length === 1 ? 'Room' : 'Rooms'}
               </span>
             </div>
 
             {/* Room Cards Grid */}
+            {activeRooms.length === 0 ? (
+              <div className="glass-panel rounded-2xl p-8 sm:p-12 text-center space-y-3 border border-[#272a31]">
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+                  <Layers className="w-7 h-7" />
+                </div>
+                <h3 className="font-display font-bold text-base text-white">
+                  {game.id === 'lottery' ? 'No Active Lottery Rooms' : 'No Active Game Rooms'}
+                </h3>
+                <p className="text-xs text-[#9b8f7c] max-w-md mx-auto">
+                  {game.id === 'lottery' 
+                    ? 'There are currently no active lottery events published. Please check back shortly or create one in the Admin Panel.'
+                    : 'All game tables are currently undergoing scheduled maintenance. Please check back in a few moments.'}
+                </p>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {rooms.map((room: any) => {
+          {activeRooms.map((room: any) => {
             const isVip = room.type === ROOM_TYPES.VIP || room.type === ROOM_TYPES.HIGH_ROLLER;
             const matchingEvent = game.id === 'lottery' 
-              ? events.find(e => e.id === room.id || e.id === room.drawId || e.title?.toLowerCase().includes(room.name?.toLowerCase()))
+              ? (room.event || events.find(e => e.id === room.id || e.id === room.drawId || e.title?.toLowerCase().includes(room.name?.toLowerCase())))
               : null;
             const isRoomConcluded = game.id === 'lottery'
               ? (matchingEvent?.status === 'completed' || (matchingEvent?.drawTime && matchingEvent.drawTime <= Date.now()) || room.status === 'completed')
@@ -1099,7 +1149,7 @@ export default function GamePage({
                         {game.id === 'lottery' ? 'Ticket Price' : 'Stake Limits'}
                       </span>
                       <strong className="text-white">
-                        {game.id === 'lottery' ? `${room.minStakeFC} FC / Ticket` : `${room.minStakeFC} - ${room.maxStakeFC} FC`}
+                        {game.id === 'lottery' ? `${room.minStakeFC} ${room.currency || 'FLO'} / Ticket` : `${room.minStakeFC} - ${room.maxStakeFC} FC`}
                       </strong>
                     </div>
 
@@ -1107,7 +1157,7 @@ export default function GamePage({
                       <span className="text-[10px] text-[#8b92a2] block">Participants</span>
                       <strong className="text-emerald-400 flex items-center gap-1">
                         <Users className="w-3 h-3" />
-                        <span>{room.currentPlayers} / {room.playerCapacity}</span>
+                        <span>{room.currentPlayers || 0} / {room.playerCapacity || 1000}</span>
                       </strong>
                     </div>
                   </div>
@@ -1141,6 +1191,7 @@ export default function GamePage({
             );
           })}
         </div>
+        )}
       </section>
 
       {/* 4. GAME RULES & PAYOUT EXPLANATION */}

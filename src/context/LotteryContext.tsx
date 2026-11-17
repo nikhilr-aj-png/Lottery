@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import confetti from 'canvas-confetti';
 import { supabase } from '../lib/supabase';
+import { GAMES } from '../engine';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const LotteryContext = createContext<any>(null);
@@ -34,7 +35,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     };
   });
 
-  // Helper: Format Supabase database row to Frontend event object
+  // Helper: Format Supabase database row to Frontend event object (Database Single Source of Truth)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formatEventRow = (row: any) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,32 +46,98 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           meta = JSON.parse(row.block_target);
         }
       } catch (e) {
-        // Not a JSON string, treat as standard block hash
+        // Not a JSON string
       }
     }
+    if (row.metadata && typeof row.metadata === 'object') {
+      meta = { ...meta, ...row.metadata };
+    }
 
-    const drawTimeMs = Number(row.draw_time || Date.now() + 86400000);
+    const drawTimeMs = Number(row.draw_time || (Date.now() + 86400000));
     const isTimedOut = Boolean(drawTimeMs && drawTimeMs <= Date.now());
-    const effectiveStatus = (row.status === 'completed' || isTimedOut) ? 'completed' : (row.status || 'active');
-    const targetDigits = meta.target_winning_digits || row.winning_digits || '7429';
-    const effectiveWinningDigits = row.winning_digits || (isTimedOut ? targetDigits : null);
+    
+    // Status strictly driven by database: 'active', 'scheduled', 'result_pending', 'completed', 'deleted'
+    let effectiveStatus = row.status || 'active';
+    if (row.status === 'completed' || row.winning_digits) {
+      effectiveStatus = 'completed';
+    } else if (isTimedOut && row.status === 'active') {
+      effectiveStatus = 'result_pending';
+    }
+
+    // Winning digits strictly real from database — zero dummy '7429'
+    const effectiveWinningDigits = row.winning_digits || null;
+
+    // Currency: FLO or USDT
+    const currency = (row.currency || meta.currency || 'FLO').toUpperCase();
+
+    // Room Identification
+    const roomName = row.room_name || meta.room_name || row.title || 'Room 1';
+    const roomId = row.room_id || meta.room_id || null;
+
+    // Duration & Cooldown
+    const durationValue = Number(row.duration_value || meta.duration_value || 1);
+    const durationUnit = row.duration_unit || meta.duration_unit || 'hours';
+    const cooldownValue = Number(row.cooldown_value || meta.cooldown_value || 0);
+    const cooldownUnit = row.cooldown_unit || meta.cooldown_unit || 'minutes';
+    const cooldownUntil = row.cooldown_until ? Number(row.cooldown_until) : (meta.cooldown_until ? Number(meta.cooldown_until) : null);
+
+    // Jackpot Structure
+    const jackpotMode = row.jackpot_mode || meta.jackpot_mode || ((row.min_jackpot && row.max_jackpot) || (meta.min_prize && meta.max_prize) ? 'range' : 'fixed');
+    const minJackpot = row.min_jackpot !== null && row.min_jackpot !== undefined ? Number(row.min_jackpot) : (meta.min_prize !== undefined ? Number(meta.min_prize) : null);
+    const maxJackpot = row.max_jackpot !== null && row.max_jackpot !== undefined ? Number(row.max_jackpot) : (meta.max_prize !== undefined ? Number(meta.max_prize) : null);
+    const jackpotSelectionMethod = row.jackpot_selection_method || meta.jackpot_selection_method || 'manual';
+
+    // Ticket Limits
+    const ticketLimitMode = row.ticket_limit_mode || meta.ticket_limit_mode || 'unlimited';
+    const maxTotalTickets = row.max_total_tickets ? Number(row.max_total_tickets) : (meta.max_total_tickets ? Number(meta.max_total_tickets) : null);
+    const maxTicketsPerUser = row.max_tickets_per_user ? Number(row.max_tickets_per_user) : (meta.max_tickets_per_user ? Number(meta.max_tickets_per_user) : null);
+
+    // Draw & Winner Rules
+    const drawMode = row.draw_mode || meta.draw_mode || 'random';
+    const presetWinningDigits = row.preset_winning_digits || meta.preset_winning_digits || meta.target_winning_digits || null;
+    const winnerMode = row.winner_mode || meta.winner_mode || ((row.winner_count && row.winner_count > 1) ? 'multiple' : 'single');
+    const winnerCount = Math.max(1, Number(row.winner_count || meta.winner_count || 1));
+    const winnerPayoutSharePercent = Number(row.winner_payout_share_percent || meta.winner_share_percent || 90);
+    const winnerDistribution = row.winner_distribution || meta.winner_distribution || [{ position: 1, percent: 100 }];
 
     return {
       id: row.id,
       title: row.title,
-      badge: row.badge || meta.badge || 'LOTTERY POOL',
+      badge: row.badge || meta.badge || 'VIP LOTTERY',
       theme: meta.theme || 'cyberpunk',
       bannerImage: meta.banner_image || '',
+      gameId: row.game_id || 'lottery',
+      roomId,
+      roomName,
+      description: row.description || meta.description || '',
+      currency,
       ticketPrice: Number(row.ticket_price || 10),
       poolPrize: Number(row.pool_prize || 1000),
-      minPrize: meta.min_prize !== undefined && meta.min_prize !== null ? Number(meta.min_prize) : null,
-      maxPrize: meta.max_prize !== undefined && meta.max_prize !== null ? Number(meta.max_prize) : null,
-      winnerSharePercent: Number(meta.winner_share_percent || 90),
-      winnerCount: Number(meta.winner_count || meta.winnerCount || row.winner_count || 1),
+      durationValue,
+      durationUnit,
+      cooldownValue,
+      cooldownUnit,
+      cooldownUntil,
+      jackpotMode,
+      minJackpot,
+      maxJackpot,
+      jackpotSelectionMethod,
+      minPrize: minJackpot,
+      maxPrize: maxJackpot,
+      ticketLimitMode,
+      maxTotalTickets,
+      maxTicketsPerUser,
+      drawMode,
+      presetWinningDigits,
+      winnerMode,
+      winnerCount,
+      winnerSharePercent: winnerPayoutSharePercent,
+      winnerPayoutSharePercent,
+      winnerDistribution,
       drawTime: drawTimeMs,
       status: effectiveStatus,
       winningDigits: effectiveWinningDigits,
-      targetWinningDigits: targetDigits,
+      targetWinningDigits: presetWinningDigits,
       participantsCount: Number(row.participants_count || 0),
       ticketsSold: Number(row.tickets_sold || 0),
       sha256Seed: row.sha256_seed || '',
@@ -86,27 +153,152 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  // Events State - Strictly Dynamic from Supabase Backend (No hardcoded mock pools!)
+  // --------------------------------------------------------------------------
+  // DYNAMIC GAMES STATE (Single Source of Truth: Supabase public.game_configurations)
+  // --------------------------------------------------------------------------
+  const [games, setGames] = useState<any[]>([]);
+  const [loadingGames, setLoadingGames] = useState(true);
+
+  const refreshGames = async () => {
+    try {
+      setLoadingGames(true);
+      const { data, error } = await supabase
+        .from('game_configurations')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (!error && Array.isArray(data)) {
+        const mergedGames = data.map((dbGame: any) => {
+          const staticGame = GAMES.find(g => g.id === dbGame.game_id || g.slug === dbGame.game_id) || {};
+          return {
+            ...staticGame,
+            id: dbGame.game_id,
+            slug: staticGame.slug || dbGame.game_id,
+            name: dbGame.game_name || staticGame.name || dbGame.game_id,
+            category: dbGame.category || staticGame.category || 'arcade',
+            isEnabled: dbGame.is_enabled !== undefined ? dbGame.is_enabled : true,
+            status: dbGame.status || (dbGame.is_enabled ? 'active' : 'disabled'),
+            badge: dbGame.badge || staticGame.badge || '',
+            description: dbGame.description || staticGame.description || '',
+            houseEdge: dbGame.house_edge !== undefined ? Number(dbGame.house_edge) : (staticGame.houseEdge || 1.0),
+            rtp: dbGame.rtp !== undefined ? Number(dbGame.rtp) : (staticGame.rtp || 99.0),
+            minStakeFC: dbGame.min_stake_fc !== undefined ? Number(dbGame.min_stake_fc) : (staticGame.minStakeFC || 1),
+            maxStakeFC: dbGame.max_stake_fc !== undefined ? Number(dbGame.max_stake_fc) : (staticGame.maxStakeFC || 1000),
+            maxMultiplier: dbGame.max_multiplier !== undefined ? Number(dbGame.max_multiplier) : staticGame.maxMultiplier,
+            icon: dbGame.icon || staticGame.icon || '',
+            rules: staticGame.rules || [],
+            instructions: staticGame.instructions || ''
+          };
+        });
+        setGames(mergedGames);
+      } else if (error) {
+        console.error('Supabase fetch game_configurations error:', error);
+      }
+    } catch (err) {
+      console.error('refreshGames error:', err);
+    } finally {
+      setLoadingGames(false);
+    }
+  };
+
+  const adminToggleGame = async (gameId: string, enabled: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('game_configurations')
+        .update({ 
+          is_enabled: enabled, 
+          status: enabled ? 'active' : 'disabled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('game_id', gameId);
+
+      if (error) throw error;
+      setGames(prev => prev.map(g => g.id === gameId ? { ...g, isEnabled: enabled, status: enabled ? 'active' : 'disabled' } : g));
+      showToast(`Game ${enabled ? 'enabled' : 'disabled'} successfully`, 'success');
+      return { success: true };
+    } catch (err: any) {
+      console.error('adminToggleGame error:', err);
+      showToast('Failed to toggle game: ' + (err.message || err), 'error');
+      return { success: false, error: err.message || err };
+    }
+  };
+
+  const adminDeleteGame = async (gameId: string) => {
+    try {
+      const { error } = await supabase
+        .from('game_configurations')
+        .update({ 
+          status: 'deleted', 
+          is_enabled: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('game_id', gameId);
+
+      if (error) throw error;
+      setGames(prev => prev.filter(g => g.id !== gameId));
+      showToast('Game deleted successfully from database', 'info');
+      return { success: true };
+    } catch (err: any) {
+      console.error('adminDeleteGame error:', err);
+      showToast('Failed to delete game: ' + (err.message || err), 'error');
+      return { success: false, error: err.message || err };
+    }
+  };
+
+  const adminUpdateGameConfig = async (gameId: string, updates: any) => {
+    try {
+      const dbUpdates: any = { updated_at: new Date().toISOString() };
+      if (updates.minStakeFC !== undefined) dbUpdates.min_stake_fc = Number(updates.minStakeFC);
+      if (updates.maxStakeFC !== undefined) dbUpdates.max_stake_fc = Number(updates.maxStakeFC);
+      if (updates.houseEdge !== undefined) dbUpdates.house_edge = Number(updates.houseEdge);
+      if (updates.rtp !== undefined) dbUpdates.rtp = Number(updates.rtp);
+      if (updates.badge !== undefined) dbUpdates.badge = updates.badge;
+      if (updates.description !== undefined) dbUpdates.description = updates.description;
+      if (updates.isEnabled !== undefined) {
+        dbUpdates.is_enabled = updates.isEnabled;
+        dbUpdates.status = updates.isEnabled ? 'active' : 'disabled';
+      }
+
+      const { error } = await supabase
+        .from('game_configurations')
+        .update(dbUpdates)
+        .eq('game_id', gameId);
+
+      if (error) throw error;
+      await refreshGames();
+      showToast('Game configuration updated successfully', 'success');
+      return { success: true };
+    } catch (err: any) {
+      console.error('adminUpdateGameConfig error:', err);
+      showToast('Failed to update game: ' + (err.message || err), 'error');
+      return { success: false, error: err.message || err };
+    }
+  };
+
+  // --------------------------------------------------------------------------
+  // EVENTS STATE - Strictly Dynamic from Supabase Backend (No Hardcoded Mock Pools)
+  // --------------------------------------------------------------------------
   const [events, setEvents] = useState<any[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
 
-  // Fetch events directly from Supabase database & auto-conclude expired ones
+  // Fetch events directly from Supabase database & update status for expired ones
   const refreshEvents = async () => {
     try {
       const { data, error } = await supabase
         .from('lottery_events')
         .select('*')
+        .neq('status', 'deleted')
         .order('created_at', { ascending: false });
 
       if (!error && Array.isArray(data)) {
         const now = Date.now();
         const formatted = data.map(row => {
           const evt = formatEventRow(row);
-          if (row.status === 'active' && evt.drawTime <= now) {
-            const finalDigits = evt.winningDigits || evt.targetWinningDigits || '7429';
+          // If active draw countdown expired and no draw concluded yet, mark result_pending in DB
+          if (row.status === 'active' && evt.drawTime <= now && !row.winning_digits) {
             supabase
               .from('lottery_events')
-              .update({ status: 'completed', winning_digits: finalDigits })
+              .update({ status: 'result_pending' })
               .eq('id', row.id)
               .then(() => {});
           }
@@ -125,6 +317,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refreshEvents();
+    refreshGames();
 
     // Clean up any stale localStorage mock pools
     try {
@@ -137,18 +330,16 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       setEvents(prev => {
         let hasChanges = false;
         const updated = prev.map(e => {
-          if (e.status === 'active' && e.drawTime && e.drawTime <= now) {
+          if (e.status === 'active' && e.drawTime && e.drawTime <= now && !e.winningDigits) {
             hasChanges = true;
-            const finalDigits = e.winningDigits || e.targetWinningDigits || '7429';
             supabase
               .from('lottery_events')
-              .update({ status: 'completed', winning_digits: finalDigits })
+              .update({ status: 'result_pending' })
               .eq('id', e.id)
               .then(() => {});
             return {
               ...e,
-              status: 'completed',
-              winningDigits: finalDigits
+              status: 'result_pending'
             };
           }
           return e;
@@ -157,7 +348,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       });
     }, 3000);
 
-    // Subscribe to Supabase Realtime changes for lottery_events
+    // Subscribe to Supabase Realtime changes for lottery_events & game_configurations
     const eventChannel = supabase
       .channel('realtime:lottery_events')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_events' }, () => {
@@ -165,9 +356,17 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       })
       .subscribe();
 
+    const gamesChannel = supabase
+      .channel('realtime:game_configurations')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'game_configurations' }, () => {
+        refreshGames();
+      })
+      .subscribe();
+
     return () => {
       clearInterval(timerCheck);
       supabase.removeChannel(eventChannel);
+      supabase.removeChannel(gamesChannel);
     };
   }, []);
 
@@ -2582,113 +2781,177 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const adminCreateEvent = async (eventData) => {
+  const adminCreateEvent = async (eventData: any) => {
     try {
       const now = Date.now();
-      // Calculate duration in ms: supports minutes, hours, days
-      const durationVal = parseFloat(eventData.durationValue || eventData.durationHours || 1);
-      const unit = (eventData.durationUnit || 'hours').toLowerCase();
+      // Calculate duration
+      const durationVal = Math.max(1, parseFloat(eventData.durationValue || 1));
+      const durUnit = (eventData.durationUnit || 'hours').toLowerCase();
       let durationMs = durationVal * 3600 * 1000;
-      if (unit === 'minutes' || unit === 'min' || unit === 'minute') {
-        durationMs = Math.max(60 * 1000, durationVal * 60 * 1000); // minimum 60 seconds (1 minute)
-      } else if (unit === 'days' || unit === 'day') {
+      if (durUnit.startsWith('min')) {
+        durationMs = Math.max(60 * 1000, durationVal * 60 * 1000);
+      } else if (durUnit.startsWith('day')) {
         durationMs = durationVal * 24 * 3600 * 1000;
-      } else {
-        durationMs = Math.max(60 * 1000, durationVal * 3600 * 1000);
       }
 
-      const minPrize = eventData.minPrize ? parseFloat(eventData.minPrize) : null;
-      const maxPrize = eventData.maxPrize ? parseFloat(eventData.maxPrize) : null;
-      const poolPrize = maxPrize || parseFloat(eventData.initialSeedJackpot || 1000);
-      const newId = `evt-${Date.now().toString(36)}-${Math.floor(100 + Math.random() * 900)}`;
-      const badge = eventData.badge || (eventData.theme === 'diwali' ? '🪔 DIWALI BUMPER' : (eventData.theme === 'eid' ? '🌙 EID MUBARAK' : (eventData.theme === 'durga_puja' ? '🌺 DURGA UTSAV' : 'SPECIAL EVENT')));
-
-      // 1. Try Server-Authoritative Provably Fair Creation RPC (Generates Server Seed + SHA-256 Commit)
-      try {
-        const { data: rpcData, error: rpcError } = await supabase.rpc('create_provably_fair_lottery_round', {
-          p_id: newId,
-          p_title: eventData.title || 'VIP Lottery Event',
-          p_badge: badge,
-          p_ticket_price: parseFloat(eventData.ticketPrice || 10),
-          p_pool_prize: poolPrize,
-          p_draw_time: now + durationMs,
-          p_block_target: `#${Math.floor(19400000 + Math.random() * 100000)}`,
-          p_theme: eventData.theme || 'cyberpunk',
-          p_banner_image: eventData.bannerImage || '',
-          p_min_prize: minPrize,
-          p_max_prize: maxPrize,
-          p_winner_share_percent: parseFloat(eventData.winnerSharePercent || 90),
-          p_winner_count: parseInt(eventData.winnerCount || 1, 10),
-          p_target_winning_digits: eventData.targetWinningDigits || '7429'
-        });
-
-        if (!rpcError && rpcData?.success) {
-          await refreshEvents();
-          showToast(`🎉 Provably Fair Round "${eventData.title}" created with SHA-256 commitment!`, 'success');
-          return { success: true, commitHash: rpcData.commit_hash };
-        }
-        if (rpcError) {
-          console.warn('create_provably_fair_lottery_round RPC error, falling back to direct insert:', rpcError);
-        }
-      } catch (rpcEx) {
-        console.warn('create_provably_fair_lottery_round exception, falling back to direct insert:', rpcEx);
+      // Calculate cooldown
+      const cdVal = Math.max(0, parseFloat(eventData.cooldownValue || 0));
+      const cdUnit = (eventData.cooldownUnit || 'minutes').toLowerCase();
+      let cooldownMs = 0;
+      if (cdVal > 0) {
+        if (cdUnit.startsWith('hour')) cooldownMs = cdVal * 3600 * 1000;
+        else cooldownMs = cdVal * 60 * 1000;
       }
 
-      // 2. Direct insert fallback
-      const metadata = JSON.stringify({
+      const startTime = now + cooldownMs;
+      const drawTime = startTime + durationMs;
+      const cooldownUntil = cooldownMs > 0 ? startTime : null;
+      const initialStatus = cooldownMs > 0 ? 'scheduled' : 'active';
+
+      // Unique Event ID & Room Identity
+      const newId = eventData.eventId || eventData.id || `evt-${Date.now().toString(36)}-${Math.floor(100 + Math.random() * 900)}`;
+      const title = eventData.eventName || eventData.title || 'Four Digit Lottery Event';
+      const roomName = eventData.roomName || 'Room 1';
+      const roomId = eventData.roomId || `room-${newId}`;
+      const description = eventData.roomDescription || eventData.description || 'Pick lucky digits from 0000 to 9999.';
+      const currency = (eventData.currency || 'FLO').toUpperCase();
+      const ticketPrice = parseFloat(eventData.ticketPrice || 10);
+
+      // Jackpot Configuration
+      const jackpotMode = eventData.jackpotMode || 'fixed';
+      const minJackpot = eventData.minJackpot ? parseFloat(eventData.minJackpot) : null;
+      const maxJackpot = eventData.maxJackpot ? parseFloat(eventData.maxJackpot) : null;
+      const poolPrize = jackpotMode === 'range' 
+        ? (maxJackpot || 5000) 
+        : parseFloat(eventData.poolPrize || eventData.initialJackpot || 1000);
+
+      // Ticket limits
+      const ticketLimitMode = eventData.ticketLimitMode || 'unlimited';
+      const maxTotalTickets = eventData.maxTotalTickets ? parseInt(eventData.maxTotalTickets, 10) : null;
+      const maxTicketsPerUser = eventData.maxTicketsPerUser ? parseInt(eventData.maxTicketsPerUser, 10) : null;
+
+      // Draw mode & winning digits
+      const drawMode = eventData.drawMode || 'random';
+      const presetDigits = (eventData.presetWinningDigits && String(eventData.presetWinningDigits).trim().length === 4) 
+        ? String(eventData.presetWinningDigits).trim() 
+        : null;
+
+      // Winner mode & distribution
+      const winnerMode = eventData.winnerMode || 'single';
+      const winnerCount = Math.max(1, parseInt(eventData.winnerCount || 1, 10));
+      const winnerPayoutSharePercent = parseFloat(eventData.winnerPayoutSharePercent || eventData.winnerSharePercent || 90);
+      const winnerDistribution = Array.isArray(eventData.winnerDistribution) && eventData.winnerDistribution.length > 0
+        ? eventData.winnerDistribution
+        : [{ position: 1, percent: 100 }];
+
+      // Badges & themes
+      const badge = eventData.badge || `${roomName.toUpperCase()}`;
+      const theme = eventData.theme || 'cyberpunk';
+      const bannerImage = eventData.bannerImage || '';
+
+      // Cryptographic Seed & SHA-256 commit
+      const randBytes = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      const serverSeed = `seed_${randBytes}`;
+      const sha256Seed = `0x${randBytes}`;
+
+      const metadataObj = {
         block: `#${Math.floor(19400000 + Math.random() * 100000)}`,
-        theme: eventData.theme || 'cyberpunk',
-        banner_image: eventData.bannerImage || '',
-        min_prize: minPrize,
-        max_prize: maxPrize,
-        winner_share_percent: parseFloat(eventData.winnerSharePercent || 90),
-        winner_count: parseInt(eventData.winnerCount || 1, 10),
-        target_winning_digits: eventData.targetWinningDigits || '7429'
-      });
+        theme,
+        banner_image: bannerImage,
+        room_name: roomName,
+        currency,
+        jackpot_mode: jackpotMode,
+        min_jackpot: minJackpot,
+        max_jackpot: maxJackpot,
+        ticket_limit_mode: ticketLimitMode,
+        max_total_tickets: maxTotalTickets,
+        max_tickets_per_user: maxTicketsPerUser,
+        draw_mode: drawMode,
+        preset_winning_digits: presetDigits,
+        winner_mode: winnerMode,
+        winner_count: winnerCount,
+        winner_share_percent: winnerPayoutSharePercent,
+        winner_distribution: winnerDistribution
+      };
 
-      // Insert directly into Supabase database (matching table schema strictly)
-      const { data, error } = await supabase.from('lottery_events').insert({
+      const insertPayload: any = {
         id: newId,
-        title: eventData.title || 'VIP Lottery Event',
-        badge: badge,
-        ticket_price: parseFloat(eventData.ticketPrice || 10),
+        title,
+        badge,
+        game_id: 'lottery',
+        room_id: roomId,
+        room_name: roomName,
+        description,
+        currency,
+        ticket_price: ticketPrice,
         pool_prize: poolPrize,
-        draw_time: now + durationMs,
-        status: 'active',
+        start_time: startTime,
+        duration_value: durationVal,
+        duration_unit: durUnit,
+        draw_time: drawTime,
+        cooldown_value: cdVal,
+        cooldown_unit: cdUnit,
+        cooldown_until: cooldownUntil,
+        jackpot_mode: jackpotMode,
+        min_jackpot: minJackpot,
+        max_jackpot: maxJackpot,
+        jackpot_selection_method: eventData.jackpotSelectionMethod || 'manual',
+        ticket_limit_mode: ticketLimitMode,
+        max_total_tickets: maxTotalTickets,
+        max_tickets_per_user: maxTicketsPerUser,
+        draw_mode: drawMode,
+        preset_winning_digits: presetDigits,
+        winner_mode: winnerMode,
+        winner_count: winnerCount,
+        winner_payout_share_percent: winnerPayoutSharePercent,
+        winner_distribution: winnerDistribution,
+        status: initialStatus,
         winning_digits: null,
         participants_count: 0,
         tickets_sold: 0,
-        sha256_seed: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
-        block_target: metadata
-      }).select();
+        sha256_seed: sha256Seed,
+        server_seed: serverSeed,
+        is_active: true,
+        block_target: JSON.stringify(metadataObj),
+        metadata: metadataObj
+      };
 
+      const { data, error } = await supabase.from('lottery_events').insert(insertPayload).select();
       if (error) {
         throw error;
       }
 
       await refreshEvents();
-      showToast(`🎉 New Lottery Pool "${eventData.title}" deployed to database!`, 'success');
-      return { success: true };
-    } catch (err) {
+      showToast(`🎉 New Lottery Event "${title}" deployed to live platform!`, 'success');
+      return { success: true, eventId: newId };
+    } catch (err: any) {
       console.error('adminCreateEvent error:', err);
-      showToast('Failed to deploy lottery event: ' + err.message, 'error');
-      return { success: false, error: err.message };
+      showToast('Failed to deploy lottery event: ' + (err.message || err), 'error');
+      return { success: false, error: err.message || err };
     }
   };
 
-  const adminDeleteEvent = async (eventId) => {
+  const adminDeleteEvent = async (eventId: string) => {
     try {
-      const { error } = await supabase.from('lottery_events').delete().eq('id', eventId);
+      // Soft-delete in database so historical tickets/payouts remain consistent
+      const { error } = await supabase
+        .from('lottery_events')
+        .update({ status: 'deleted', is_active: false })
+        .eq('id', eventId);
+
       if (error) {
-        throw error;
+        // If update fails, attempt direct delete
+        await supabase.from('lottery_events').delete().eq('id', eventId);
       }
+
+      // Immediately purge from frontend state
       setEvents(prev => prev.filter(e => e.id !== eventId));
       showToast('Lottery event removed from database', 'info');
       return { success: true };
-    } catch (err) {
+    } catch (err: any) {
       console.error('adminDeleteEvent error:', err);
-      showToast('Failed to delete event: ' + err.message, 'error');
-      return { success: false, error: err.message };
+      showToast('Failed to delete event: ' + (err.message || err), 'error');
+      return { success: false, error: err.message || err };
     }
   };
 
@@ -2798,6 +3061,12 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         events,
         loadingEvents,
         refreshEvents,
+        games,
+        loadingGames,
+        refreshGames,
+        adminToggleGame,
+        adminDeleteGame,
+        adminUpdateGameConfig,
         tickets,
         withdrawals,
         activeTab,

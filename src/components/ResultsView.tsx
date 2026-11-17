@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLottery } from '../context/LotteryContext';
+import { supabase } from '../lib/supabase';
 import ProvablyFairModal from './ProvablyFairModal';
 import { 
   Trophy, 
@@ -8,10 +9,10 @@ import {
   CheckCircle2, 
   Award, 
   Layers, 
-  Sparkles, 
   ChevronDown, 
-  ChevronUp,
-  ShieldCheck
+  ChevronUp, 
+  ShieldCheck,
+  AlertCircle
 } from 'lucide-react';
 
 interface ResultCardProps {
@@ -22,21 +23,53 @@ interface ResultCardProps {
 }
 
 function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify }: ResultCardProps) {
-  const winDigits = String(event.winningDigits || event.targetWinningDigits || '7429');
-  const winnersList = Array.isArray(event.winners) && event.winners.length > 0 
-    ? event.winners 
-    : [
-        { 
-          rank: 1, 
-          user: event.winnerSummary ? `@${event.winnerSummary.replace(/[^a-zA-Z0-9_]/g, '')}` : '@WinnerPlayer', 
-          ticket: `#${winDigits}`, 
-          prize: `${Number(event.poolPrize || 5000).toLocaleString()} FC`, 
-          status: 'Disbursed' 
-        }
-      ];
+  const winDigits = String(event.winningDigits || '----');
+  const [dbWinners, setDbWinners] = useState<any[]>([]);
+  const [loadingWinners, setLoadingWinners] = useState(false);
+
+  // Fetch real winner payouts from Supabase when card is expanded or if not provided in event
+  useEffect(() => {
+    let isMounted = true;
+    if (isExpanded && (!event.winners || event.winners.length === 0)) {
+      setLoadingWinners(true);
+      supabase
+        .from('winner_payouts')
+        .select('*')
+        .eq('event_id', event.id)
+        .order('position', { ascending: true })
+        .then(({ data, error }) => {
+          if (!isMounted) return;
+          if (!error && Array.isArray(data)) {
+            const mapped = data.map((p: any, idx: number) => ({
+              rank: p.position || (idx + 1),
+              user: p.username ? `@${p.username}` : (p.user_address ? `${p.user_address.slice(0, 6)}...${p.user_address.slice(-4)}` : `@Player_${p.id.slice(-4)}`),
+              ticket: `#${p.ticket_number || '----'}`,
+              prize: `${Number(p.net_payout_fc || p.gross_payout_fc || 0).toLocaleString()} ${p.currency || event.currency || 'FLO'}`,
+              status: p.status === 'paid' ? 'Paid' : 'Disbursed'
+            }));
+            setDbWinners(mapped);
+          }
+          setLoadingWinners(false);
+        })
+        .catch(() => {
+          if (isMounted) setLoadingWinners(false);
+        });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [isExpanded, event.id, event.winners, event.currency]);
+
+  const winnersList = useMemo(() => {
+    if (Array.isArray(event.winners) && event.winners.length > 0) {
+      return event.winners;
+    }
+    return dbWinners;
+  }, [event.winners, dbWinners]);
 
   const winnerCount = Number(event.winnerCount || winnersList.length || 1);
   const isMultiWinner = winnerCount > 1;
+  const currency = event.currency || 'FLO';
 
   // Derive clean room name
   const roomName = event.roomName || event.title?.split(':')[0] || 'Lottery Room';
@@ -60,7 +93,7 @@ function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify }: ResultC
                 {roomName}
               </span>
               <span className="text-[10px] font-mono-numbers text-[#9b8f7c] bg-[#141924] px-1.5 py-0.5 rounded border border-[#272a31]">
-                ROUND #{event.id.replace('evt-', '').toUpperCase()}
+                EVENT: {event.id}
               </span>
               <span className="text-[10px] text-[#9b8f7c] font-mono-numbers flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
@@ -76,7 +109,7 @@ function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify }: ResultC
           <div className="text-right shrink-0 bg-[#07090e] px-2.5 py-1 rounded-xl border border-[#272a31]">
             <span className="text-[9px] uppercase font-bold text-[#9b8f7c] block">Prize Pool</span>
             <span className="font-display font-black text-sm sm:text-base text-[#ffd700] font-mono-numbers">
-              {Number(event.poolPrize || 5000).toLocaleString()} FC
+              {Number(event.poolPrize || 0).toLocaleString()} {currency}
             </span>
           </div>
         </div>
@@ -119,15 +152,15 @@ function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify }: ResultC
           <span className="flex items-center gap-1">
             <Award className="w-3.5 h-3.5 text-amber-400" />
             <strong className="text-white">
-              {isMultiWinner ? `${winnerCount} Winners (Split Pot)` : '1 Grand Jackpot Winner'}
+              {isMultiWinner ? `${winnerCount} Winners Tiered Split` : '1 Grand Winner'}
             </strong>
           </span>
           <span className="font-mono-numbers text-emerald-400 font-bold">
-            100% Flow Coins Settled
+            100% {currency} Distributed
           </span>
         </div>
 
-        {/* EXPANDABLE SECTION: Dedicated Winner Details (Inside this card only!) */}
+        {/* EXPANDABLE SECTION: Dedicated Winner Details */}
         {isExpanded && (
           <div className="mt-3.5 pt-3.5 border-t border-[#1f2737] space-y-2 animate-in fade-in duration-200">
             <div className="flex items-center justify-between text-xs pb-1">
@@ -138,28 +171,39 @@ function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify }: ResultC
               <span className="text-[10px] text-emerald-400 font-mono-numbers font-bold">Verified On-Chain</span>
             </div>
 
-            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 no-scrollbar">
-              {winnersList.map((w: any, idx: number) => (
-                <div 
-                  key={idx}
-                  className="bg-[#07090e] p-2.5 rounded-xl border border-[#272a31] flex items-center justify-between text-xs font-mono-numbers"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] flex items-center justify-center font-bold">
-                      #{idx + 1}
-                    </span>
-                    <span className="font-sans font-bold text-white">{w.user}</span>
-                    <span className="text-emerald-400 font-black bg-black/60 px-2 py-0.5 rounded border border-emerald-500/30 text-xs">
-                      {w.ticket}
-                    </span>
+            {loadingWinners ? (
+              <div className="py-4 text-center text-xs text-[#9b8f7c]">
+                Loading verified winners from blockchain ledger...
+              </div>
+            ) : winnersList.length === 0 ? (
+              <div className="bg-[#07090e] p-3 rounded-xl border border-[#272a31] text-center text-xs text-[#9b8f7c] flex items-center justify-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>No eligible tickets matched this draw. Prize carried forward or refunded.</span>
+              </div>
+            ) : (
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 no-scrollbar">
+                {winnersList.map((w: any, idx: number) => (
+                  <div 
+                    key={idx}
+                    className="bg-[#07090e] p-2.5 rounded-xl border border-[#272a31] flex items-center justify-between text-xs font-mono-numbers"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] flex items-center justify-center font-bold">
+                        #{w.rank || (idx + 1)}
+                      </span>
+                      <span className="font-sans font-bold text-white">{w.user}</span>
+                      <span className="text-emerald-400 font-black bg-black/60 px-2 py-0.5 rounded border border-emerald-500/30 text-xs">
+                        {w.ticket}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-amber-400 font-black text-xs sm:text-sm">{w.prize}</span>
+                      <span className="block text-[9px] text-emerald-400 font-bold">{w.status || 'Disbursed'}</span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-amber-400 font-black text-xs sm:text-sm">{w.prize}</span>
-                    <span className="block text-[9px] text-emerald-400 font-bold">{w.status || 'Disbursed'}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -205,48 +249,11 @@ export default function ResultsView() {
     setExpandedCardId(prev => prev === id ? null : id);
   };
 
-  // Concluded lottery events from database or default structured room results
+  // Concluded lottery events strictly loaded from real database records — ZERO dummy data
   const completedEvents = useMemo(() => {
-    const fromContext = (events || []).filter((e: any) => 
-      e.status === 'completed' || (e.drawTime && e.drawTime <= Date.now())
+    return (events || []).filter((e: any) => 
+      e.status === 'completed' && e.winningDigits
     );
-    if (fromContext.length > 0) return fromContext;
-
-    // Structured fallback completed room events for instant rendering & offline resilience
-    return [
-      {
-        id: 'DRW-1000',
-        title: 'Lottery Room 1: Daily Jackpot Pot (Round #1000)',
-        roomName: 'Lottery Room 1',
-        status: 'completed',
-        drawTime: Date.now() - 86400000,
-        winningDigits: '7429',
-        poolPrize: 5000,
-        winnerCount: 1,
-        winnerSummary: 'Single Grand Winner',
-        winners: [
-          { rank: 1, user: '@CryptoWhale_7', ticket: '#7429', prize: '4,500 FC', status: 'Disbursed' }
-        ],
-        sha256Seed: '0x9941a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1'
-      },
-      {
-        id: 'DRW-0999',
-        title: 'Lottery Room 2: VIP Mega Pot (Round #999)',
-        roomName: 'Lottery Room 2',
-        status: 'completed',
-        drawTime: Date.now() - 172800000,
-        winningDigits: '1802',
-        poolPrize: 25000,
-        winnerCount: 3,
-        winnerSummary: '3 Split Winners',
-        winners: [
-          { rank: 1, user: '@LuckyStar_9', ticket: '#1802', prize: '7,500 FC', status: 'Disbursed' },
-          { rank: 2, user: '@Nikhil_Kr_9', ticket: '#1802', prize: '7,500 FC', status: 'Disbursed' },
-          { rank: 3, user: '@ApexRoller', ticket: '#1802', prize: '7,500 FC', status: 'Disbursed' }
-        ],
-        sha256Seed: '0x5521a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1'
-      }
-    ];
   }, [events]);
 
   const filteredResults = useMemo(() => {
@@ -301,19 +308,18 @@ export default function ResultsView() {
                   : 'text-[#9b8f7c] hover:text-white hover:bg-[#141924]'
               }`}
             >
-              <span>{evt.roomName || evt.title?.split(':')[0] || `Round #${evt.id.replace('evt-', '').toUpperCase()}`}</span>
+              <span>{evt.roomName || evt.title?.split(':')[0] || `Event #${evt.id.replace('evt-', '').toUpperCase()}`}</span>
             </button>
           ))}
         </div>
       )}
 
       {/* 3. STABLE RESULTS GRID WITH INDEPENDENT CARD EXPANSION */}
-      {/* Using items-start prevents neighboring cards from stretching or altering their dimensions when one expands! */}
       {filteredResults.length === 0 ? (
         <div className="glass-panel rounded-2xl p-8 sm:p-12 text-center text-xs text-[#9b8f7c] border border-[#272a31] space-y-2">
           <Trophy className="w-10 h-10 text-[#9b8f7c]/40 mx-auto" />
           <p className="font-bold text-white">No Concluded Draws Recorded Yet</p>
-          <p>Active rooms are currently in progress. When a draw time completes, its official result will appear here automatically.</p>
+          <p>Active rooms are currently in progress. When a draw time completes or is drawn by admin, its official result will appear here automatically.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
@@ -338,7 +344,7 @@ export default function ResultsView() {
             id: verifyModalEvent.id,
             event_id: verifyModalEvent.id,
             event_title: verifyModalEvent.title,
-            winning_digits: verifyModalEvent.winningDigits || verifyModalEvent.targetWinningDigits || '7429',
+            winning_digits: verifyModalEvent.winningDigits || '----',
             commit_hash: verifyModalEvent.sha256Seed,
             revealed_seed: verifyModalEvent.revealedSeed || '0x4f88e1...revealed-at-cutoff',
             client_seed: verifyModalEvent.clientSeed || 'eos-tron-ledger-seed',

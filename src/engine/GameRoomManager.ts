@@ -2,9 +2,9 @@
  * ============================================================================
  * GAME ROOM & TABLE MANAGER — SHARED ROOM ARCHITECTURE
  * ============================================================================
- * Coordinates multi-table, multi-room, and multi-session state across all 12 games.
+ * Coordinates multi-table, multi-room, and multi-session state across all modular games.
  * Supports:
- *   - Offline/SSR instant default rooms
+ *   - Clean default rooms without simulated/dummy winners or fake player counts
  *   - Supabase live synchronization (`public.game_rooms`)
  *   - Four-Digit Lottery dynamic room mapping from `public.lottery_events`
  */
@@ -51,96 +51,9 @@ export interface RoomConfig {
   [key: string]: unknown;
 }
 
-// Default static fallback rooms for all 12 games
+// Default rooms for modular casino games (Zero fake players or simulated rolls)
 export const DEFAULT_ROOMS: RoomConfig[] = [
-  // 1. Four-Digit Lottery (5 Independently Configured Lottery Rooms)
-  {
-    id: 'lottery-room-1',
-    gameId: 'lottery',
-    drawId: 'DRW-1001',
-    name: 'Lottery Room 1: Daily Jackpot Pot',
-    type: ROOM_TYPES.STANDARD,
-    status: ROOM_STATUSES.ACTIVE,
-    description: 'Autonomous 4-digit draw with guaranteed jackpot pot. Pick lucky digits from 0000 to 9999.',
-    minStakeFC: 1,
-    maxStakeFC: 50,
-    playerCapacity: 500,
-    currentPlayers: 24,
-    drawDurationHours: 24,
-    recentWinners: ['7429', '1802', '9941'],
-    prizeInfo: '5,000 FC Jackpot Pool',
-    sortOrder: 1
-  },
-  {
-    id: 'lottery-room-2',
-    gameId: 'lottery',
-    drawId: 'DRW-1002',
-    name: 'Lottery Room 2: VIP Mega Pot',
-    type: ROOM_TYPES.VIP,
-    status: ROOM_STATUSES.ACTIVE,
-    description: 'High-stakes 4-digit draw pool with amplified Flow Coin reward allocation.',
-    minStakeFC: 10,
-    maxStakeFC: 500,
-    playerCapacity: 200,
-    currentPlayers: 12,
-    drawDurationHours: 48,
-    recentWinners: ['5521', '0344', '8812'],
-    prizeInfo: '25,000 FC Mega Jackpot',
-    sortOrder: 2
-  },
-  {
-    id: 'lottery-room-3',
-    gameId: 'lottery',
-    drawId: 'DRW-1003',
-    name: 'Lottery Room 3: Festive Fast-Draw',
-    type: ROOM_TYPES.TURBO,
-    status: ROOM_STATUSES.ACTIVE,
-    description: 'Rapid cycle draw with dynamic festive prize structures and provably fair Oracle.',
-    minStakeFC: 5,
-    maxStakeFC: 100,
-    playerCapacity: 300,
-    currentPlayers: 18,
-    drawDurationHours: 6,
-    recentWinners: ['3391', '7209', '4410'],
-    prizeInfo: '10,000 FC Dynamic Pot',
-    sortOrder: 3
-  },
-  {
-    id: 'lottery-room-4',
-    gameId: 'lottery',
-    drawId: 'DRW-1004',
-    name: 'Lottery Room 4: High Stakes Grand Draw',
-    type: ROOM_TYPES.HIGH_ROLLER,
-    status: ROOM_STATUSES.ACTIVE,
-    description: 'Grand jackpot pool with multi-tiered lucky winner distributions and high stake limits.',
-    minStakeFC: 25,
-    maxStakeFC: 1000,
-    playerCapacity: 150,
-    currentPlayers: 8,
-    drawDurationHours: 72,
-    recentWinners: ['2048', '6190', '0077'],
-    prizeInfo: '50,000 FC Grand Jackpot',
-    sortOrder: 4
-  },
-  {
-    id: 'lottery-room-5',
-    gameId: 'lottery',
-    drawId: 'DRW-1005',
-    name: 'Lottery Room 5: Midnight Lightning Draw',
-    type: ROOM_TYPES.TURBO,
-    status: ROOM_STATUSES.ACTIVE,
-    description: 'Rapid-closing 4-digit draw with instant cryptographic Provably Fair finalization.',
-    minStakeFC: 2,
-    maxStakeFC: 200,
-    playerCapacity: 400,
-    currentPlayers: 15,
-    drawDurationHours: 3,
-    recentWinners: ['8192', '4096', '1337'],
-    prizeInfo: '15,000 FC Lightning Pot',
-    sortOrder: 5
-  },
-
-  // 2. Crash
+  // 1. Crash
   {
     id: 'crash-room-1',
     gameId: 'crash',
@@ -151,8 +64,7 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 1,
     maxStakeFC: 50,
     playerCapacity: 1000,
-    currentPlayers: 42,
-    recentMultipliers: ['1.45x', '2.80x', '1.12x', '3.15x'],
+    currentPlayers: 0,
     rulesSummary: 'Exponential curve with 1.01x minimum cashout',
     sortOrder: 1
   },
@@ -166,8 +78,7 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 5,
     maxStakeFC: 250,
     playerCapacity: 2000,
-    currentPlayers: 87,
-    recentMultipliers: ['2.40x', '5.80x', '1.05x', '14.20x'],
+    currentPlayers: 0,
     rulesSummary: 'Standard volatility launch pad with 1% house edge',
     sortOrder: 2
   },
@@ -181,13 +92,12 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 50,
     maxStakeFC: 1000,
     playerCapacity: 500,
-    currentPlayers: 19,
-    recentMultipliers: ['18.25x', '42.10x', '1.02x', '9.50x'],
+    currentPlayers: 0,
     rulesSummary: 'High roller limits up to 1,000 FC with auto-cashout',
     sortOrder: 3
   },
 
-  // 3. Dice
+  // 2. Dice
   {
     id: 'dice-room-1',
     gameId: 'dice',
@@ -198,8 +108,7 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 1,
     maxStakeFC: 100,
     playerCapacity: 1000,
-    currentPlayers: 31,
-    recentRolls: ['68.42', '12.05', '91.30', '73.18'],
+    currentPlayers: 0,
     rulesSummary: 'Target slider from 1.00 to 98.00 with dynamic odds',
     sortOrder: 1
   },
@@ -213,13 +122,12 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 20,
     maxStakeFC: 2000,
     playerCapacity: 500,
-    currentPlayers: 14,
-    recentRolls: ['84.10', '52.70', '19.95', '95.40'],
+    currentPlayers: 0,
     rulesSummary: 'High stakes up to 2,000 FC with HMAC-SHA256 seed commit',
     sortOrder: 2
   },
 
-  // 4. Bingo – Color Trading
+  // 3. Bingo – Color Trading
   {
     id: 'bingo-room-1',
     gameId: 'bingo',
@@ -230,8 +138,7 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 1,
     maxStakeFC: 100,
     playerCapacity: 1000,
-    currentPlayers: 48,
-    recentWinners: ['Red (2x)', 'Violet (4.5x)', 'Green (2x)', '#7 (9x)'],
+    currentPlayers: 0,
     rulesSummary: 'Red/Green 2x, Violet 4.5x, Single Number 9x, Big/Small 1.98x',
     sortOrder: 1
   },
@@ -245,13 +152,12 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 20,
     maxStakeFC: 1000,
     playerCapacity: 500,
-    currentPlayers: 19,
-    recentWinners: ['Big (1.98x)', 'Red (2x)', '#0 (Violet 4.5x)', '#3 (9x)'],
+    currentPlayers: 0,
     rulesSummary: 'Elevated bounds up to 1,000 FC with HMAC-SHA256 seed commit',
     sortOrder: 2
   },
 
-  // 5. Horse Racing
+  // 4. Horse Racing
   {
     id: 'horse-racing-room-1',
     gameId: 'horse-racing',
@@ -262,8 +168,7 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 1,
     maxStakeFC: 100,
     playerCapacity: 1000,
-    currentPlayers: 37,
-    recentWinners: ['#1 Golden Thunder (2.4x)', '#3 Crimson Comet (5.2x)', '#2 Silver Streak (3.8x)'],
+    currentPlayers: 0,
     rulesSummary: '6-runner sprint with fixed odds from 2.4x to 35.0x',
     sortOrder: 1
   },
@@ -277,13 +182,12 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 25,
     maxStakeFC: 1000,
     playerCapacity: 500,
-    currentPlayers: 16,
-    recentWinners: ['#4 Midnight Stallion (8.0x)', '#1 Golden Thunder (2.4x)', '#5 Royal Pegasus (15.0x)'],
+    currentPlayers: 0,
     rulesSummary: 'Championship turf with elevated limits and Provably Fair audit',
     sortOrder: 2
   },
 
-  // 6. European Roulette
+  // 5. European Roulette
   {
     id: 'roulette-room-1',
     gameId: 'roulette',
@@ -294,8 +198,7 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 1,
     maxStakeFC: 200,
     playerCapacity: 100,
-    currentPlayers: 27,
-    recentSpins: ['17', '32', '0', '7', '24'],
+    currentPlayers: 0,
     wheelConfig: 'Single Zero (0 - 36)',
     rulesSummary: 'Straight 36x, Red/Black & Even/Odd 2x, Columns/Dozens 3x.',
     sortOrder: 1
@@ -310,14 +213,13 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 25,
     maxStakeFC: 1000,
     playerCapacity: 50,
-    currentPlayers: 9,
-    recentSpins: ['29', '14', '2', '36', '0'],
+    currentPlayers: 0,
     wheelConfig: 'VIP French Layout (0 - 36)',
     rulesSummary: 'High-limit inside/outside betting with smooth wheel physics.',
     sortOrder: 2
   },
 
-  // 7. Coinflip
+  // 6. Coinflip
   {
     id: 'coinflip-room-1',
     gameId: 'coinflip',
@@ -328,9 +230,8 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 1,
     maxStakeFC: 100,
     playerCapacity: 1000,
-    currentPlayers: 44,
+    currentPlayers: 0,
     flipConfig: '50/50 Dual Face (1.98x Payout)',
-    recentFlips: ['heads', 'tails', 'heads', 'heads'],
     rulesSummary: '1.98x payout on Heads or Tails with 3D coin physics and HMAC-SHA256',
     sortOrder: 1
   },
@@ -344,14 +245,13 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 20,
     maxStakeFC: 2500,
     playerCapacity: 500,
-    currentPlayers: 18,
+    currentPlayers: 0,
     flipConfig: 'High Roller Streak Arena',
-    recentFlips: ['tails', 'heads', 'tails', 'tails'],
     rulesSummary: 'High stakes up to 2,500 FC for streak hunters',
     sortOrder: 2
   },
 
-  // 8. Blackjack 21
+  // 7. Blackjack 21
   {
     id: 'blackjack-room-1',
     gameId: 'blackjack',
@@ -362,9 +262,8 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 1,
     maxStakeFC: 100,
     playerCapacity: 7,
-    currentPlayers: 5,
+    currentPlayers: 0,
     deckConfig: '6-Deck Shoe (Dealer stands on 17)',
-    recentOutcomes: ['Win 2.0x', 'BJ 2.5x', 'Push 1.0x', 'Win 2.0x'],
     rulesSummary: 'Blackjack pays 3:2, Double Down allowed, Dealer stands on 17',
     sortOrder: 1
   },
@@ -378,14 +277,13 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 25,
     maxStakeFC: 1000,
     playerCapacity: 7,
-    currentPlayers: 3,
+    currentPlayers: 0,
     deckConfig: 'VIP Single Deck (Soft 17 Stand)',
-    recentOutcomes: ['BJ 2.5x', 'Win 2.0x', 'Push 1.0x', 'Win 2.0x'],
     rulesSummary: 'High roller limits up to 1,000 FC with natural 3:2 payout',
     sortOrder: 2
   },
 
-  // 9. Golden Reels Slot
+  // 8. Golden Reels Slot
   {
     id: 'slots-room-1',
     gameId: 'slots',
@@ -396,9 +294,8 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 1,
     maxStakeFC: 50,
     playerCapacity: 1000,
-    currentPlayers: 61,
+    currentPlayers: 0,
     reelsConfig: '3 Reels · 5 Paylines · 250x Top Jackpot',
-    recentPayouts: ['Diamonds 50x', 'Cherries 4x', 'Slots 15x', 'Sevens 250x'],
     rulesSummary: 'Match 3 on 5 paylines. Wild Diamonds substitute any symbol.',
     sortOrder: 1
   },
@@ -412,14 +309,13 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 10,
     maxStakeFC: 500,
     playerCapacity: 500,
-    currentPlayers: 29,
+    currentPlayers: 0,
     reelsConfig: 'High Roller 3-Reel (500 FC Max Stake)',
-    recentPayouts: ['Sevens 250x', 'Diamonds 50x', 'Bells 8x', 'Slots 15x'],
     rulesSummary: 'Enhanced stakes up to 500 FC per spin with 250x jackpot',
     sortOrder: 2
   },
 
-  // 10. Texas Hold'em Poker
+  // 9. Texas Hold'em Poker
   {
     id: 'poker-room-1',
     gameId: 'poker',
@@ -430,10 +326,8 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 5,
     maxStakeFC: 100,
     playerCapacity: 6,
-    currentPlayers: 4,
+    currentPlayers: 0,
     tableConfig: '6-Max Table · Blinds 5/10 FC · Solo Demo',
-    seatsAvailable: 2,
-    recentHands: ['Two Pair 2.0x', 'Flush 3.5x', 'Trips 2.5x', 'Straight 2.5x'],
     rulesSummary: 'Texas Hold’em heads-up demo against dealer with Flop, Turn, River & Showdown',
     sortOrder: 1
   },
@@ -447,29 +341,26 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 25,
     maxStakeFC: 1000,
     playerCapacity: 6,
-    currentPlayers: 5,
-    tableConfig: '6-Max VIP Table · Blinds 25/50 FC · Solo Demo',
-    seatsAvailable: 1,
-    recentHands: ['Full House 4.0x', 'Flush 3.5x', 'Two Pair 2.0x', 'Quads 10.0x'],
-    rulesSummary: 'High stakes Hold’em table with elevated blinds and deep stack play',
+    currentPlayers: 0,
+    tableConfig: 'High Roller 6-Max · Blinds 25/50 FC',
+    rulesSummary: 'High stakes deep-stack Hold’em against aggressive AI positioning',
     sortOrder: 2
   },
 
-  // 11. Classic Keno
+  // 10. Classic Keno
   {
     id: 'keno-room-1',
     gameId: 'keno',
     name: 'Quick Draw 40-Ball Room',
     type: ROOM_TYPES.STANDARD,
     status: ROOM_STATUSES.ACTIVE,
-    description: 'Pick 1 to 10 numbers from a 40-ball board. 10 rapid balls drawn each round.',
+    description: 'Select up to 10 numbers from 1 to 40. Rapid drawing with dynamic payouts.',
     minStakeFC: 1,
-    maxStakeFC: 100,
+    maxStakeFC: 50,
     playerCapacity: 1000,
-    currentPlayers: 39,
-    gridConfig: '40-Ball Board · Pick 1 to 10 Numbers',
-    recentDraws: ['4/5 Hits 18x', '3/4 Hits 8x', '5/6 Hits 45x', '2/3 Hits 3x'],
-    rulesSummary: 'Pick up to 10 balls. 10 balls drawn. Match numbers to climb paytable.',
+    currentPlayers: 0,
+    kenoConfig: '40-Ball Grid · 10 Picks Max · Up to 100x',
+    rulesSummary: 'Pick 1-10 numbers on a 40-ball card. Up to 100x for 10/10 matches.',
     sortOrder: 1
   },
   {
@@ -478,31 +369,29 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     name: 'Golden Keno Jackpot Hall',
     type: ROOM_TYPES.VIP,
     status: ROOM_STATUSES.ACTIVE,
-    description: 'Enhanced payout ladder for master pickers targeting 500x multi-hit jackpots.',
+    description: 'Elevated wager bounds with up to 500x jackpot payout for perfect matches.',
     minStakeFC: 10,
     maxStakeFC: 500,
     playerCapacity: 500,
-    currentPlayers: 16,
-    gridConfig: 'High Roller 40-Ball · 500x Max Multiplier',
-    recentDraws: ['6/8 Hits 85x', '5/7 Hits 40x', '7/10 Hits 180x', '4/4 Hits 35x'],
-    rulesSummary: 'Enhanced payout ladder for master pickers targeting 500x multi-hit jackpots.',
+    currentPlayers: 0,
+    kenoConfig: 'VIP 40-Ball Grid · 500x Top Jackpot',
+    rulesSummary: 'Enhanced payout tables with top multipliers up to 500x on 10/10 hits.',
     sortOrder: 2
   },
 
-  // 12. Limbo
+  // 11. Limbo
   {
     id: 'limbo-room-1',
     gameId: 'limbo',
     name: 'Standard Multiplier Lab',
     type: ROOM_TYPES.STANDARD,
     status: ROOM_STATUSES.ACTIVE,
-    description: 'Target multipliers from 1.01x up to 100x with dynamic probability display.',
+    description: 'Dynamic target slider from 1.01x to 100x with real-time win probability calculations.',
     minStakeFC: 1,
     maxStakeFC: 100,
     playerCapacity: 1000,
-    currentPlayers: 47,
+    currentPlayers: 0,
     targetRange: '1.01x to 100x Target Multiplier',
-    recentMultipliers: ['4.82x', '12.40x', '2.10x', '67.50x'],
     rulesSummary: 'Predict if rocket reaches or exceeds target multiplier.',
     sortOrder: 1
   },
@@ -516,9 +405,8 @@ export const DEFAULT_ROOMS: RoomConfig[] = [
     minStakeFC: 10,
     maxStakeFC: 1000,
     playerCapacity: 500,
-    currentPlayers: 23,
+    currentPlayers: 0,
     targetRange: '1.01x to 10,000x Astronomical Target',
-    recentMultipliers: ['342x', '1250x', '1.05x', '88.40x'],
     rulesSummary: 'Astronomical targets up to 10,000x with real-time win probability.',
     sortOrder: 2
   }
@@ -533,6 +421,8 @@ export class GameRoomManager {
     this.rooms = [...DEFAULT_ROOMS];
     this.listeners = new Set();
     this.initialized = false;
+    this.fetchRooms();
+    this.initRealtime();
   }
 
   // Subscribe to room updates
@@ -556,7 +446,6 @@ export class GameRoomManager {
         .order('sort_order', { ascending: true });
 
       if (!error && Array.isArray(data) && data.length > 0) {
-        // Merge Supabase rooms with local defaults
         const dbRooms: RoomConfig[] = data.map((r: Record<string, unknown>) => ({
           id: String(r.id || ''),
           gameId: String(r.game_id || ''),
@@ -569,6 +458,7 @@ export class GameRoomManager {
           playerCapacity: Number(r.player_capacity || 100),
           currentPlayers: Number(r.current_players || 0),
           sortOrder: Number(r.sort_order || 0),
+          rulesSummary: (r.rules_summary as string) || '',
           metadata: (r.metadata as Record<string, unknown>) || {}
         }));
 
@@ -579,6 +469,17 @@ export class GameRoomManager {
     } catch (err) {
       console.warn('GameRoomManager fetchRooms fallback to defaults:', err);
     }
+  }
+
+  initRealtime(): void {
+    try {
+      supabase
+        .channel('realtime:game_rooms')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'game_rooms' }, () => {
+          this.fetchRooms();
+        })
+        .subscribe();
+    } catch (e) {}
   }
 
   // Get all rooms
@@ -612,4 +513,3 @@ export class GameRoomManager {
 }
 
 export const gameRoomManager = new GameRoomManager();
-

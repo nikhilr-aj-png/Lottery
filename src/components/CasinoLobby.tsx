@@ -24,13 +24,22 @@ interface CasinoLobbyProps {
 }
 
 export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: CasinoLobbyProps) {
+  const { games: dynamicGames } = useLottery();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('popular'); // 'popular' | 'rtp' | 'multiplier'
 
+  // Dynamic database-driven games list (strictly excludes deleted/disabled items)
+  const availableGames = useMemo(() => {
+    if (Array.isArray(dynamicGames) && dynamicGames.length > 0) {
+      return dynamicGames.filter(g => g.isEnabled && g.status !== 'deleted');
+    }
+    return GAMES;
+  }, [dynamicGames]);
+
   // Filter & Sort Games
   const filteredGames = useMemo(() => {
-    let list = [...GAMES];
+    let list = [...availableGames];
 
     // Filter by Category
     if (selectedCategory !== 'all') {
@@ -39,7 +48,7 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: Casino
         if (selectedCategory === 'arcade') return g.category === 'arcade';
         if (selectedCategory === 'table') return g.category === 'table' || g.category === 'card';
         if (selectedCategory === 'slots') return g.category === 'slots';
-        if (selectedCategory === 'lottery') return g.category === 'lottery';
+        if (selectedCategory === 'lottery') return g.category === 'lottery' || g.id === 'lottery';
         return true;
       });
     }
@@ -58,20 +67,20 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: Casino
     if (sortBy === 'rtp') {
       list.sort((a, b) => b.rtp - a.rtp);
     } else if (sortBy === 'multiplier') {
-      list.sort((a, b) => b.maxMultiplier - a.maxMultiplier);
+      list.sort((a, b) => (b.maxMultiplier || 0) - (a.maxMultiplier || 0));
     }
 
     return list;
-  }, [selectedCategory, searchQuery, sortBy]);
+  }, [availableGames, selectedCategory, searchQuery, sortBy]);
 
-  const categories = [
-    { id: 'all', label: 'All Games', count: GAMES.length },
-    { id: 'lottery', label: 'Four-Digit Lottery', count: 1 },
-    { id: 'instant', label: 'Instant Originals', count: 4 },
-    { id: 'arcade', label: 'Arcade & Plinko', count: 3 },
-    { id: 'table', label: 'Table & Cards', count: 3 },
-    { id: 'slots', label: 'Slots', count: 1 }
-  ];
+  const categories = useMemo(() => [
+    { id: 'all', label: 'All Games', count: availableGames.length },
+    { id: 'lottery', label: 'Four-Digit Lottery', count: availableGames.filter(g => g.category === 'lottery' || g.id === 'lottery').length },
+    { id: 'instant', label: 'Instant Originals', count: availableGames.filter(g => g.category === 'instant').length },
+    { id: 'arcade', label: 'Arcade & Color', count: availableGames.filter(g => g.category === 'arcade').length },
+    { id: 'table', label: 'Table & Cards', count: availableGames.filter(g => g.category === 'table' || g.category === 'card').length },
+    { id: 'slots', label: 'Slots', count: availableGames.filter(g => g.category === 'slots').length }
+  ], [availableGames]);
 
   const handleGameSelect = (game) => {
     if (onLaunchGame) {
