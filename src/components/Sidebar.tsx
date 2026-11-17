@@ -75,8 +75,8 @@ export default function Sidebar({
       case 'lottery': return Ticket;
       case 'crash': return Rocket;
       case 'dice': return Dices;
-      case 'mines': return Bomb;
-      case 'plinko': return Target;
+      case 'bingo': return Sparkles;
+      case 'horse-racing': return Trophy;
       case 'roulette': return CircleDot;
       case 'coinflip': return Coins;
       case 'blackjack': return Layers;

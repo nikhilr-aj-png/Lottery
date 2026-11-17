@@ -57,8 +57,8 @@ export default function LiveBetsTicker({ onSelectGame }: LiveBetsTickerProps) {
     switch (gameId?.toLowerCase()) {
       case 'crash': return '🚀';
       case 'dice': return '🎲';
-      case 'mines': return '💣';
-      case 'plinko': return '🎯';
+      case 'bingo': return '🎨';
+      case 'horse-racing': return '🏇';
       case 'roulette': return '🎡';
       case 'coinflip': return '🪙';
       case 'blackjack': return '🃏';

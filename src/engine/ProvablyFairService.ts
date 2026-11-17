@@ -351,6 +351,68 @@ export async function generateLotteryDigits(serverSeed: string, clientSeed: stri
   return digits;
 }
 
+/**
+ * BINGO – COLOR TRADING OUTCOME GENERATOR
+ * Generates drawn number 0-9, associated colors (Red, Green, Violet) and size (Big, Small)
+ */
+export async function generateBingoResult(serverSeed: string, clientSeed: string, nonce = 1): Promise<{
+  number: number;
+  color: 'red' | 'green' | 'violet';
+  hasViolet: boolean;
+  size: 'big' | 'small';
+}> {
+  const hash = await hmacSha256Hex(serverSeed, `${clientSeed}:${nonce}:bingo`);
+  const uint32 = hexToUint32(hash, 0);
+  const number = uint32 % 10;
+  const size: 'big' | 'small' = number >= 5 ? 'big' : 'small';
+
+  let color: 'red' | 'green' | 'violet' = 'red';
+  let hasViolet = false;
+  if (number === 0) {
+    color = 'red';
+    hasViolet = true;
+  } else if (number === 5) {
+    color = 'green';
+    hasViolet = true;
+  } else if ([1, 3, 7, 9].includes(number)) {
+    color = 'green';
+  } else {
+    color = 'red';
+  }
+
+  return { number, color, hasViolet, size };
+}
+
+/**
+ * HORSE RACING OUTCOME GENERATOR
+ * Generates winning horse position (1 to 6) based on weighted odds distribution
+ */
+export async function generateHorseRaceWinner(serverSeed: string, clientSeed: string, nonce = 1): Promise<{
+  winner: number;
+  podium: number[];
+}> {
+  const hash = await hmacSha256Hex(serverSeed, `${clientSeed}:${nonce}:horse-racing`);
+  const uint32 = hexToUint32(hash, 0);
+  const float01 = (uint32 % 10000) / 10000;
+
+  // Cumulative probabilities matching horse odds (2.4x, 3.8x, 5.2x, 8.0x, 15.0x, 35.0x)
+  let winner = 1;
+  if (float01 < 0.38) winner = 1;
+  else if (float01 < 0.62) winner = 2;
+  else if (float01 < 0.79) winner = 3;
+  else if (float01 < 0.90) winner = 4;
+  else if (float01 < 0.96) winner = 5;
+  else winner = 6;
+
+  // Podium 1st, 2nd, 3rd
+  const others = [1, 2, 3, 4, 5, 6].filter(h => h !== winner);
+  const second = others[(hexToUint32(hash, 4) % others.length)];
+  const remaining = others.filter(h => h !== second);
+  const third = remaining[(hexToUint32(hash, 8) % remaining.length)];
+
+  return { winner, podium: [winner, second, third] };
+}
+
 // ============================================================================
 // UNIVERSAL VERIFICATION AUDITOR
 // ============================================================================
@@ -393,11 +455,11 @@ export async function verifyGameRound(
       case 'dice':
         computedOutcome = await generateDiceRoll(serverSeed, clientSeed, nonce);
         break;
-      case 'mines':
-        computedOutcome = await generateMinesGrid(serverSeed, clientSeed, nonce, (gameParams.mineCount as number) || 3);
+      case 'bingo':
+        computedOutcome = await generateBingoResult(serverSeed, clientSeed, nonce);
         break;
-      case 'plinko':
-        computedOutcome = await generatePlinkoPath(serverSeed, clientSeed, nonce, (gameParams.rows as number) || 12);
+      case 'horse-racing':
+        computedOutcome = await generateHorseRaceWinner(serverSeed, clientSeed, nonce);
         break;
       case 'roulette':
         computedOutcome = await generateRouletteNumber(serverSeed, clientSeed, nonce);

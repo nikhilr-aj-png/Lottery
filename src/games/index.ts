@@ -10,15 +10,15 @@
 // Four-Digit Lottery Dedicated Workstation
 export { default as LotteryWorkstation } from './LotteryWorkstation';
 
-// Phase 6: Instant Games
+// Phase 6: Instant & Arcade Games
 export { default as CrashGame } from './CrashGame';
 export { default as DiceGame } from './DiceGame';
-export { default as MinesGame } from './MinesGame';
 export { default as LimboGame } from './LimboGame';
+export { default as BingoGame } from './BingoGame';
+export { default as HorseRacingGame } from './HorseRacingGame';
 
-// Phase 7: Table & Arcade Games
+// Phase 7: Table & Card Games
 export { default as CoinflipGame } from './CoinflipGame';
-export { default as PlinkoGame } from './PlinkoGame';
 export { default as RouletteGame } from './RouletteGame';
 export { default as KenoGame } from './KenoGame';
 

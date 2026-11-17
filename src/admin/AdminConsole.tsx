@@ -554,27 +554,9 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
             }`}
           >
             <Gamepad2 className="w-4 h-4" />
-            <span>Games Management</span>
+            <span>Game Management</span>
             <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-black/40 font-mono-numbers text-amber-300 font-bold">
-              7 Hubs
-            </span>
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveAdminTab('games-management');
-              setGamesManagementSubTab('lottery-draws');
-            }}
-            className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'games-management' && gamesManagementSubTab === 'lottery-draws'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Dices className="w-3.5 h-3.5 text-amber-400" />
-            <span>Lottery Draws</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-black/40 font-mono-numbers">
-              {activeEvents.length}
+              12 Games
             </span>
           </button>
 

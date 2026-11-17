@@ -119,67 +119,69 @@ export const GAMES: GameDefinition[] = [
   },
 
   // --------------------------------------------------------------------------
-  // GAME 04: MINES
+  // GAME 04: BINGO – COLOR TRADING
   // --------------------------------------------------------------------------
   {
-    id: 'mines',
-    name: 'Mines',
-    shortName: 'Mines',
-    slug: 'mines',
+    id: 'bingo',
+    name: 'Bingo – Color Trading',
+    shortName: 'Bingo',
+    slug: 'bingo-color-trading',
+    aliases: ['bingo', 'color-trading', 'bingo-color'],
     category: GAME_CATEGORIES.ARCADE,
-    badge: 'POPULAR',
-    themeColor: '#ef4444',
-    icon: '/items/Mines.jpg',
-    image: '/items/Mines.jpg',
-    description: 'Uncover gems on a 5x5 grid while avoiding hidden mines. Each uncovered gem increases your multiplier!',
-    rtp: 99.0,
-    houseEdge: 1.0,
+    badge: 'TRADING',
+    themeColor: '#8b5cf6',
+    icon: '/items/Bingo.jpg',
+    image: '/items/Bingo.jpg',
+    description: 'Fast-paced provably fair color prediction. Pick Red, Green, Violet, Numbers (0–9), or Big/Small with instant payouts!',
+    rtp: 98.0,
+    houseEdge: 2.0,
     minStakeFC: 1,
     maxStakeFC: 1000,
     defaultStakeFC: 10,
-    maxMultiplier: 10000.0,
+    maxMultiplier: 9.0,
     isProvablyFair: true,
     status: 'active',
-    features: ['5x5 Grid (25 tiles)', '1 to 24 Configurable Mines', 'Manual & Auto Cashout', 'Step-by-step Multiplier Ladder'],
+    features: ['Red / Green / Violet', 'Numbers 0 to 9 (9x Payout)', 'Big (5-9) & Small (0-4)', '60s Rapid Draw Cycles'],
     rules: [
-      'Choose the number of hidden mines (between 1 and 24).',
-      'Click tiles on the 5x5 grid to reveal Gems or Mines.',
-      'Each Gem increases your accumulated payout multiplier.',
-      'Cash out anytime to bank your winnings, or continue for bigger multipliers.'
+      'Green wins on 1, 3, 7, 9 (2x payout). If 5 appears with Violet, half split applies.',
+      'Red wins on 2, 4, 6, 8 (2x payout). If 0 appears with Violet, half split applies.',
+      'Violet wins on 0 and 5 (4.5x payout).',
+      'Select any number 0–9 for a 9x payout. Big (5–9) or Small (0–4) pays 1.98x.'
     ],
-    instructions: 'Select your mine count, place your bet, and click tiles to reveal gems.'
+    instructions: 'Select your chosen color, number, or size category, set stake, and trade before the round countdown completes.'
   },
 
   // --------------------------------------------------------------------------
-  // GAME 05: PLINKO
+  // GAME 05: HORSE RACING
   // --------------------------------------------------------------------------
   {
-    id: 'plinko',
-    name: 'Plinko',
-    shortName: 'Plinko',
-    slug: 'plinko',
-    category: GAME_CATEGORIES.ARCADE,
-    badge: 'VIRAL',
-    themeColor: '#ec4899',
-    icon: '/items/Plinko.jpg',
-    image: '/items/Plinko.jpg',
-    description: 'Drop bouncing balls through a responsive pegboard pyramid into high-multiplier slots at the base.',
-    rtp: 99.0,
-    houseEdge: 1.0,
+    id: 'horse-racing',
+    name: 'Horse Racing',
+    shortName: 'Horse Racing',
+    slug: 'horse-racing',
+    aliases: ['horse-racing', 'derby', 'racing'],
+    category: GAME_CATEGORIES.TABLE,
+    badge: 'DERBY',
+    themeColor: '#10b981',
+    icon: '/items/Horse Racing.jpg',
+    image: '/items/Horse Racing.jpg',
+    description: 'Live virtual derby turf racing. Back your champion thoroughbred from 6 horses with fixed odds up to 35.0x!',
+    rtp: 97.5,
+    houseEdge: 2.5,
     minStakeFC: 1,
     maxStakeFC: 1000,
     defaultStakeFC: 10,
-    maxMultiplier: 1000.0,
+    maxMultiplier: 35.0,
     isProvablyFair: true,
     status: 'active',
-    features: ['Physics Simulation', '8 to 16 Rows Configurable', 'Low / Medium / High Risk Profiles', 'Rapid Multi-Ball Drop'],
+    features: ['6-Runner Thoroughbred Sprint', 'Fixed Odds (2.4x to 35.0x)', 'Realtime Visual Track Sprint', 'Win & Place Betting'],
     rules: [
-      'Select risk profile: Low, Medium, or High.',
-      'Select pegboard rows: 8, 10, 12, 14, or 16 rows.',
-      'Drop balls from the top of the pyramid.',
-      'Each ball deflects off pegs and lands in a multiplier slot at the bottom.'
+      'Study the 6 competing horses, their post positions, and live odds.',
+      'Place your Flow Coin stake on your chosen horse to Win.',
+      'Watch the runners sprint down the turf in real time.',
+      'If your horse crosses the finish line first, receive the payout instantly!'
     ],
-    instructions: 'Choose risk and row count, then click "Drop Ball".'
+    instructions: 'Select your winning horse from the roster, enter your bet, and watch the race.'
   },
 
   // --------------------------------------------------------------------------
@@ -448,10 +450,11 @@ export function getGameIconUrl(idOrSlug?: string | { id?: string; slug?: string 
       return '/items/Crash.jpg';
     case 'dice':
       return '/items/Dice.jpg';
-    case 'mines':
-      return '/items/Mines.jpg';
-    case 'plinko':
-      return '/items/Plinko.jpg';
+    case 'bingo':
+    case 'bingo-color-trading':
+      return '/items/Bingo.jpg';
+    case 'horse-racing':
+      return '/items/Horse Racing.jpg';
     case 'roulette':
     case 'european-roulette':
       return '/items/European Roulette.jpg';
@@ -505,10 +508,11 @@ export function getGameFallbackIconUrl(idOrSlug?: string | { id?: string; slug?:
       return '/items/Crash.jpg';
     case 'dice':
       return '/items/Dice.jpg';
-    case 'mines':
-      return '/items/Mines.jpg';
-    case 'plinko':
-      return '/items/Plinko.jpg';
+    case 'bingo':
+    case 'bingo-color-trading':
+      return '/items/Bingo.jpg';
+    case 'horse-racing':
+      return '/items/Horse Racing.jpg';
     case 'coinflip':
       return '/items/Coinflip.jpg';
     case 'limbo':

@@ -19,10 +19,10 @@ import ProvablyFairModal from './ProvablyFairModal';
 import { 
   CrashGame, 
   DiceGame, 
-  MinesGame, 
+  BingoGame, 
+  HorseRacingGame,
   LimboGame,
   CoinflipGame,
-  PlinkoGame,
   RouletteGame,
   KenoGame,
   BlackjackGame,
@@ -92,8 +92,8 @@ export default function GameModal({ gameId, onClose }) {
               <span className="hidden text-xl">
                 {game.id === 'crash' ? '🚀' : 
                  game.id === 'dice' ? '🎲' : 
-                 game.id === 'mines' ? '💣' : 
-                 game.id === 'plinko' ? '🎯' : 
+                 game.id === 'bingo' ? '🎨' : 
+                 game.id === 'horse-racing' ? '🏇' : 
                  game.id === 'roulette' ? '🎡' : 
                  game.id === 'coinflip' ? '🪙' : 
                  game.id === 'blackjack' ? '🃏' : 
@@ -195,14 +195,14 @@ export default function GameModal({ gameId, onClose }) {
             <CrashGame room={null} />
           ) : game.id === 'dice' ? (
             <DiceGame room={null} />
-          ) : game.id === 'mines' ? (
-            <MinesGame room={null} />
+          ) : game.id === 'bingo' ? (
+            <BingoGame room={null} />
+          ) : game.id === 'horse-racing' ? (
+            <HorseRacingGame room={null} />
           ) : game.id === 'limbo' ? (
             <LimboGame room={null} />
           ) : game.id === 'coinflip' ? (
             <CoinflipGame room={null} />
-          ) : game.id === 'plinko' ? (
-            <PlinkoGame room={null} />
           ) : game.id === 'roulette' ? (
             <RouletteGame room={null} />
           ) : game.id === 'keno' ? (
@@ -331,7 +331,8 @@ export default function GameModal({ gameId, onClose }) {
                 {/* Animated Game Stage Center */}
                 <div className="my-auto py-8 space-y-4">
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-[#111827] border-2 border-amber-500/40 flex items-center justify-center text-5xl sm:text-6xl mx-auto shadow-[0_0_30px_rgba(245,196,81,0.2)]">
-                    {((game.id as string) === 'plinko') ? '🎯' : 
+                    {((game.id as string) === 'bingo') ? '🎨' : 
+                     ((game.id as string) === 'horse-racing') ? '🏇' : 
                      ((game.id as string) === 'roulette') ? '🎡' : 
                      ((game.id as string) === 'coinflip') ? '🪙' : 
                      ((game.id as string) === 'blackjack') ? '🃏' : 

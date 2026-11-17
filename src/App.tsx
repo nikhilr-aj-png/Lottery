@@ -173,6 +173,15 @@ function LotteryAppContent() {
     const cleanPath = path.split('?')[0].split('#')[0];
     const match = cleanPath.match(/^\/games\/([^\/]+)(?:\/([^\/]+))?/);
     if (match) {
+      const slug = match[1]?.toLowerCase();
+      if (slug === 'mines' || slug === 'plinko') {
+        if (typeof window !== 'undefined') {
+          try {
+            window.history.replaceState(null, '', '/');
+          } catch (e) {}
+        }
+        return null;
+      }
       return { gameSlug: match[1], roomId: match[2] || null };
     }
     return null;

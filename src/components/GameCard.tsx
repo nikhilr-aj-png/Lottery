@@ -42,19 +42,19 @@ export default function GameCard({ game, onPlay }: GameCardProps) {
           borderHover: 'hover:border-blue-400/60',
           accent: '#3B82F6'
         };
-      case 'mines':
+      case 'bingo':
         return {
-          emoji: '💣',
-          gradient: 'from-red-500/25 via-rose-500/10 to-transparent',
-          borderHover: 'hover:border-red-400/60',
-          accent: '#EF4444'
+          emoji: '🎨',
+          gradient: 'from-purple-500/25 via-violet-500/10 to-transparent',
+          borderHover: 'hover:border-purple-400/60',
+          accent: '#8B5CF6'
         };
-      case 'plinko':
+      case 'horse-racing':
         return {
-          emoji: '🎯',
-          gradient: 'from-pink-500/25 via-purple-500/10 to-transparent',
-          borderHover: 'hover:border-pink-400/60',
-          accent: '#EC4899'
+          emoji: '🏇',
+          gradient: 'from-emerald-500/25 via-green-500/10 to-transparent',
+          borderHover: 'hover:border-emerald-400/60',
+          accent: '#10B981'
         };
       case 'roulette':
         return {

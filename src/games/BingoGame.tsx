@@ -1,0 +1,509 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useGameEngine } from '../hooks/useGameEngine';
+import { generateBingoResult } from '../engine';
+import { 
+  Play, 
+  Sparkles, 
+  Clock, 
+  CheckCircle2, 
+  TrendingUp, 
+  ShieldCheck, 
+  Flame,
+  Award,
+  Zap,
+  RotateCcw
+} from 'lucide-react';
+import confetti from 'canvas-confetti';
+import { soundFX } from '../engine/SoundFXService';
+
+type BetSelectionType = 'color' | 'number' | 'size';
+
+interface BetSelection {
+  type: BetSelectionType;
+  value: string | number; // 'green' | 'violet' | 'red' | 'big' | 'small' | 0..9
+  odds: number;
+  label: string;
+}
+
+export default function BingoGame({ 
+  room, 
+  activityBox 
+}: { 
+  room?: any; 
+  activityBox?: React.ReactNode; 
+}) {
+  const {
+    game,
+    betAmount,
+    setBetAmount,
+    doubleBet,
+    halveBet,
+    setMinBet,
+    setMaxBet,
+    seeds,
+    startRound,
+    settleRound,
+    walletBalance,
+    loading
+  } = useGameEngine('bingo');
+
+  // Enforce room-specific stake bounds
+  useEffect(() => {
+    if (room?.minStakeFC && betAmount < room.minStakeFC) {
+      setBetAmount(room.minStakeFC);
+    } else if (room?.maxStakeFC && betAmount > room.maxStakeFC) {
+      setBetAmount(room.maxStakeFC);
+    }
+  }, [room?.minStakeFC, room?.maxStakeFC]);
+
+  // Selected Bet
+  const [selectedBet, setSelectedBet] = useState<BetSelection>({
+    type: 'color',
+    value: 'green',
+    odds: 2.0,
+    label: 'GREEN (2.0x)'
+  });
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [roundOutcome, setRoundOutcome] = useState<{
+    number: number;
+    color: 'red' | 'green' | 'violet';
+    hasViolet: boolean;
+    size: 'big' | 'small';
+  } | null>(null);
+
+  const [lastResult, setLastResult] = useState<'won' | 'lost' | null>(null);
+  const [countdown, setCountdown] = useState(25);
+  const [isRevealing, setIsRevealing] = useState(false);
+
+  // History strip of recent color rounds
+  const [history, setHistory] = useState<Array<{ number: number; color: 'red' | 'green' | 'violet'; hasViolet?: boolean; size: 'big' | 'small' }>>([
+    { number: 7, color: 'green', size: 'big' },
+    { number: 2, color: 'red', size: 'small' },
+    { number: 0, color: 'red', hasViolet: true, size: 'small' },
+    { number: 9, color: 'green', size: 'big' },
+    { number: 5, color: 'green', hasViolet: true, size: 'big' },
+    { number: 4, color: 'red', size: 'small' },
+    { number: 8, color: 'red', size: 'big' },
+    { number: 3, color: 'green', size: 'small' }
+  ]);
+
+  // 30-second cycle countdown ticker
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) return 30;
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const potentialPayout = parseFloat((betAmount * selectedBet.odds).toFixed(2));
+
+  // Handle Trade / Bet Action
+  const handleTrade = async () => {
+    if (isPlaying || loading) return;
+
+    const startRes = await startRound();
+    if (!startRes.success) return;
+
+    soundFX.playChipBet();
+    setIsPlaying(true);
+    setIsRevealing(true);
+    setLastResult(null);
+
+    // Provably fair generation
+    const outcome = await generateBingoResult(
+      seeds.serverHash || 'seed_bingo_default',
+      seeds.clientSeed,
+      seeds.nonce
+    );
+
+    // Dramatic 1.5s reveal simulation
+    setTimeout(() => {
+      finalizeRound(outcome);
+    }, 1500);
+  };
+
+  const finalizeRound = async (outcome: { number: number; color: 'red' | 'green' | 'violet'; hasViolet: boolean; size: 'big' | 'small' }) => {
+    setRoundOutcome(outcome);
+    setIsRevealing(false);
+    setIsPlaying(false);
+
+    // Determine win condition
+    let isWin = false;
+    let effectiveMultiplier = 0;
+
+    if (selectedBet.type === 'color') {
+      if (selectedBet.value === 'violet' && outcome.hasViolet) {
+        isWin = true;
+        effectiveMultiplier = 4.5;
+      } else if (selectedBet.value === 'green' && outcome.color === 'green') {
+        isWin = true;
+        effectiveMultiplier = outcome.hasViolet ? 1.5 : 2.0;
+      } else if (selectedBet.value === 'red' && outcome.color === 'red') {
+        isWin = true;
+        effectiveMultiplier = outcome.hasViolet ? 1.5 : 2.0;
+      }
+    } else if (selectedBet.type === 'number') {
+      if (selectedBet.value === outcome.number) {
+        isWin = true;
+        effectiveMultiplier = 9.0;
+      }
+    } else if (selectedBet.type === 'size') {
+      if (selectedBet.value === outcome.size) {
+        isWin = true;
+        effectiveMultiplier = 1.98;
+      }
+    }
+
+    const payout = isWin ? parseFloat((betAmount * effectiveMultiplier).toFixed(2)) : 0;
+    setLastResult(isWin ? 'won' : 'lost');
+
+    // Add to history
+    setHistory((prev) => [outcome, ...prev.slice(0, 11)]);
+
+    if (isWin) {
+      soundFX.playWinFanfare('standard');
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#10B981', '#8B5CF6', '#EF4444', '#F5C451']
+        });
+      } catch (e) {}
+    } else {
+      soundFX.playCoinflipLand(false);
+    }
+
+    // Settle with backend engine
+    await settleRound({
+      multiplier: effectiveMultiplier,
+      payout,
+      outcomeData: {
+        drawnNumber: outcome.number,
+        drawnColor: outcome.color,
+        hasViolet: outcome.hasViolet,
+        drawnSize: outcome.size,
+        betType: selectedBet.type,
+        betValue: selectedBet.value
+      }
+    });
+  };
+
+  return (
+    <div className="w-full flex-1 flex flex-col min-h-0 space-y-2 text-left">
+      {/* Top Banner: Round Cycle Timer & Recent Draws Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-2 sm:px-3 rounded-xl bg-[#090D16] border border-[#1F2737] shrink-0 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono-numbers font-black">
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            <span>00:{countdown.toString().padStart(2, '0')}</span>
+          </div>
+          <span className="font-bold text-[11px] text-white">Live Color Cycle</span>
+          <span className="text-[10px] text-[#94A3B8] font-mono-numbers">Round #{seeds.nonce}</span>
+        </div>
+
+        {/* Recent Drawn Number History Bar */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          <span className="text-[10px] text-[#94A3B8] uppercase font-bold shrink-0">Recent:</span>
+          {history.map((h, i) => {
+            const bg = h.hasViolet 
+              ? (h.color === 'green' ? 'bg-gradient-to-r from-emerald-600 to-purple-600' : 'bg-gradient-to-r from-red-600 to-purple-600')
+              : h.color === 'green' ? 'bg-emerald-600' : 'bg-red-600';
+            return (
+              <span
+                key={i}
+                className={`w-6 h-6 rounded-full ${bg} text-white font-mono-numbers font-black text-xs flex items-center justify-center shadow-xs shrink-0`}
+                title={`Number ${h.number} (${h.color.toUpperCase()}${h.hasViolet ? ' + VIOLET' : ''}, ${h.size.toUpperCase()})`}
+              >
+                {h.number}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Game Stage: 2-Column Responsive Layout */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 overflow-y-auto no-scrollbar">
+        {/* Left Stage Area: Color Prediction & Number Board (7 cols on Desktop) */}
+        <div className="lg:col-span-8 flex flex-col space-y-2">
+          {/* Active Reveal Display Stage */}
+          <div className="relative rounded-2xl bg-gradient-to-b from-[#101726] to-[#0A0E17] border border-amber-500/30 p-4 sm:p-5 flex flex-col items-center justify-center overflow-hidden min-h-[160px] sm:min-h-[180px] shadow-lg">
+            <div className="absolute top-2 left-3 flex items-center gap-1.5 text-[10px] font-mono-numbers text-amber-400">
+              <Zap className="w-3 h-3" />
+              <span>Provably Fair Draw Oracle</span>
+            </div>
+
+            {/* Glowing Ball Reveal */}
+            <div className="my-2 flex flex-col items-center justify-center">
+              {isRevealing ? (
+                <div className="flex flex-col items-center space-y-2 animate-pulse">
+                  <div className="w-20 h-20 rounded-full border-4 border-amber-400 border-t-transparent animate-spin flex items-center justify-center">
+                    <span className="text-xl font-black text-amber-300">🎲</span>
+                  </div>
+                  <span className="text-xs font-mono-numbers font-extrabold text-amber-300 uppercase tracking-widest">
+                    Drawing Color...
+                  </span>
+                </div>
+              ) : roundOutcome ? (
+                <div className="flex flex-col items-center space-y-1.5 animate-in zoom-in-95 duration-200">
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(245,196,81,0.4)] ${
+                    roundOutcome.hasViolet
+                      ? (roundOutcome.color === 'green' ? 'bg-gradient-to-tr from-emerald-500 via-purple-600 to-purple-400' : 'bg-gradient-to-tr from-red-500 via-purple-600 to-purple-400')
+                      : roundOutcome.color === 'green' ? 'bg-emerald-500' : 'bg-red-500'
+                  }`}>
+                    <span className="text-3xl font-mono-numbers font-black text-white drop-shadow-md">
+                      {roundOutcome.number}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase text-white px-2 py-0.5 rounded bg-black/50 border border-white/20">
+                      {roundOutcome.color.toUpperCase()}{roundOutcome.hasViolet ? ' + VIOLET' : ''}
+                    </span>
+                    <span className="text-xs font-mono-numbers font-bold text-amber-300 px-2 py-0.5 rounded bg-black/50 border border-amber-500/30 uppercase">
+                      {roundOutcome.size}
+                    </span>
+                  </div>
+                  {lastResult && (
+                    <div className={`text-xs font-extrabold uppercase px-3 py-1 rounded-full font-mono-numbers ${
+                      lastResult === 'won' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/40'
+                    }`}>
+                      {lastResult === 'won' ? `🎉 WIN +${potentialPayout} FC` : 'MISSED · NEXT ROUND'}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center space-y-2 text-center">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500/20 to-purple-500/20 border-2 border-amber-500/40 flex items-center justify-center">
+                    <Sparkles className="w-7 h-7 text-amber-400" />
+                  </div>
+                  <span className="text-xs font-bold text-white">Place Your Prediction</span>
+                  <span className="text-[11px] text-[#94A3B8]">Pick Color, Number (0–9), or Big/Small below</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* COLOR SELECTION ROW (GREEN, VIOLET, RED) */}
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              disabled={isPlaying}
+              onClick={() => setSelectedBet({ type: 'color', value: 'green', odds: 2.0, label: 'GREEN (2.0x)' })}
+              className={`p-3 rounded-xl font-bold flex flex-col items-center justify-center transition-all cursor-pointer shadow-md ${
+                selectedBet.type === 'color' && selectedBet.value === 'green'
+                  ? 'bg-emerald-500 text-white ring-2 ring-emerald-300 ring-offset-2 ring-offset-[#07090d] scale-102 font-black'
+                  : 'bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 border border-emerald-500/40'
+              }`}
+            >
+              <span className="text-xs sm:text-sm font-extrabold uppercase">Green</span>
+              <span className="text-[10px] font-mono-numbers text-emerald-200">2.0x Payout</span>
+              <span className="text-[9px] text-emerald-300/80">Wins: 1, 3, 7, 9</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isPlaying}
+              onClick={() => setSelectedBet({ type: 'color', value: 'violet', odds: 4.5, label: 'VIOLET (4.5x)' })}
+              className={`p-3 rounded-xl font-bold flex flex-col items-center justify-center transition-all cursor-pointer shadow-md ${
+                selectedBet.type === 'color' && selectedBet.value === 'violet'
+                  ? 'bg-purple-600 text-white ring-2 ring-purple-300 ring-offset-2 ring-offset-[#07090d] scale-102 font-black'
+                  : 'bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 border border-purple-500/40'
+              }`}
+            >
+              <span className="text-xs sm:text-sm font-extrabold uppercase">Violet</span>
+              <span className="text-[10px] font-mono-numbers text-purple-200">4.5x Payout</span>
+              <span className="text-[9px] text-purple-300/80">Wins: 0, 5</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isPlaying}
+              onClick={() => setSelectedBet({ type: 'color', value: 'red', odds: 2.0, label: 'RED (2.0x)' })}
+              className={`p-3 rounded-xl font-bold flex flex-col items-center justify-center transition-all cursor-pointer shadow-md ${
+                selectedBet.type === 'color' && selectedBet.value === 'red'
+                  ? 'bg-red-600 text-white ring-2 ring-red-300 ring-offset-2 ring-offset-[#07090d] scale-102 font-black'
+                  : 'bg-red-950/40 hover:bg-red-900/50 text-red-300 border border-red-500/40'
+              }`}
+            >
+              <span className="text-xs sm:text-sm font-extrabold uppercase">Red</span>
+              <span className="text-[10px] font-mono-numbers text-red-200">2.0x Payout</span>
+              <span className="text-[9px] text-red-300/80">Wins: 2, 4, 6, 8</span>
+            </button>
+          </div>
+
+          {/* NUMBER CARDS (0 to 9) - PAYS 9X */}
+          <div className="p-2 sm:p-2.5 rounded-xl bg-[#090D16] border border-[#1F2737] space-y-1.5">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-extrabold text-white flex items-center gap-1">
+                <span>Numbers Grid</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 font-mono-numbers border border-amber-500/30">9.0X PAYOUT</span>
+              </span>
+              <span className="text-[10px] text-[#94A3B8]">Direct Hits</span>
+            </div>
+
+            <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => {
+                const isSelected = selectedBet.type === 'number' && selectedBet.value === num;
+                const isGreen = [1, 3, 7, 9].includes(num);
+                const isVioletSplit = num === 0 || num === 5;
+                const numColorClass = isVioletSplit 
+                  ? (num === 0 ? 'bg-gradient-to-r from-red-600 to-purple-600' : 'bg-gradient-to-r from-emerald-600 to-purple-600')
+                  : isGreen ? 'bg-emerald-600' : 'bg-red-600';
+
+                return (
+                  <button
+                    key={num}
+                    type="button"
+                    disabled={isPlaying}
+                    onClick={() => setSelectedBet({ type: 'number', value: num, odds: 9.0, label: `NUMBER #${num} (9.0x)` })}
+                    className={`py-2 rounded-lg font-mono-numbers font-black text-sm flex flex-col items-center justify-center transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-amber-400 text-black ring-2 ring-amber-300 ring-offset-2 ring-offset-[#07090d] scale-105'
+                        : `${numColorClass} text-white hover:brightness-110 shadow-xs`
+                    }`}
+                  >
+                    <span>{num}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* SIZE SELECTION ROW (BIG VS SMALL) */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              disabled={isPlaying}
+              onClick={() => setSelectedBet({ type: 'size', value: 'big', odds: 1.98, label: 'BIG (5–9) 1.98x' })}
+              className={`p-2.5 rounded-xl font-bold flex items-center justify-between px-4 transition-all cursor-pointer ${
+                selectedBet.type === 'size' && selectedBet.value === 'big'
+                  ? 'bg-amber-500 text-black font-extrabold shadow-md'
+                  : 'bg-[#141924] hover:bg-[#1a2130] text-[#94A3B8] hover:text-white border border-[#272a31]'
+              }`}
+            >
+              <span className="text-xs uppercase font-extrabold">Big (5 – 9)</span>
+              <span className="text-[11px] font-mono-numbers font-black">1.98x</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isPlaying}
+              onClick={() => setSelectedBet({ type: 'size', value: 'small', odds: 1.98, label: 'SMALL (0–4) 1.98x' })}
+              className={`p-2.5 rounded-xl font-bold flex items-center justify-between px-4 transition-all cursor-pointer ${
+                selectedBet.type === 'size' && selectedBet.value === 'small'
+                  ? 'bg-amber-500 text-black font-extrabold shadow-md'
+                  : 'bg-[#141924] hover:bg-[#1a2130] text-[#94A3B8] hover:text-white border border-[#272a31]'
+              }`}
+            >
+              <span className="text-xs uppercase font-extrabold">Small (0 – 4)</span>
+              <span className="text-[11px] font-mono-numbers font-black">1.98x</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Right Stage Area: Bet Slip, Multipliers & Room Activity (4 cols on Desktop) */}
+        <div className="lg:col-span-4 flex flex-col space-y-2">
+          {/* Bet Slip Controls */}
+          <div className="p-3 sm:p-3.5 rounded-xl bg-[#0B0F19] border border-[#1F2737] space-y-2.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-[#94A3B8]">Selected Bet:</span>
+              <span className="font-extrabold text-amber-300 font-mono-numbers uppercase">
+                {selectedBet.label}
+              </span>
+            </div>
+
+            {/* Stake Input with Quick Multipliers */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#94A3B8]">Stake Amount:</span>
+                <span className="font-mono-numbers text-white font-bold">{betAmount} FC</span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min={room?.minStakeFC || 1}
+                  max={room?.maxStakeFC || 1000}
+                  value={betAmount}
+                  disabled={isPlaying}
+                  onChange={(e) => setBetAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="flex-1 bg-[#141924] border border-[#272a31] rounded-xl px-3 py-2 text-xs font-mono-numbers text-white outline-none focus:border-amber-500"
+                />
+                <button
+                  type="button"
+                  onClick={halveBet}
+                  disabled={isPlaying}
+                  className="px-2.5 py-2 rounded-xl bg-[#141924] hover:bg-[#1f2737] text-[10px] font-bold text-[#94A3B8] border border-[#272a31] cursor-pointer"
+                >
+                  ½
+                </button>
+                <button
+                  type="button"
+                  onClick={doubleBet}
+                  disabled={isPlaying}
+                  className="px-2.5 py-2 rounded-xl bg-[#141924] hover:bg-[#1f2737] text-[10px] font-bold text-[#94A3B8] border border-[#272a31] cursor-pointer"
+                >
+                  2×
+                </button>
+              </div>
+
+              {/* Quick Multiplier Buttons */}
+              <div className="grid grid-cols-4 gap-1 pt-1">
+                {[1, 5, 20, 100].map((quick) => (
+                  <button
+                    key={quick}
+                    type="button"
+                    disabled={isPlaying}
+                    onClick={() => setBetAmount(quick)}
+                    className="py-1 rounded bg-[#111827] hover:bg-[#1a2333] text-[10px] font-mono-numbers text-amber-300/90 border border-[#1f2737] cursor-pointer font-bold"
+                  >
+                    +{quick}FC
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Potential Return Box */}
+            <div className="flex items-center justify-between p-2 rounded-lg bg-[#07090d] border border-[#1F2737] text-xs">
+              <span className="text-[#94A3B8]">Potential Return:</span>
+              <strong className="text-emerald-400 font-mono-numbers font-black text-sm">
+                {potentialPayout} FC
+              </strong>
+            </div>
+
+            {/* Execute Trade Action CTA */}
+            <button
+              type="button"
+              disabled={isPlaying || loading}
+              onClick={handleTrade}
+              className="w-full py-3 rounded-xl btn-gold text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-transform active:scale-98"
+            >
+              {isPlaying ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  <span>Locking Trade...</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>Place Trade · {betAmount} FC</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Dedicated In-Room Activity Box */}
+          {activityBox && (
+            <div className="flex-1 min-h-[140px] flex flex-col">
+              {activityBox}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

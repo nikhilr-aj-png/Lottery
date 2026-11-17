@@ -2,15 +2,15 @@ export type GameId =
   | 'lottery' 
   | 'crash' 
   | 'dice' 
-  | 'mines' 
-  | 'plinko' 
   | 'roulette' 
   | 'coinflip' 
   | 'blackjack' 
   | 'slots' 
   | 'poker' 
   | 'keno' 
-  | 'limbo';
+  | 'limbo'
+  | 'bingo'
+  | 'horse-racing';
 
 export type GameCategory = 'all' | 'lottery' | 'instant' | 'table' | 'arcade' | 'card' | 'slots';
 
@@ -28,7 +28,9 @@ export type GameBadge =
   | 'VEGAS' 
   | 'SKILL' 
   | 'LOTTO' 
-  | '10,000X';
+  | '10,000X'
+  | 'TRADING'
+  | 'DERBY';
 
 export interface GameDefinition {
   id: GameId;
