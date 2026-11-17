@@ -1811,29 +1811,46 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
-  // Helper: Check if a 4-digit number is already sold in an event
+  // Helper: Check if a 4-digit number is already sold in an event (general check)
   const isTicketNumberSold = (eventId, number) => {
     if (!eventId || number === undefined || number === null) return false;
     const formatted = String(number).padStart(4, '0');
     return tickets.some(t => t.eventId === eventId && String(t.ticketNumber).padStart(4, '0') === formatted);
   };
 
+  // Helper: Check if the CURRENT user has already purchased a specific ticket number in this event
+  const isUserTicketNumberPurchased = (eventId, number) => {
+    if (!eventId || number === undefined || number === null) return false;
+    const formatted = String(number).padStart(4, '0');
+    return tickets.some(t => 
+      (t.eventId === eventId || t.event_id === eventId) && 
+      String(t.ticketNumber).padStart(4, '0') === formatted &&
+      (
+        (wallet?.address && t.userAddress === wallet.address) ||
+        (user?.id && (t.userId === user.id || t.user_id === user.id))
+      )
+    );
+  };
+
   // Helper: Get all tickets sold for a specific event
   const getSoldTicketsForEvent = (eventId) => {
     if (!eventId) return [];
-    return tickets.filter(t => t.eventId === eventId);
+    return tickets.filter(t => t.eventId === eventId || t.event_id === eventId);
   };
 
-  // Helper: Generate an unsold random 4-digit number for an event
+  // Helper: Generate an unsold random 4-digit number for an event (prioritizing numbers not yet owned by user)
   const getUnsoldRandomNumber = (eventId) => {
-    const soldSet = new Set(
+    const userOwnedSet = new Set(
       tickets
-        .filter(t => t.eventId === eventId)
+        .filter(t => 
+          (t.eventId === eventId || t.event_id === eventId) && 
+          ((wallet?.address && t.userAddress === wallet.address) || (user?.id && (t.userId === user.id || t.user_id === user.id)))
+        )
         .map(t => String(t.ticketNumber).padStart(4, '0'))
     );
     for (let i = 0; i < 10000; i++) {
       const candidate = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-      if (!soldSet.has(candidate)) return candidate;
+      if (!userOwnedSet.has(candidate)) return candidate;
     }
     return String(Math.floor(Math.random() * 10000)).padStart(4, '0');
   };
@@ -1851,7 +1868,15 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   };
 
   // Purchase Lottery Tickets
+  const isPurchasingTicketsRef = React.useRef(false);
+
   const buyTickets = async (eventId, ticketNumbers) => {
+    // Prevent repeated purchases through rapid clicking / multiple requests
+    if (isPurchasingTicketsRef.current) {
+      showToast('Purchase in progress, please wait a moment...', 'info');
+      return false;
+    }
+
     // 0. Strict Authentication Check: No ticket purchase without login
     if (!user) {
       showToast('Authentication required: Please log in to purchase lottery tickets!', 'error');
@@ -1871,20 +1896,25 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    // Check if any requested ticket number is already sold in this event!
-    const activeTicketsForEvent = tickets.filter(t => t.eventId === eventId);
-    const soldSet = new Set(activeTicketsForEvent.map(t => String(t.ticketNumber).padStart(4, '0')));
+    // Check if any requested ticket number is already purchased by THIS user in this event!
+    const userOwnedTicketsForEvent = tickets.filter(t => 
+      (t.eventId === eventId || t.event_id === eventId) && 
+      (
+        (wallet?.address && t.userAddress === wallet.address) ||
+        (user?.id && (t.userId === user.id || t.user_id === user.id))
+      )
+    );
+    const userOwnedSet = new Set(userOwnedTicketsForEvent.map(t => String(t.ticketNumber).padStart(4, '0')));
     
     const seenInOrder = new Set();
     for (const num of ticketNumbers) {
       const formatted = String(num).padStart(4, '0');
-      if (soldSet.has(formatted)) {
-        const alt = suggestAlternative(formatted, soldSet);
-        showToast(`Combination #${formatted} is ALREADY SOLD OUT! Please select an available number (e.g. #${alt}).`, 'error');
+      if (userOwnedSet.has(formatted)) {
+        showToast(`You have already purchased ticket #${formatted} for this draw! Duplicate purchases by the same user are not permitted.`, 'error');
         return false;
       }
       if (seenInOrder.has(formatted)) {
-        showToast(`Duplicate ticket #${formatted} in order! Each ticket must be unique.`, 'error');
+        showToast(`Duplicate ticket #${formatted} in order! Each ticket in an order must be unique.`, 'error');
         return false;
       }
       seenInOrder.add(formatted);
@@ -1895,6 +1925,8 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       showToast(`Insufficient Flow Coins! Need ${totalCost} FC, have ${wallet.balance.toFixed(2)} FC. Claim your Daily Bonus!`, 'error');
       return false;
     }
+
+    isPurchasingTicketsRef.current = true;
 
     // Call Server-Authoritative Atomic PostgreSQL RPC Transaction
     try {
@@ -1941,6 +1973,8 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       console.error('buyTickets RPC error:', err);
       showToast('Error completing purchase: ' + (err.message || 'Server error'), 'error');
       return false;
+    } finally {
+      isPurchasingTicketsRef.current = false;
     }
   };
 
@@ -2834,6 +2868,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         adminUpdatePlatformSettings,
         fetchPlatformSettings,
         isTicketNumberSold,
+        isUserTicketNumberPurchased,
         getSoldTicketsForEvent,
         getUnsoldRandomNumber,
         needsUsernameSetup,

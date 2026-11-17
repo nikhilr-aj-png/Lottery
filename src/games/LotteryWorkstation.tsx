@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import { 
   Dices, 
-  RotateCcw, 
-  Plus, 
-  Trash2, 
+  ChevronUp, 
+  ChevronDown, 
   ShieldCheck, 
   Check, 
   Sparkles, 
@@ -14,45 +13,46 @@ import {
   Trophy, 
   Users, 
   CheckCircle2, 
-  ChevronUp, 
-  ChevronDown, 
   Ticket, 
-  Calendar, 
-  Layers, 
-  Award, 
-  Hash, 
   ArrowLeft,
-  Play
+  Play,
+  RotateCcw,
+  Flame,
+  Activity
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundFX } from '../engine/SoundFXService';
 
-export default function LotteryWorkstation({ room, onBackToLobby, activityBox }: { room?: any; onBackToLobby?: () => void; activityBox?: React.ReactNode; }) {
+export interface LotteryWorkstationProps {
+  room?: any;
+  onBackToLobby?: () => void;
+  activityBox?: React.ReactNode;
+}
+
+export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorkstationProps) {
   const { 
     user, 
     wallet, 
     events, 
     tickets, 
     buyTickets, 
-    isTicketNumberSold, 
+    isUserTicketNumberPurchased,
     getUnsoldRandomNumber, 
     showToast, 
     setIsAuthModalOpen 
   } = useLottery();
 
-  // Map room to matching or fallback lottery event
+  // 1. Resolve matching or active lottery event for this room
   const event = useMemo(() => {
     if (!room) return events[0] || null;
-    // Check if an event matches the room id or drawId
-    const matching = events.find(e => 
+    const matching = events.find((e: any) => 
       e.id === room.id || 
       e.id === room.drawId || 
       e.title?.toLowerCase().includes(room.name?.toLowerCase())
     );
     if (matching) return matching;
 
-    // Use active event or construct virtual room event based on room configuration
-    const active = events.find(e => e.status === 'active');
+    const active = events.find((e: any) => e.status === 'active');
     if (active) {
       return {
         ...active,
@@ -76,16 +76,17 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
     };
   }, [room, events]);
 
-  // Active 4-digit dial states
-  const [digits, setDigits] = useState(() => {
-    return (getUnsoldRandomNumber ? getUnsoldRandomNumber(event?.id) : '7429').split('');
+  // 2. Active 4-digit dials state
+  const [digits, setDigits] = useState<string[]>(() => {
+    const initial = getUnsoldRandomNumber ? getUnsoldRandomNumber(event?.id) : '7429';
+    return String(initial).padStart(4, '0').slice(0, 4).split('');
   });
-  const [activeSlot, setActiveSlot] = useState(0);
-  const [stagedTickets, setStagedTickets] = useState<any[]>([]);
-  const [recentPurchase, setRecentPurchase] = useState<any>(null);
+  const [activeSlot, setActiveSlot] = useState<number>(0);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Countdown timer calculation
+  // 3. Countdown timer
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
+  const isTimedOut = event.status === 'completed' || (event.drawTime && event.drawTime <= Date.now());
 
   useEffect(() => {
     const updateTime = () => {
@@ -101,12 +102,27 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
     return () => clearInterval(interval);
   }, [event.drawTime]);
 
+  // Current dial combination
   const currentNumberStr = digits.join('');
-  const isCurrentSold = isTicketNumberSold ? isTicketNumberSold(event.id, currentNumberStr) : false;
-  const isAlreadyStaged = stagedTickets.includes(currentNumberStr);
+
+  // Check if CURRENT USER already purchased this number in this event
+  const isAlreadyPurchasedByMe = useMemo(() => {
+    if (isUserTicketNumberPurchased) {
+      return isUserTicketNumberPurchased(event.id, currentNumberStr);
+    }
+    if (!user && !wallet?.address) return false;
+    return (tickets || []).some((t: any) => 
+      (t.eventId === event.id || t.event_id === event.id) && 
+      String(t.ticketNumber).padStart(4, '0') === currentNumberStr &&
+      (
+        (wallet?.address && t.userAddress === wallet.address) ||
+        (user?.id && (t.userId === user.id || t.user_id === user.id))
+      )
+    );
+  }, [isUserTicketNumberPurchased, event.id, currentNumberStr, tickets, user, wallet?.address]);
 
   // Keypad presses
-  const handleKeypadPress = (val) => {
+  const handleKeypadPress = (val: number) => {
     soundFX.playDialTick();
     const newDigits = [...digits];
     newDigits[activeSlot] = String(val);
@@ -123,7 +139,7 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
   };
 
   // Dial increment / decrement
-  const incrementDigit = (slotIdx) => {
+  const incrementDigit = (slotIdx: number) => {
     soundFX.playDialTick();
     const newDigits = [...digits];
     newDigits[slotIdx] = String((parseInt(newDigits[slotIdx], 10) + 1) % 10);
@@ -131,7 +147,7 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
     setActiveSlot(slotIdx);
   };
 
-  const decrementDigit = (slotIdx) => {
+  const decrementDigit = (slotIdx: number) => {
     soundFX.playDialTick();
     const newDigits = [...digits];
     newDigits[slotIdx] = String((parseInt(newDigits[slotIdx], 10) + 9) % 10);
@@ -144,414 +160,265 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
     soundFX.playDialTick();
     if (getUnsoldRandomNumber) {
       const unsold = getUnsoldRandomNumber(event.id);
-      setDigits(unsold.split(''));
+      setDigits(String(unsold).padStart(4, '0').slice(0, 4).split(''));
     } else {
       const rand = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
       setDigits(rand.split(''));
     }
   };
 
-  // Add current 4-digit to staged tickets
-  const handleAddCurrentTicket = () => {
-    const num = digits.join('');
-    if (isTicketNumberSold && isTicketNumberSold(event.id, num)) {
-      showToast(`Combination #${num} is already SOLD OUT! Please select an available combination.`, 'error');
-      return;
-    }
-    if (stagedTickets.includes(num)) {
-      showToast(`Combination #${num} is already in your selected tickets!`, 'error');
-      return;
-    }
-    soundFX.playChipBet();
-    setStagedTickets(prev => [...prev, num]);
-    
-    // Automatically advance dials to next available number
-    if (getUnsoldRandomNumber) {
-      const nextUnsold = getUnsoldRandomNumber(event.id);
-      setDigits(nextUnsold.split(''));
-    }
-  };
+  // Physical keyboard listener (0-9, Backspace, Arrow keys)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept if inside an input or textarea
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
 
-  // Bulk add quick picks
-  const handleBulkAdd = (count) => {
-    soundFX.playChipBet();
-    const added: string[] = [];
-    const used = new Set([...stagedTickets]);
-    for (let i = 0; i < count; i++) {
-      let candidate = getUnsoldRandomNumber ? getUnsoldRandomNumber(event.id) : String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-      let attempts = 0;
-      while (used.has(candidate) && attempts < 50) {
-        candidate = getUnsoldRandomNumber ? getUnsoldRandomNumber(event.id) : String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-        attempts++;
+      if (/^[0-9]$/.test(e.key)) {
+        handleKeypadPress(parseInt(e.key, 10));
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        handleBackspace();
+      } else if (e.key === 'ArrowUp') {
+        incrementDigit(activeSlot);
+      } else if (e.key === 'ArrowDown') {
+        decrementDigit(activeSlot);
+      } else if (e.key === 'ArrowLeft') {
+        setActiveSlot(prev => (prev === 0 ? 3 : prev - 1));
+      } else if (e.key === 'ArrowRight') {
+        setActiveSlot(prev => (prev + 1) % 4);
       }
-      used.add(candidate);
-      added.push(candidate);
-    }
-    setStagedTickets(prev => [...prev, ...added]);
-    showToast(`Added ${added.length} unique unsold ticket(s) to order!`, 'success');
-  };
+    };
 
-  const handleRemoveStaged = (index) => {
-    soundFX.playClick();
-    setStagedTickets(prev => prev.filter((_, idx) => idx !== index));
-  };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeSlot, digits]);
 
-  // Cost calculation
-  const totalCost = stagedTickets.length * (event.ticketPrice || 10);
-  const hasEnoughBalance = Number(wallet.balance || 0) >= totalCost && totalCost > 0;
-  const isTimedOut = event.status === 'completed' || (event.drawTime && event.drawTime <= Date.now());
+  // Single Ticket Checkout
+  const handlePurchaseSingle = async () => {
+    if (isSubmitting) return;
 
-  // Submit Order
-  const handleCheckout = async () => {
     if (isTimedOut) {
       showToast('This draw has concluded and is closed for purchases!', 'error');
       return;
     }
     if (!user) {
-      showToast('Authentication required: Please log in to submit entries!', 'info');
+      showToast('Authentication required: Please log in to buy lottery tickets!', 'info');
       setIsAuthModalOpen(true);
       return;
     }
-    if (stagedTickets.length === 0) {
-      showToast('Please add at least 1 four-digit ticket to submit an entry.', 'error');
+
+    if (isAlreadyPurchasedByMe) {
+      showToast(`You have already purchased ticket #${currentNumberStr} for this draw! Duplicate purchases by the same user are not permitted.`, 'error');
       return;
     }
 
-    if (!hasEnoughBalance) {
+    const ticketCost = Number(event.ticketPrice || 10);
+    if (Number(wallet.balance || 0) < ticketCost) {
+      showToast(`Insufficient Flow Coins. Required: ${ticketCost} FC, Available: ${wallet.balance} FC`, 'error');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const success = await buyTickets(event.id, [currentNumberStr]);
+      if (success) {
+        soundFX.playWinFanfare('big');
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.65 },
+          colors: ['#ffd700', '#f5c451', '#22c55e', '#ffffff']
+        });
+        showToast(`🎉 Purchased Ticket #${currentNumberStr} for ${ticketCost} FC!`, 'success');
+        
+        // Auto-advance dial to another available unsold number
+        if (getUnsoldRandomNumber) {
+          const next = getUnsoldRandomNumber(event.id);
+          setDigits(String(next).padStart(4, '0').slice(0, 4).split(''));
+        }
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Bulk Quick Buy (1, 5, or 10 unique tickets)
+  const handleBulkBuy = async (count: number) => {
+    if (isSubmitting) return;
+
+    if (isTimedOut) {
+      showToast('This draw has concluded and is closed for purchases!', 'error');
+      return;
+    }
+    if (!user) {
+      showToast('Authentication required: Please log in to buy lottery tickets!', 'info');
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    const totalCost = Number(event.ticketPrice || 10) * count;
+    if (Number(wallet.balance || 0) < totalCost) {
       showToast(`Insufficient Flow Coins. Required: ${totalCost} FC, Available: ${wallet.balance} FC`, 'error');
       return;
     }
 
-    const success = await buyTickets(event.id, stagedTickets);
-    if (success) {
-      soundFX.playWinFanfare('big');
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ['#ffd700', '#f5c451', '#22c55e', '#ffffff']
-      });
-      setRecentPurchase({
-        tickets: [...stagedTickets],
-        totalCost,
-        time: new Date().toLocaleTimeString(),
-        drawId: event.id
-      });
-      setStagedTickets([]);
-      showToast(`🎉 Successfully entered ${stagedTickets.length} ticket(s) into ${room.name}!`, 'success');
+    // Generate unique random tickets not yet owned by this user
+    const userOwnedSet = new Set(
+      (tickets || [])
+        .filter((t: any) => 
+          (t.eventId === event.id || t.event_id === event.id) &&
+          ((wallet?.address && t.userAddress === wallet.address) || (user?.id && (t.userId === user.id || t.user_id === user.id)))
+        )
+        .map((t: any) => String(t.ticketNumber).padStart(4, '0'))
+    );
+
+    const generatedTickets: string[] = [];
+    const usedInBatch = new Set<string>();
+
+    for (let i = 0; i < count; i++) {
+      let candidate = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+      let attempts = 0;
+      while ((userOwnedSet.has(candidate) || usedInBatch.has(candidate)) && attempts < 100) {
+        candidate = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+        attempts++;
+      }
+      usedInBatch.add(candidate);
+      generatedTickets.push(candidate);
+    }
+
+    setIsSubmitting(true);
+    try {
+      const success = await buyTickets(event.id, generatedTickets);
+      if (success) {
+        soundFX.playWinFanfare('big');
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.65 },
+          colors: ['#ffd700', '#f5c451', '#22c55e', '#ffffff']
+        });
+        showToast(`🎉 Successfully purchased ${generatedTickets.length} unique tickets for ${totalCost} FC!`, 'success');
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Filter user's personal tickets in this draw
+  // Room Activity: All ticket purchases made by users in THIS room/event
+  const roomActivityTickets = useMemo(() => {
+    if (!tickets) return [];
+    return tickets
+      .filter((t: any) => t.eventId === event.id || t.event_id === event.id)
+      .slice(0, 30); // Show recent 30 tickets
+  }, [tickets, event.id]);
+
+  // Current user's tickets in this room
   const myTicketsInThisRoom = useMemo(() => {
-    if (!tickets || !user) return [];
-    return tickets.filter(t => t.event_id === event.id || t.eventId === event.id);
-  }, [tickets, user, event.id]);
+    if (!tickets || (!user && !wallet?.address)) return [];
+    return tickets.filter((t: any) => 
+      (t.eventId === event.id || t.event_id === event.id) &&
+      (
+        (wallet?.address && t.userAddress === wallet.address) ||
+        (user?.id && (t.userId === user.id || t.user_id === user.id))
+      )
+    );
+  }, [tickets, user, wallet?.address, event.id]);
 
-  // Formatted closing time
-  const closingDateStr = useMemo(() => {
-    const d = new Date(event.drawTime || Date.now() + 86400000);
-    return d.toLocaleDateString(undefined, { 
-      month: 'short', 
-      day: 'numeric', 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-  }, [event.drawTime]);
+  const winDigits = String(event.winningDigits || event.targetWinningDigits || '7429');
 
-  const [workstationTab, setWorkstationTab] = useState<'entry' | 'tickets' | 'results'>('entry');
-  const winDigits = event.winningDigits || event.targetWinningDigits || '7429';
-
-  const completedLotteryEvents = useMemo(() => {
-    return events.filter(e => e.status === 'completed' || (e.drawTime && e.drawTime <= Date.now()));
-  }, [events]);
+  // Format relative time helper
+  const formatTimeAgo = (timestamp: number) => {
+    const diff = Math.max(0, Date.now() - timestamp);
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  };
 
   return (
     <div className="w-full h-full flex flex-col min-h-0 overflow-hidden text-left space-y-1.5 sm:space-y-2">
       
-      {/* 1. COMPACT IN-ROOM BANNER & DRAW METRICS */}
+      {/* 1. COMPACT TOP IN-ROOM BANNER */}
       <div className="glass-panel rounded-xl p-2 sm:px-3 sm:py-2 border border-amber-500/30 bg-gradient-to-r from-[#151C2B] via-[#0F1420] to-[#0B0F19] shadow-md flex flex-col md:flex-row items-stretch md:items-center justify-between gap-1.5 sm:gap-3 shrink-0">
         
-        {/* Left: Back to Lobby + Room Name + Draw Badge */}
+        {/* Left: Back to Lobby + Room Name + Status Badge */}
         <div className="flex items-center gap-2 min-w-0">
           {onBackToLobby && (
             <button
               onClick={onBackToLobby}
-              className="px-2 py-0.5 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-[#9b8f7c] hover:text-white border border-[#272a31] text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+              className="px-2 py-1 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-[#9b8f7c] hover:text-white border border-[#272a31] text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
               title="Return to Lottery Lobby"
             >
-              <ArrowLeft className="w-3 h-3 text-amber-400" />
+              <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
               <span className="hidden xs:inline">Lobby</span>
             </button>
           )}
 
           <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
             <h2 className="font-display font-extrabold text-xs sm:text-sm text-white truncate">
-              {room.name}
+              {room?.name || event.title}
             </h2>
             <span className="text-[9px] font-mono-numbers px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold uppercase shrink-0">
-              {room.drawId || 'DRAW #' + event.id}
+              {room?.drawId || 'DRAW #' + event.id}
             </span>
-            <span className="text-[9px] font-mono-numbers px-1.5 py-0.2 rounded bg-[#141924] text-emerald-400 border border-[#272a31] font-bold uppercase flex items-center gap-1 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className={`text-[9px] font-mono-numbers px-1.5 py-0.2 rounded font-bold uppercase flex items-center gap-1 shrink-0 ${
+              isTimedOut 
+                ? 'bg-[#141924] text-amber-300 border border-amber-500/30' 
+                : 'bg-[#141924] text-emerald-400 border border-[#272a31]'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isTimedOut ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
               {isTimedOut ? 'CONCLUDED' : 'ACTIVE'}
             </span>
           </div>
         </div>
 
-        {/* Right: Inline Compact Metrics Strip (Price, Pool, Players, Time) */}
+        {/* Right: Inline Metrics Strip (Price, Pool, Players, Countdown) */}
         <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono-numbers overflow-x-auto no-scrollbar shrink-0">
           <div className="bg-[#0b0e14] px-2 py-0.5 rounded border border-[#272a31] flex items-center gap-1 shrink-0">
-            <span className="text-[#8b92a2]">Price:</span>
+            <span className="text-[#8b92a2]">Ticket:</span>
             <strong className="text-amber-400 font-bold">{event.ticketPrice} FC</strong>
           </div>
 
           <div className="bg-[#0b0e14] px-2 py-0.5 rounded border border-[#272a31] flex items-center gap-1 shrink-0">
-            <span className="text-[#8b92a2]">Pool:</span>
+            <span className="text-[#8b92a2]">Jackpot:</span>
             <strong className="text-emerald-400 font-bold">{Number(event.poolPrize || 5000).toLocaleString()} FC</strong>
           </div>
 
           <div className="bg-[#0b0e14] px-2 py-0.5 rounded border border-[#272a31] flex items-center gap-1 shrink-0">
             <span className="text-[#8b92a2]">Players:</span>
-            <strong className="text-purple-300 font-bold">{event.participantsCount || room.currentPlayers || 18}</strong>
+            <strong className="text-purple-300 font-bold">{event.participantsCount || room?.currentPlayers || 18}</strong>
           </div>
 
           <div className="bg-[#0b0e14] px-2 py-0.5 rounded border border-[#272a31] flex items-center gap-1 text-amber-300 font-bold shrink-0">
             <Clock className="w-3 h-3 text-amber-400" />
-            <span>{isTimedOut ? 'Ended' : `${timeLeft.hours}h ${timeLeft.minutes}m`}</span>
+            <span>{isTimedOut ? 'Draw Closed' : `${timeLeft.hours}h ${timeLeft.minutes}m ${timeLeft.seconds}s`}</span>
           </div>
         </div>
 
       </div>
 
-      {/* In-Room Sub-Navigation Tabs: Play/Result, My Tickets, Past Results */}
-      <div className="flex items-center justify-between gap-2 px-2 py-1 rounded-xl bg-[#0B0F19]/90 border border-[#1F2737] shrink-0 text-xs">
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setWorkstationTab('entry')}
-            className={`px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors ${
-              workstationTab === 'entry'
-                ? 'bg-amber-500 text-black shadow-sm'
-                : 'text-[#9b8f7c] hover:text-white hover:bg-[#141924]'
-            }`}
-          >
-            {isTimedOut ? <Trophy className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
-            <span>{isTimedOut ? 'Official Draw Result' : 'Play & Enter Digits'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setWorkstationTab('tickets')}
-            className={`px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors ${
-              workstationTab === 'tickets'
-                ? 'bg-amber-500 text-black shadow-sm'
-                : 'text-[#9b8f7c] hover:text-white hover:bg-[#141924]'
-            }`}
-          >
-            <Ticket className="w-3.5 h-3.5" />
-            <span>My Tickets ({myTicketsInThisRoom.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setWorkstationTab('results')}
-            className={`px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors ${
-              workstationTab === 'results'
-                ? 'bg-amber-500 text-black shadow-sm'
-                : 'text-[#9b8f7c] hover:text-white hover:bg-[#141924]'
-            }`}
-          >
-            <Award className="w-3.5 h-3.5" />
-            <span>Past Results</span>
-          </button>
-        </div>
-
-        {isTimedOut && (
-          <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold uppercase hidden sm:inline">
-            Draw Concluded · Results Below
-          </span>
-        )}
-      </div>
-
-      {/* 2. MAIN WORKSTATION VIEWS (ENTRY / CONCLUDED RESULT / MY TICKETS / PAST RESULTS) */}
-      {workstationTab === 'tickets' ? (
-        /* IN-ROOM MY TICKETS VIEW */
-        <div className="flex-1 min-h-0 bg-[#111827] border border-[#1F2737] rounded-xl p-3 sm:p-4 flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#1f2737] shrink-0">
-            <div className="flex items-center gap-2">
-              <Ticket className="w-4 h-4 text-amber-400" />
-              <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
-                My Lottery Tickets ({tickets?.length || 0})
-              </h3>
-            </div>
-            <button
-              type="button"
-              onClick={() => setWorkstationTab('entry')}
-              className="text-xs font-bold text-amber-400 hover:text-white flex items-center gap-1 cursor-pointer"
-            >
-              <span>← Back to {isTimedOut ? 'Result' : 'Entry'}</span>
-            </button>
-          </div>
-
-          <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1 no-scrollbar">
-            {(!tickets || tickets.length === 0) ? (
-              <div className="py-12 text-center text-[#9b8f7c] space-y-2">
-                <Ticket className="w-10 h-10 text-[#9b8f7c]/40 mx-auto" />
-                <p className="text-xs">No lottery tickets purchased yet.</p>
-                {!isTimedOut && (
-                  <button
-                    type="button"
-                    onClick={() => setWorkstationTab('entry')}
-                    className="btn-gold px-3.5 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-md"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Enter 4 Digits Now</span>
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                {tickets.map((tkt: any) => {
-                  const isForThisDraw = tkt.eventId === event.id || tkt.event_id === event.id;
-                  const isWin = tkt.status === 'won' || tkt.ticketNumber === winDigits;
-                  return (
-                    <div
-                      key={tkt.id}
-                      className={`p-3 rounded-xl border flex flex-col justify-between transition-all ${
-                        isForThisDraw
-                          ? 'bg-[#151C2B] border-amber-500/40 shadow-sm'
-                          : 'bg-[#0b0e14] border-[#272a31]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between text-[10px] text-[#9b8f7c] mb-1.5">
-                        <span className="font-mono-numbers font-bold">#{tkt.id.slice(-6)}</span>
-                        <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[9px] ${
-                          isWin
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                            : isForThisDraw
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                            : 'bg-[#141924] text-[#8b92a2] border border-[#272a31]'
-                        }`}>
-                          {isWin ? '🏆 WINNER' : isForThisDraw ? 'THIS DRAW' : (tkt.status || 'PAST')}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-center gap-1.5 my-2">
-                        {String(tkt.ticketNumber || '0000').split('').map((char: string, dIdx: number) => (
-                          <div
-                            key={dIdx}
-                            className={`w-8 h-9 rounded-lg flex items-center justify-center font-display font-black text-base shadow-inner border ${
-                              isWin
-                                ? 'bg-emerald-950/40 border-emerald-400 text-emerald-300'
-                                : 'bg-[#07090e] border-[#272a31] text-amber-400'
-                            }`}
-                          >
-                            {char}
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="pt-2 border-t border-[#1f2737] flex items-center justify-between text-[10px] font-mono-numbers">
-                        <span className="text-[#8b92a2] truncate max-w-[120px]">{tkt.eventTitle || event.title}</span>
-                        <strong className="text-white">{tkt.price || event.ticketPrice} FC</strong>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      ) : workstationTab === 'results' ? (
-        /* IN-ROOM PAST RESULTS VIEW */
-        <div className="flex-1 min-h-0 bg-[#111827] border border-[#1F2737] rounded-xl p-3 sm:p-4 flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#1f2737] shrink-0">
-            <div className="flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-emerald-400" />
-              <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
-                Lottery Draw Results ({completedLotteryEvents.length})
-              </h3>
-            </div>
-            <button
-              type="button"
-              onClick={() => setWorkstationTab('entry')}
-              className="text-xs font-bold text-amber-400 hover:text-white flex items-center gap-1 cursor-pointer"
-            >
-              <span>← Back to {isTimedOut ? 'Result' : 'Entry'}</span>
-            </button>
-          </div>
-
-          <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1 no-scrollbar">
-            {completedLotteryEvents.length === 0 ? (
-              <div className="py-12 text-center text-[#9b8f7c] space-y-2">
-                <Trophy className="w-10 h-10 text-[#9b8f7c]/40 mx-auto" />
-                <p className="text-xs">No lottery rounds have concluded yet.</p>
-              </div>
-            ) : (
-              completedLotteryEvents.map((ce: any) => {
-                const cWinDigits = ce.winningDigits || ce.targetWinningDigits || '7429';
-                return (
-                  <div
-                    key={ce.id}
-                    className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] hover:border-amber-500/40 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-                  >
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono-numbers font-bold text-[10px] text-amber-400 bg-[#141924] px-1.5 py-0.5 rounded border border-amber-500/30">
-                          ROUND #{ce.id.replace('evt-', '').toUpperCase()}
-                        </span>
-                        <span className="text-[10px] text-[#8b92a2] flex items-center gap-1 font-mono-numbers">
-                          <Calendar className="w-3 h-3" />
-                          {ce.drawTime ? new Date(ce.drawTime).toLocaleDateString() : 'Recent'}
-                        </span>
-                      </div>
-                      <h4 className="font-display font-bold text-xs sm:text-sm text-white truncate">
-                        {ce.title}
-                      </h4>
-                      <div className="text-[10px] text-[#9b8f7c] flex items-center gap-2">
-                        <span>Pool: <strong className="text-emerald-400 font-mono-numbers">{Number(ce.poolPrize || 5000).toLocaleString()} FC</strong></span>
-                        <span>•</span>
-                        <span>Winners: <strong className="text-purple-300 font-mono-numbers">{ce.winners?.length || 1}</strong></span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {cWinDigits.split('').map((char: string, idx: number) => (
-                        <div
-                          key={idx}
-                          className="w-8 h-9 sm:w-9 sm:h-10 rounded-lg bg-gradient-to-b from-[#192233] to-[#0c0f17] border border-emerald-400 flex items-center justify-center font-display font-black text-base text-emerald-400 shadow-[0_0_10px_rgba(5,213,170,0.25)]"
-                        >
-                          {char}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      ) : isTimedOut ? (
-        /* CONCLUDED EVENT RESULT VIEW (Automatic transition when draw expires) */
-        <div className="flex-1 min-h-0 bg-[#111827] border border-[#1F2737] rounded-xl p-3 sm:p-4 flex flex-col justify-between overflow-hidden">
-          <div className="space-y-2">
+      {/* 2. MAIN WORKSTATION: CONCLUDED RESULT OR 4-PART ACTIVE GAMEPLAY */}
+      {isTimedOut ? (
+        /* CONCLUDED EVENT RESULT VIEW */
+        <div className="flex-1 min-h-0 bg-[#111827] border border-[#1F2737] rounded-xl p-3 sm:p-5 flex flex-col justify-between overflow-y-auto no-scrollbar">
+          <div className="space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-[#1f2737]">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,196,81,0.6)]" />
-                <span className="font-display font-extrabold text-xs sm:text-sm text-white">
-                  Official Drawn Winning Combination
+                <span className="font-display font-extrabold text-sm sm:text-base text-white">
+                  Official Concluded Result – {room?.name || event.title}
                 </span>
               </div>
               <span className="text-[10px] font-mono-numbers px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold uppercase">
-                Round Concluded
+                Draw Concluded
               </span>
             </div>
 
-            {/* Big Glowing Drawn 4-Digit Balls */}
-            <div className="text-center py-2 sm:py-3">
-              <span className="text-[10px] text-[#8b92a2] uppercase font-bold tracking-wider block mb-2">
-                Winning 4-Digit Number
+            {/* Glowing Drawn 4-Digit Balls */}
+            <div className="text-center py-2 sm:py-4">
+              <span className="text-[11px] text-[#8b92a2] uppercase font-bold tracking-wider block mb-2">
+                Official Winning 4-Digit Number
               </span>
               <div className="flex items-center justify-center gap-2 sm:gap-3">
                 {winDigits.split('').map((digit: string, idx: number) => (
@@ -566,9 +433,9 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
             </div>
 
             {/* Pool & Winner Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-mono-numbers">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs font-mono-numbers">
               <div className="bg-[#0b0e14] p-2.5 rounded-xl border border-[#272a31]">
-                <span className="text-[#8b92a2] text-[10px] block">Total Prize Pool</span>
+                <span className="text-[#8b92a2] text-[10px] block">Prize Pool</span>
                 <strong className="text-amber-400 text-sm font-black">{Number(event.poolPrize || 5000).toLocaleString()} FC</strong>
               </div>
               <div className="bg-[#0b0e14] p-2.5 rounded-xl border border-[#272a31]">
@@ -576,26 +443,24 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
                 <strong className="text-emerald-400 text-sm font-black">#{winDigits}</strong>
               </div>
               <div className="bg-[#0b0e14] p-2.5 rounded-xl border border-[#272a31] col-span-2 sm:col-span-1">
-                <span className="text-[#8b92a2] text-[10px] block">Winners</span>
-                <strong className="text-purple-300 text-sm font-bold">{event.winners?.length || 1} Winner(s)</strong>
+                <span className="text-[#8b92a2] text-[10px] block">Winner Payouts</span>
+                <strong className="text-purple-300 text-sm font-bold">{event.winners?.length || 1} Winner(s) Settled</strong>
               </div>
             </div>
 
             {/* User's tickets in this concluded draw */}
             <div className="pt-2 border-t border-[#1f2737] space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-white flex items-center gap-1.5">
-                  <Ticket className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Your Tickets in this Round ({myTicketsInThisRoom.length})</span>
-                </span>
-              </div>
+              <span className="font-bold text-xs text-white flex items-center gap-1.5">
+                <Ticket className="w-3.5 h-3.5 text-amber-400" />
+                <span>Your Tickets in this Round ({myTicketsInThisRoom.length})</span>
+              </span>
 
               {myTicketsInThisRoom.length === 0 ? (
-                <div className="p-2 rounded-lg bg-[#0b0e14] border border-[#272a31] text-center text-xs text-[#9b8f7c]">
-                  You did not purchase tickets in this concluded round.
+                <div className="p-3 rounded-lg bg-[#0b0e14] border border-[#272a31] text-center text-xs text-[#9b8f7c]">
+                  You did not participate in this concluded round.
                 </div>
               ) : (
-                <div className="space-y-1 max-h-28 overflow-y-auto pr-1 no-scrollbar">
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1 no-scrollbar">
                   {myTicketsInThisRoom.map((t: any, idx: number) => {
                     const isWin = t.ticketNumber === winDigits || t.status === 'won';
                     return (
@@ -624,271 +489,272 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
             </div>
           </div>
 
-          {/* CTAs */}
-          <div className="pt-2 flex flex-col xs:flex-row gap-2 shrink-0">
+          {/* Action CTAs */}
+          <div className="pt-3 border-t border-[#1f2737] flex flex-col xs:flex-row gap-2 shrink-0">
             {onBackToLobby && (
               <button
                 type="button"
                 onClick={onBackToLobby}
-                className="btn-gold flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                className="btn-gold flex-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
               >
-                <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Browse Active Lottery Pools</span>
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Return to Available Lottery Pools</span>
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setWorkstationTab('tickets')}
-              className="px-3 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] cursor-pointer"
-            >
-              All My Tickets
-            </button>
           </div>
         </div>
       ) : (
-        /* ACTIVE ENTRY WORKSTATION (2 Columns) */
+        /* ================================================================ */
+        /* 4-PART PROPORTIONAL LAYOUT: 75% DIGIT SELECTION : 25% ROOM ACTIVITY */
+        /* ================================================================ */
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 overflow-hidden">
-        
-        {/* LEFT COLUMN: 4-Digit Dials & Keypad (7 Cols) */}
-        <div className="order-1 lg:col-span-7 bg-[#111827] border border-[#1F2737] rounded-xl p-2 sm:p-2.5 flex flex-col justify-between overflow-hidden h-full min-h-0 gap-1.5">
           
-          <div className="flex items-center justify-between pb-1 border-b border-[#1f2737] shrink-0">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
-                Select Your 4-Digit Combination (0000–9999)
-              </h3>
-            </div>
+          {/* ============================================================== */}
+          {/* DIGIT SELECTION AREA (3 PARTS / ~75% of content width)          */}
+          {/* ============================================================== */}
+          <div className="order-1 lg:col-span-9 bg-[#111827] border border-[#1F2737] rounded-xl p-2.5 sm:p-4 flex flex-col justify-between overflow-y-auto no-scrollbar h-full min-h-0 gap-2">
             
-            <button
-              type="button"
-              onClick={handleQuickPickCurrent}
-              className="px-2 py-0.5 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-amber-300 hover:text-white border border-[#272a31] text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
-            >
-              <Dices className="w-3 h-3" />
-              <span>Quick RNG</span>
-            </button>
-          </div>
-
-          {/* 4 Mechanical Dials */}
-          <div className="py-1 shrink-0">
-            <div className="grid grid-cols-4 gap-1.5 xs:gap-2 max-w-[280px] xs:max-w-[320px] mx-auto">
-              {digits.map((digit, idx) => {
-                const isSelected = activeSlot === idx;
-                return (
-                  <div key={idx} className="flex flex-col items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => incrementDigit(idx)}
-                      className="w-full py-1 rounded bg-[#141924] hover:bg-[#1f2737] text-[#9b8f7c] hover:text-white border border-[#272a31] flex items-center justify-center cursor-pointer transition-colors"
-                      title="Increment"
-                    >
-                      <ChevronUp className="w-3.5 h-3.5" />
-                    </button>
-
-                    <div
-                      onClick={() => setActiveSlot(idx)}
-                      className={`w-full aspect-[4/5] rounded-xl flex items-center justify-center font-mono-numbers font-black text-2xl sm:text-3xl cursor-pointer select-none transition-all shadow-inner border-2 ${
-                        isSelected 
-                          ? 'bg-[#1e2638] text-amber-400 border-amber-400 shadow-[0_0_15px_rgba(245,196,81,0.3)] scale-105' 
-                          : 'bg-[#0b0e14] text-white border-[#272a31] hover:border-amber-500/40'
-                      }`}
-                    >
-                      {digit}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => decrementDigit(idx)}
-                      className="w-full py-1 rounded bg-[#141924] hover:bg-[#1f2737] text-[#9b8f7c] hover:text-white border border-[#272a31] flex items-center justify-center cursor-pointer transition-colors"
-                      title="Decrement"
-                    >
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Availability Indicator */}
-            <div className="text-center pt-1.5">
-              {isCurrentSold ? (
-                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 text-[10px] font-bold">
-                  <AlertCircle className="w-3 h-3" />
-                  <span>#{currentNumberStr} is SOLD OUT in this round</span>
-                </div>
-              ) : isAlreadyStaged ? (
-                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 text-[10px] font-bold">
-                  <Check className="w-3 h-3" />
-                  <span>#{currentNumberStr} is already staged</span>
-                </div>
-              ) : (
-                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
-                  <CheckCircle2 className="w-3 h-3" />
-                  <span>#{currentNumberStr} is Available</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Virtual Numeric Keypad (0–9) */}
-          <div className="max-w-[280px] xs:max-w-[320px] mx-auto space-y-1 w-full shrink-0">
-            <div className="grid grid-cols-3 gap-1">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((val) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => handleKeypadPress(val)}
-                  className="py-1.5 rounded-lg bg-[#0b0e14] hover:bg-[#151c2b] text-white hover:text-amber-300 font-mono-numbers font-extrabold text-xs border border-[#272a31] active:scale-95 transition-all cursor-pointer"
-                >
-                  {val}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={handleBackspace}
-                className="py-1.5 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-[#9b8f7c] hover:text-white font-bold text-[10px] border border-[#272a31] transition-colors cursor-pointer flex items-center justify-center"
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                onClick={() => handleKeypadPress(0)}
-                className="py-1.5 rounded-lg bg-[#0b0e14] hover:bg-[#151c2b] text-white hover:text-amber-300 font-mono-numbers font-extrabold text-xs border border-[#272a31] active:scale-95 transition-all cursor-pointer"
-              >
-                0
-              </button>
+            {/* Header: Title + Quick RNG */}
+            <div className="flex items-center justify-between pb-1.5 border-b border-[#1f2737] shrink-0">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
+                  Pick Your 4-Digit Lucky Combination (0000–9999)
+                </h3>
+              </div>
+              
               <button
                 type="button"
                 onClick={handleQuickPickCurrent}
-                className="py-1.5 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-amber-400 font-bold text-[10px] border border-amber-500/30 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                className="px-2.5 py-1 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-amber-300 hover:text-white border border-[#272a31] text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                title="Generate Random Number"
               >
-                <Dices className="w-3 h-3" />
-                <span>RNG</span>
+                <Dices className="w-3.5 h-3.5" />
+                <span>Quick RNG</span>
               </button>
             </div>
 
-            {/* Action Buttons: Add Current & Quick Bulk Picks */}
-            <div className="pt-1 space-y-1">
-              <button
-                type="button"
-                onClick={handleAddCurrentTicket}
-                disabled={isCurrentSold || isAlreadyStaged}
-                className="w-full py-2 rounded-lg btn-gold font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add #{currentNumberStr} to Order ({event.ticketPrice} FC)</span>
-              </button>
+            {/* 4 MECHANICAL DIALS */}
+            <div className="py-2 shrink-0">
+              <div className="grid grid-cols-4 gap-2 xs:gap-3 max-w-[320px] xs:max-w-[360px] mx-auto">
+                {digits.map((digit, idx) => {
+                  const isSelected = activeSlot === idx;
+                  return (
+                    <div key={idx} className="flex flex-col items-center gap-1">
+                      {/* Increment Button */}
+                      <button
+                        type="button"
+                        onClick={() => incrementDigit(idx)}
+                        className="w-full py-1.5 rounded-lg bg-[#141924] hover:bg-[#1f2737] text-[#9b8f7c] hover:text-white border border-[#272a31] flex items-center justify-center cursor-pointer transition-colors"
+                        title="Increment (+1)"
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                      </button>
 
-              <div className="flex items-center justify-between gap-1 pt-0.5 text-[10px]">
-                <span className="text-[#8b92a2]">Quick Add:</span>
-                <div className="flex items-center gap-1">
-                  {[1, 5, 10].map(cnt => (
-                    <button
-                      key={cnt}
-                      type="button"
-                      onClick={() => handleBulkAdd(cnt)}
-                      className="px-2 py-0.5 rounded bg-[#141924] hover:bg-[#1a2130] text-[10px] font-mono-numbers text-amber-300 border border-[#272a31] cursor-pointer"
-                    >
-                      +{cnt}
-                    </button>
-                  ))}
-                </div>
+                      {/* Large Tactile Digit Slot */}
+                      <div
+                        onClick={() => setActiveSlot(idx)}
+                        className={`w-full aspect-[4/5] rounded-xl flex items-center justify-center font-mono-numbers font-black text-2xl sm:text-4xl cursor-pointer select-none transition-all shadow-inner border-2 ${
+                          isAlreadyPurchasedByMe
+                            ? 'bg-[#181216] text-amber-300 border-amber-500/80 shadow-[0_0_15px_rgba(245,196,81,0.25)]'
+                            : isSelected 
+                            ? 'bg-[#1e2638] text-[#ffd700] border-[#ffd700] shadow-[0_0_18px_rgba(255,215,0,0.35)] scale-105' 
+                            : 'bg-[#0b0e14] text-white border-[#272a31] hover:border-amber-500/50'
+                        }`}
+                      >
+                        {digit}
+                      </div>
+
+                      {/* Decrement Button */}
+                      <button
+                        type="button"
+                        onClick={() => decrementDigit(idx)}
+                        className="w-full py-1.5 rounded-lg bg-[#141924] hover:bg-[#1f2737] text-[#9b8f7c] hover:text-white border border-[#272a31] flex items-center justify-center cursor-pointer transition-colors"
+                        title="Decrement (-1)"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          </div>
 
-        </div>
-
-        {/* RIGHT COLUMN: Staged Tickets & Review Order (5 Cols) */}
-        <div className="order-2 lg:col-span-5 bg-[#111827] border border-[#1F2737] rounded-xl p-2 sm:p-2.5 flex flex-col justify-between overflow-hidden h-full min-h-0 gap-1.5">
-          
-          <div className="flex items-center justify-between pb-1 border-b border-[#1f2737] shrink-0">
-            <div className="flex items-center gap-1.5">
-              <Ticket className="w-3.5 h-3.5 text-amber-400" />
-              <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
-                Selected Tickets ({stagedTickets.length})
-              </h3>
-            </div>
-
-            {stagedTickets.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setStagedTickets([])}
-                className="text-[10px] text-red-400 hover:text-red-300 flex items-center gap-0.5 cursor-pointer"
-              >
-                <Trash2 className="w-3 h-3" />
-                <span>Clear All</span>
-              </button>
-            )}
-          </div>
-
-          {/* Staged Tickets List */}
-          <div className="max-h-[90px] xs:max-h-[110px] overflow-y-auto space-y-1 pr-1 no-scrollbar shrink-0">
-            {stagedTickets.length === 0 ? (
-              <div className="py-2.5 flex flex-col items-center justify-center text-center p-2 rounded-lg border border-dashed border-[#272a31] text-[#9b8f7c]">
-                <p className="text-[11px]">No tickets selected yet.</p>
-                <p className="text-[10px] text-[#64748b]">Pick digits on keypad or click Quick Add.</p>
-              </div>
-            ) : (
-              stagedTickets.map((tkt, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-1.5 rounded-lg bg-[#0b0e14] border border-[#1f2737] text-xs font-mono-numbers"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-4 h-4 rounded bg-amber-500/15 text-amber-400 text-[10px] font-bold flex items-center justify-center">
-                      {idx + 1}
-                    </span>
-                    <span className="font-black text-xs text-white tracking-widest">
-                      #{tkt}
-                    </span>
-                    <span className="text-[10px] text-[#8b92a2]">
-                      ({event.ticketPrice} FC)
-                    </span>
+              {/* Duplicate Protection & Availability Status Badge */}
+              <div className="text-center pt-2">
+                {isAlreadyPurchasedByMe ? (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[11px] font-bold">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                    <span>You already purchased #{currentNumberStr} for this draw!</span>
                   </div>
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Combination #{currentNumberStr} is Available</span>
+                  </div>
+                )}
+              </div>
+            </div>
 
+            {/* VIRTUAL NUMERIC KEYPAD (0–9) */}
+            <div className="max-w-[320px] xs:max-w-[360px] mx-auto space-y-1.5 w-full shrink-0">
+              <div className="grid grid-cols-3 gap-1.5">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((val) => (
                   <button
+                    key={val}
                     type="button"
-                    onClick={() => handleRemoveStaged(idx)}
-                    className="p-0.5 rounded text-[#9b8f7c] hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
-                    title="Remove"
+                    onClick={() => handleKeypadPress(val)}
+                    className="py-2 rounded-xl bg-[#0b0e14] hover:bg-[#151c2b] text-white hover:text-amber-300 font-mono-numbers font-extrabold text-sm border border-[#272a31] active:scale-95 transition-all cursor-pointer shadow-sm"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    {val}
                   </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleBackspace}
+                  className="py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-[#9b8f7c] hover:text-white font-bold text-xs border border-[#272a31] transition-colors cursor-pointer flex items-center justify-center"
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleKeypadPress(0)}
+                  className="py-2 rounded-xl bg-[#0b0e14] hover:bg-[#151c2b] text-white hover:text-amber-300 font-mono-numbers font-extrabold text-sm border border-[#272a31] active:scale-95 transition-all cursor-pointer shadow-sm"
+                >
+                  0
+                </button>
+                <button
+                  type="button"
+                  onClick={handleQuickPickCurrent}
+                  className="py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-amber-400 font-bold text-xs border border-amber-500/30 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                >
+                  <Dices className="w-3.5 h-3.5" />
+                  <span>RNG</span>
+                </button>
+              </div>
+
+              {/* Primary Purchase CTA Button (With duplicate protection) */}
+              <div className="pt-1.5 space-y-2">
+                <button
+                  type="button"
+                  onClick={handlePurchaseSingle}
+                  disabled={isAlreadyPurchasedByMe || isSubmitting || isTimedOut}
+                  className={`w-full py-2.5 sm:py-3 rounded-xl font-display font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all ${
+                    isAlreadyPurchasedByMe
+                      ? 'bg-[#181a24] text-[#8b92a2] border border-[#272a31] cursor-not-allowed opacity-75'
+                      : 'btn-gold shadow-amber-500/20 active:scale-[0.98]'
+                  }`}
+                >
+                  <Coins className="w-4 h-4" />
+                  <span>
+                    {isAlreadyPurchasedByMe 
+                      ? `Already Purchased by You (#${currentNumberStr})`
+                      : `Buy Ticket #${currentNumberStr} (${event.ticketPrice} Flow Coins)`}
+                  </span>
+                </button>
+
+                {/* Bulk Quick Add Row */}
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <span className="text-[#8b92a2] text-[11px]">Quick Multiple:</span>
+                  <div className="flex items-center gap-1.5">
+                    {[1, 5, 10].map(cnt => (
+                      <button
+                        key={cnt}
+                        type="button"
+                        onClick={() => handleBulkBuy(cnt)}
+                        disabled={isSubmitting || isTimedOut}
+                        className="px-2.5 py-1 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-[11px] font-mono-numbers text-amber-300 hover:text-white border border-[#272a31] hover:border-amber-500/40 cursor-pointer transition-colors"
+                        title={`Buy ${cnt} unique unsold ticket(s)`}
+                      >
+                        +{cnt} {cnt === 1 ? 'Pick' : 'Picks'} ({cnt * event.ticketPrice} FC)
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              ))
-            )}
-          </div>
-
-          {/* Order Summary & Submit Button */}
-          <div className="space-y-1.5 shrink-0">
-            <div className="p-1.5 rounded-lg bg-[#0b0e14] border border-[#272a31] flex items-center justify-between text-[11px] font-mono-numbers">
-              <span className="text-[#8b92a2]">Total ({stagedTickets.length} tkts):</span>
-              <strong className="font-black text-amber-400 font-mono-numbers text-xs sm:text-sm">{totalCost} FC</strong>
+              </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleCheckout}
-              disabled={stagedTickets.length === 0 || !hasEnoughBalance || isTimedOut}
-              className="w-full py-2.5 rounded-xl btn-gold font-display font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              <Coins className="w-3.5 h-3.5" />
-              <span>Submit Entry ({totalCost} Flow Coins)</span>
-            </button>
           </div>
 
-          {/* Dedicated In-Room Live Activity Box */}
-          {activityBox && (
-            <div className="flex-1 min-h-[120px] max-h-[160px] xs:max-h-[180px] lg:max-h-[220px] overflow-hidden">
-              {activityBox}
+          {/* ============================================================== */}
+          {/* ROOM ACTIVITY PANEL (1 PART / ~25% of content width)           */}
+          {/* ============================================================== */}
+          <div className="order-2 lg:col-span-3 bg-[#111827] border border-[#1F2737] rounded-xl p-2.5 sm:p-3 flex flex-col justify-between overflow-hidden h-full min-h-0 gap-2">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-1.5 border-b border-[#1f2737] shrink-0">
+              <div className="flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-emerald-400" />
+                <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
+                  Room Activity
+                </h3>
+              </div>
+              <span className="text-[10px] font-mono-numbers px-2 py-0.2 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Live Feed</span>
+              </span>
             </div>
-          )}
+
+            {/* Ticket Purchases by ALL Users in this Room/Event */}
+            <div className="flex-1 min-h-[140px] max-h-[220px] xs:max-h-[260px] lg:max-h-none overflow-y-auto space-y-1.5 pr-1 no-scrollbar">
+              {roomActivityTickets.length === 0 ? (
+                <div className="py-6 flex flex-col items-center justify-center text-center p-3 rounded-lg border border-dashed border-[#272a31] text-[#9b8f7c] space-y-1">
+                  <Ticket className="w-6 h-6 text-[#9b8f7c]/40" />
+                  <p className="text-[11px] font-bold text-white">No Tickets in this Room</p>
+                  <p className="text-[10px] text-[#64748b]">Be the first player to enter a ticket!</p>
+                </div>
+              ) : (
+                roomActivityTickets.map((tkt: any, idx: number) => {
+                  const isMine = (user && tkt.userId === user.id) || (wallet?.address && tkt.userAddress === wallet.address);
+                  const displayUsername = tkt.username || (isMine ? '@You' : `@player_${tkt.id.slice(-4)}`);
+
+                  return (
+                    <div
+                      key={tkt.id || idx}
+                      className={`p-2 rounded-lg border flex items-center justify-between text-xs font-mono-numbers transition-all ${
+                        isMine
+                          ? 'bg-[#151d2c] border-amber-500/40 text-amber-300'
+                          : 'bg-[#0b0e14] border-[#1f2737] text-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[9px] shrink-0 ${
+                          isMine ? 'bg-amber-500 text-black' : 'bg-[#1f2737] text-white'
+                        }`}>
+                          {displayUsername.replace('@', '').slice(0, 1).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <span className={`block text-[11px] font-bold truncate ${isMine ? 'text-amber-300' : 'text-white'}`}>
+                            {isMine ? `${displayUsername} (You)` : displayUsername}
+                          </span>
+                          <span className="text-[9px] text-[#8b92a2]">
+                            {formatTimeAgo(Number(tkt.purchaseTime || Date.now()))}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className="font-display font-black text-xs sm:text-sm text-emerald-400 block tracking-wider">
+                          #{String(tkt.ticketNumber).padStart(4, '0')}
+                        </span>
+                        <span className="text-[9px] text-[#8b92a2]">
+                          {tkt.price || event.ticketPrice} FC
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Room Stats Footer */}
+            <div className="p-2 rounded-lg bg-[#0b0e14] border border-[#272a31] flex items-center justify-between text-[10px] font-mono-numbers shrink-0">
+              <span className="text-[#8b92a2]">Room Total:</span>
+              <strong className="text-white font-bold">{roomActivityTickets.length} Tickets Sold</strong>
+            </div>
+
+          </div>
 
         </div>
-
-      </div>
       )}
 
       {/* 3. PROVABLY FAIR VERIFICATION BAR */}
@@ -907,4 +773,3 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
     </div>
   );
 }
-

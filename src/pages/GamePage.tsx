@@ -524,7 +524,7 @@ export default function GamePage({
         </div>
       </div>
 
-      {/* LOTTERY SPECIFIC SUB-NAVIGATION TABS (Pools & Rooms vs My Tickets vs Draw Results) */}
+      {/* LOTTERY SPECIFIC SUB-NAVIGATION TABS (Available Pools & Rooms vs My Tickets vs Results) */}
       {game.id === 'lottery' && (
         <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#0B0F19]/90 border border-[#1F2737] shrink-0 text-xs">
           <button
@@ -550,7 +550,7 @@ export default function GamePage({
             }`}
           >
             <Ticket className="w-3.5 h-3.5" />
-            <span>My Tickets ({tickets?.length || 0})</span>
+            <span>My Tickets ({user ? (tickets?.filter(t => (user?.id && (t.userId === user.id || t.user_id === user.id)) || (wallet?.address && t.userAddress === wallet.address)).length || 0) : 0})</span>
           </button>
 
           <button
@@ -563,7 +563,7 @@ export default function GamePage({
             }`}
           >
             <Trophy className="w-3.5 h-3.5" />
-            <span>Draw Results</span>
+            <span>Results</span>
           </button>
         </div>
       )}
@@ -601,6 +601,13 @@ export default function GamePage({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {rooms.map((room: any) => {
             const isVip = room.type === ROOM_TYPES.VIP || room.type === ROOM_TYPES.HIGH_ROLLER;
+            const matchingEvent = game.id === 'lottery' 
+              ? events.find(e => e.id === room.id || e.id === room.drawId || e.title?.toLowerCase().includes(room.name?.toLowerCase()))
+              : null;
+            const isRoomConcluded = game.id === 'lottery'
+              ? (matchingEvent?.status === 'completed' || (matchingEvent?.drawTime && matchingEvent.drawTime <= Date.now()) || room.status === 'completed')
+              : room.status === 'completed';
+            const roomNumberName = room.name.match(/Room\s*\d+/i)?.[0] || room.name.split(':')[0];
             return (
               <div
                 key={room.id}
@@ -622,9 +629,13 @@ export default function GamePage({
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-mono-numbers font-bold">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(34,197,94,0.6)]" />
-                      <span>{room.status === 'completed' ? 'CONCLUDED' : 'OPEN'}</span>
+                    <div className={`flex items-center gap-1.5 text-[10px] font-mono-numbers font-bold ${
+                      isRoomConcluded ? 'text-amber-400' : 'text-emerald-400'
+                    }`}>
+                      <span className={`w-2 h-2 rounded-full ${
+                        isRoomConcluded ? 'bg-amber-400 shadow-[0_0_6px_rgba(245,196,81,0.6)]' : 'bg-emerald-400 shadow-[0_0_6px_rgba(34,197,94,0.6)]'
+                      }`} />
+                      <span>{isRoomConcluded ? 'CONCLUDED' : 'OPEN'}</span>
                     </div>
                   </div>
 
@@ -1106,10 +1117,23 @@ export default function GamePage({
                 <div className="pt-4 mt-2">
                   <button
                     onClick={() => handleEnterRoom(room.id)}
-                    className="w-full py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all"
+                    className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all ${
+                      game.id === 'lottery' && isRoomConcluded
+                        ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 hover:border-amber-400'
+                        : 'btn-gold'
+                    }`}
                   >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>{game.id === 'lottery' ? (room.status === 'completed' ? `View Result (${room.name.split(':')[0]})` : `Enter ${room.name.split(':')[0]}`) : `Enter ${room.name.split(':')[0]}`}</span>
+                    {game.id === 'lottery' && isRoomConcluded ? (
+                      <>
+                        <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Show Result – {roomNumberName}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        <span>Enter {room.name.split(':')[0]}</span>
+                      </>
+                    )}
                   </button>
                 </div>
 
