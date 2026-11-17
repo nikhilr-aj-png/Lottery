@@ -45,7 +45,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
     const matching = events.find((e: any) => 
       e.id === room.id || 
       e.id === room.drawId || 
-      e.title?.toLowerCase().includes(room.name?.toLowerCase())
+      (room.name && e.title && e.title.toLowerCase().includes(room.name.toLowerCase()))
     );
     if (matching) return matching;
 
@@ -56,26 +56,27 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
         id: room.drawId || room.id || active.id,
         title: room.name || active.title,
         ticketPrice: room.minStakeFC || active.ticketPrice || 10,
-        poolPrize: room.prizeInfo?.match(/\d+[\d,]*/)?.[0]?.replace(',', '') || active.poolPrize || 5000
+        poolPrize: room.prizeInfo?.match(/\d+[\d,]*/)?.[0]?.replace(',', '') || active.poolPrize || 1000
       };
     }
 
     return {
-      id: room.drawId || room.id || 'DRW-1001',
+      id: room.drawId || room.id || 'evt-default',
       title: room.name || 'Four-Digit Lottery Draw',
       ticketPrice: room.minStakeFC || 10,
-      poolPrize: 10000,
+      currency: room.currency || 'FLO',
+      poolPrize: room.poolPrize || 1000,
       drawTime: Date.now() + (room.drawDurationHours || 24) * 3600 * 1000,
       status: 'active',
-      ticketsSold: 42,
-      participantsCount: room.currentPlayers || 18,
+      ticketsSold: 0,
+      participantsCount: 0,
       sha256Seed: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
     };
   }, [room, events]);
 
   // 2. Active 4-digit dials state
   const [digits, setDigits] = useState<string[]>(() => {
-    const initial = getUnsoldRandomNumber ? getUnsoldRandomNumber(event?.id) : '7429';
+    const initial = getUnsoldRandomNumber ? getUnsoldRandomNumber(event?.id) : Math.floor(1000 + Math.random() * 9000).toString();
     return String(initial).padStart(4, '0').slice(0, 4).split('');
   });
   const [activeSlot, setActiveSlot] = useState<number>(0);

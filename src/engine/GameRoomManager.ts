@@ -449,9 +449,9 @@ export class GameRoomManager {
         const dbRooms: RoomConfig[] = data.map((r: Record<string, unknown>) => ({
           id: String(r.id || ''),
           gameId: String(r.game_id || ''),
-          name: String(r.room_name || ''),
-          type: String(r.room_type || ROOM_TYPES.STANDARD),
-          status: String(r.status || ROOM_STATUSES.ACTIVE),
+          name: String(r.room_name || r.name || ''),
+          type: (r.room_type as RoomType) || (r.type as RoomType) || ROOM_TYPES.STANDARD,
+          status: (r.status as RoomStatus) || ROOM_STATUSES.ACTIVE,
           description: String(r.description || ''),
           minStakeFC: Number(r.min_stake_fc || 1),
           maxStakeFC: Number(r.max_stake_fc || 1000),
@@ -462,7 +462,26 @@ export class GameRoomManager {
           metadata: (r.metadata as Record<string, unknown>) || {}
         }));
 
-        this.rooms = dbRooms;
+        // Merge database values with local default configs so rich game-specific properties are preserved
+        const merged = DEFAULT_ROOMS.map(def => {
+          const remote = dbRooms.find(r => r.id === def.id);
+          if (!remote) return def;
+          return {
+            ...def,
+            name: remote.name || def.name,
+            minStakeFC: remote.minStakeFC || def.minStakeFC,
+            maxStakeFC: remote.maxStakeFC || def.maxStakeFC,
+            playerCapacity: remote.playerCapacity || def.playerCapacity,
+            currentPlayers: remote.currentPlayers !== undefined ? remote.currentPlayers : 0,
+            status: remote.status || def.status,
+            rulesSummary: remote.rulesSummary || def.rulesSummary
+          };
+        });
+
+        // Add any extra custom rooms created in DB that are not in defaults
+        const newDbRooms = dbRooms.filter(r => !DEFAULT_ROOMS.some(def => def.id === r.id));
+
+        this.rooms = [...merged, ...newDbRooms];
         this.initialized = true;
         this.notify();
       }

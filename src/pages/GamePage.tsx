@@ -657,7 +657,8 @@ export default function GamePage({
             const isRoomConcluded = game.id === 'lottery'
               ? (matchingEvent?.status === 'completed' || (matchingEvent?.drawTime && matchingEvent.drawTime <= Date.now()) || room.status === 'completed')
               : room.status === 'completed';
-            const roomNumberName = room.name.match(/Room\s*\d+/i)?.[0] || room.name.split(':')[0];
+            const safeRoomName = room.name || `Room ${room.id || ''}`;
+            const roomNumberName = safeRoomName.match(/Room\s*\d+/i)?.[0] || safeRoomName.split(':')[0] || 'Room';
             return (
               <div
                 key={room.id}
@@ -1181,7 +1182,7 @@ export default function GamePage({
                     ) : (
                       <>
                         <Play className="w-3.5 h-3.5 fill-current" />
-                        <span>Enter {room.name.split(':')[0]}</span>
+                        <span>Enter {(room.name || 'Room').split(':')[0]}</span>
                       </>
                     )}
                   </button>

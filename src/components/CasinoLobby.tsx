@@ -57,9 +57,11 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: Casino
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(g => 
-        g.name.toLowerCase().includes(q) || 
-        g.description.toLowerCase().includes(q) || 
-        g.category.toLowerCase().includes(q)
+        Boolean(
+          (g.name && g.name.toLowerCase().includes(q)) || 
+          (g.description && g.description.toLowerCase().includes(q)) || 
+          (g.category && g.category.toLowerCase().includes(q))
+        )
       );
     }
 

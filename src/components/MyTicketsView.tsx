@@ -125,7 +125,7 @@ export default function MyTicketsView({ onOpenPicker }: MyTicketsViewProps) {
                   : 'text-[#9b8f7c] hover:text-white'
               }`}
             >
-              {group.event.title.split(':')[0]} ({group.tickets.length})
+              {(group.event?.title || 'Lottery Room').split(':')[0]} ({group.tickets.length})
             </button>
           ))}
         </div>
@@ -163,7 +163,7 @@ export default function MyTicketsView({ onOpenPicker }: MyTicketsViewProps) {
                   <div className="flex items-center gap-2">
                     <Layers className="w-4 h-4 text-amber-400" />
                     <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
-                      {group.event.title}
+                      {group.event?.title || 'Lottery Draw'}
                     </h3>
                     <span className={`text-[10px] font-mono-numbers px-2 py-0.2 rounded font-bold uppercase ${
                       isCompleted 
@@ -199,7 +199,7 @@ export default function MyTicketsView({ onOpenPicker }: MyTicketsViewProps) {
                         }`}
                       >
                         <div className="flex items-center justify-between text-[10px] text-[#9b8f7c] mb-2 font-mono-numbers">
-                          <span className="font-bold">#{tkt.id.slice(-6)}</span>
+                          <span className="font-bold">#{String(tkt.id || '').slice(-6)}</span>
                           <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[9px] ${
                             isWin
                               ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
@@ -228,7 +228,7 @@ export default function MyTicketsView({ onOpenPicker }: MyTicketsViewProps) {
                         </div>
 
                         <div className="pt-2 border-t border-[#1f2737] flex items-center justify-between text-[11px] font-mono-numbers">
-                          <span className="text-[#8b92a2]">Stake: {tkt.price || group.event.ticketPrice} FC</span>
+                          <span className="text-[#8b92a2]">Stake: {tkt.price || group.event?.ticketPrice || 10} {tkt.currency || group.event?.currency || 'FLO'}</span>
                           {isWin ? (
                             <strong className="text-emerald-400 font-bold">+{tkt.wonAmount || 'Won'} FC</strong>
                           ) : isCompleted ? (

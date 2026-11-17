@@ -59,11 +59,21 @@ class GlobalErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBound
   }
 
   handleReload = () => {
+    try {
+      sessionStorage.clear();
+    } catch (e) {}
     window.location.href = '/';
+  };
+
+  handleReset = () => {
+    this.setState({ hasError: false, error: null });
   };
 
   render() {
     if (this.state.hasError) {
+      const errMsg = this.state.error?.message || String(this.state.error || 'Unknown error');
+      const errStack = this.state.error?.stack || '';
+
       return (
         <div className="min-h-screen bg-[#0B0F19] text-[#F8FAFC] flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-[#111827] border border-amber-500/30 rounded-2xl p-6 text-center space-y-4 shadow-2xl shadow-black/80">
@@ -76,12 +86,29 @@ class GlobalErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBound
             <p className="text-xs text-[#94A3B8] leading-relaxed">
               An unexpected render issue occurred while loading this view. Click below to reload the platform cleanly.
             </p>
-            <button
-              onClick={this.handleReload}
-              className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-lg shadow-amber-500/20"
-            >
-              Reload Platform
-            </button>
+
+            {/* Error Details in development or debug */}
+            <div className="text-left bg-black/60 p-3 rounded-xl border border-red-500/30 text-xs font-mono text-red-400 overflow-x-auto max-h-40">
+              <p className="font-bold text-red-300 break-words">{errMsg}</p>
+              {errStack && (
+                <pre className="text-[10px] text-gray-400 mt-1 whitespace-pre-wrap leading-tight">{errStack.slice(0, 400)}</pre>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={this.handleReset}
+                className="flex-1 py-2.5 rounded-xl bg-[#1f2737] hover:bg-[#2d3748] text-white font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={this.handleReload}
+                className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-lg shadow-amber-500/20"
+              >
+                Reload Platform
+              </button>
+            </div>
           </div>
         </div>
       );
