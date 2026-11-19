@@ -529,7 +529,7 @@ export default function GamesManagementSuperHub({
             <p className="text-xs text-[#94A3B8] mt-1">Try resetting the category filter or search query</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
             {filteredGames.map((game) => {
               const config = gameConfigs.find(c => c.game_id === game.id) || {};
               const isEnabled = config.is_enabled !== false;
@@ -539,7 +539,7 @@ export default function GamesManagementSuperHub({
               return (
                 <div
                   key={game.id}
-                  className={`glass-panel rounded-2xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 border ${
+                  className={`glass-panel rounded-2xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 border min-h-[320px] h-full ${
                     isEnabled ? 'border-[#272a31] hover:border-amber-500/40' : 'border-red-500/30 opacity-75'
                   }`}
                 >
@@ -955,72 +955,34 @@ export default function GamesManagementSuperHub({
                   </button>
                 </div>
               ) : (
-                <div className="overflow-x-auto no-scrollbar">
-                  <table className="w-full text-left text-xs font-mono-numbers">
-                    <thead className="bg-[#07090d] text-[10px] text-[#64748B] uppercase tracking-wider border-b border-[#1f2737]">
-                      <tr>
-                        <th className="py-3 px-3.5 font-bold">Event &amp; Room</th>
-                        <th className="py-3 px-3 font-bold">Event ID</th>
-                        <th className="py-3 px-3 font-bold">Status</th>
-                        <th className="py-3 px-3 font-bold">Ticket Price</th>
-                        <th className="py-3 px-3 font-bold">Sold / Limit</th>
-                        <th className="py-3 px-3 font-bold">Jackpot Pool</th>
-                        <th className="py-3 px-3 font-bold">Winning Mode</th>
-                        <th className="py-3 px-3 font-bold">Winning Codes</th>
-                        <th className="py-3 px-3 font-bold">Result Status</th>
-                        <th className="py-3 px-3.5 font-bold text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#1f2737]/60">
-                      {filteredLotteryEvents.map((evt: any) => {
-                        const isActive = evt.status === 'active' && !evt.isPaused && (!evt.drawTime || evt.drawTime > Date.now());
-                        const isPaused = evt.isPaused || evt.status === 'paused';
-                        const isPending = evt.status === 'result_pending' || (evt.status === 'active' && evt.drawTime && evt.drawTime <= Date.now());
-                        const isConcluded = evt.status === 'completed';
-                        const currency = evt.currency || 'USDT';
+                <div className="p-4 sm:p-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+                    {filteredLotteryEvents.map((evt: any) => {
+                      const isActive = evt.status === 'active' && !evt.isPaused && (!evt.drawTime || evt.drawTime > Date.now());
+                      const isPaused = evt.isPaused || evt.status === 'paused';
+                      const isPending = evt.status === 'result_pending' || (evt.status === 'active' && evt.drawTime && evt.drawTime <= Date.now());
+                      const isConcluded = evt.status === 'completed';
+                      const currency = evt.currency || 'USDT';
 
-                        // Winning codes display
-                        const codesList: string[] = Array.isArray(evt.winningCodes) && evt.winningCodes.length > 0
-                          ? evt.winningCodes
-                          : evt.presetWinningDigits
-                            ? [evt.presetWinningDigits]
-                            : [];
+                      // Winning codes display
+                      const codesList: string[] = Array.isArray(evt.winningCodes) && evt.winningCodes.length > 0
+                        ? evt.winningCodes
+                        : evt.presetWinningDigits
+                          ? [evt.presetWinningDigits]
+                          : [];
 
-                        return (
-                          <tr key={evt.id} className="hover:bg-[#141924]/60 transition-colors">
-                            
-                            {/* 1. Event Name & Room */}
-                            <td className="py-3 px-3.5 max-w-[200px]">
-                              <div className="flex items-center gap-1.5 mb-0.5">
-                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 uppercase font-bold truncate">
-                                  {evt.badge || 'VIP DRAW'}
-                                </span>
-                              </div>
-                              <h4 className="font-sans font-bold text-white text-xs truncate" title={evt.title}>
-                                {evt.title}
-                              </h4>
-                              <p className="font-sans text-[11px] text-[#94A3B8] truncate" title={evt.roomName}>
-                                {evt.roomName || 'Room 1: Grand Pot Arena'}
-                              </p>
-                            </td>
+                      return (
+                        <div
+                          key={evt.id}
+                          className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col justify-between border border-[#272a31] hover:border-amber-500/40 transition-all duration-200 shadow-md hover:shadow-xl group"
+                        >
+                          {/* Card Top: Room Badge & Status Pill */}
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <span className="text-[9px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 uppercase font-bold truncate max-w-[140px]">
+                                {evt.badge || 'VIP DRAW'}
+                              </span>
 
-                            {/* 2. Event ID */}
-                            <td className="py-3 px-3">
-                              <div className="flex items-center gap-1 text-amber-400 font-bold">
-                                <span>{evt.id}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => copyToClipboard(evt.id, evt.id)}
-                                  className="text-[#64748B] hover:text-white cursor-pointer"
-                                  title="Copy Event ID"
-                                >
-                                  {copiedText === evt.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                                </button>
-                              </div>
-                            </td>
-
-                            {/* 3. Status Badge */}
-                            <td className="py-3 px-3">
                               {isActive ? (
                                 <span className="px-2 py-0.5 rounded border bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] font-bold">
                                   ● ACTIVE
@@ -1041,103 +1003,169 @@ export default function GamesManagementSuperHub({
                                   ✓ CONCLUDED
                                 </span>
                               )}
-                            </td>
+                            </div>
 
-                            {/* 4. Ticket Price */}
-                            <td className="py-3 px-3 text-white font-bold">
-                              {evt.ticketPrice || 10} {currency}
-                            </td>
+                            {/* Event Title & Room Name */}
+                            <div>
+                              <h4 className="font-display font-extrabold text-white text-sm sm:text-base line-clamp-1 group-hover:text-amber-400 transition-colors" title={evt.title}>
+                                {evt.title}
+                              </h4>
+                              <p className="font-sans text-[11px] text-[#94A3B8] truncate mt-0.5" title={evt.roomName}>
+                                {evt.roomName || 'Room 1: Grand Pot Arena'}
+                              </p>
+                            </div>
 
-                            {/* 5. Sold / Limit */}
-                            <td className="py-3 px-3">
-                              <span className="text-emerald-400 font-bold">{evt.ticketsSold || 0}</span>
-                              <span className="text-[#64748B]"> / {evt.ticketLimitMode === 'limited' ? (evt.maxTotalTickets || evt.maxTickets || 500) : '∞'}</span>
-                            </td>
+                            {/* Event ID with copy button */}
+                            <div className="flex items-center gap-1.5 text-xs text-[#94A3B8] font-mono-numbers mt-2 pt-2 border-t border-[#1f2737]/60">
+                              <span className="text-[10px] uppercase text-[#64748B]">ID:</span>
+                              <span className="text-amber-400 font-bold">{evt.id}</span>
+                              <button
+                                type="button"
+                                onClick={() => copyToClipboard(evt.id, evt.id)}
+                                className="text-[#64748B] hover:text-white cursor-pointer ml-auto"
+                                title="Copy Event ID"
+                              >
+                                {copiedText === evt.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-[#64748B]" />}
+                              </button>
+                            </div>
 
-                            {/* 6. Jackpot Pool & Determination Method */}
-                            <td className="py-3 px-3">
-                              <div className="font-bold text-amber-400">
-                                {evt.lockedJackpot ? (
-                                  <span>{Number(evt.lockedJackpot).toLocaleString()} {currency}</span>
-                                ) : evt.jackpotMode === 'fixed' ? (
-                                  <span>{(evt.fixedJackpot || evt.poolPrize || 5000).toLocaleString()} {currency}</span>
-                                ) : (
-                                  <span>{(evt.minPrize || 1000).toLocaleString()} - {(evt.maxPrize || 10000).toLocaleString()} {currency}</span>
-                                )}
+                            {/* Core Metrics 2x2 Grid */}
+                            <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-[#07090d] border border-[#1f2737] text-xs font-mono-numbers my-3">
+                              <div>
+                                <span className="text-[9px] text-[#8b92a2] block uppercase">Ticket Price</span>
+                                <strong className="text-white text-xs">{evt.ticketPrice || 10} {currency}</strong>
                               </div>
-                              <span className="text-[10px] text-[#94A3B8] block uppercase">
-                                {evt.jackpotMode === 'fixed'
-                                  ? 'Fixed Pot'
-                                  : evt.jackpotSelectionMethod === 'manual'
-                                    ? 'Manual Exact'
-                                    : 'Random RNG'}
-                              </span>
-                            </td>
-
-                            {/* 7. Winning Mode */}
-                            <td className="py-3 px-3">
-                              {evt.winnerMode === 'single' ? (
-                                <span className="inline-flex items-center gap-1 text-amber-300 font-bold text-[11px]">
-                                  <Trophy className="w-3 h-3 text-amber-400" />
-                                  <span>Single Winner</span>
+                              <div>
+                                <span className="text-[9px] text-[#8b92a2] block uppercase">Sold / Limit</span>
+                                <div>
+                                  <span className="text-emerald-400 font-bold">{evt.ticketsSold || 0}</span>
+                                  <span className="text-[#64748B]"> / {evt.ticketLimitMode === 'limited' ? (evt.maxTotalTickets || evt.maxTickets || 500) : '∞'}</span>
+                                </div>
+                              </div>
+                              <div>
+                                <span className="text-[9px] text-[#8b92a2] block uppercase">Jackpot Pool</span>
+                                <div className="text-amber-400 font-bold text-xs truncate">
+                                  {evt.lockedJackpot ? (
+                                    <span>{Number(evt.lockedJackpot).toLocaleString()} {currency}</span>
+                                  ) : evt.jackpotMode === 'fixed' ? (
+                                    <span>{(evt.fixedJackpot || evt.poolPrize || 5000).toLocaleString()} {currency}</span>
+                                  ) : (
+                                    <span>{(evt.minPrize || 1000).toLocaleString()}-{(evt.maxPrize || 10000).toLocaleString()} {currency}</span>
+                                  )}
+                                </div>
+                                <span className="text-[8px] text-[#94A3B8] block uppercase">
+                                  {evt.jackpotMode === 'fixed'
+                                    ? 'Fixed Pot'
+                                    : evt.jackpotSelectionMethod === 'manual'
+                                      ? 'Manual Exact'
+                                      : 'Random RNG'}
                                 </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-purple-300 font-bold text-[11px]">
-                                  <Users className="w-3 h-3 text-purple-400" />
-                                  <span>Multiple ({evt.winningCodeCount || evt.winnerCount || 3} Codes)</span>
-                                </span>
-                              )}
-                            </td>
-
-                            {/* 8. Winning Codes Preview */}
-                            <td className="py-3 px-3">
-                              {isConcluded && evt.winningDigits ? (
-                                <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-black text-[11px]">
-                                  Drawn: [{evt.winningDigits}]
-                                </span>
-                              ) : codesList.length > 0 ? (
-                                <div className="flex flex-wrap gap-1 max-w-[140px]">
-                                  {codesList.slice(0, 2).map((c: string, idx: number) => (
-                                    <span key={idx} className="px-1.5 py-0.2 rounded bg-purple-500/15 border border-purple-500/30 text-purple-300 font-black text-[10px]">
-                                      [{c}]
+                              </div>
+                              <div>
+                                <span className="text-[9px] text-[#8b92a2] block uppercase">Winner Mode</span>
+                                <div className="text-xs truncate">
+                                  {evt.winnerMode === 'single' ? (
+                                    <span className="inline-flex items-center gap-1 text-amber-300 font-bold text-[11px]">
+                                      <Trophy className="w-3 h-3 text-amber-400" />
+                                      <span>Single Winner</span>
                                     </span>
-                                  ))}
-                                  {codesList.length > 2 && (
-                                    <span className="px-1.5 py-0.2 rounded bg-[#141924] border border-[#272a31] text-[#94A3B8] text-[9px] font-bold" title={codesList.join(', ')}>
-                                      +{codesList.length - 2} more
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-purple-300 font-bold text-[11px]">
+                                      <Users className="w-3 h-3 text-purple-400" />
+                                      <span>{evt.winningCodeCount || evt.winnerCount || 3} Codes</span>
                                     </span>
                                   )}
                                 </div>
-                              ) : (
-                                <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-bold flex items-center gap-1">
-                                  <AlertTriangle className="w-3 h-3" />
-                                  <span>To Be Configured</span>
+                                <span className="text-[8px] text-[#94A3B8] block">
+                                  {evt.winnerPayoutSharePercent ? `${evt.winnerPayoutSharePercent}% Pool Share` : '100% Pool Share'}
                                 </span>
-                              )}
-                            </td>
+                              </div>
+                            </div>
 
-                            {/* 9. Result Status */}
-                            <td className="py-3 px-3 text-[11px]">
-                              {isConcluded ? (
-                                <span className="text-emerald-400 font-bold flex items-center gap-1">
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
-                                  <span>Settled &amp; Paid</span>
-                                </span>
-                              ) : isPending ? (
-                                <span className="text-amber-400 font-bold">
-                                  Draw Ready
-                                </span>
-                              ) : (
-                                <span className="text-[#94A3B8]">
-                                  Ticket Sales Open
-                                </span>
-                              )}
-                            </td>
+                            {/* Winning Codes & Result Status Row */}
+                            <div className="p-2.5 rounded-xl bg-[#141924]/60 border border-[#272a31]/60 flex items-center justify-between gap-2 mb-3">
+                              <div className="flex-1 min-w-0">
+                                <span className="text-[9px] text-[#8b92a2] block uppercase font-bold mb-1">Winning Digits:</span>
+                                {isConcluded && evt.winningDigits ? (
+                                  <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono-numbers font-black text-xs inline-block">
+                                    Drawn: [{evt.winningDigits}]
+                                  </span>
+                                ) : codesList.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {codesList.slice(0, 3).map((c: string, idx: number) => (
+                                      <span key={idx} className="px-1.5 py-0.5 rounded bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono-numbers font-bold text-[10px]">
+                                        [{c}]
+                                      </span>
+                                    ))}
+                                    {codesList.length > 3 && (
+                                      <span className="px-1.5 py-0.5 rounded bg-[#0d1117] border border-[#272a31] text-[#94A3B8] text-[9px] font-bold" title={codesList.join(', ')}>
+                                        +{codesList.length - 3}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-bold inline-flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3" />
+                                    <span>To Be Configured</span>
+                                  </span>
+                                )}
+                              </div>
 
-                            {/* 10. Contextual Action Buttons */}
-                            <td className="py-3 px-3.5 text-right whitespace-nowrap">
-                              <div className="flex items-center justify-end gap-1.5">
-                                
+                              <div className="text-right shrink-0">
+                                <span className="text-[9px] text-[#8b92a2] block uppercase font-bold mb-1">Settlement:</span>
+                                {isConcluded ? (
+                                  <span className="text-emerald-400 font-bold text-[10px] inline-flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    <span>Settled &amp; Paid</span>
+                                  </span>
+                                ) : isPending ? (
+                                  <span className="text-amber-400 font-bold text-[10px]">
+                                    Draw Ready
+                                  </span>
+                                ) : (
+                                  <span className="text-[#94A3B8] text-[10px]">
+                                    Sales Open
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Card Actions: Primary Button + Secondary Action Toolbar */}
+                          <div className="space-y-2 pt-2 border-t border-[#1f2737]">
+                            {/* Primary Action Button */}
+                            {isPending ? (
+                              <button
+                                type="button"
+                                onClick={() => openDrawOracle(evt)}
+                                className="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all"
+                              >
+                                <Dices className="w-3.5 h-3.5" />
+                                <span>Launch Draw Oracle</span>
+                              </button>
+                            ) : isConcluded ? (
+                              <button
+                                type="button"
+                                onClick={() => setViewPayoutsEvent(evt)}
+                                className="w-full py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                              >
+                                <Coins className="w-3.5 h-3.5" />
+                                <span>View Disbursed Payouts</span>
+                              </button>
+                            ) : codesList.length === 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => openWinnerConfig(evt)}
+                                className="w-full py-2 rounded-xl btn-gold text-black font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all"
+                              >
+                                <Trophy className="w-3.5 h-3.5" />
+                                <span>Configure Winning Codes</span>
+                              </button>
+                            ) : null}
+
+                            {/* Secondary Action Toolbar */}
+                            <div className="flex items-center justify-between gap-1 pt-1">
+                              <div className="flex items-center gap-1 flex-wrap">
                                 {/* View Details */}
                                 <button
                                   type="button"
@@ -1163,7 +1191,7 @@ export default function GamesManagementSuperHub({
                                   type="button"
                                   onClick={() => openWinnerConfig(evt)}
                                   className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-colors cursor-pointer"
-                                  title="Configure Winners &amp; Winning Codes"
+                                  title="Configure Winners & Winning Codes"
                                 >
                                   <Trophy className="w-3.5 h-3.5" />
                                 </button>
@@ -1173,7 +1201,7 @@ export default function GamesManagementSuperHub({
                                   type="button"
                                   onClick={() => openDrawOracle(evt)}
                                   className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition-colors cursor-pointer"
-                                  title="Draw Oracle &amp; Finalize Settlement"
+                                  title="Draw Oracle & Finalize Settlement"
                                 >
                                   <Dices className="w-3.5 h-3.5" />
                                 </button>
@@ -1187,7 +1215,9 @@ export default function GamesManagementSuperHub({
                                 >
                                   <Coins className="w-3.5 h-3.5" />
                                 </button>
+                              </div>
 
+                              <div className="flex items-center gap-1 shrink-0">
                                 {/* Emergency Pause / Resume */}
                                 <button
                                   type="button"
@@ -1222,15 +1252,13 @@ export default function GamesManagementSuperHub({
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
-
                               </div>
-                            </td>
-
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -3147,29 +3175,43 @@ export default function GamesManagementSuperHub({
                         No winner payouts recorded for this event yet.
                       </div>
                     ) : (
-                      <div className="overflow-x-auto no-scrollbar">
-                        <table className="w-full text-left text-xs font-mono-numbers">
-                          <thead className="bg-[#07090d] text-[10px] text-[#64748B] uppercase border-b border-[#1f2737]">
-                            <tr>
-                              <th className="py-2 px-2.5">Ticket ID</th>
-                              <th className="py-2 px-2.5">Winner</th>
-                              <th className="py-2 px-2.5">Winning Digits</th>
-                              <th className="py-2 px-2.5">Amount</th>
-                              <th className="py-2 px-2.5">Status</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[#1f2737]/60">
-                            {eventPayouts.map((p: any) => (
-                              <tr key={p.id} className="hover:bg-[#141924]">
-                                <td className="py-2 px-2.5 text-amber-400 font-bold">{p.ticketId || p.id}</td>
-                                <td className="py-2 px-2.5 text-white font-sans">{p.winnerUsername || p.winnerAddress || 'Winner'}</td>
-                                <td className="py-2 px-2.5 text-emerald-400 font-bold">[{p.winningDigits}]</td>
-                                <td className="py-2 px-2.5 text-emerald-400 font-bold">+{p.payoutAmount} USDT</td>
-                                <td className="py-2 px-2.5 uppercase text-[10px] text-purple-300">{p.status}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto no-scrollbar p-1">
+                        {eventPayouts.map((p: any) => (
+                          <div
+                            key={p.id}
+                            className="p-3.5 rounded-xl bg-[#07090d] border border-[#272a31] hover:border-purple-500/40 space-y-2 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-mono-numbers text-xs text-amber-400 font-bold">
+                                #{p.ticketId || p.id}
+                              </span>
+                              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                                {p.status || 'PAID'}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs pt-1 border-t border-[#1f2737]/60">
+                              <span className="text-[#94A3B8]">Winner:</span>
+                              <span className="text-white font-semibold truncate max-w-[140px]">
+                                {p.winnerUsername || p.winnerAddress || 'Winner'}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-[#94A3B8]">Winning Digits:</span>
+                              <span className="font-mono-numbers text-emerald-400 font-black px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                                [{p.winningDigits}]
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs pt-1 border-t border-[#1f2737]/60">
+                              <span className="text-[#94A3B8] font-bold">Disbursed Payout:</span>
+                              <span className="font-mono-numbers text-emerald-400 font-black text-sm">
+                                +{p.payoutAmount} USDT
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
 
@@ -3505,37 +3547,39 @@ export default function GamesManagementSuperHub({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                 {gameRooms.map((room) => (
                   <div
                     key={room.id}
-                    className="p-4 rounded-2xl bg-[#0d1117] border border-[#272a31] space-y-3 shadow-md"
+                    className="p-4 sm:p-5 rounded-2xl bg-[#0d1117] border border-[#272a31] hover:border-amber-500/40 space-y-3 shadow-md flex flex-col justify-between transition-all group"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-[#141924] text-amber-300 border border-[#272a31] font-bold uppercase">
-                        {room.room_type || room.type || 'STANDARD'} ROOM
-                      </span>
-                      <span className="text-[10px] font-mono-numbers text-emerald-400 font-bold">
-                        ● ACTIVE
-                      </span>
-                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-[#141924] text-amber-300 border border-[#272a31] font-bold uppercase">
+                          {room.room_type || room.type || 'STANDARD'} ROOM
+                        </span>
+                        <span className="text-[10px] font-mono-numbers text-emerald-400 font-bold">
+                          ● ACTIVE
+                        </span>
+                      </div>
 
-                    <div>
-                      <h4 className="font-bold text-sm text-white">
-                        {room.room_name || room.name}
-                      </h4>
-                      <p className="text-xs text-[#94A3B8] mt-0.5">
-                        {room.description}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 p-2 rounded-xl bg-[#07090d] border border-[#1f2737] text-xs font-mono-numbers">
                       <div>
-                        <span className="text-[9px] text-[#8b92a2] block">Limits:</span>
+                        <h4 className="font-bold text-sm sm:text-base text-white group-hover:text-amber-400 transition-colors">
+                          {room.room_name || room.name}
+                        </h4>
+                        <p className="text-xs text-[#94A3B8] mt-1 leading-relaxed">
+                          {room.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-[#07090d] border border-[#1f2737] text-xs font-mono-numbers mt-2">
+                      <div>
+                        <span className="text-[9px] text-[#8b92a2] block uppercase font-bold">Limits:</span>
                         <strong className="text-white">{room.min_stake_fc || room.minStakeFC}-{room.max_stake_fc || room.maxStakeFC} USDT</strong>
                       </div>
                       <div>
-                        <span className="text-[9px] text-[#8b92a2] block">Capacity:</span>
+                        <span className="text-[9px] text-[#8b92a2] block uppercase font-bold">Capacity:</span>
                         <strong className="text-emerald-400">{room.player_capacity || room.playerCapacity || 1000} Players</strong>
                       </div>
                     </div>
@@ -3585,43 +3629,54 @@ export default function GamesManagementSuperHub({
                 </span>
               </div>
 
-              <div className="overflow-x-auto no-scrollbar">
-                <table className="w-full min-w-[650px] text-left text-xs">
-                  <thead className="bg-[#07090d] text-[#8b92a2] uppercase text-[10px] tracking-wider border-b border-[#1f2737]">
-                    <tr>
-                      <th className="py-2.5 px-3">Round ID</th>
-                      <th className="py-2.5 px-3">User / Player</th>
-                      <th className="py-2.5 px-3">Stake (USDT)</th>
-                      <th className="py-2.5 px-3">Multiplier</th>
-                      <th className="py-2.5 px-3">Payout (USDT)</th>
-                      <th className="py-2.5 px-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#1f2737]">
-                    {gameRounds.filter(r => r.game_id === activeGame.id).slice(0, 10).map((r: any) => (
-                      <tr key={r.id} className="hover:bg-white/2">
-                        <td className="py-2.5 px-3 font-mono-numbers text-amber-300 font-bold">#{r.id.slice(-6)}</td>
-                        <td className="py-2.5 px-3 font-semibold text-white">{r.username || `@${r.wallet_address?.slice(-4)}`}</td>
-                        <td className="py-2.5 px-3 font-mono-numbers text-white">{r.bet_amount} USDT</td>
-                        <td className="py-2.5 px-3 font-mono-numbers text-blue-300 font-bold">{r.multiplier}x</td>
-                        <td className="py-2.5 px-3 font-mono-numbers font-bold text-emerald-400">+{r.payout} USDT</td>
-                        <td className="py-2.5 px-3">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                            SETTLED
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                    {gameRounds.filter(r => r.game_id === activeGame.id).length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="py-8 text-center text-[#64748b]">
-                          No recent rounds recorded for {activeGame.name} yet.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              {gameRounds.filter(r => r.game_id === activeGame.id).length === 0 ? (
+                <div className="p-8 text-center text-xs text-[#64748b] bg-[#07090d] border border-[#272a31] rounded-xl">
+                  No recent rounds recorded for {activeGame.name} yet.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4">
+                  {gameRounds.filter(r => r.game_id === activeGame.id).slice(0, 12).map((r: any) => (
+                    <div
+                      key={r.id}
+                      className="p-3.5 rounded-xl bg-[#07090d] border border-[#272a31] hover:border-amber-500/40 space-y-2.5 transition-colors shadow-sm"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono-numbers text-xs text-amber-300 font-bold">
+                          #{r.id.slice(-6)}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          SETTLED
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-[#1f2737]/60">
+                        <span className="text-[#94A3B8]">Player:</span>
+                        <span className="font-semibold text-white truncate max-w-[130px]">
+                          {r.username || `@${r.wallet_address?.slice(-4)}`}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 p-2 rounded-lg bg-[#141924]/60 border border-[#272a31]/60 text-xs font-mono-numbers">
+                        <div>
+                          <span className="text-[9px] text-[#8b92a2] block uppercase">Stake</span>
+                          <strong className="text-white">{r.bet_amount} USDT</strong>
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-[#8b92a2] block uppercase">Multiplier</span>
+                          <strong className="text-blue-300">{r.multiplier}x</strong>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-[#1f2737]/60">
+                        <span className="text-[#94A3B8] font-bold">Payout:</span>
+                        <span className="font-mono-numbers font-black text-emerald-400 text-sm">
+                          +{r.payout} USDT
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
