@@ -100,6 +100,27 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     const winnerPayoutSharePercent = Number(row.winner_payout_share_percent || meta.winner_share_percent || 90);
     const winnerDistribution = row.winner_distribution || meta.winner_distribution || [{ position: 1, percent: 100 }];
 
+    // Multi-Winning Codes & Lifecycle
+    let winningCodes: string[] = [];
+    if (Array.isArray(row.winning_codes)) {
+      winningCodes = row.winning_codes.map((c: any) => String(c).padStart(4, '0'));
+    } else if (presetWinningDigits) {
+      winningCodes = [String(presetWinningDigits).padStart(4, '0')];
+    } else if (row.winning_digits) {
+      winningCodes = [String(row.winning_digits).padStart(4, '0')];
+    }
+    const winningCodeCount = Number(row.winning_code_count || (winningCodes.length > 0 ? winningCodes.length : winnerCount));
+    const codesTiming = row.codes_timing || meta.codes_timing || (winningCodes.length > 0 ? 'configured' : 'after_publishing');
+    const codesLocked = Boolean(row.codes_locked || (Number(row.tickets_sold || 0) > 0));
+    const isPaused = Boolean(row.is_paused);
+    const pauseReason = row.pause_reason || '';
+    const lockedJackpot = row.locked_jackpot ? Number(row.locked_jackpot) : Number(row.pool_prize || 1000);
+    const drawResultCodes = Array.isArray(row.draw_result_codes) && row.draw_result_codes.length > 0
+      ? row.draw_result_codes
+      : (row.winning_digits ? [row.winning_digits] : []);
+    const drawResultDetails = row.draw_result_details || null;
+    const drawExecutedAt = row.draw_executed_at || null;
+
     return {
       id: row.id,
       title: row.title,
@@ -113,6 +134,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       currency,
       ticketPrice: Number(row.ticket_price || 10),
       poolPrize: Number(row.pool_prize || 1000),
+      lockedJackpot,
       durationValue,
       durationUnit,
       cooldownValue,
@@ -129,13 +151,22 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       maxTicketsPerUser,
       drawMode,
       presetWinningDigits,
+      winningCodes,
+      winningCodeCount,
+      codesTiming,
+      codesLocked,
+      isPaused,
+      pauseReason,
+      drawResultCodes,
+      drawResultDetails,
+      drawExecutedAt,
       winnerMode,
       winnerCount,
       winnerSharePercent: winnerPayoutSharePercent,
       winnerPayoutSharePercent,
       winnerDistribution,
       drawTime: drawTimeMs,
-      status: effectiveStatus,
+      status: isPaused ? 'paused' : effectiveStatus,
       winningDigits: effectiveWinningDigits,
       targetWinningDigits: presetWinningDigits,
       participantsCount: Number(row.participants_count || 0),
@@ -2282,19 +2313,33 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   };
 
   // Draw Logic: Provably Fair Multi/Single Lucky Winner Match & Automated Payout
-  const executeDraw = async (eventId, specifiedWinningDigits = null, customWinnerCount = null) => {
+  const executeDraw = async (eventId: string, specifiedWinningDigits: any = null, customWinnerCount: any = null, winningCodesList: any = null) => {
     const event = events.find(e => e.id === eventId);
     if (!event) return { success: false, error: 'Event not found' };
 
-    const parsedWinnerCount = Math.max(1, parseInt(customWinnerCount || event.winnerCount || 1, 10));
-    const targetDigits = specifiedWinningDigits ? String(specifiedWinningDigits).padStart(4, '0') : null;
+    const parsedWinnerCount = Math.max(1, parseInt(customWinnerCount || event.winnerCount || event.winningCodeCount || 1, 10));
+    
+    let codesPayload: string[] | null = null;
+    if (Array.isArray(winningCodesList) && winningCodesList.length > 0) {
+      codesPayload = winningCodesList.map((c: any) => String(c).replace(/\D/g, '').padStart(4, '0'));
+    } else if (Array.isArray(specifiedWinningDigits) && specifiedWinningDigits.length > 0) {
+      codesPayload = specifiedWinningDigits.map((c: any) => String(c).replace(/\D/g, '').padStart(4, '0'));
+    } else if (specifiedWinningDigits) {
+      codesPayload = [String(specifiedWinningDigits).replace(/\D/g, '').padStart(4, '0')];
+    } else if (event.winningCodes && event.winningCodes.length > 0) {
+      codesPayload = event.winningCodes;
+    }
+
+    const targetDigits = codesPayload && codesPayload.length > 0 ? codesPayload[0] : null;
 
     // 1. Try Server-Authoritative Provably Fair Finalization RPC
     try {
       const { data: rpcData, error: rpcError } = await supabase.rpc('finalize_lottery_draw_secure', {
         p_event_id: eventId,
-        p_custom_digits: targetDigits,
-        p_custom_winner_count: parsedWinnerCount
+        p_winning_codes: codesPayload,
+        p_draw_mode: event.drawMode || 'random',
+        p_custom_winner_count: parsedWinnerCount,
+        p_custom_digits: targetDigits
       });
 
       if (!rpcError && rpcData?.success) {
@@ -2303,11 +2348,17 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         await fetchWinnerPayouts();
         await fetchDrawAudits();
 
-        const finalDigits = rpcData.winning_digits;
+        const finalDigits = rpcData.winning_digits || (Array.isArray(rpcData.winning_codes) ? rpcData.winning_codes[0] : targetDigits);
+        const codesStr = Array.isArray(rpcData.winning_codes) && rpcData.winning_codes.length > 0
+          ? rpcData.winning_codes.join(', ')
+          : finalDigits;
         const auditRef = rpcData.audit_id ? ` · Audit #${rpcData.audit_id}` : '';
-        showToast(`🏆 Draw Finalized! Winning Digits: [${finalDigits}]${auditRef}`, 'success');
+        showToast(`🏆 Draw Finalized! Winning Code(s): [${codesStr}]${auditRef}`, 'success');
 
-        const userWon = tickets.filter(t => t.eventId === eventId && t.ticketNumber === finalDigits);
+        const userWon = tickets.filter(t => 
+          t.eventId === eventId && 
+          (Array.isArray(rpcData.winning_codes) ? rpcData.winning_codes.includes(t.ticketNumber) : t.ticketNumber === finalDigits)
+        );
         if (userWon.length > 0) {
           confetti({
             particleCount: 180,
@@ -2318,7 +2369,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           setWinCelebration({
             eventTitle: event.title,
             winningDigits: finalDigits,
-            totalWon: (rpcData.per_winner_amount || 0) * userWon.length,
+            totalWon: rpcData.total_paid_out || (userWon.length * 100),
             winningTickets: userWon
           });
         }
@@ -2827,32 +2878,77 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       const currency = 'USDT';
       const ticketPrice = parseFloat(eventData.ticketPrice || 10);
 
-      // Jackpot Configuration
+      // Jackpot Configuration (Part 1 - Manual vs Random determination)
       const jackpotMode = eventData.jackpotMode || 'fixed';
       const minJackpot = eventData.minJackpot ? parseFloat(eventData.minJackpot) : null;
       const maxJackpot = eventData.maxJackpot ? parseFloat(eventData.maxJackpot) : null;
-      const poolPrize = jackpotMode === 'range' 
-        ? (maxJackpot || 5000) 
-        : parseFloat(eventData.poolPrize || eventData.initialJackpot || 1000);
+      const jackpotSelectionMethod = eventData.jackpotSelectionMethod || 'manual';
+
+      let poolPrize = 1000;
+      let lockedJackpot = 1000;
+
+      if (jackpotMode === 'fixed') {
+        poolPrize = parseFloat(eventData.fixedJackpot || eventData.poolPrize || eventData.initialJackpot || 1000);
+        lockedJackpot = poolPrize;
+      } else if (jackpotMode === 'range') {
+        const floor = minJackpot || 500;
+        const ceiling = maxJackpot || 2500;
+        if (jackpotSelectionMethod === 'manual') {
+          // Manual: Admin enters exact jackpot within range
+          const selected = parseFloat(eventData.selectedJackpot || eventData.poolPrize || floor);
+          poolPrize = Math.max(floor, Math.min(ceiling, selected));
+          lockedJackpot = poolPrize;
+        } else {
+          // Random: Backend determines jackpot within range
+          const rnd = floor + Math.random() * (ceiling - floor);
+          poolPrize = Math.round(rnd * 100) / 100;
+          lockedJackpot = poolPrize;
+        }
+      }
 
       // Ticket limits
       const ticketLimitMode = eventData.ticketLimitMode || 'unlimited';
       const maxTotalTickets = eventData.maxTotalTickets ? parseInt(eventData.maxTotalTickets, 10) : null;
       const maxTicketsPerUser = eventData.maxTicketsPerUser ? parseInt(eventData.maxTicketsPerUser, 10) : null;
 
-      // Draw mode & winning digits
-      const drawMode = eventData.drawMode || 'random';
-      const presetDigits = (eventData.presetWinningDigits && String(eventData.presetWinningDigits).trim().length === 4) 
-        ? String(eventData.presetWinningDigits).trim() 
-        : null;
-
-      // Winner mode & distribution
+      // Winner mode & Winning codes (Parts 2, 3, 4)
       const winnerMode = eventData.winnerMode || 'single';
-      const winnerCount = Math.max(1, parseInt(eventData.winnerCount || 1, 10));
+      const drawMode = eventData.drawMode || 'random';
+      const codesTiming = eventData.codesTiming || 'before_publishing';
+
+      let winningCodes: string[] = [];
+      if (Array.isArray(eventData.winningCodes)) {
+        winningCodes = eventData.winningCodes
+          .map((c: any) => String(c).replace(/\D/g, '').padStart(4, '0'))
+          .filter((c: string, idx: number, arr: string[]) => c.length === 4 && arr.indexOf(c) === idx);
+      } else if (eventData.presetWinningDigits) {
+        const single = String(eventData.presetWinningDigits).replace(/\D/g, '').padStart(4, '0');
+        if (single.length === 4) winningCodes = [single];
+      }
+
+      if (winnerMode === 'single' && winningCodes.length > 1) {
+        winningCodes = [winningCodes[0]];
+      }
+
+      const winningCodeCount = winnerMode === 'single' ? 1 : Math.max(1, parseInt(eventData.winningCodeCount || (winningCodes.length > 0 ? winningCodes.length : eventData.winnerCount) || 1, 10));
+      const presetDigits = winningCodes.length > 0 ? winningCodes[0] : null;
+
+      // Payout Distribution (Part 5)
       const winnerPayoutSharePercent = parseFloat(eventData.winnerPayoutSharePercent || eventData.winnerSharePercent || 90);
-      const winnerDistribution = Array.isArray(eventData.winnerDistribution) && eventData.winnerDistribution.length > 0
+      let winnerDistribution = Array.isArray(eventData.winnerDistribution) && eventData.winnerDistribution.length > 0
         ? eventData.winnerDistribution
         : [{ position: 1, percent: 100 }];
+
+      if (winnerMode === 'single') {
+        winnerDistribution = [{ position: 1, percent: 100 }];
+      } else if (winnerDistribution.length !== winningCodeCount) {
+        const count = winningCodeCount;
+        const eq = parseFloat((100 / count).toFixed(2));
+        winnerDistribution = Array.from({ length: count }, (_, i) => ({
+          position: i + 1,
+          percent: i === count - 1 ? parseFloat((100 - eq * (count - 1)).toFixed(2)) : eq
+        }));
+      }
 
       // Badges & themes
       const badge = eventData.badge || `${roomName.toUpperCase()}`;
@@ -2873,13 +2969,17 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         jackpot_mode: jackpotMode,
         min_jackpot: minJackpot,
         max_jackpot: maxJackpot,
+        locked_jackpot: lockedJackpot,
         ticket_limit_mode: ticketLimitMode,
         max_total_tickets: maxTotalTickets,
         max_tickets_per_user: maxTicketsPerUser,
         draw_mode: drawMode,
         preset_winning_digits: presetDigits,
+        winning_codes: winningCodes,
+        winning_code_count: winningCodeCount,
+        codes_timing: codesTiming,
         winner_mode: winnerMode,
-        winner_count: winnerCount,
+        winner_count: winningCodeCount,
         winner_share_percent: winnerPayoutSharePercent,
         winner_distribution: winnerDistribution
       };
@@ -2895,6 +2995,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         currency,
         ticket_price: ticketPrice,
         pool_prize: poolPrize,
+        locked_jackpot: lockedJackpot,
         start_time: startTime,
         duration_value: durationVal,
         duration_unit: durUnit,
@@ -2905,14 +3006,18 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         jackpot_mode: jackpotMode,
         min_jackpot: minJackpot,
         max_jackpot: maxJackpot,
-        jackpot_selection_method: eventData.jackpotSelectionMethod || 'manual',
+        jackpot_selection_method: jackpotSelectionMethod,
         ticket_limit_mode: ticketLimitMode,
         max_total_tickets: maxTotalTickets,
         max_tickets_per_user: maxTicketsPerUser,
         draw_mode: drawMode,
         preset_winning_digits: presetDigits,
+        winning_codes: winningCodes,
+        winning_code_count: winningCodeCount,
+        codes_timing: codesTiming,
+        codes_locked: false,
         winner_mode: winnerMode,
-        winner_count: winnerCount,
+        winner_count: winningCodeCount,
         winner_payout_share_percent: winnerPayoutSharePercent,
         winner_distribution: winnerDistribution,
         status: initialStatus,
@@ -2962,6 +3067,117 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       console.error('adminDeleteEvent error:', err);
       showToast('Failed to delete event: ' + (err.message || err), 'error');
       return { success: false, error: err.message || err };
+    }
+  };
+
+  // Update an event's Winner Configuration & Multi-Winning Codes (Parts 2, 3, 5, 9)
+  const adminUpdateEventWinnerConfig = async (eventId: string, configData: any) => {
+    try {
+      const event = events.find(e => e.id === eventId);
+      if (!event) throw new Error('Event not found: ' + eventId);
+
+      if (event.status === 'completed') {
+        throw new Error('Event is concluded and paid out. Winning codes cannot be modified.');
+      }
+
+      const winnerMode = configData.winnerMode || event.winnerMode || 'single';
+      const drawMode = configData.drawMode || event.drawMode || 'random';
+      const winnerPayoutSharePercent = parseFloat(configData.winnerPayoutSharePercent || event.winnerPayoutSharePercent || 90);
+      
+      let winningCodes: string[] = [];
+      if (Array.isArray(configData.winningCodes)) {
+        winningCodes = configData.winningCodes
+          .map((c: any) => String(c).replace(/\D/g, '').padStart(4, '0'))
+          .filter((c: string, idx: number, arr: string[]) => c.length === 4 && arr.indexOf(c) === idx);
+      } else if (configData.presetWinningDigits) {
+        const single = String(configData.presetWinningDigits).replace(/\D/g, '').padStart(4, '0');
+        if (single.length === 4) winningCodes = [single];
+      }
+
+      if (winnerMode === 'single' && winningCodes.length > 1) {
+        winningCodes = [winningCodes[0]];
+      }
+
+      const winningCodeCount = winnerMode === 'single' 
+        ? 1 
+        : Math.max(1, parseInt(configData.winningCodeCount || winningCodes.length || 1, 10));
+
+      const winnerDistribution = Array.isArray(configData.winnerDistribution) && configData.winnerDistribution.length > 0
+        ? configData.winnerDistribution
+        : [{ position: 1, percent: 100 }];
+
+      const updatePayload: any = {
+        winner_mode: winnerMode,
+        draw_mode: drawMode,
+        winning_codes: winningCodes,
+        winning_code_count: winningCodeCount,
+        winner_count: winningCodeCount,
+        preset_winning_digits: winningCodes.length > 0 ? winningCodes[0] : null,
+        winner_payout_share_percent: winnerPayoutSharePercent,
+        winner_distribution: winnerDistribution,
+        codes_timing: 'configured'
+      };
+
+      if (configData.codesLocked !== undefined) {
+        updatePayload.codes_locked = Boolean(configData.codesLocked);
+      }
+
+      const { error } = await supabase
+        .from('lottery_events')
+        .update(updatePayload)
+        .eq('id', eventId);
+
+      if (error) throw error;
+
+      await refreshEvents();
+      showToast('Winner configuration updated and saved to database!', 'success');
+      return { success: true };
+    } catch (err: any) {
+      console.error('adminUpdateEventWinnerConfig error:', err);
+      showToast('Failed to update winner configuration: ' + (err.message || err), 'error');
+      return { success: false, error: err.message || err };
+    }
+  };
+
+  // Pause / Resume an event with documented reason (Part 3)
+  const adminPauseEvent = async (eventId: string, isPaused: boolean, reason: string = '') => {
+    try {
+      const { error } = await supabase
+        .from('lottery_events')
+        .update({
+          is_paused: isPaused,
+          pause_reason: reason,
+          status: isPaused ? 'paused' : 'active'
+        })
+        .eq('id', eventId);
+
+      if (error) throw error;
+      await refreshEvents();
+      showToast(isPaused ? `Event paused: ${reason || 'Administrative hold'}` : 'Event resumed to active status!', 'info');
+      return { success: true };
+    } catch (err: any) {
+      console.error('adminPauseEvent error:', err);
+      showToast('Failed to update event pause status: ' + err.message, 'error');
+      return { success: false, error: err.message };
+    }
+  };
+
+  // General event edits (title, room, times, limits)
+  const adminUpdateEvent = async (eventId: string, updateData: any) => {
+    try {
+      const { error } = await supabase
+        .from('lottery_events')
+        .update(updateData)
+        .eq('id', eventId);
+
+      if (error) throw error;
+      await refreshEvents();
+      showToast('Event settings updated successfully!', 'success');
+      return { success: true };
+    } catch (err: any) {
+      console.error('adminUpdateEvent error:', err);
+      showToast('Failed to update event: ' + err.message, 'error');
+      return { success: false, error: err.message };
     }
   };
 
@@ -3105,7 +3321,10 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         requestWithdrawal,
         executeDraw,
         adminCreateEvent,
+        adminUpdateEvent,
         adminDeleteEvent,
+        adminUpdateEventWinnerConfig,
+        adminPauseEvent,
         adminApproveWithdrawal,
         adminRejectWithdrawal,
         adminFetchAllUsers,

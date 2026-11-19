@@ -53,13 +53,16 @@ async function runVerification() {
       pool_prize, start_time, duration_value, duration_unit, draw_time, cooldown_value,
       cooldown_unit, jackpot_mode, min_jackpot, max_jackpot, jackpot_selection_method,
       ticket_limit_mode, max_total_tickets, max_tickets_per_user, draw_mode, preset_winning_digits,
+      winning_codes, winning_code_count,
       winner_mode, winner_count, winner_payout_share_percent, winner_distribution, status,
       participants_count, tickets_sold, sha256_seed, server_seed, is_active
     ) VALUES (
-      '${testEventId}', 'Verification Grand Event 10000 FLO', 'VIP TEST', 'lottery', 'room-${testEventId}',
-      'Room 1: Verification Arena', 'Provably fair verification event', 'FLO', 10, 10000,
+      '${testEventId}', 'Verification Grand Event 10000 USDT', 'VIP TEST', 'lottery', 'room-${testEventId}',
+      'Room 1: Verification Arena', 'Provably fair verification event', 'USDT', 10, 10000,
       ${Date.now()}, 1, 'hours', ${Date.now() + 3600000}, 0, 'minutes', 'fixed', NULL, NULL,
-      'manual', 'unlimited', NULL, NULL, 'preset', '8888', 'multiple', 3, 90,
+      'manual', 'unlimited', NULL, NULL, 'preset', '8888',
+      '["8888", "1234", "5678"]'::jsonb, 3,
+      'multiple', 3, 90,
       '${JSON.stringify(testDistribution)}'::jsonb, 'active', 0, 0,
       '0x112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00', 'seed_secret_test_12345', true
     );
@@ -86,14 +89,18 @@ async function runVerification() {
       INSERT INTO public.lottery_tickets (
         id, event_id, event_title, ticket_number, user_id, user_address, price, currency, status, purchase_time, created_at
       ) VALUES (
-        '${t.id}', '${testEventId}', 'Verification Grand Event 10000 FLO', '${t.number}', '${t.user}', '${t.addr}', 10, 'FLO', 'active', ${Date.now()}, now()
+        '${t.id}', '${testEventId}', 'Verification Grand Event 10000 USDT', '${t.number}', '${t.user}', '${t.addr}', 10, 'USDT', 'active', ${Date.now()}, now()
       );
     `);
   }
 
   // 5. Test executing draw via finalize_lottery_draw_secure RPC
   const finalizeRes = await runSql(`
-    SELECT public.finalize_lottery_draw_secure('${testEventId}', '8888', 3) as result;
+    SELECT public.finalize_lottery_draw_secure(
+      p_event_id => '${testEventId}',
+      p_winning_codes => '["8888", "1234", "5678"]'::jsonb,
+      p_draw_mode => 'preset'
+    ) as result;
   `);
 
   const resJson = finalizeRes[0]?.result;
