@@ -324,7 +324,7 @@ export default function ProvablyFairModal({ isOpen, onClose, event, auditData = 
         {/* Footer */}
         <div className="mt-5 pt-4 border-t border-[#1f2737] flex items-center justify-between">
           <span className="text-[11px] text-[#94A3B8] font-sans">
-            Free-to-play social entertainment with Flow Coin (FC).
+            Cryptographically verified on public immutable ledger with USDT (TRC-20).
           </span>
           <button
             onClick={onClose}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import ProvablyFairModal from '../components/ProvablyFairModal';
 import GamesManagementSuperHub from './GamesManagementSuperHub';
@@ -64,6 +64,8 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
     events, 
     withdrawals, 
     winnerPayouts = [],
+    games = [],
+    loadingGames = false,
     executeDraw, 
     adminCreateEvent, 
     adminDeleteEvent,
@@ -91,6 +93,14 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
   // Navigation tab: 'overview' | 'games-management' | 'pools' | 'games' | 'game-rounds' | 'withdrawals' | 'users' | 'winner-payouts' | 'support' | 'settings'
   const [activeAdminTab, setActiveAdminTab] = useState('overview');
   const [gamesManagementSubTab, setGamesManagementSubTab] = useState('all-games');
+
+  // Dynamic active games count from database-driven game configurations
+  const activeGamesCount = useMemo(() => {
+    if (Array.isArray(games) && games.length > 0) {
+      return games.filter(g => (g.isEnabled !== false && g.status !== 'deleted' && g.status !== 'disabled')).length;
+    }
+    return 6;
+  }, [games]);
 
   // Game Engine Administration state
   const [adminGameRounds, setAdminGameRounds] = useState<any[]>([]);
@@ -556,7 +566,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
             <Gamepad2 className="w-4 h-4" />
             <span>Game Management</span>
             <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-black/40 font-mono-numbers text-amber-300 font-bold">
-              12 Games
+              {loadingGames ? '...' : `${activeGamesCount} Active Games`}
             </span>
           </button>
 

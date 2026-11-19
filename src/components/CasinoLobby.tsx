@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { GAMES, GAME_CATEGORIES } from '../engine';
 import GameCard from './GameCard';
 import { useLottery } from '../context/LotteryContext';
+import { supabase } from '../lib/supabase';
 import { 
   Flame, 
   Search, 
@@ -42,6 +43,69 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: Casino
     return GAMES;
   }, [dynamicGames]);
 
+  // Real backend usage stats for dynamic popularity ranking
+  const [popularityScores, setPopularityScores] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchPopularity = async () => {
+      try {
+        const scores: Record<string, number> = {};
+
+        // 1. Fetch round counts & unique players from game_rounds
+        const { data: roundData } = await supabase
+          .from('game_rounds')
+          .select('game_id, user_id');
+
+        if (Array.isArray(roundData)) {
+          const playersPerGame: Record<string, Set<string>> = {};
+          roundData.forEach(r => {
+            const gid = r.game_id;
+            scores[gid] = (scores[gid] || 0) + 1;
+            if (r.user_id) {
+              if (!playersPerGame[gid]) playersPerGame[gid] = new Set();
+              playersPerGame[gid].add(r.user_id);
+            }
+          });
+          Object.keys(playersPerGame).forEach(gid => {
+            scores[gid] = (scores[gid] || 0) + (playersPerGame[gid].size * 5);
+          });
+        }
+
+        // 2. Fetch lottery ticket counts & unique players
+        const { data: ticketData } = await supabase
+          .from('lottery_tickets')
+          .select('user_id');
+
+        if (Array.isArray(ticketData)) {
+          const uniquePlayers = new Set(ticketData.map(t => t.user_id).filter(Boolean));
+          scores['lottery'] = (scores['lottery'] || 0) + ticketData.length + (uniquePlayers.size * 5);
+        }
+
+        if (isMounted) {
+          setPopularityScores(scores);
+        }
+      } catch (err) {
+        console.warn('fetchPopularity error:', err);
+      }
+    };
+
+    fetchPopularity();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Top popular active game derived dynamically from backend activity
+  const topPopularGame = useMemo(() => {
+    if (!availableGames || availableGames.length === 0) return null;
+    const sorted = [...availableGames].sort((a, b) => {
+      const scoreA = popularityScores[a.id] || 0;
+      const scoreB = popularityScores[b.id] || 0;
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      return (b.rtp || 0) - (a.rtp || 0);
+    });
+    return sorted[0];
+  }, [availableGames, popularityScores]);
+
   // Filter & Sort Games
   const filteredGames = useMemo(() => {
     let list = [...availableGames];
@@ -69,15 +133,22 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: Casino
       );
     }
 
-    // Sort
-    if (sortBy === 'rtp') {
+    // Genuine popularity & metric sorting
+    if (sortBy === 'popular') {
+      list.sort((a, b) => {
+        const scoreA = popularityScores[a.id] || 0;
+        const scoreB = popularityScores[b.id] || 0;
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        return (b.rtp || 0) - (a.rtp || 0);
+      });
+    } else if (sortBy === 'rtp') {
       list.sort((a, b) => b.rtp - a.rtp);
     } else if (sortBy === 'multiplier') {
       list.sort((a, b) => (b.maxMultiplier || 0) - (a.maxMultiplier || 0));
     }
 
     return list;
-  }, [availableGames, selectedCategory, searchQuery, sortBy]);
+  }, [availableGames, selectedCategory, searchQuery, sortBy, popularityScores]);
 
   const categories = useMemo(() => [
     { id: 'all', label: 'All Games', count: availableGames.length },
@@ -136,18 +207,20 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: Casino
                 className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition-all cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current shrink-0" />
-                <span>Explore All 6 Games</span>
+                <span>Explore All {availableGames.length} Games</span>
               </button>
 
-              <button
-                onClick={() => {
-                  handleGameSelect({ id: 'lottery', slug: 'four-digit-lottery' });
-                }}
-                className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-white border border-[#272A31] hover:border-amber-500/40 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <Ticket className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
-                <span>Enter 4-Digit Lottery</span>
-              </button>
+              {topPopularGame && (
+                <button
+                  onClick={() => {
+                    handleGameSelect(topPopularGame);
+                  }}
+                  className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-white border border-[#272A31] hover:border-amber-500/40 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
+                  <span>Play {topPopularGame.name}</span>
+                </button>
+              )}
             </div>
           </div>
 

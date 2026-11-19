@@ -1657,8 +1657,23 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     if (effectivePath === '/legal/terms' || effectivePath === '/terms-and-conditions' || effectivePath === '/terms' || hash === 'legal/terms' || hash === 'terms-and-conditions' || hash === 'terms' || tabParam === 'terms') {
       return 'terms';
     }
-    if (effectivePath === '/contact' || effectivePath === '/contact-us' || hash === 'contact' || hash === 'contact-us' || tabParam === 'contact') {
-      return 'contact';
+    if (
+      effectivePath === '/support' ||
+      effectivePath === '/contact' ||
+      effectivePath === '/contact-us' ||
+      effectivePath === '/help' ||
+      effectivePath === '/faq' ||
+      hash === 'support' ||
+      hash === 'contact' ||
+      hash === 'contact-us' ||
+      hash === 'help' ||
+      hash === 'faq' ||
+      tabParam === 'support' ||
+      tabParam === 'contact' ||
+      tabParam === 'faq' ||
+      tabParam === 'help'
+    ) {
+      return 'support';
     }
     if (effectivePath === '/results' || hash === 'results' || tabParam === 'results') return 'results';
     if (effectivePath === '/tickets' || hash === 'tickets' || tabParam === 'tickets') return 'tickets';
@@ -1687,9 +1702,9 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     } else if (tabName === 'terms') {
       targetPath = '/legal/terms';
       pageTitle = 'Terms & Conditions · EarnFlow.in';
-    } else if (tabName === 'contact') {
-      targetPath = '/contact';
-      pageTitle = 'Contact Support Desk · EarnFlow.in';
+    } else if (tabName === 'support' || tabName === 'contact') {
+      targetPath = '/support';
+      pageTitle = 'Customer Support & FAQ · EarnFlow.in';
     } else if (tabName === 'results') {
       targetPath = '/?tab=results';
       pageTitle = 'Draw Results & Verified Winners · EarnFlow.in';

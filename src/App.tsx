@@ -278,9 +278,15 @@ function LotteryAppContent() {
     } else if (path === '/legal/terms' || path === '/terms' || path === '/terms-and-conditions') {
       setActiveTab('terms', false);
       document.title = 'Terms & Conditions · EarnFlow.in';
-    } else if (path === '/contact') {
-      setActiveTab('contact', false);
-      document.title = 'Contact Support Desk · EarnFlow.in';
+    } else if (
+      path === '/support' ||
+      path === '/contact' ||
+      path === '/contact-us' ||
+      path === '/help' ||
+      path === '/faq'
+    ) {
+      setActiveTab('support', false);
+      document.title = 'Customer Support & FAQ · EarnFlow.in';
     }
 
     const mainEl = document.getElementById('main-content');
@@ -309,6 +315,18 @@ function LotteryAppContent() {
       navigate('/transaction-history');
     } else if (tab === 'fairness') {
       setIsFairnessModalOpen(true);
+    } else if (tab === 'support' || tab === 'contact') {
+      setIsTransactionRoute(false);
+      navigate('/support');
+      setActiveTab('support');
+    } else if (tab === 'terms') {
+      setIsTransactionRoute(false);
+      navigate('/legal/terms');
+      setActiveTab('terms');
+    } else if (tab === 'privacy') {
+      setIsTransactionRoute(false);
+      navigate('/legal/privacy');
+      setActiveTab('privacy');
     } else {
       setIsTransactionRoute(false);
       navigate(`/?tab=${tab}`);
@@ -379,9 +397,23 @@ function LotteryAppContent() {
       } else if (cleanPath === '/legal/terms' || cleanPath === '/terms' || cleanPath === '/terms-and-conditions' || search.get('tab') === 'terms') {
         setActiveTab('terms', false);
         document.title = 'Terms & Conditions · EarnFlow.in';
-      } else if (cleanPath === '/contact' || search.get('tab') === 'contact' || search.get('tab') === 'support') {
-        setActiveTab('contact', false);
-        document.title = 'Contact Support Desk · EarnFlow.in';
+      } else if (
+        cleanPath === '/support' ||
+        cleanPath === '/contact' ||
+        cleanPath === '/contact-us' ||
+        cleanPath === '/help' ||
+        cleanPath === '/faq' ||
+        pParam === 'support' ||
+        pParam === 'contact' ||
+        pParam === 'help' ||
+        pParam === 'faq' ||
+        search.get('tab') === 'support' ||
+        search.get('tab') === 'contact' ||
+        search.get('tab') === 'help' ||
+        search.get('tab') === 'faq'
+      ) {
+        setActiveTab('support', false);
+        document.title = 'Customer Support & FAQ · EarnFlow.in';
       } else if (!gr && (cleanPath === '/' || cleanPath === '' || cleanPath === '/profile' || cleanPath === '/wallet')) {
         const tab = search.get('tab') || (cleanPath === '/profile' ? 'profile' : cleanPath === '/wallet' ? 'wallet' : null);
         if (tab) {
@@ -696,18 +728,19 @@ function LotteryAppContent() {
 
                   <div className="flex items-center gap-2.5 xs:gap-3.5 font-semibold text-[10px] xs:text-[11px] shrink-0 flex-wrap justify-center sm:justify-end">
                     <a
-                      href="/contact"
+                      href="/support"
                       onClick={(e) => {
                         e.preventDefault();
                         setIsTransactionRoute(false);
-                        setActiveTab('contact');
+                        navigate('/support');
+                        setActiveTab('support');
                         const mainEl = document.getElementById('main-content');
                         if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                       className="hover:text-purple-400 transition-colors cursor-pointer text-[#a855f7]"
                     >
-                      Contact Support
+                      Customer Support &amp; FAQ
                     </a>
                     <span>•</span>
                     <a

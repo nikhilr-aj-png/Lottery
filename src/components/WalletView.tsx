@@ -246,83 +246,105 @@ export default function WalletView({ onOpenDeposit, onOpenWithdraw, onOpenTransa
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         
         {/* Card 1: Available Balance */}
-        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-6 rounded-2xl border-l-4 border-l-[#a855f7] relative overflow-hidden">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
-              Available USDT Balance
-            </span>
-            <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[rgba(168,85,247,0.15)] flex items-center justify-center text-[#a855f7]">
-              <Coins className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
+        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-5 lg:p-6 rounded-2xl border-l-4 border-l-[#a855f7] relative overflow-hidden flex flex-col justify-between min-w-0 h-full">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider truncate">
+                Available USDT Balance
+              </span>
+              <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[rgba(168,85,247,0.15)] flex items-center justify-center text-[#a855f7] shrink-0">
+                <Coins className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1.5 xs:gap-2 min-w-0 overflow-hidden my-1">
+              <span 
+                className="font-display font-black text-xl xs:text-2xl sm:text-3xl text-purple-300 font-mono-numbers tracking-tight truncate max-w-full block"
+                title={`${wallet.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })} USDT`}
+              >
+                {wallet.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <span className="text-xs text-purple-400 font-bold font-mono-numbers shrink-0">USDT</span>
             </div>
           </div>
-          <div className="flex items-baseline gap-1.5 xs:gap-2">
-            <span className="font-display font-black text-2xl xs:text-3xl sm:text-4xl text-purple-300 font-mono-numbers">
-              {wallet.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-            <span className="text-xs text-purple-400 font-bold font-mono-numbers">USDT</span>
-          </div>
-          <span className="text-[10px] xs:text-[11px] text-[#9b8f7c] mt-1 block font-mono-numbers">
+          <span className="text-[10px] xs:text-[11px] text-[#9b8f7c] mt-2 block font-mono-numbers truncate">
             TRC-20 Network Settlement
           </span>
         </div>
 
         {/* Card 2: Total Won Prizes */}
-        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-6 rounded-2xl border-l-4 border-l-[#05d5aa] relative overflow-hidden">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
-              Total Won Prizes
-            </span>
-            <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[rgba(5,213,170,0.15)] flex items-center justify-center text-[#05d5aa]">
-              <DollarSign className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
+        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-5 lg:p-6 rounded-2xl border-l-4 border-l-[#05d5aa] relative overflow-hidden flex flex-col justify-between min-w-0 h-full">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider truncate">
+                Total Won Prizes
+              </span>
+              <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[rgba(5,213,170,0.15)] flex items-center justify-center text-[#05d5aa] shrink-0">
+                <DollarSign className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1.5 xs:gap-2 min-w-0 overflow-hidden my-1">
+              <span 
+                className="font-display font-black text-xl xs:text-2xl sm:text-3xl text-white font-mono-numbers tracking-tight truncate max-w-full block"
+                title={`${wallet.lifetimeWon.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })} USDT`}
+              >
+                {wallet.lifetimeWon.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <span className="text-xs text-[#05d5aa] font-bold font-mono-numbers shrink-0">USDT</span>
             </div>
           </div>
-          <div className="flex items-baseline gap-1.5 xs:gap-2">
-            <span className="font-display font-black text-2xl xs:text-3xl sm:text-4xl text-white">
-              {wallet.lifetimeWon.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-            <span className="text-xs text-[#05d5aa] font-bold font-mono-numbers">USDT</span>
-          </div>
-          <span className="text-[10px] xs:text-[11px] text-[#05d5aa] mt-1 block font-semibold">
+          <span className="text-[10px] xs:text-[11px] text-[#05d5aa] mt-2 block font-semibold truncate">
             Auto-credited directly to balance ✅
           </span>
         </div>
 
         {/* Card 3: Pending 24h Withdrawals */}
-        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-6 rounded-2xl border-l-4 border-l-amber-500 relative overflow-hidden">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
-              Pending 24h Withdrawals
-            </span>
-            <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400">
-              <Clock className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
+        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-5 lg:p-6 rounded-2xl border-l-4 border-l-amber-500 relative overflow-hidden flex flex-col justify-between min-w-0 h-full">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider truncate">
+                Pending 24h Withdrawals
+              </span>
+              <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400 shrink-0">
+                <Clock className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1.5 xs:gap-2 min-w-0 overflow-hidden my-1">
+              <span 
+                className="font-display font-black text-xl xs:text-2xl sm:text-3xl text-amber-400 font-mono-numbers tracking-tight truncate max-w-full block"
+                title={`${pendingWithdrawalsSum.toFixed(2)} USDT`}
+              >
+                {pendingWithdrawalsSum.toFixed(2)}
+              </span>
+              <span className="text-xs text-amber-400 font-bold font-mono-numbers shrink-0">USDT</span>
             </div>
           </div>
-          <div className="flex items-baseline gap-1.5 xs:gap-2">
-            <span className="font-display font-black text-2xl xs:text-3xl sm:text-4xl text-amber-400">
-              {pendingWithdrawalsSum.toFixed(2)}
-            </span>
-            <span className="text-xs text-amber-400 font-bold font-mono-numbers">USDT</span>
-          </div>
-          <span className="text-[10px] xs:text-[11px] text-amber-400/80 mt-1 block font-mono-numbers">
+          <span className="text-[10px] xs:text-[11px] text-amber-400/80 mt-2 block font-mono-numbers truncate">
             Disbursed &lt; 24 Hours
           </span>
         </div>
 
         {/* Card 4: Connected Wallet Status */}
-        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-6 rounded-2xl border-l-4 border-l-[#00f2fe] relative overflow-hidden">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
-              Settlement Network
-            </span>
-            <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[#00f2fe]/15 flex items-center justify-center text-[#00f2fe]">
-              <ShieldCheck className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
+        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-5 lg:p-6 rounded-2xl border-l-4 border-l-[#00f2fe] relative overflow-hidden flex flex-col justify-between min-w-0 h-full">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider truncate">
+                Settlement Network
+              </span>
+              <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[#00f2fe]/15 flex items-center justify-center text-[#00f2fe] shrink-0">
+                <ShieldCheck className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
+              </div>
+            </div>
+            <div className="min-w-0 overflow-hidden my-1">
+              <span 
+                className="font-mono-numbers font-bold text-base xs:text-lg sm:text-xl text-white tracking-tight truncate block"
+                title={wallet.address}
+              >
+                {wallet.address.slice(0, 8)}...{wallet.address.slice(-6)}
+              </span>
             </div>
           </div>
-          <div className="font-mono-numbers font-bold text-base xs:text-lg text-white truncate">
-            {wallet.address.slice(0, 8)}...{wallet.address.slice(-6)}
-          </div>
-          <span className="text-[10px] xs:text-[11px] text-[#05d5aa] mt-1 block font-mono-numbers flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#05d5aa] animate-ping" />
+          <span className="text-[10px] xs:text-[11px] text-[#05d5aa] mt-2 block font-mono-numbers flex items-center gap-1 truncate">
+            <span className="w-2 h-2 rounded-full bg-[#05d5aa] animate-ping shrink-0" />
             Active Non-Custodial Vault
           </span>
         </div>

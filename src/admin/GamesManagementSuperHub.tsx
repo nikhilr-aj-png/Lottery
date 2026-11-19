@@ -333,6 +333,15 @@ export default function GamesManagementSuperHub({
     return GAMES.find(g => g.id === selectedGameId) || null;
   }, [selectedGameId]);
 
+  // Dynamic active game count calculated from database configurations
+  const activeGamesCount = useMemo(() => {
+    if (gameConfigs && gameConfigs.length > 0) {
+      const active = gameConfigs.filter(c => (c.status === 'active' || !c.status) && c.is_enabled !== false);
+      if (active.length > 0) return active.length;
+    }
+    return GAMES.length;
+  }, [gameConfigs]);
+
   // When a game is selected, populate active config form and set default subTab
   useEffect(() => {
     if (activeGame) {
@@ -452,14 +461,14 @@ export default function GamesManagementSuperHub({
               </h2>
             </div>
             <p className="text-xs text-[#94A3B8] max-w-2xl">
-              Centralized administrative hub for all 12 active casino, lottery, and arcade games. Select any game card to configure its events, mathematical models, room limits, and Provably Fair seeds.
+              Centralized administrative hub for all {activeGamesCount} active games. Select any game card to configure its events, mathematical models, room limits, and Provably Fair seeds.
             </p>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <div className="px-3 py-1.5 rounded-xl bg-[#07090d] border border-[#272a31] text-xs font-mono-numbers">
               <span className="text-[#94A3B8] block text-[10px]">Active Games:</span>
-              <strong className="text-amber-400 text-sm">{GAMES.length} Modules</strong>
+              <strong className="text-amber-400 text-sm">{activeGamesCount} Active Games</strong>
             </div>
             <div className="px-3 py-1.5 rounded-xl bg-[#07090d] border border-[#272a31] text-xs font-mono-numbers">
               <span className="text-[#94A3B8] block text-[10px]">Total Rooms:</span>
@@ -507,21 +516,34 @@ export default function GamesManagementSuperHub({
           </div>
         </div>
 
-        {/* 4 CARDS PER ROW DESKTOP GRID (Responsive 1 -> 2 -> 3 -> 4 Columns) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-          {filteredGames.map((game) => {
-            const config = gameConfigs.find(c => c.game_id === game.id) || {};
-            const isEnabled = config.is_enabled !== false;
-            const gameRooms = rooms.filter(r => r.game_id === game.id || r.gameId === game.id);
+        {/* 2 CARDS PER ROW DESKTOP GRID (Responsive 1 Column Mobile -> 2 Columns Desktop) */}
+        {loadingData ? (
+          <div className="p-12 text-center bg-[#07090d] border border-[#272a31] rounded-2xl">
+            <RefreshCw className="w-6 h-6 animate-spin text-amber-400 mx-auto mb-2" />
+            <p className="text-xs text-[#94A3B8]">Loading active games from database...</p>
+          </div>
+        ) : filteredGames.length === 0 ? (
+          <div className="p-12 text-center bg-[#07090d] border border-[#272a31] rounded-2xl">
+            <Gamepad2 className="w-8 h-8 text-[#64748b] mx-auto mb-2" />
+            <p className="text-sm font-bold text-white">No active games match your filter</p>
+            <p className="text-xs text-[#94A3B8] mt-1">Try resetting the category filter or search query</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            {filteredGames.map((game) => {
+              const config = gameConfigs.find(c => c.game_id === game.id) || {};
+              const isEnabled = config.is_enabled !== false;
+              const gameRooms = rooms.filter(r => r.game_id === game.id || r.gameId === game.id);
+              const gameRoundCount = game.id === 'lottery' ? events.length : gameRounds.filter(r => r.game_id === game.id).length;
 
-            return (
-              <div
-                key={game.id}
-                className={`glass-panel rounded-2xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 border ${
-                  isEnabled ? 'border-[#272a31] hover:border-amber-500/40' : 'border-red-500/30 opacity-75'
-                }`}
-              >
-                <div className="space-y-3">
+              return (
+                <div
+                  key={game.id}
+                  className={`glass-panel rounded-2xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 border ${
+                    isEnabled ? 'border-[#272a31] hover:border-amber-500/40' : 'border-red-500/30 opacity-75'
+                  }`}
+                >
+                  <div className="space-y-3">
                   {/* Top Row: Thumbnail + Category & Status Toggle */}
                   <div className="flex items-start justify-between gap-2.5">
                     <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[#141924] border border-amber-500/40 overflow-hidden shrink-0 shadow-inner flex items-center justify-center">
@@ -583,13 +605,13 @@ export default function GamesManagementSuperHub({
                     <div>
                       <span className="text-[9px] text-[#8b92a2] block uppercase">Stake Bounds</span>
                       <strong className="text-white">
-                        {game.minStakeFC}-{game.maxStakeFC} USDT
+                        {(config.min_stake_fc || game.minStakeUSDT || game.minStakeFC || 1)}-{(config.max_stake_fc || game.maxStakeUSDT || game.maxStakeFC || 1000)} USDT
                       </strong>
                     </div>
                     <div>
-                      <span className="text-[9px] text-[#8b92a2] block uppercase">Live Rooms</span>
+                      <span className="text-[9px] text-[#8b92a2] block uppercase">Live Activity</span>
                       <strong className="text-purple-300">
-                        {gameRooms.length} Tables
+                        {gameRooms.length} Tables · {gameRoundCount} Rounds
                       </strong>
                     </div>
                   </div>
@@ -613,9 +635,10 @@ export default function GamesManagementSuperHub({
             );
           })}
         </div>
-      </div>
-    );
-  }
+      )}
+    </div>
+  );
+}
 
   // --------------------------------------------------------------------------
   // VIEW 2: DEDICATED INDIVIDUAL GAME MANAGEMENT PAGE

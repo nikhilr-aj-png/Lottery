@@ -36,24 +36,28 @@ import {
 
 const FAQS = [
   {
-    q: 'What are Flow Coins (FC) and can they be withdrawn?',
-    a: 'Flow Coins (FC) are 100% non-transferable, non-redeemable virtual social credits designed exclusively for free social entertainment. They hold zero monetary value and cannot be exchanged, deposited, cashed out, or redeemed for fiat currency or cryptocurrency.'
+    q: 'What currency is used on EarnFlow.in?',
+    a: 'EarnFlow.in operates strictly on USDT (Tether TRC-20). All game stakes, lottery tickets, pool prizes, and account balances are denominated exclusively in USDT. Deposits are received via official TRON TRC-20 addresses, and withdrawals are disbursed directly to your external wallet.'
   },
   {
-    q: 'How does the Provably Fair system work?',
-    a: 'Every round across all 12 games and the Four-Digit Lottery uses cryptographic SHA-256 and HMAC-SHA256 commit-reveal algorithms. The server publishes a pre-committed hash before the round begins. Once the round ends, the server seed is revealed so you can independently verify that the outcome was never manipulated.'
+    q: 'How does the Provably Fair cryptographic system work?',
+    a: 'Every round across our 6 active games (Four-Digit Lottery, Crash, Dice, Coinflip, Bingo – Color Trading, and Horse Racing) uses cryptographic SHA-256 and HMAC-SHA256 commit-reveal protocols. Before any round starts or lottery tickets are sold, the server publishes a SHA-256 hash of its secret server seed. Once the round or draw concludes, the unhashed seed is revealed, allowing any player to verify that outcomes were predetermined and tamper-proof.'
   },
   {
-    q: 'How often can I claim free Flow Coins?',
-    a: 'All registered players can claim free Flow Coins every 24 hours through our daily faucet and Lucky Wheel! Additionally, players receive a 500 FC welcome grant upon registration and bonus Flow Coins through achievement milestones and VIP loyalty rank-ups.'
+    q: 'How long do USDT withdrawals take to process?',
+    a: 'Withdrawals are processed under our strict 24-Hour Service Level Agreement. All verified withdrawal orders are audited, approved, and disbursed to your TRC-20 destination address within 24 hours.'
   },
   {
     q: 'Can I install this app on Android or iOS?',
     a: 'Yes! The platform is a Progressive Web App (PWA) that installs on any Android or iOS device directly from your browser. We also provide an official native Flutter Android APK download in the navbar.'
   },
   {
-    q: 'What are the RTP (Return to Player) percentages for the games?',
-    a: 'Our games feature industry-leading fair math models: Blackjack (99.5% RTP / 0.5% house edge), Dice (99.0% RTP / 1% edge), Crash (99.0% RTP), Mines (99.0% RTP), Limbo (99.0% RTP), and European Roulette (97.3% RTP).'
+    q: 'What are the RTP (Return to Player) percentages for active games?',
+    a: 'Our games feature industry-leading fair math models: Crash (99.0% RTP / 1.0% house edge), Dice (99.0% RTP / 1.0% edge), Coinflip (99.0% RTP / 1.0% edge), Bingo – Color Trading (98.0% RTP / 2.0% edge), Horse Racing (97.5% RTP / 2.5% edge), and Four-Digit Lottery (95.0% RTP / 5.0% edge).'
+  },
+  {
+    q: 'How do I participate in the Four-Digit Lottery?',
+    a: 'Simply choose any 4-digit sequence between 0000 and 9999 (or use Quick Pick) and purchase your ticket in USDT. When the event countdown concludes, our provably fair Oracle determines winning digits. Winners receive automatic USDT prize payouts according to the configured single or multi-winner prize distribution rules.'
   }
 ];
 
@@ -523,14 +527,14 @@ export default function SupportView() {
             <div className="p-4 rounded-2xl bg-[#0B0F19] border border-[#1F2737] space-y-3">
               <div className="flex items-center gap-2 text-white font-bold text-xs sm:text-sm">
                 <Coins className="w-4 h-4 text-amber-400" />
-                <span>Daily Flow Coin Wagering Limit</span>
+                <span>Daily USDT Wagering Limit</span>
               </div>
               <p className="text-xs text-[#94A3B8]">
-                Caps the maximum amount of Flow Coins you can wager across all games in a 24-hour cycle.
+                Caps the maximum amount of USDT you can wager across all games in a 24-hour cycle.
               </p>
 
               <div className="grid grid-cols-3 gap-2">
-                {['none', '500', '1000', '2500', '5000'].map(val => (
+                {['none', '25', '50', '100', '250', '500'].map(val => (
                   <button
                     key={val}
                     type="button"
@@ -541,7 +545,7 @@ export default function SupportView() {
                         : 'bg-[#151C2B] text-[#94A3B8] border border-[#272a31] hover:text-white'
                     }`}
                   >
-                    {val === 'none' ? 'No Limit' : `${val} FC`}
+                    {val === 'none' ? 'No Limit' : `${val} USDT`}
                   </button>
                 ))}
               </div>

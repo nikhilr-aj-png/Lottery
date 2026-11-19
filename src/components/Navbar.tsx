@@ -75,7 +75,7 @@ export default function Navbar({
 
   const handleNavClick = (tabId) => {
     // Public tabs where unauthenticated visitors can freely navigate:
-    const publicTabs = ['lotteries', 'contact', 'terms', 'privacy', 'rewards', 'leaderboard', 'profile', 'wallet'];
+    const publicTabs = ['lotteries', 'support', 'contact', 'terms', 'privacy', 'rewards', 'leaderboard', 'profile', 'wallet'];
     if (!isLoggedIn && !publicTabs.includes(tabId)) {
       setIsAuthModalOpen(true);
       const tabNames = {
