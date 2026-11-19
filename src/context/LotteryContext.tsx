@@ -185,7 +185,13 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
             minStakeFC: dbGame.min_stake_fc !== undefined ? Number(dbGame.min_stake_fc) : (staticGame.minStakeFC || 1),
             maxStakeFC: dbGame.max_stake_fc !== undefined ? Number(dbGame.max_stake_fc) : (staticGame.maxStakeFC || 1000),
             maxMultiplier: dbGame.max_multiplier !== undefined ? Number(dbGame.max_multiplier) : staticGame.maxMultiplier,
-            icon: dbGame.icon || staticGame.icon || '',
+            icon: (dbGame.game_id === 'bingo' || dbGame.game_id === 'color-trading')
+              ? '/items/Color.jpg'
+              : (dbGame.game_id === 'horse-racing'
+                ? '/items/Horse Racing.jpg'
+                : (dbGame.game_id === 'lottery'
+                  ? '/items/Four Digit Lottery.jpg'
+                  : (dbGame.icon || staticGame.icon || `/items/${dbGame.game_id}.jpg`))),
             rules: staticGame.rules || [],
             instructions: staticGame.instructions || ''
           };

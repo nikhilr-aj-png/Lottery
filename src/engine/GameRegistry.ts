@@ -173,8 +173,8 @@ export const GAMES: GameDefinition[] = [
     category: GAME_CATEGORIES.ARCADE,
     badge: 'TRADING',
     themeColor: '#8b5cf6',
-    icon: '/items/Bingo – Color Trading.jpg',
-    image: '/items/Bingo – Color Trading.jpg',
+    icon: '/items/Color.jpg',
+    image: '/items/Color.jpg',
     description: 'Fast-paced provably fair color prediction. Pick Red, Green, Violet, Numbers (0–9), or Big/Small with instant USDT payouts!',
     rtp: 98.0,
     houseEdge: 2.0,
@@ -248,11 +248,24 @@ export function getGameById(idOrSlug: string): GameDefinition | undefined {
 // Helper to get game icon image URL with fallback
 export function getGameIconUrl(gameId: GameId | string): string {
   const g = typeof gameId === 'string' ? getGameById(gameId) : GAMES.find(x => x.id === gameId);
-  return g?.icon || `/items/${gameId}.jpg`;
+  if (g?.icon) return g.icon;
+  if (gameId === 'bingo' || gameId === 'color-trading') return '/items/Color.jpg';
+  if (gameId === 'horse-racing') return '/items/Horse Racing.jpg';
+  if (gameId === 'lottery') return '/items/Four Digit Lottery.jpg';
+  if (gameId === 'crash') return '/items/Crash.jpg';
+  if (gameId === 'dice') return '/items/Dice.jpg';
+  if (gameId === 'coinflip') return '/items/Coinflip.jpg';
+  return `/items/${gameId}.jpg`;
 }
 
 // Helper to get fallback artwork URL
 export function getGameFallbackIconUrl(gameId: GameId | string): string {
+  if (gameId === 'bingo' || gameId === 'color-trading') return '/items/Color.jpg';
+  if (gameId === 'horse-racing') return '/items/Horse Racing.jpg';
+  if (gameId === 'lottery') return '/items/Four Digit Lottery.jpg';
+  if (gameId === 'crash') return '/items/Crash.jpg';
+  if (gameId === 'dice') return '/items/Dice.jpg';
+  if (gameId === 'coinflip') return '/items/Coinflip.jpg';
   return `/items/${gameId}.jpg`;
 }
 

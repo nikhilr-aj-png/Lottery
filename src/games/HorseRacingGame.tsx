@@ -185,9 +185,14 @@ export default function HorseRacingGame({
       {/* Top Bar: Derby Track Conditions & Nonce */}
       <div className="flex items-center justify-between p-2 sm:px-3 rounded-xl bg-[#090D16] border border-[#1F2737] shrink-0 text-xs">
         <div className="flex items-center gap-2">
+          <img 
+            src="/items/Horse Racing.jpg" 
+            alt="Horse Racing" 
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover border border-emerald-500/40 shrink-0 shadow-xs"
+          />
           <span className="font-extrabold text-white text-xs sm:text-sm flex items-center gap-1.5">
             <Flag className="w-4 h-4 text-emerald-400" />
-            <span>Championship Derby</span>
+            <span className="hidden xs:inline">Championship Derby</span>
           </span>
           <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 uppercase font-bold">
             1,000M TURF SPRINT

@@ -198,11 +198,16 @@ export default function BingoGame({
       {/* Top Banner: Round Cycle Timer & Recent Draws Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-2 sm:px-3 rounded-xl bg-[#090D16] border border-[#1F2737] shrink-0 text-xs">
         <div className="flex items-center gap-2">
+          <img 
+            src="/items/Color.jpg" 
+            alt="Bingo Color Trading" 
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover border border-purple-500/40 shrink-0 shadow-xs"
+          />
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono-numbers font-black">
             <Clock className="w-3.5 h-3.5 text-amber-400" />
             <span>00:{countdown.toString().padStart(2, '0')}</span>
           </div>
-          <span className="font-bold text-[11px] text-white">Live Color Cycle</span>
+          <span className="font-bold text-[11px] text-white hidden xs:inline">Live Color Cycle</span>
           <span className="text-[10px] text-[#94A3B8] font-mono-numbers">Round #{seeds.nonce}</span>
         </div>
 
