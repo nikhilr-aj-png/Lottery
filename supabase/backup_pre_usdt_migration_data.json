@@ -1,0 +1,4417 @@
+{
+  "game_configurations": [
+    {
+      "game_id": "lottery",
+      "game_name": "Four-Digit Lottery",
+      "category": "lottery",
+      "is_enabled": true,
+      "min_stake_fc": "1",
+      "max_stake_fc": "500",
+      "default_stake_fc": "10",
+      "house_edge": "5.0",
+      "rtp": "95.0",
+      "max_multiplier": "1000.0",
+      "rules_config": {
+        "dials": 4,
+        "range": [
+          0,
+          9999
+        ]
+      },
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00",
+      "status": "active",
+      "icon": "",
+      "description": "",
+      "badge": ""
+    },
+    {
+      "game_id": "crash",
+      "game_name": "Crash",
+      "category": "instant",
+      "is_enabled": true,
+      "min_stake_fc": "1",
+      "max_stake_fc": "1000",
+      "default_stake_fc": "10",
+      "house_edge": "1.0",
+      "rtp": "99.0",
+      "max_multiplier": "1000.0",
+      "rules_config": {
+        "curve_speed": 1,
+        "auto_cashout_min": 1.01
+      },
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00",
+      "status": "active",
+      "icon": "",
+      "description": "",
+      "badge": ""
+    },
+    {
+      "game_id": "dice",
+      "game_name": "Dice",
+      "category": "instant",
+      "is_enabled": true,
+      "min_stake_fc": "1",
+      "max_stake_fc": "2000",
+      "default_stake_fc": "10",
+      "house_edge": "1.0",
+      "rtp": "99.0",
+      "max_multiplier": "990.0",
+      "rules_config": {
+        "max_target": 98,
+        "min_target": 1
+      },
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00",
+      "status": "active",
+      "icon": "",
+      "description": "",
+      "badge": ""
+    },
+    {
+      "game_id": "roulette",
+      "game_name": "European Roulette",
+      "category": "table",
+      "is_enabled": true,
+      "min_stake_fc": "1",
+      "max_stake_fc": "1000",
+      "default_stake_fc": "10",
+      "house_edge": "2.7",
+      "rtp": "97.3",
+      "max_multiplier": "36.0",
+      "rules_config": {
+        "type": "european",
+        "pockets": 37
+      },
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00",
+      "status": "active",
+      "icon": "",
+      "description": "",
+      "badge": ""
+    },
+    {
+      "game_id": "coinflip",
+      "game_name": "Coinflip",
+      "category": "instant",
+      "is_enabled": true,
+      "min_stake_fc": "1",
+      "max_stake_fc": "2500",
+      "default_stake_fc": "10",
+      "house_edge": "2.0",
+      "rtp": "98.0",
+      "max_multiplier": "1.98",
+      "rules_config": {
+        "options": [
+          "heads",
+          "tails"
+        ],
+        "payout_multiplier": 1.98
+      },
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00",
+      "status": "active",
+      "icon": "",
+      "description": "",
+      "badge": ""
+    },
+    {
+      "game_id": "blackjack",
+      "game_name": "Blackjack 21",
+      "category": "card",
+      "is_enabled": true,
+      "min_stake_fc": "1",
+      "max_stake_fc": "1000",
+      "default_stake_fc": "10",
+      "house_edge": "0.5",
+      "rtp": "99.5",
+      "max_multiplier": "2.5",
+      "rules_config": {
+        "decks": 6,
+        "dealer_stands": 17,
+        "blackjack_payout": 2.5
+      },
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00",
+      "status": "active",
+      "icon": "",
+      "description": "",
+      "badge": ""
+    },
+    {
+      "game_id": "slots",
+      "game_name": "Golden Reels Slot",
+      "category": "slots",
+      "is_enabled": true,
+      "min_stake_fc": "1",
+      "max_stake_fc": "500",
+      "default_stake_fc": "10",
+      "house_edge": "2.5",
+      "rtp": "97.5",
+      "max_multiplier": "250.0",
+      "rules_config": {
+        "reels": 3,
+        "paylines": 5,
+        "jackpot_symbol": "777"
+      },
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00",
+      "status": "active",
+      "icon": "",
+      "description": "",
+      "badge": ""
+    },
+    {
+      "game_id": "poker",
+      "game_name": "Texas Hold'em Poker",
+      "category": "card",
+      "is_enabled": true,
+      "min_stake_fc": "5",
+      "max_stake_fc": "1000",
+      "default_stake_fc": "25",
+      "house_edge": "1.5",
+      "rtp": "98.5",
+      "max_multiplier": "50.0",
+      "rules_config": {
+        "seats": 6,
+        "blinds": [
+          5,
+          10
+        ],
+        "table_type": "texas_holdem"
+      },
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00",
+      "status": "active",
+      "icon": "",
+      "description": "",
+      "badge": ""
+    },
+    {
+      "game_id": "keno",
+      "game_name": "Classic Keno",
+      "category": "arcade",
+      "is_enabled": true,
+      "min_stake_fc": "1",
+      "max_stake_fc": "500",
+      "default_stake_fc": "10",
+      "house_edge": "3.0",
+      "rtp": "97.0",
+      "max_multiplier": "500.0",
+      "rules_config": {
+        "max_picks": 10,
+        "draw_count": 10,
+        "total_balls": 40
+      },
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00",
+      "status": "active",
+      "icon": "",
+      "description": "",
+      "badge": ""
+    },
+    {
+      "game_id": "limbo",
+      "game_name": "Limbo",
+      "category": "instant",
+      "is_enabled": true,
+      "min_stake_fc": "1",
+      "max_stake_fc": "1000",
+      "default_stake_fc": "10",
+      "house_edge": "1.0",
+      "rtp": "99.0",
+      "max_multiplier": "10000.0",
+      "rules_config": {
+        "max_multiplier": 10000,
+        "min_multiplier": 1.01
+      },
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00",
+      "status": "active",
+      "icon": "",
+      "description": "",
+      "badge": ""
+    },
+    {
+      "game_id": "bingo",
+      "game_name": "Bingo – Color Trading",
+      "category": "arcade",
+      "is_enabled": true,
+      "min_stake_fc": "1",
+      "max_stake_fc": "1000",
+      "default_stake_fc": "10",
+      "house_edge": "2",
+      "rtp": "98",
+      "max_multiplier": "1000.0",
+      "rules_config": {
+        "modes": [
+          "color",
+          "number",
+          "size"
+        ],
+        "red_odds": 2,
+        "green_odds": 2,
+        "number_odds": 9,
+        "violet_odds": 4.5,
+        "big_small_odds": 1.98,
+        "round_duration_sec": 60
+      },
+      "metadata": {},
+      "created_at": "2026-11-17 12:32:10.67084+00",
+      "updated_at": "2026-11-17 12:32:10.605+00",
+      "status": "active",
+      "icon": "",
+      "description": "",
+      "badge": ""
+    },
+    {
+      "game_id": "horse-racing",
+      "game_name": "Horse Racing",
+      "category": "table",
+      "is_enabled": true,
+      "min_stake_fc": "1",
+      "max_stake_fc": "1000",
+      "default_stake_fc": "10",
+      "house_edge": "2.5",
+      "rtp": "97.5",
+      "max_multiplier": "1000.0",
+      "rules_config": {
+        "horses": [
+          {
+            "name": "Golden Thunder",
+            "odds": 2.4,
+            "color": "#f5c451",
+            "number": 1
+          },
+          {
+            "name": "Silver Streak",
+            "odds": 3.8,
+            "color": "#94a3b8",
+            "number": 2
+          },
+          {
+            "name": "Crimson Comet",
+            "odds": 5.2,
+            "color": "#ef4444",
+            "number": 3
+          },
+          {
+            "name": "Midnight Stallion",
+            "odds": 8,
+            "color": "#8b5cf6",
+            "number": 4
+          },
+          {
+            "name": "Royal Pegasus",
+            "odds": 15,
+            "color": "#06b6d4",
+            "number": 5
+          },
+          {
+            "name": "Wild Valkyrie",
+            "odds": 35,
+            "color": "#10b981",
+            "number": 6
+          }
+        ],
+        "horses_count": 6,
+        "race_distance_m": 1000,
+        "race_duration_sec": 30
+      },
+      "metadata": {},
+      "created_at": "2026-11-17 12:32:10.805179+00",
+      "updated_at": "2026-11-17 12:32:10.749+00",
+      "status": "active",
+      "icon": "",
+      "description": "",
+      "badge": ""
+    }
+  ],
+  "game_rooms": [
+    {
+      "id": "crash-room-1",
+      "game_id": "crash",
+      "room_name": "Casual Flight Lounge",
+      "room_type": "casual",
+      "status": "active",
+      "description": "Low stakes room ideal for casual players and test flights.",
+      "min_stake_fc": "1",
+      "max_stake_fc": "50",
+      "player_capacity": 1000,
+      "current_players": 0,
+      "sort_order": 1,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "crash-room-2",
+      "game_id": "crash",
+      "room_name": "Main Rocket Arena",
+      "room_type": "standard",
+      "status": "active",
+      "description": "High volume main launch pad with auto-cashout controls.",
+      "min_stake_fc": "5",
+      "max_stake_fc": "250",
+      "player_capacity": 2000,
+      "current_players": 0,
+      "sort_order": 2,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "crash-room-3",
+      "game_id": "crash",
+      "room_name": "High Rollers Orbit",
+      "room_type": "high_roller",
+      "status": "active",
+      "description": "Uncapped multipliers for strategic high rollers.",
+      "min_stake_fc": "50",
+      "max_stake_fc": "1000",
+      "player_capacity": 500,
+      "current_players": 0,
+      "sort_order": 3,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "dice-room-1",
+      "game_id": "dice",
+      "room_name": "Classic Roller Table",
+      "room_type": "standard",
+      "status": "active",
+      "description": "Standard 100-sided die with Roll Over and Roll Under.",
+      "min_stake_fc": "1",
+      "max_stake_fc": "100",
+      "player_capacity": 1000,
+      "current_players": 0,
+      "sort_order": 1,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "dice-room-2",
+      "game_id": "dice",
+      "room_name": "High Stakes Dice Arena",
+      "room_type": "high_roller",
+      "status": "active",
+      "description": "Maximum precision rolls with flexible target range.",
+      "min_stake_fc": "20",
+      "max_stake_fc": "2000",
+      "player_capacity": 500,
+      "current_players": 0,
+      "sort_order": 2,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "roulette-room-1",
+      "game_id": "roulette",
+      "room_name": "Monte Carlo Table",
+      "room_type": "standard",
+      "status": "active",
+      "description": "Single-zero European wheel with complete inside and outside betting.",
+      "min_stake_fc": "1",
+      "max_stake_fc": "200",
+      "player_capacity": 100,
+      "current_players": 0,
+      "sort_order": 1,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "roulette-room-2",
+      "game_id": "roulette",
+      "room_name": "VIP Salon Privé",
+      "room_type": "vip",
+      "status": "active",
+      "description": "Exclusive French/European layout with higher stake allowances.",
+      "min_stake_fc": "25",
+      "max_stake_fc": "1000",
+      "player_capacity": 50,
+      "current_players": 0,
+      "sort_order": 2,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "coinflip-room-1",
+      "game_id": "coinflip",
+      "room_name": "Instant Flip 50/50",
+      "room_type": "standard",
+      "status": "active",
+      "description": "Pure heads or tails with instant Provably Fair resolution.",
+      "min_stake_fc": "1",
+      "max_stake_fc": "100",
+      "player_capacity": 1000,
+      "current_players": 0,
+      "sort_order": 1,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "coinflip-room-2",
+      "game_id": "coinflip",
+      "room_name": "Streak Challenge Arena",
+      "room_type": "high_roller",
+      "status": "active",
+      "description": "High stake coinflip for winning streak champions.",
+      "min_stake_fc": "20",
+      "max_stake_fc": "2500",
+      "player_capacity": 500,
+      "current_players": 0,
+      "sort_order": 2,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "blackjack-room-1",
+      "game_id": "blackjack",
+      "room_name": "Emerald 6-Deck Table",
+      "room_type": "standard",
+      "status": "active",
+      "description": "Dealer stands on soft 17, 3:2 natural blackjack, double down supported.",
+      "min_stake_fc": "1",
+      "max_stake_fc": "100",
+      "player_capacity": 7,
+      "current_players": 0,
+      "sort_order": 1,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "blackjack-room-2",
+      "game_id": "blackjack",
+      "room_name": "Diamond High Roller Table",
+      "room_type": "vip",
+      "status": "active",
+      "description": "VIP single table experience with elevated table limits.",
+      "min_stake_fc": "25",
+      "max_stake_fc": "1000",
+      "player_capacity": 7,
+      "current_players": 0,
+      "sort_order": 2,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "slots-room-1",
+      "game_id": "slots",
+      "room_name": "Vegas Classic 3-Reel",
+      "room_type": "standard",
+      "status": "active",
+      "description": "5 active paylines with wild diamonds and 777 jackpot.",
+      "min_stake_fc": "1",
+      "max_stake_fc": "50",
+      "player_capacity": 1000,
+      "current_players": 0,
+      "sort_order": 1,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "slots-room-2",
+      "game_id": "slots",
+      "room_name": "High Roller Gold Spinner",
+      "room_type": "high_roller",
+      "status": "active",
+      "description": "Higher stake denominations for massive line hit payouts.",
+      "min_stake_fc": "10",
+      "max_stake_fc": "500",
+      "player_capacity": 500,
+      "current_players": 0,
+      "sort_order": 2,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "poker-room-1",
+      "game_id": "poker",
+      "room_name": "Novice Table (5/10 Blinds)",
+      "room_type": "casual",
+      "status": "active",
+      "description": "6-seat Hold'em table. Practice standard hand rankings and betting rounds.",
+      "min_stake_fc": "5",
+      "max_stake_fc": "100",
+      "player_capacity": 6,
+      "current_players": 0,
+      "sort_order": 1,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "poker-room-2",
+      "game_id": "poker",
+      "room_name": "Champions Table (25/50 Blinds)",
+      "room_type": "high_roller",
+      "status": "active",
+      "description": "Competitive Hold'em table with strategic flop, turn, and river action.",
+      "min_stake_fc": "25",
+      "max_stake_fc": "1000",
+      "player_capacity": 6,
+      "current_players": 0,
+      "sort_order": 2,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "keno-room-1",
+      "game_id": "keno",
+      "room_name": "Quick Draw 40-Ball Room",
+      "room_type": "standard",
+      "status": "active",
+      "description": "Select 1 to 10 lucky numbers and watch 10 balls draw in real time.",
+      "min_stake_fc": "1",
+      "max_stake_fc": "100",
+      "player_capacity": 1000,
+      "current_players": 0,
+      "sort_order": 1,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "keno-room-2",
+      "game_id": "keno",
+      "room_name": "Golden Keno Jackpot Hall",
+      "room_type": "vip",
+      "status": "active",
+      "description": "High hit-multiplier paytable for master keno players.",
+      "min_stake_fc": "10",
+      "max_stake_fc": "500",
+      "player_capacity": 500,
+      "current_players": 0,
+      "sort_order": 2,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "limbo-room-1",
+      "game_id": "limbo",
+      "room_name": "Standard Multiplier Lab",
+      "room_type": "standard",
+      "status": "active",
+      "description": "Target multipliers up to 100x with dynamic probability display.",
+      "min_stake_fc": "1",
+      "max_stake_fc": "100",
+      "player_capacity": 1000,
+      "current_players": 0,
+      "sort_order": 1,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "limbo-room-2",
+      "game_id": "limbo",
+      "room_name": "10,000x Astronomical Arena",
+      "room_type": "high_roller",
+      "status": "active",
+      "description": "Target extreme multipliers up to 10,000x.",
+      "min_stake_fc": "10",
+      "max_stake_fc": "1000",
+      "player_capacity": 500,
+      "current_players": 0,
+      "sort_order": 2,
+      "metadata": {},
+      "created_at": "2026-11-07 14:38:52.820274+00",
+      "updated_at": "2026-11-07 14:38:52.820274+00"
+    },
+    {
+      "id": "bingo-room-1",
+      "game_id": "bingo",
+      "room_name": "Fast 1-Min Color Arena",
+      "room_type": "standard",
+      "status": "active",
+      "description": "Rapid 60-second color trading draws for Red, Green, Violet and Numbers 0-9.",
+      "min_stake_fc": "1",
+      "max_stake_fc": "100",
+      "player_capacity": 1000,
+      "current_players": 0,
+      "sort_order": 1,
+      "metadata": {},
+      "created_at": "2026-11-17 12:32:10.951795+00",
+      "updated_at": "2026-11-17 12:32:10.951795+00"
+    },
+    {
+      "id": "bingo-room-2",
+      "game_id": "bingo",
+      "room_name": "VIP High Stakes Color Arena",
+      "room_type": "vip",
+      "status": "active",
+      "description": "High ceiling color prediction with elevated limits up to 1,000 Flow Coins.",
+      "min_stake_fc": "20",
+      "max_stake_fc": "1000",
+      "player_capacity": 500,
+      "current_players": 0,
+      "sort_order": 2,
+      "metadata": {},
+      "created_at": "2026-11-17 12:32:10.951795+00",
+      "updated_at": "2026-11-17 12:32:10.951795+00"
+    },
+    {
+      "id": "horse-racing-room-1",
+      "game_id": "horse-racing",
+      "room_name": "Derby Club Track",
+      "room_type": "standard",
+      "status": "active",
+      "description": "Standard 6-horse sprint with Win & Place bets on live virtual turf.",
+      "min_stake_fc": "1",
+      "max_stake_fc": "100",
+      "player_capacity": 1000,
+      "current_players": 0,
+      "sort_order": 1,
+      "metadata": {},
+      "created_at": "2026-11-17 12:32:11.055028+00",
+      "updated_at": "2026-11-17 12:32:11.055028+00"
+    },
+    {
+      "id": "horse-racing-room-2",
+      "game_id": "horse-racing",
+      "room_name": "Royal Ascot Grandstand",
+      "room_type": "high_roller",
+      "status": "active",
+      "description": "High roller championship turf with bets up to 1,000 Flow Coins.",
+      "min_stake_fc": "25",
+      "max_stake_fc": "1000",
+      "player_capacity": 500,
+      "current_players": 0,
+      "sort_order": 2,
+      "metadata": {},
+      "created_at": "2026-11-17 12:32:11.055028+00",
+      "updated_at": "2026-11-17 12:32:11.055028+00"
+    }
+  ],
+  "lottery_events": [],
+  "lottery_wallets": [
+    {
+      "address": "0x5a62a2456ce628b32f81e46427e412dcc56bb057",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 16:34:50.431866+00",
+      "user_id": null
+    },
+    {
+      "address": "0xTestAuditor57517",
+      "balance": "535.00",
+      "lifetime_won": "37944.00",
+      "network": "TRC-20",
+      "updated_at": "2026-11-07 15:38:11.154948+00",
+      "user_id": null
+    },
+    {
+      "address": "0x76e9ace81a091e2aeb185a022683b8729656b33e",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 16:34:51.209896+00",
+      "user_id": null
+    },
+    {
+      "address": "0xTestAuditor46823",
+      "balance": "535.00",
+      "lifetime_won": "37944.00",
+      "network": "TRC-20",
+      "updated_at": "2026-11-07 15:38:58.71773+00",
+      "user_id": null
+    },
+    {
+      "address": "0x8888888888888888888888888888888888888888",
+      "balance": "350.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-07 16:35:35.917597+00",
+      "user_id": null
+    },
+    {
+      "address": "0x5f89d360a05672ed506e218a92a11bfea40849ca",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 16:26:24.220532+00",
+      "user_id": null
+    },
+    {
+      "address": "0x8a7cde408961f80f1c2aeaf6f618f9aad7d7a844",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x0d0297ce6ebca350018b0d4ec13af1980025a649",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x0a9409358f00e28095f39917c813aca40e8afe59",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x9ee13b97ba5767de06c8e82c18ca62bb5cd23128",
+      "balance": "575.00",
+      "lifetime_won": "150.00",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 16:47:21.461919+00",
+      "user_id": null
+    },
+    {
+      "address": "0xc852af623a1c9cae45d51160bca1a0922f3bc0f4",
+      "balance": "600.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 16:55:12.822968+00",
+      "user_id": null
+    },
+    {
+      "address": "0xa4b0bcce990e7a76fa908da9809b2ccd2c36ca7d",
+      "balance": "500.00",
+      "lifetime_won": "0.00",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c"
+    },
+    {
+      "address": "0x3f0784844e0f797d1bf40550dbe034089d28ae9d",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0xc6cac0e8e2e7f06e103dce9e22b695a07c2186f0",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x1ebeb67455b8244053e030d9e867d6baf965ffb4",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x125568d13157e91153922a9d9703013e18f61358",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0xfc2c41b166c3c770d2e7730af123c5d8bb9345a1",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x8a0141706d5c904f767d34c0ebab33d7b82287b9",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0xfa0ebef73b2e678c9a9b32f1d4f092e55933b29b",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x5de594681037eacebde3f6a49d6906fe4e2ae675",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0xa5f8f0401a569c9f2c7bcfc9f0a125832756f9ba",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x77575c4a1baa1acb404e9ccd07d8cc713bd15c3d",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0xceacf1672eb346a691f43da7954aa49eb4f6c36a",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0xcb2ff02fc487d242a71dfcf7bd15ec0ece425928",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0xb2e081c68f0bc6c7b3a888bbdb1ec21e01e8586a",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x67788903ac5f75a2bcf590439fafa86edfae2adf",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x3a218ac5b72aeff104cb224fca1dc8b5a231c19e",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x4c430ca0f9e882985f7c5b6d42e932c2f432dfec",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x49f386b359ddbdbc01adc72648819984e82aa2c8",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x2278f3e612963e02711d646e4ec7a0a706f47dda",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0xf6f81cd61f75eb1d87620d9ab0df56eaf7fd8b4a",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x20f65ccee671a43f884f9c37902e819d5bd93225",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x352807b8c45a28280d10c9f2af83c74ce09eb4b1",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x6c4ea2d2c66af19ff63901c69889965cf99f484c",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0xce83131cd82fd191f8ff63e7c8b3d7a7134e85e8",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x7ebcd554ab910f5c8251eaa5352589f402be6812",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x3d0f7b773759d8deb604e2918c2be7ceff293042",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0xb2a5a134fe7f094bf200f9aa98da5f05e6e3a8f5",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x034cdf85de2a77bb2aaa2b52a9ccf5561eeb3191",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0x6ffaede1a51b855a8612f33b083ec2d111bc8450",
+      "balance": "500.00",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 14:33:00.996077+00",
+      "user_id": null
+    },
+    {
+      "address": "0xf1e63d9ef3ace0cc2fe446d35776a47619313781",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 15:47:10.699344+00",
+      "user_id": null
+    },
+    {
+      "address": "0x0aadff1fd75d84a7de21b045ee69b62389bf394b",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 16:55:25.28447+00",
+      "user_id": null
+    },
+    {
+      "address": "0xb015106e20006da375fcd4820e3204f24bd15ef0",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-06 17:28:17.898341+00",
+      "user_id": null
+    },
+    {
+      "address": "0xf79973350c946967fac3da0311c5e65b7f1457c3",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-06 17:28:19.218897+00",
+      "user_id": null
+    },
+    {
+      "address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "balance": "18574.10",
+      "lifetime_won": "18274.00",
+      "network": "TRC-20",
+      "updated_at": "2026-11-12 15:50:31.775061+00",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c"
+    },
+    {
+      "address": "0x2756133a2b73b37382f749c4bc7bbd89fa770ed8",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 13:10:18.237168+00",
+      "user_id": null
+    },
+    {
+      "address": "0x690f5964486a1b4649cd5b8d96aca5bd217460d7",
+      "balance": "480.00",
+      "lifetime_won": "20.00",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 18:38:39.273346+00",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c"
+    },
+    {
+      "address": "0xe440044b69fdffd56490919f60091da2930edd1f",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 05:20:34.983295+00",
+      "user_id": null
+    },
+    {
+      "address": "0x2c8ef20ced7cf000bb2c8ce9dcdcb6a9425c380b",
+      "balance": "547.20",
+      "lifetime_won": "117.20",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 16:15:58.232145+00",
+      "user_id": null
+    },
+    {
+      "address": "0x6ebdad68e762557f4b18031de1989a913b69fa81",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 13:10:20.977373+00",
+      "user_id": null
+    },
+    {
+      "address": "0x35076680cc1bb9de5f0e841430b90724c9c3695a",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 13:14:47.6398+00",
+      "user_id": null
+    },
+    {
+      "address": "0xe84749e96dfe6982eb16a86a4c9ea735d945e68c",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 13:14:47.707016+00",
+      "user_id": null
+    },
+    {
+      "address": "0x6d49f021a6558e3806e9728375cac03967d943e3",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 14:08:48.425052+00",
+      "user_id": null
+    },
+    {
+      "address": "0x09100c06660b162a81c256c7eccf482dbff105ed",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 14:08:49.229113+00",
+      "user_id": null
+    },
+    {
+      "address": "0x0bb4f9768e54bb1ee7526399c6acded4abfaa2b5",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 14:09:06.416151+00",
+      "user_id": null
+    },
+    {
+      "address": "0x01e39500b7db0ca5c7de1b294a149f2fad8b9a1a",
+      "balance": "547.20",
+      "lifetime_won": "117.20",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 16:16:33.342941+00",
+      "user_id": null
+    },
+    {
+      "address": "0x87d5b6633da23f8e14159d0eada6bac63157ad50",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 14:15:21.139198+00",
+      "user_id": null
+    },
+    {
+      "address": "0x0e73357877e5e1e8a99eaa82a7f9c7ddb7db36aa",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 14:15:21.150389+00",
+      "user_id": null
+    },
+    {
+      "address": "0xbf96c47a030660e69bcf4ecdd2b02b0322517ff9",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 14:29:21.134349+00",
+      "user_id": null
+    },
+    {
+      "address": "0xb6bd83e77bec0dd9f873f0fdd414ea4b54b7c205",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 14:29:21.1902+00",
+      "user_id": null
+    },
+    {
+      "address": "0xTestAuditor48666",
+      "balance": "500",
+      "lifetime_won": "37884.00",
+      "network": "TRC-20",
+      "updated_at": "2026-11-07 15:37:06.707735+00",
+      "user_id": null
+    },
+    {
+      "address": "0x55c5afd109b96882aa4dc2638908973d062f09f4",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 15:47:11.410585+00",
+      "user_id": null
+    },
+    {
+      "address": "0xecde9b24afb6677a8a726ebce240dc3eff69fe56",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 15:54:41.368079+00",
+      "user_id": null
+    },
+    {
+      "address": "0x128a10b21ca159e191407e39d4292aacd05409cf",
+      "balance": "604.60",
+      "lifetime_won": "194.60",
+      "network": "TRC-20",
+      "updated_at": "2026-11-06 16:25:06.628679+00",
+      "user_id": null
+    },
+    {
+      "address": "0x8b9b79910396aca61752b27a3aef7f4100a368c6",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 15:54:41.641683+00",
+      "user_id": null
+    },
+    {
+      "address": "0x79c9e195855b432b497d43c169562cc7254c3a2a",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 16:13:20.25583+00",
+      "user_id": null
+    },
+    {
+      "address": "0xTestAuditor92998",
+      "balance": "535.00",
+      "lifetime_won": "37944.00",
+      "network": "TRC-20",
+      "updated_at": "2026-11-07 15:37:31.292799+00",
+      "user_id": null
+    },
+    {
+      "address": "0x981a1373b491f22bed2ca5c614c3ef92b71f1a44",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 16:13:21.40672+00",
+      "user_id": null
+    },
+    {
+      "address": "0x4544f50f0877560bf9c3180e34425bd72c268090",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 16:26:25.376003+00",
+      "user_id": null
+    },
+    {
+      "address": "0x7c818aa5226197df238ace43af731ca7981bb554",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 16:46:33.075617+00",
+      "user_id": null
+    },
+    {
+      "address": "0xdecce74d5b023fc939351a5b21e9720bfdd2b10b",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-07 16:46:36.512323+00",
+      "user_id": null
+    },
+    {
+      "address": "0x374b7d408f4de88fad0ef94d1e9132af4578c1ad",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-08 01:09:06.076927+00",
+      "user_id": null
+    },
+    {
+      "address": "0x22d2d7f1b1a93c953b41f108d653c96a14210fcf",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-08 23:09:02.806182+00",
+      "user_id": null
+    },
+    {
+      "address": "0xb45eaca9aefecb0bee742405b4c821192825da70",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-09 10:53:33.28649+00",
+      "user_id": null
+    },
+    {
+      "address": "0xf58d2c0bf3a3191cde9815a325498fd8752187d6",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-11 23:11:08.350619+00",
+      "user_id": null
+    },
+    {
+      "address": "0xbb0d72b2ac4b82a2108758ad7b4fc719680160dc",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 10:53:09.998662+00",
+      "user_id": null
+    },
+    {
+      "address": "0x71A9f24E68B8910d54F30C8B38194aE02919B42",
+      "balance": "750.00",
+      "lifetime_won": "0.00",
+      "network": "TRC-20",
+      "updated_at": "2026-11-12 15:57:47.669145+00",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0"
+    },
+    {
+      "address": "0x1111111111111111111111111111111111111111",
+      "balance": "150.25",
+      "lifetime_won": "0",
+      "network": "FC-Virtual",
+      "updated_at": "2026-11-12 14:10:34.313897+00",
+      "user_id": null
+    },
+    {
+      "address": "0x4b8f5b56fbf50679606ce4579b6dbe611feece32",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 13:16:59.853122+00",
+      "user_id": null
+    },
+    {
+      "address": "0x25467395ae01201e71c7c09fd59e03d242927c2b",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 13:17:02.347083+00",
+      "user_id": null
+    },
+    {
+      "address": "0xf5cf6c1e057635f7ba8b41ed4ea40bb0bdaad909",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 13:50:39.374266+00",
+      "user_id": null
+    },
+    {
+      "address": "0x3c855b4e97e557ea4806bc5d0b355a3f9d0e2a01",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 13:50:41.373623+00",
+      "user_id": null
+    },
+    {
+      "address": "0x7150a379e6b1e01ced3daed060eb71275306241f",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 14:02:19.758965+00",
+      "user_id": null
+    },
+    {
+      "address": "0x10843b4231d3cac4e3527a19c0c644807ef8e322",
+      "balance": "500",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 14:02:20.934954+00",
+      "user_id": null
+    },
+    {
+      "address": "0x418f1ab9304e6d96dab7c79fc618d515e0e984db",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 14:37:18.283902+00",
+      "user_id": null
+    },
+    {
+      "address": "0x40ea190c3430ea98c94c8dd369645eb73bcad7c1",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 14:37:21.667655+00",
+      "user_id": null
+    },
+    {
+      "address": "0xa1b4b4ef6fb47933915b67427b39d1c04e95a160",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 15:02:29.890161+00",
+      "user_id": null
+    },
+    {
+      "address": "0x897fd3ca88b67c75d48d2d872d74181b1076fb55",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 15:03:15.093808+00",
+      "user_id": null
+    },
+    {
+      "address": "0xfe2191fb46fe9a429555dbf7ef8396cb4bec205a",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 15:05:27.080807+00",
+      "user_id": null
+    },
+    {
+      "address": "0x19a1d7d32f9dabbe22e301bda7e2de0df35a72a4",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 15:05:30.865569+00",
+      "user_id": null
+    },
+    {
+      "address": "0x1A2B3C4D5E6F7890123456789ABCDEF012345678",
+      "balance": "100.00",
+      "lifetime_won": "0",
+      "network": "FC-Virtual",
+      "updated_at": "2026-11-12 15:12:16.311408+00",
+      "user_id": null
+    },
+    {
+      "address": "0x6788157677824f70737f6338b5b6b7ac6d25b66f",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 15:47:25.650866+00",
+      "user_id": null
+    },
+    {
+      "address": "0x3e0d2c1a3e0dcc2946ec8244c140d3f7540f5fd8",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 15:47:26.666302+00",
+      "user_id": null
+    },
+    {
+      "address": "0x2f0d7d98d20f2d9e05d5df84e13128eeba123cb3",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 17:04:59.397083+00",
+      "user_id": null
+    },
+    {
+      "address": "0x1192cd5c4c3d88aa4d01a492a07888b9f2cd7eb5",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-12 17:04:59.535202+00",
+      "user_id": null
+    },
+    {
+      "address": "0xc78933a157b17afbc041ab7c305bf50b9ca7f050",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 03:05:15.411473+00",
+      "user_id": null
+    },
+    {
+      "address": "0xd09957e598e8477ea9418a1eba1d189b455aee29",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 03:05:16.524666+00",
+      "user_id": null
+    },
+    {
+      "address": "0x7e556d9cb17cd827627cb98b040452c1b7ff1c0c",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 03:06:47.219643+00",
+      "user_id": null
+    },
+    {
+      "address": "0x0396cd8d1b138c78ac97d8b53ef6b7516b037f40",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 03:14:51.985792+00",
+      "user_id": null
+    },
+    {
+      "address": "0x2da529b69850c89f26457fe0b89617ef60629330",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 03:14:56.010212+00",
+      "user_id": null
+    },
+    {
+      "address": "0x003ccf5fafc48593daee24102d2d1775afb286df",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 03:17:57.434761+00",
+      "user_id": null
+    },
+    {
+      "address": "0x070f73900b2bc3738c818998a3889e72bdc1e266",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 03:17:57.635994+00",
+      "user_id": null
+    },
+    {
+      "address": "0xe45acd3e0dd922d4a788dc9ace21cd55817d99dc",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 03:32:51.861359+00",
+      "user_id": null
+    },
+    {
+      "address": "0x8d98930ff2c62fdee0d1de17db2bdb0645fe6056",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 03:32:53.154768+00",
+      "user_id": null
+    },
+    {
+      "address": "0xb79c6cf6a259e0d979e2a797669e64914d1dbdf1",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 03:50:20.377118+00",
+      "user_id": null
+    },
+    {
+      "address": "0xe5333bade0004833da1ae9e8f7bef2ae9dd2d90e",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 09:05:20.857407+00",
+      "user_id": null
+    },
+    {
+      "address": "0x0b1657d01dd5cc8933e5a15910a08767adfcae18",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 09:05:23.477744+00",
+      "user_id": null
+    },
+    {
+      "address": "0x7949b511fa48d24395337cc514d846aa6937b346",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 09:23:27.264489+00",
+      "user_id": null
+    },
+    {
+      "address": "0x6bdc68972b4d80a871873d5cb68d732bbbe4e21a",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 09:23:27.525898+00",
+      "user_id": null
+    },
+    {
+      "address": "0xf537053ce9c48f1da899ed80c27ea38dcb4f19df",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 10:02:36.648974+00",
+      "user_id": null
+    },
+    {
+      "address": "0x7a428ae157fe5215155b33d202035030e03e1261",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 10:02:37.184674+00",
+      "user_id": null
+    },
+    {
+      "address": "0x095029f5709d80bbaa0dafef35f6b08c587f8f9e",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 10:36:10.623038+00",
+      "user_id": null
+    },
+    {
+      "address": "0x72ca2ddb02d93be5f4376db7bbfdb525eb31fe6e",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 10:36:14.722325+00",
+      "user_id": null
+    },
+    {
+      "address": "0x99f780593fe3b5a5bbd974c92ac901664b6c4d2e",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 11:08:22.772422+00",
+      "user_id": null
+    },
+    {
+      "address": "0xb0e024b3d4e54d4094b9a50043852950c36327d0",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 11:08:23.180802+00",
+      "user_id": null
+    },
+    {
+      "address": "0xca78075dc685ad747a2758d5101088a12e09219f",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 11:08:45.018768+00",
+      "user_id": null
+    },
+    {
+      "address": "0xdf6653d193905cc7ac13676595f8ac74358cc9cd",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 12:00:11.112663+00",
+      "user_id": null
+    },
+    {
+      "address": "0xb948c817416b3e837d24cca5e5432fd48cbfb92a",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 12:00:15.267378+00",
+      "user_id": null
+    },
+    {
+      "address": "0x9a938185ff18f2dfe55df550acf8ac7ae700e050",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 13:23:48.143656+00",
+      "user_id": null
+    },
+    {
+      "address": "0xb00583575eefc35dc96d4a117af19f4b8dcf98f9",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 16:13:25.43439+00",
+      "user_id": null
+    },
+    {
+      "address": "0xadc9638de111fb989a5786a8eec54528a1b86a1d",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 16:13:28.438473+00",
+      "user_id": null
+    },
+    {
+      "address": "0xab61e4209fa5884668d3b44892c0589da8bb3d26",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 16:15:06.45488+00",
+      "user_id": null
+    },
+    {
+      "address": "0x34ff2f05be33b55600788087b1b4cde29212e084",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 16:15:09.325318+00",
+      "user_id": null
+    },
+    {
+      "address": "0x93cc1a21991c9abfbe0e71b3ba7a28377c4e077d",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 16:31:28.838213+00",
+      "user_id": null
+    },
+    {
+      "address": "0x626709a85565f5d2dc00e0f87421e1f1dd627739",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 16:31:28.863961+00",
+      "user_id": null
+    },
+    {
+      "address": "0xad49ed78e692821cd4e9996a627fbc1f6385c178",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 16:43:35.570331+00",
+      "user_id": null
+    },
+    {
+      "address": "0xed82b5a6ba1ab36ea203412c9079eaf865fe5b2f",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 16:43:36.06169+00",
+      "user_id": null
+    },
+    {
+      "address": "0x21137a3267e8e59fd31e2326e57a448a2dc770ad",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 17:19:46.026656+00",
+      "user_id": null
+    },
+    {
+      "address": "0xed6634eb3666c4389c24e95728f1730f6a74ec2f",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 17:21:05.937162+00",
+      "user_id": null
+    },
+    {
+      "address": "0xe0f14d719e4a5d0d5ac606779e6cc306d73244bc",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-13 17:21:08.81396+00",
+      "user_id": null
+    },
+    {
+      "address": "0xcf885c28401250bcf9b38b20aba7d647c057a7bc",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 01:25:08.400081+00",
+      "user_id": null
+    },
+    {
+      "address": "0xddbb7633ef666222d951e79b127c688a0fa63910",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 02:14:47.388715+00",
+      "user_id": null
+    },
+    {
+      "address": "0x5cc6e6c58d67743a4d535362bfe163487b04b2fb",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 03:08:27.536271+00",
+      "user_id": null
+    },
+    {
+      "address": "0x95a6be07d8ee5941efe0acd0f920101cdef5dbcd",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 03:19:40.086772+00",
+      "user_id": null
+    },
+    {
+      "address": "0x77f31b73c5389f796e197fffef3cd5e9d8224019",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 03:29:34.143588+00",
+      "user_id": null
+    },
+    {
+      "address": "0xfbeed813ef9ffb855071bf93172e4987390037ae",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 03:29:34.85798+00",
+      "user_id": null
+    },
+    {
+      "address": "0xeca5fd1f080176768885d70357c14e110b71a799",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 03:35:58.777646+00",
+      "user_id": null
+    },
+    {
+      "address": "0x730084d5b360ed62b7d738b521dcb383df3b0472",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 03:36:02.009126+00",
+      "user_id": null
+    },
+    {
+      "address": "0xa7b29e5fee739d2cacfacefae64263507779ab1b",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 05:40:37.376315+00",
+      "user_id": null
+    },
+    {
+      "address": "0x3dcd5a4da8abcdf8405e54126a5861a4c1f6f973",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 05:41:49.577739+00",
+      "user_id": null
+    },
+    {
+      "address": "0xbda6a1297bacff8fb8984f387da205e7f7527a3b",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 05:42:29.888854+00",
+      "user_id": null
+    },
+    {
+      "address": "0xe1bef4a6656bf803e616c089878373c95782ae49",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 05:43:54.310657+00",
+      "user_id": null
+    },
+    {
+      "address": "0x558f4254133d693c7661ced4f72b11b02da784a5",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 05:43:57.41252+00",
+      "user_id": null
+    },
+    {
+      "address": "0xd3ee4ee12957583bbe385e6240a54d9131b1ad61",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 12:02:58.821548+00",
+      "user_id": null
+    },
+    {
+      "address": "0x954daae3e626679c0bb201383366dd56d60123d9",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 12:03:36.780387+00",
+      "user_id": null
+    },
+    {
+      "address": "0x6b17a808bbcf43d2154d8fcb59989909079ea96e",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 12:05:02.511959+00",
+      "user_id": null
+    },
+    {
+      "address": "0xcea79ae2c33167259adbb2cedfadf27ac4921a51",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 12:07:18.442198+00",
+      "user_id": null
+    },
+    {
+      "address": "0x812d19c3db944b44ab91af35c173165ce3950fa2",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 12:07:18.452945+00",
+      "user_id": null
+    },
+    {
+      "address": "0xcacb5dddf39b5e24b998921c8e1a7f248afdced0",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 12:16:43.167267+00",
+      "user_id": null
+    },
+    {
+      "address": "0x77a38209738765daa194d5490e20ec2341504ff4",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 12:21:15.726258+00",
+      "user_id": null
+    },
+    {
+      "address": "0x6e9a6514d68acb4d46f4e77164fe978a306129f9",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 12:21:16.634096+00",
+      "user_id": null
+    },
+    {
+      "address": "0xd31082d714cc19770e7beabcf90dad94d531313a",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-14 13:41:42.077565+00",
+      "user_id": null
+    },
+    {
+      "address": "0xc83bcef642762dd350ec475e945618f12eb155a7",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-15 10:53:33.645071+00",
+      "user_id": null
+    },
+    {
+      "address": "0xf8269299f02d56ebb39bf1ea148c1bc299645242",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 01:38:15.328617+00",
+      "user_id": null
+    },
+    {
+      "address": "0x3e333d62f4d99639b5c74d57ca3125277cb604fa",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 10:52:47.049469+00",
+      "user_id": null
+    },
+    {
+      "address": "0xad5261955a929aea2a49b7997bf941b056e9940f",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 12:21:23.657568+00",
+      "user_id": null
+    },
+    {
+      "address": "0x50675c2aa11514f545c639734b01f02459bc01a2",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 12:24:43.919077+00",
+      "user_id": null
+    },
+    {
+      "address": "0xf327e0bfff940cd52cc3e0df15edcbfdd0f21833",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 12:26:59.505654+00",
+      "user_id": null
+    },
+    {
+      "address": "0xfedffd24bfc74cc0312b949e9a11e0ef841c8171",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 12:26:59.537494+00",
+      "user_id": null
+    },
+    {
+      "address": "0x647f84e4ea25f0aac822b3741e28a99b42807733",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 12:51:57.668784+00",
+      "user_id": null
+    },
+    {
+      "address": "0x3bdfa2878a9c0ff8ef1acda93d4ebe84efae2927",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 12:56:21.503066+00",
+      "user_id": null
+    },
+    {
+      "address": "0x8f6bea2c3a0d60e1f61dd9aed4cf6f4c3858e22f",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 12:56:22.229232+00",
+      "user_id": null
+    },
+    {
+      "address": "0x3fcdb8f85ff5f1def842c7acf59dc96c95d97a11",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:03:22.548557+00",
+      "user_id": null
+    },
+    {
+      "address": "0x23255fdb6ba0bda2bee7f83bb1b56e5080e0d897",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:03:26.993532+00",
+      "user_id": null
+    },
+    {
+      "address": "0x790885a6aea34e5d1032374a6c3e57688ef5bbd8",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:03:31.515754+00",
+      "user_id": null
+    },
+    {
+      "address": "0x011d3b7cc639cf97f5dd1702a98345650fbdb867",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:03:46.274443+00",
+      "user_id": null
+    },
+    {
+      "address": "0x338622a12a50c90101b21efdeb1244ca609a0cf4",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:03:53.221319+00",
+      "user_id": null
+    },
+    {
+      "address": "0x99ab43b860ce98ff003a0bfde79ae411117f6169",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:04:03.198799+00",
+      "user_id": null
+    },
+    {
+      "address": "0xa96d069af944e142c7ec3a05b3c0119b806b752f",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:08:59.40916+00",
+      "user_id": null
+    },
+    {
+      "address": "0xfdae3b9c5d35612fc4767d23419667c493dee211",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:09:04.774085+00",
+      "user_id": null
+    },
+    {
+      "address": "0x41a30bf306b8e1254a681f7125416e0ab259bcd3",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:09:08.295087+00",
+      "user_id": null
+    },
+    {
+      "address": "0xf84b38b1fb07092461f4aa03da527d8314d577a1",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:09:13.407433+00",
+      "user_id": null
+    },
+    {
+      "address": "0xff2d6f15b0699356323ec9e8b1cd2370e5fa18b8",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:09:17.62993+00",
+      "user_id": null
+    },
+    {
+      "address": "0x03da22e9325e595bf1544d27b961ab84d8158cc3",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:09:28.343639+00",
+      "user_id": null
+    },
+    {
+      "address": "0xc23675c7728ad24312f3030be248fb03b55f13c1",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:11:28.529566+00",
+      "user_id": null
+    },
+    {
+      "address": "0x85d3515e1b80a5a4ac023abf05daee2df3d155f2",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:11:51.704644+00",
+      "user_id": null
+    },
+    {
+      "address": "0xed46cbd9d7c5129b74585f188770e6da32b4fb25",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:12:17.415477+00",
+      "user_id": null
+    },
+    {
+      "address": "0x4faf4b2661f39479f6bf1864400d089c12c10958",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:12:54.340565+00",
+      "user_id": null
+    },
+    {
+      "address": "0xe202cbae903eb55100b7da8bc9f01baf8ac6a237",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:13:22.097645+00",
+      "user_id": null
+    },
+    {
+      "address": "0x1b2d20fb58b73b788fe58e4bfe7252b464712316",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:13:46.952123+00",
+      "user_id": null
+    },
+    {
+      "address": "0xf5ea4c93ac72fab97a220f766ff5f70fc32a84c5",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:21:04.458118+00",
+      "user_id": null
+    },
+    {
+      "address": "0x6e4125064fe6b52e74ed84d39ff7ebb70a5356a3",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:22:04.053873+00",
+      "user_id": null
+    },
+    {
+      "address": "0xef0d1cd71a2c21ed86bd50c0d1fe96b1251d1214",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:26:19.267159+00",
+      "user_id": null
+    },
+    {
+      "address": "0x99aa2449fb9644751a9718051512fb0c2017298d",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:26:51.969389+00",
+      "user_id": null
+    },
+    {
+      "address": "0x7867c4b9e6bbdab1ba648f0575562429f31cf421",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:31:13.765433+00",
+      "user_id": null
+    },
+    {
+      "address": "0x405fc9c59c4c1c2a33011ae4705c3ad17134920b",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:31:40.945028+00",
+      "user_id": null
+    },
+    {
+      "address": "0x8a6e69bcbc610a636a08838c709eee4592199fa3",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:31:51.212178+00",
+      "user_id": null
+    },
+    {
+      "address": "0x6107d720e4170f12ac6af2761e10e318faeb2a15",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:33:04.049175+00",
+      "user_id": null
+    },
+    {
+      "address": "0xc00346899cf65211fdfa78e6e8f1e2935263d3bb",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:34:14.454685+00",
+      "user_id": null
+    },
+    {
+      "address": "0x274dbc5b35aa2efc40660940c0c3ef0dfee33770",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:34:57.207336+00",
+      "user_id": null
+    },
+    {
+      "address": "0x32813a08112752c02bf474d61d8b65080af1fb57",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:35:13.649353+00",
+      "user_id": null
+    },
+    {
+      "address": "0x007afbb12a0a54172166f8f5ebd0f55a458bf4e7",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:35:38.91199+00",
+      "user_id": null
+    },
+    {
+      "address": "0xc0c2eaa67a2536aea137b2710ff6e66afbd27c52",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:35:56.781613+00",
+      "user_id": null
+    },
+    {
+      "address": "0x2e72a55eb8c86580a882aaa806b002e0da3d4439",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:36:21.255442+00",
+      "user_id": null
+    },
+    {
+      "address": "0xc225e89b473cbe7ae71f2d3398e8b990d207c35b",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:36:56.523591+00",
+      "user_id": null
+    },
+    {
+      "address": "0x5043cbebf2711490d9ddc9323d6f5ac1ad7b23cf",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:37:11.595004+00",
+      "user_id": null
+    },
+    {
+      "address": "0xf31790e9c2b2a93c4d1c2d9d2833d8e3f808e276",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:37:36.664004+00",
+      "user_id": null
+    },
+    {
+      "address": "0x3bd750f39f506d5d507885441a428c0ac724d440",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:37:52.796268+00",
+      "user_id": null
+    },
+    {
+      "address": "0x5f9929af4476f15bdadbc0bfe26f505451743f57",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:38:01.30714+00",
+      "user_id": null
+    },
+    {
+      "address": "0x9b5b0090bfc4bb71aaf71c56a5523dd60ab6903f",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:38:45.534424+00",
+      "user_id": null
+    },
+    {
+      "address": "0x99a61dccba78b4f38ef6517a63f78bbc2f8de220",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:40:15.033066+00",
+      "user_id": null
+    },
+    {
+      "address": "0x92339e1c15fab86fe768bc1f288ce430d3ef7901",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 13:40:15.472519+00",
+      "user_id": null
+    },
+    {
+      "address": "0x13b153ad3a9038d055be69ec7b26a678fd135e3e",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 14:59:33.848838+00",
+      "user_id": null
+    },
+    {
+      "address": "0xec945225422eb0175d6a94a14571879eed349fde",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-17 14:59:34.323593+00",
+      "user_id": null
+    },
+    {
+      "address": "0x4846d8a9750a99f51d381ea26d6ec3ec7423e28d",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-18 20:34:12.20707+00",
+      "user_id": null
+    },
+    {
+      "address": "0x2df5b03e759bdc50d7c37e25040ba0a93f43de9c",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-19 05:49:33.715539+00",
+      "user_id": null
+    },
+    {
+      "address": "0x925ec62648784f6874eec9368e4770fa1f4671cc",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-19 07:24:49.467806+00",
+      "user_id": null
+    },
+    {
+      "address": "0x68129c7bc4cc257109971494831494290e3f0359",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-19 07:26:04.987287+00",
+      "user_id": null
+    },
+    {
+      "address": "0x0776d08d8c191084b346110533771c436132efd5",
+      "balance": "0",
+      "lifetime_won": "0",
+      "network": "Flow Coin",
+      "updated_at": "2026-11-19 10:51:07.844628+00",
+      "user_id": null
+    }
+  ],
+  "wallet_ledger": [
+    {
+      "id": "tx_20261106143300_addcd949",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x71A9f24E68B8910d54F30C8B38194aE02919B42",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x71A9f24E68B8910d54F30C8B38194aE02919B42",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_edd0c608",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0xa4b0bcce990e7a76fa908da9809b2ccd2c36ca7d",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0xa4b0bcce990e7a76fa908da9809b2ccd2c36ca7d",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_4a041274",
+      "user_id": null,
+      "wallet_address": "0x3f0784844e0f797d1bf40550dbe034089d28ae9d",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x3f0784844e0f797d1bf40550dbe034089d28ae9d",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_a95c8e79",
+      "user_id": null,
+      "wallet_address": "0xc6cac0e8e2e7f06e103dce9e22b695a07c2186f0",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0xc6cac0e8e2e7f06e103dce9e22b695a07c2186f0",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_f9b24d01",
+      "user_id": null,
+      "wallet_address": "0x1ebeb67455b8244053e030d9e867d6baf965ffb4",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x1ebeb67455b8244053e030d9e867d6baf965ffb4",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_e32480a4",
+      "user_id": null,
+      "wallet_address": "0x125568d13157e91153922a9d9703013e18f61358",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x125568d13157e91153922a9d9703013e18f61358",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_39e5215d",
+      "user_id": null,
+      "wallet_address": "0xfc2c41b166c3c770d2e7730af123c5d8bb9345a1",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0xfc2c41b166c3c770d2e7730af123c5d8bb9345a1",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_86b2da6a",
+      "user_id": null,
+      "wallet_address": "0x8a0141706d5c904f767d34c0ebab33d7b82287b9",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x8a0141706d5c904f767d34c0ebab33d7b82287b9",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_4f333db6",
+      "user_id": null,
+      "wallet_address": "0xfa0ebef73b2e678c9a9b32f1d4f092e55933b29b",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0xfa0ebef73b2e678c9a9b32f1d4f092e55933b29b",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_bb9576ba",
+      "user_id": null,
+      "wallet_address": "0x5de594681037eacebde3f6a49d6906fe4e2ae675",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x5de594681037eacebde3f6a49d6906fe4e2ae675",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_6072777a",
+      "user_id": null,
+      "wallet_address": "0xa5f8f0401a569c9f2c7bcfc9f0a125832756f9ba",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0xa5f8f0401a569c9f2c7bcfc9f0a125832756f9ba",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_6dd0fc0f",
+      "user_id": null,
+      "wallet_address": "0x77575c4a1baa1acb404e9ccd07d8cc713bd15c3d",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x77575c4a1baa1acb404e9ccd07d8cc713bd15c3d",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_a2f29b11",
+      "user_id": null,
+      "wallet_address": "0xceacf1672eb346a691f43da7954aa49eb4f6c36a",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0xceacf1672eb346a691f43da7954aa49eb4f6c36a",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_ba5b6472",
+      "user_id": null,
+      "wallet_address": "0xcb2ff02fc487d242a71dfcf7bd15ec0ece425928",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0xcb2ff02fc487d242a71dfcf7bd15ec0ece425928",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_afb4cac9",
+      "user_id": null,
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_b8803582",
+      "user_id": null,
+      "wallet_address": "0x690f5964486a1b4649cd5b8d96aca5bd217460d7",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x690f5964486a1b4649cd5b8d96aca5bd217460d7",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_56cc62f0",
+      "user_id": null,
+      "wallet_address": "0x2c8ef20ced7cf000bb2c8ce9dcdcb6a9425c380b",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x2c8ef20ced7cf000bb2c8ce9dcdcb6a9425c380b",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_38b7106d",
+      "user_id": null,
+      "wallet_address": "0x01e39500b7db0ca5c7de1b294a149f2fad8b9a1a",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x01e39500b7db0ca5c7de1b294a149f2fad8b9a1a",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_d0abd6f6",
+      "user_id": null,
+      "wallet_address": "0x128a10b21ca159e191407e39d4292aacd05409cf",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x128a10b21ca159e191407e39d4292aacd05409cf",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_bb72b5e5",
+      "user_id": null,
+      "wallet_address": "0x9ee13b97ba5767de06c8e82c18ca62bb5cd23128",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x9ee13b97ba5767de06c8e82c18ca62bb5cd23128",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_797cdbcc",
+      "user_id": null,
+      "wallet_address": "0xc852af623a1c9cae45d51160bca1a0922f3bc0f4",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0xc852af623a1c9cae45d51160bca1a0922f3bc0f4",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_646a8c07",
+      "user_id": null,
+      "wallet_address": "0x0aadff1fd75d84a7de21b045ee69b62389bf394b",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x0aadff1fd75d84a7de21b045ee69b62389bf394b",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_b91448f5",
+      "user_id": null,
+      "wallet_address": "0x8a7cde408961f80f1c2aeaf6f618f9aad7d7a844",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x8a7cde408961f80f1c2aeaf6f618f9aad7d7a844",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_8eada76e",
+      "user_id": null,
+      "wallet_address": "0x0d0297ce6ebca350018b0d4ec13af1980025a649",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x0d0297ce6ebca350018b0d4ec13af1980025a649",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_617d9b0e",
+      "user_id": null,
+      "wallet_address": "0x0a9409358f00e28095f39917c813aca40e8afe59",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x0a9409358f00e28095f39917c813aca40e8afe59",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_4ce21a74",
+      "user_id": null,
+      "wallet_address": "0xb2e081c68f0bc6c7b3a888bbdb1ec21e01e8586a",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0xb2e081c68f0bc6c7b3a888bbdb1ec21e01e8586a",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_9469a5ae",
+      "user_id": null,
+      "wallet_address": "0x67788903ac5f75a2bcf590439fafa86edfae2adf",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x67788903ac5f75a2bcf590439fafa86edfae2adf",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_ee8c026e",
+      "user_id": null,
+      "wallet_address": "0x3a218ac5b72aeff104cb224fca1dc8b5a231c19e",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x3a218ac5b72aeff104cb224fca1dc8b5a231c19e",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_a8c34a80",
+      "user_id": null,
+      "wallet_address": "0x4c430ca0f9e882985f7c5b6d42e932c2f432dfec",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x4c430ca0f9e882985f7c5b6d42e932c2f432dfec",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_350f1ebd",
+      "user_id": null,
+      "wallet_address": "0x49f386b359ddbdbc01adc72648819984e82aa2c8",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x49f386b359ddbdbc01adc72648819984e82aa2c8",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_d2a80241",
+      "user_id": null,
+      "wallet_address": "0x2278f3e612963e02711d646e4ec7a0a706f47dda",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x2278f3e612963e02711d646e4ec7a0a706f47dda",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_db8321d5",
+      "user_id": null,
+      "wallet_address": "0xf6f81cd61f75eb1d87620d9ab0df56eaf7fd8b4a",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0xf6f81cd61f75eb1d87620d9ab0df56eaf7fd8b4a",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_9b808f39",
+      "user_id": null,
+      "wallet_address": "0x20f65ccee671a43f884f9c37902e819d5bd93225",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x20f65ccee671a43f884f9c37902e819d5bd93225",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_107ab399",
+      "user_id": null,
+      "wallet_address": "0x352807b8c45a28280d10c9f2af83c74ce09eb4b1",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x352807b8c45a28280d10c9f2af83c74ce09eb4b1",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_3e23dfbb",
+      "user_id": null,
+      "wallet_address": "0x6c4ea2d2c66af19ff63901c69889965cf99f484c",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x6c4ea2d2c66af19ff63901c69889965cf99f484c",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_0c03fa77",
+      "user_id": null,
+      "wallet_address": "0xce83131cd82fd191f8ff63e7c8b3d7a7134e85e8",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0xce83131cd82fd191f8ff63e7c8b3d7a7134e85e8",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_8b9d61dd",
+      "user_id": null,
+      "wallet_address": "0x7ebcd554ab910f5c8251eaa5352589f402be6812",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x7ebcd554ab910f5c8251eaa5352589f402be6812",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_25187d2f",
+      "user_id": null,
+      "wallet_address": "0x3d0f7b773759d8deb604e2918c2be7ceff293042",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x3d0f7b773759d8deb604e2918c2be7ceff293042",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_f507a789",
+      "user_id": null,
+      "wallet_address": "0xb2a5a134fe7f094bf200f9aa98da5f05e6e3a8f5",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0xb2a5a134fe7f094bf200f9aa98da5f05e6e3a8f5",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_6c40e2ac",
+      "user_id": null,
+      "wallet_address": "0x034cdf85de2a77bb2aaa2b52a9ccf5561eeb3191",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x034cdf85de2a77bb2aaa2b52a9ccf5561eeb3191",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106143300_b227fa95",
+      "user_id": null,
+      "wallet_address": "0x6ffaede1a51b855a8612f33b083ec2d111bc8450",
+      "transaction_type": "welcome_grant",
+      "amount": "500.00",
+      "balance_before": "0",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "welcome-0x6ffaede1a51b855a8612f33b083ec2d111bc8450",
+      "description": "Welcome Bonus: 500 Free Flow Coins",
+      "metadata": {},
+      "created_at": "2026-11-06 14:33:00.996077+00"
+    },
+    {
+      "id": "tx_20261106144839_efcdd9ff",
+      "user_id": null,
+      "wallet_address": "0x71A9f24E68B8910d54F30C8B38194aE02919B42",
+      "transaction_type": "daily_bonus",
+      "amount": "100.00",
+      "balance_before": "500.00",
+      "balance_after": "600.00",
+      "currency": "Flow Coin",
+      "reference_id": "daily-2026-11-06-0x71A9f24E68B8910d54F30C8B38194aE02919B42",
+      "description": "Free Daily Social Grant: 100 Flow Coins",
+      "metadata": {
+        "source": "daily_faucet"
+      },
+      "created_at": "2026-11-06 14:48:39.971484+00"
+    },
+    {
+      "id": "tx_20261106161555_195dce83",
+      "user_id": null,
+      "wallet_address": "0x2c8ef20ced7cf000bb2c8ce9dcdcb6a9425c380b",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "500.00",
+      "balance_after": "490.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261106161555_84e2a3",
+      "description": "Bet placed on CRASH",
+      "metadata": {
+        "game_id": "crash",
+        "round_id": "rnd_crash_20261106161555_84e2a3"
+      },
+      "created_at": "2026-11-06 16:15:55.317081+00"
+    },
+    {
+      "id": "tx_20261106161555_f4f1c3d5",
+      "user_id": null,
+      "wallet_address": "0x2c8ef20ced7cf000bb2c8ce9dcdcb6a9425c380b",
+      "transaction_type": "game_win",
+      "amount": "24.50",
+      "balance_before": "490.00",
+      "balance_after": "514.50",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261106161555_84e2a3_win",
+      "description": "Payout from CRASH (2.45x)",
+      "metadata": {
+        "game_id": "crash",
+        "round_id": "rnd_crash_20261106161555_84e2a3",
+        "multiplier": 2.45
+      },
+      "created_at": "2026-11-06 16:15:55.317081+00"
+    },
+    {
+      "id": "tx_20261106161556_8a6d732a",
+      "user_id": null,
+      "wallet_address": "0x2c8ef20ced7cf000bb2c8ce9dcdcb6a9425c380b",
+      "transaction_type": "game_bet",
+      "amount": "-15",
+      "balance_before": "514.50",
+      "balance_after": "499.50",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_dice_20261106161556_2237fe",
+      "description": "Bet placed on DICE",
+      "metadata": {
+        "game_id": "dice",
+        "round_id": "rnd_dice_20261106161556_2237fe"
+      },
+      "created_at": "2026-11-06 16:15:56.485706+00"
+    },
+    {
+      "id": "tx_20261106161556_b53064ba",
+      "user_id": null,
+      "wallet_address": "0x2c8ef20ced7cf000bb2c8ce9dcdcb6a9425c380b",
+      "transaction_type": "game_win",
+      "amount": "29.70",
+      "balance_before": "499.50",
+      "balance_after": "529.20",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_dice_20261106161556_2237fe_win",
+      "description": "Payout from DICE (1.98x)",
+      "metadata": {
+        "game_id": "dice",
+        "round_id": "rnd_dice_20261106161556_2237fe",
+        "multiplier": 1.98
+      },
+      "created_at": "2026-11-06 16:15:56.485706+00"
+    },
+    {
+      "id": "tx_20261106161557_070ecbbf",
+      "user_id": null,
+      "wallet_address": "0x2c8ef20ced7cf000bb2c8ce9dcdcb6a9425c380b",
+      "transaction_type": "game_bet",
+      "amount": "-20",
+      "balance_before": "529.20",
+      "balance_after": "509.20",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_mines_20261106161557_188b52",
+      "description": "Bet placed on MINES",
+      "metadata": {
+        "game_id": "mines",
+        "round_id": "rnd_mines_20261106161557_188b52"
+      },
+      "created_at": "2026-11-06 16:15:57.315273+00"
+    },
+    {
+      "id": "tx_20261106161557_3e027d11",
+      "user_id": null,
+      "wallet_address": "0x2c8ef20ced7cf000bb2c8ce9dcdcb6a9425c380b",
+      "transaction_type": "game_win",
+      "amount": "63.00",
+      "balance_before": "509.20",
+      "balance_after": "572.20",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_mines_20261106161557_188b52_win",
+      "description": "Payout from MINES (3.15x)",
+      "metadata": {
+        "game_id": "mines",
+        "round_id": "rnd_mines_20261106161557_188b52",
+        "multiplier": 3.15
+      },
+      "created_at": "2026-11-06 16:15:57.315273+00"
+    },
+    {
+      "id": "tx_20261106161558_759d6079",
+      "user_id": null,
+      "wallet_address": "0x2c8ef20ced7cf000bb2c8ce9dcdcb6a9425c380b",
+      "transaction_type": "game_bet",
+      "amount": "-25",
+      "balance_before": "572.20",
+      "balance_after": "547.20",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261106161558_264607",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261106161558_264607"
+      },
+      "created_at": "2026-11-06 16:15:58.232145+00"
+    },
+    {
+      "id": "tx_20261106165512_7c1dfea4",
+      "user_id": null,
+      "wallet_address": "0xc852af623a1c9cae45d51160bca1a0922f3bc0f4",
+      "transaction_type": "daily_bonus",
+      "amount": "100.00",
+      "balance_before": "500.00",
+      "balance_after": "600.00",
+      "currency": "Flow Coin",
+      "reference_id": "daily-2026-11-06-0xc852af623a1c9cae45d51160bca1a0922f3bc0f4",
+      "description": "Free Daily Social Grant: 100 Flow Coins",
+      "metadata": {
+        "source": "daily_faucet"
+      },
+      "created_at": "2026-11-06 16:55:12.822968+00"
+    },
+    {
+      "id": "tx_20261106183758_df6d6f01",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x690f5964486a1b4649cd5b8d96aca5bd217460d7",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "510.00",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261106183758_fb3826",
+      "description": "Bet placed on CRASH",
+      "metadata": {
+        "game_id": "crash",
+        "round_id": "rnd_crash_20261106183758_fb3826"
+      },
+      "created_at": "2026-11-06 18:37:58.761037+00"
+    },
+    {
+      "id": "tx_20261106183803_3f0532ce",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x690f5964486a1b4649cd5b8d96aca5bd217460d7",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "500.00",
+      "balance_after": "490.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261106183803_7a29a6",
+      "description": "Bet placed on CRASH",
+      "metadata": {
+        "game_id": "crash",
+        "round_id": "rnd_crash_20261106183803_7a29a6"
+      },
+      "created_at": "2026-11-06 18:38:03.240795+00"
+    },
+    {
+      "id": "tx_20261106183839_5838d16a",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x690f5964486a1b4649cd5b8d96aca5bd217460d7",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "490.00",
+      "balance_after": "480.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261106183839_dffeed",
+      "description": "Bet placed on CRASH",
+      "metadata": {
+        "game_id": "crash",
+        "round_id": "rnd_crash_20261106183839_dffeed"
+      },
+      "created_at": "2026-11-06 18:38:39.273346+00"
+    },
+    {
+      "id": "tx_20261107122938_aa394625",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "510.00",
+      "balance_after": "500.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107122938_bf3f06",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107122938_bf3f06"
+      },
+      "created_at": "2026-11-07 12:29:38.281552+00"
+    },
+    {
+      "id": "tx_20261107122938_107366d0",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "20",
+      "balance_before": "500.00",
+      "balance_after": "520.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107122938_bf3f06_win",
+      "description": "Payout from LIMBO (2x)",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107122938_bf3f06",
+        "multiplier": 2
+      },
+      "created_at": "2026-11-07 12:29:38.281552+00"
+    },
+    {
+      "id": "tx_20261107122940_691cfcba",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "520.00",
+      "balance_after": "510.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107122940_1a8e97",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107122940_1a8e97"
+      },
+      "created_at": "2026-11-07 12:29:40.606077+00"
+    },
+    {
+      "id": "tx_20261107122940_f7e50b04",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "20",
+      "balance_before": "510.00",
+      "balance_after": "530.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107122940_1a8e97_win",
+      "description": "Payout from LIMBO (2x)",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107122940_1a8e97",
+        "multiplier": 2
+      },
+      "created_at": "2026-11-07 12:29:40.606077+00"
+    },
+    {
+      "id": "tx_20261107122942_b6618c9c",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "530.00",
+      "balance_after": "520.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107122942_42708a",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107122942_42708a"
+      },
+      "created_at": "2026-11-07 12:29:42.468938+00"
+    },
+    {
+      "id": "tx_20261107122942_ef106edb",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "20",
+      "balance_before": "520.00",
+      "balance_after": "540.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107122942_42708a_win",
+      "description": "Payout from LIMBO (2x)",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107122942_42708a",
+        "multiplier": 2
+      },
+      "created_at": "2026-11-07 12:29:42.468938+00"
+    },
+    {
+      "id": "tx_20261107122949_1aaad21c",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "540.00",
+      "balance_after": "530.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107122949_ec77b5",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107122949_ec77b5"
+      },
+      "created_at": "2026-11-07 12:29:49.545648+00"
+    },
+    {
+      "id": "tx_20261107122949_7552c0f4",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "20",
+      "balance_before": "530.00",
+      "balance_after": "550.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107122949_ec77b5_win",
+      "description": "Payout from LIMBO (2x)",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107122949_ec77b5",
+        "multiplier": 2
+      },
+      "created_at": "2026-11-07 12:29:49.545648+00"
+    },
+    {
+      "id": "tx_20261107122957_8e70f104",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "550.00",
+      "balance_after": "540.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107122957_fb3581",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107122957_fb3581"
+      },
+      "created_at": "2026-11-07 12:29:57.108778+00"
+    },
+    {
+      "id": "tx_20261107123009_42d15a66",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "540.00",
+      "balance_after": "530.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123009_802a78",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123009_802a78"
+      },
+      "created_at": "2026-11-07 12:30:09.195259+00"
+    },
+    {
+      "id": "tx_20261107123016_b0c30b33",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "530.00",
+      "balance_after": "520.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123016_1bb80a",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123016_1bb80a"
+      },
+      "created_at": "2026-11-07 12:30:16.07213+00"
+    },
+    {
+      "id": "tx_20261107123016_e97dbfa9",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "1020",
+      "balance_before": "520.00",
+      "balance_after": "1540.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123016_1bb80a_win",
+      "description": "Payout from LIMBO (2x)",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123016_1bb80a",
+        "multiplier": 2
+      },
+      "created_at": "2026-11-07 12:30:16.07213+00"
+    },
+    {
+      "id": "tx_20261107123018_4e513c40",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "1540.00",
+      "balance_after": "1530.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123018_c1a2bb",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123018_c1a2bb"
+      },
+      "created_at": "2026-11-07 12:30:18.726847+00"
+    },
+    {
+      "id": "tx_20261107123020_0f64642e",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "1530.00",
+      "balance_after": "1520.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123020_a3f1c6",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123020_a3f1c6"
+      },
+      "created_at": "2026-11-07 12:30:20.341312+00"
+    },
+    {
+      "id": "tx_20261107123020_bef079aa",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "1020",
+      "balance_before": "1520.00",
+      "balance_after": "2540.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123020_a3f1c6_win",
+      "description": "Payout from LIMBO (2x)",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123020_a3f1c6",
+        "multiplier": 2
+      },
+      "created_at": "2026-11-07 12:30:20.341312+00"
+    },
+    {
+      "id": "tx_20261107123021_d42cc804",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "2540.00",
+      "balance_after": "2530.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123021_1ebcc0",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123021_1ebcc0"
+      },
+      "created_at": "2026-11-07 12:30:21.909883+00"
+    },
+    {
+      "id": "tx_20261107123021_dacb9934",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "1020",
+      "balance_before": "2530.00",
+      "balance_after": "3550.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123021_1ebcc0_win",
+      "description": "Payout from LIMBO (2x)",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123021_1ebcc0",
+        "multiplier": 2
+      },
+      "created_at": "2026-11-07 12:30:21.909883+00"
+    },
+    {
+      "id": "tx_20261107123023_9451312a",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "3550.00",
+      "balance_after": "3540.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123023_a678e1",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123023_a678e1"
+      },
+      "created_at": "2026-11-07 12:30:23.114509+00"
+    },
+    {
+      "id": "tx_20261107123023_5414aae4",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "1020",
+      "balance_before": "3540.00",
+      "balance_after": "4560.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123023_a678e1_win",
+      "description": "Payout from LIMBO (2x)",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123023_a678e1",
+        "multiplier": 2
+      },
+      "created_at": "2026-11-07 12:30:23.114509+00"
+    },
+    {
+      "id": "tx_20261107123025_8cd9624a",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "4560.00",
+      "balance_after": "4550.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123025_fbb942",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123025_fbb942"
+      },
+      "created_at": "2026-11-07 12:30:25.017491+00"
+    },
+    {
+      "id": "tx_20261107123025_46a12b33",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "1020",
+      "balance_before": "4550.00",
+      "balance_after": "5570.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123025_fbb942_win",
+      "description": "Payout from LIMBO (2x)",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123025_fbb942",
+        "multiplier": 2
+      },
+      "created_at": "2026-11-07 12:30:25.017491+00"
+    },
+    {
+      "id": "tx_20261107123034_f9985caa",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "5570.00",
+      "balance_after": "5560.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123034_24c7ad",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123034_24c7ad"
+      },
+      "created_at": "2026-11-07 12:30:34.38011+00"
+    },
+    {
+      "id": "tx_20261107123035_d3185b63",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "5560.00",
+      "balance_after": "5550.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123035_5b965a",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123035_5b965a"
+      },
+      "created_at": "2026-11-07 12:30:35.840304+00"
+    },
+    {
+      "id": "tx_20261107123037_d8ba111f",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "5550.00",
+      "balance_after": "5540.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123037_00597b",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123037_00597b"
+      },
+      "created_at": "2026-11-07 12:30:37.51254+00"
+    },
+    {
+      "id": "tx_20261107123047_c6b4a04a",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "10610.00",
+      "balance_after": "10600.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123047_00b9b4",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123047_00b9b4"
+      },
+      "created_at": "2026-11-07 12:30:47.492064+00"
+    },
+    {
+      "id": "tx_20261107123050_cfc9489f",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "15680.00",
+      "balance_after": "15670.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123050_a4070d",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123050_a4070d"
+      },
+      "created_at": "2026-11-07 12:30:50.872372+00"
+    },
+    {
+      "id": "tx_20261107123055_e0dba655",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "15650.00",
+      "balance_after": "15640.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123055_25e993",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123055_25e993"
+      },
+      "created_at": "2026-11-07 12:30:55.314921+00"
+    },
+    {
+      "id": "tx_20261107123038_9d992ef9",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "5540.00",
+      "balance_after": "5530.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123038_4bde61",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123038_4bde61"
+      },
+      "created_at": "2026-11-07 12:30:38.817929+00"
+    },
+    {
+      "id": "tx_20261107123038_dd480a3b",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "5100",
+      "balance_before": "5530.00",
+      "balance_after": "10630.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123038_4bde61_win",
+      "description": "Payout from LIMBO (10x)",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123038_4bde61",
+        "multiplier": 10
+      },
+      "created_at": "2026-11-07 12:30:38.817929+00"
+    },
+    {
+      "id": "tx_20261107123048_299f9373",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "10600.00",
+      "balance_after": "10590.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123048_5e1a81",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123048_5e1a81"
+      },
+      "created_at": "2026-11-07 12:30:48.6886+00"
+    },
+    {
+      "id": "tx_20261107123054_2cbaf0ce",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "15660.00",
+      "balance_after": "15650.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123054_521179",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123054_521179"
+      },
+      "created_at": "2026-11-07 12:30:54.091415+00"
+    },
+    {
+      "id": "tx_20261107123106_ccc3058e",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "daily_bonus",
+      "amount": "100.00",
+      "balance_before": "18170.00",
+      "balance_after": "18270.00",
+      "currency": "Flow Coin",
+      "reference_id": "daily-2026-11-07-673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "description": "Free Daily Social Grant: 100 Flow Coins",
+      "metadata": {
+        "source": "daily_faucet"
+      },
+      "created_at": "2026-11-07 12:31:06.932437+00"
+    },
+    {
+      "id": "tx_20261107123139_01c1351f",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "18290.00",
+      "balance_after": "18280.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_dice_20261107123139_4269d2",
+      "description": "Bet placed on DICE",
+      "metadata": {
+        "game_id": "dice",
+        "round_id": "rnd_dice_20261107123139_4269d2"
+      },
+      "created_at": "2026-11-07 12:31:39.487265+00"
+    },
+    {
+      "id": "tx_20261107123044_a0652c5f",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "10630.00",
+      "balance_after": "10620.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123044_cc44d1",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123044_cc44d1"
+      },
+      "created_at": "2026-11-07 12:30:44.741372+00"
+    },
+    {
+      "id": "tx_20261107123049_329dfc91",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "10590.00",
+      "balance_after": "10580.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123049_1ca229",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123049_1ca229"
+      },
+      "created_at": "2026-11-07 12:30:49.817531+00"
+    },
+    {
+      "id": "tx_20261107123049_e726e4f2",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "5100",
+      "balance_before": "10580.00",
+      "balance_after": "15680.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123049_1ca229_win",
+      "description": "Payout from LIMBO (10x)",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123049_1ca229",
+        "multiplier": 10
+      },
+      "created_at": "2026-11-07 12:30:49.817531+00"
+    },
+    {
+      "id": "tx_20261107123058_2c3d2b08",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "15640.00",
+      "balance_after": "15630.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123058_6aa7c5",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123058_6aa7c5"
+      },
+      "created_at": "2026-11-07 12:30:58.061603+00"
+    },
+    {
+      "id": "tx_20261107123140_0ebde50f",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "18280.00",
+      "balance_after": "18270.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_dice_20261107123140_f38cc0",
+      "description": "Bet placed on DICE",
+      "metadata": {
+        "game_id": "dice",
+        "round_id": "rnd_dice_20261107123140_f38cc0"
+      },
+      "created_at": "2026-11-07 12:31:40.49828+00"
+    },
+    {
+      "id": "tx_20261107123046_6b90ba4d",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "10620.00",
+      "balance_after": "10610.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123046_e42dec",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123046_e42dec"
+      },
+      "created_at": "2026-11-07 12:30:46.265602+00"
+    },
+    {
+      "id": "tx_20261107123052_bc321a4c",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "15670.00",
+      "balance_after": "15660.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123052_11b71e",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123052_11b71e"
+      },
+      "created_at": "2026-11-07 12:30:52.222354+00"
+    },
+    {
+      "id": "tx_20261107123059_e1db250a",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "15630.00",
+      "balance_after": "15620.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123059_c19528",
+      "description": "Bet placed on LIMBO",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123059_c19528"
+      },
+      "created_at": "2026-11-07 12:30:59.333246+00"
+    },
+    {
+      "id": "tx_20261107123059_6cc7d4ba",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "2550",
+      "balance_before": "15620.00",
+      "balance_after": "18170.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_limbo_20261107123059_c19528_win",
+      "description": "Payout from LIMBO (5x)",
+      "metadata": {
+        "game_id": "limbo",
+        "round_id": "rnd_limbo_20261107123059_c19528",
+        "multiplier": 5
+      },
+      "created_at": "2026-11-07 12:30:59.333246+00"
+    },
+    {
+      "id": "tx_20261107123136_d2b55784",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "18270.00",
+      "balance_after": "18260.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_dice_20261107123136_9f8377",
+      "description": "Bet placed on DICE",
+      "metadata": {
+        "game_id": "dice",
+        "round_id": "rnd_dice_20261107123136_9f8377"
+      },
+      "created_at": "2026-11-07 12:31:36.169587+00"
+    },
+    {
+      "id": "tx_20261107123136_3d3e420d",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "20",
+      "balance_before": "18260.00",
+      "balance_after": "18280.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_dice_20261107123136_9f8377_win",
+      "description": "Payout from DICE (2x)",
+      "metadata": {
+        "game_id": "dice",
+        "round_id": "rnd_dice_20261107123136_9f8377",
+        "multiplier": 2
+      },
+      "created_at": "2026-11-07 12:31:36.169587+00"
+    },
+    {
+      "id": "tx_20261107123138_e225c194",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "18280.00",
+      "balance_after": "18270.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_dice_20261107123138_91c22f",
+      "description": "Bet placed on DICE",
+      "metadata": {
+        "game_id": "dice",
+        "round_id": "rnd_dice_20261107123138_91c22f"
+      },
+      "created_at": "2026-11-07 12:31:38.035599+00"
+    },
+    {
+      "id": "tx_20261107123138_1729f294",
+      "user_id": "673caf5b-5cd8-4d10-a50e-c74f9580f3c0",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "20",
+      "balance_before": "18270.00",
+      "balance_after": "18290.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_dice_20261107123138_91c22f_win",
+      "description": "Payout from DICE (2x)",
+      "metadata": {
+        "game_id": "dice",
+        "round_id": "rnd_dice_20261107123138_91c22f",
+        "multiplier": 2
+      },
+      "created_at": "2026-11-07 12:31:38.035599+00"
+    },
+    {
+      "id": "tx_20261107153731_b78a4f49",
+      "user_id": null,
+      "wallet_address": "0xTestAuditor92998",
+      "transaction_type": "game_bet",
+      "amount": "-25",
+      "balance_before": "500",
+      "balance_after": "475.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107153731_5f26be",
+      "description": "Bet placed on CRASH (crash-room-2)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-2",
+        "round_id": "rnd_crash_20261107153731_5f26be"
+      },
+      "created_at": "2026-11-07 15:37:31.292799+00"
+    },
+    {
+      "id": "tx_20261107153731_2eed31ab",
+      "user_id": null,
+      "wallet_address": "0xTestAuditor92998",
+      "transaction_type": "game_win",
+      "amount": "60",
+      "balance_before": "475.00",
+      "balance_after": "535.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107153731_5f26be_win",
+      "description": "Payout from CRASH (2.4x)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-2",
+        "round_id": "rnd_crash_20261107153731_5f26be",
+        "multiplier": 2.4
+      },
+      "created_at": "2026-11-07 15:37:31.292799+00"
+    },
+    {
+      "id": "tx_20261107153811_46769216",
+      "user_id": null,
+      "wallet_address": "0xTestAuditor57517",
+      "transaction_type": "game_bet",
+      "amount": "-25",
+      "balance_before": "500",
+      "balance_after": "475.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107153811_a0afa9",
+      "description": "Bet placed on CRASH (crash-room-2)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-2",
+        "round_id": "rnd_crash_20261107153811_a0afa9"
+      },
+      "created_at": "2026-11-07 15:38:11.154948+00"
+    },
+    {
+      "id": "tx_20261107153811_1032de1d",
+      "user_id": null,
+      "wallet_address": "0xTestAuditor57517",
+      "transaction_type": "game_win",
+      "amount": "60",
+      "balance_before": "475.00",
+      "balance_after": "535.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107153811_a0afa9_win",
+      "description": "Payout from CRASH (2.4x)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-2",
+        "round_id": "rnd_crash_20261107153811_a0afa9",
+        "multiplier": 2.4
+      },
+      "created_at": "2026-11-07 15:38:11.154948+00"
+    },
+    {
+      "id": "tx_20261107153858_c9430e49",
+      "user_id": null,
+      "wallet_address": "0xTestAuditor46823",
+      "transaction_type": "game_bet",
+      "amount": "-25",
+      "balance_before": "500",
+      "balance_after": "475.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107153858_8ce74e",
+      "description": "Bet placed on CRASH (crash-room-2)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-2",
+        "round_id": "rnd_crash_20261107153858_8ce74e"
+      },
+      "created_at": "2026-11-07 15:38:58.71773+00"
+    },
+    {
+      "id": "tx_20261107153858_15fcd04a",
+      "user_id": null,
+      "wallet_address": "0xTestAuditor46823",
+      "transaction_type": "game_win",
+      "amount": "60",
+      "balance_before": "475.00",
+      "balance_after": "535.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107153858_8ce74e_win",
+      "description": "Payout from CRASH (2.4x)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-2",
+        "round_id": "rnd_crash_20261107153858_8ce74e",
+        "multiplier": 2.4
+      },
+      "created_at": "2026-11-07 15:38:58.71773+00"
+    },
+    {
+      "id": "tx_20261107153922_0a9987fa",
+      "user_id": null,
+      "wallet_address": "0xTestAuditor54558",
+      "transaction_type": "game_bet",
+      "amount": "-25",
+      "balance_before": "500",
+      "balance_after": "475.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107153922_479407",
+      "description": "Bet placed on CRASH (crash-room-2)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-2",
+        "round_id": "rnd_crash_20261107153922_479407"
+      },
+      "created_at": "2026-11-07 15:39:22.240753+00"
+    },
+    {
+      "id": "tx_20261107153922_2eca8d97",
+      "user_id": null,
+      "wallet_address": "0xTestAuditor54558",
+      "transaction_type": "game_win",
+      "amount": "60",
+      "balance_before": "475.00",
+      "balance_after": "535.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107153922_479407_win",
+      "description": "Payout from CRASH (2.4x)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-2",
+        "round_id": "rnd_crash_20261107153922_479407",
+        "multiplier": 2.4
+      },
+      "created_at": "2026-11-07 15:39:22.240753+00"
+    },
+    {
+      "id": "tx_20261107161923_907ecdf7",
+      "user_id": null,
+      "wallet_address": "0x1111111111111111111111111111111111111111",
+      "transaction_type": "lucky_wheel_spin",
+      "amount": "50.00",
+      "balance_before": "0",
+      "balance_after": "50.00",
+      "currency": "Flow Coin",
+      "reference_id": "wheel-2026-11-07-11111111",
+      "description": "Daily Lucky Wheel Prize: 50.00 FC (Bronze Tier 1.0x)",
+      "metadata": {
+        "base": 50,
+        "slice": 0,
+        "vip_mult": 1
+      },
+      "created_at": "2026-11-07 16:19:23.816622+00"
+    },
+    {
+      "id": "tx_20261107163501_0d139d1b",
+      "user_id": null,
+      "wallet_address": "0xTestAuditor770",
+      "transaction_type": "game_bet",
+      "amount": "-25",
+      "balance_before": "500",
+      "balance_after": "475.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107163501_6bd22b",
+      "description": "Bet placed on CRASH (crash-room-2)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-2",
+        "round_id": "rnd_crash_20261107163501_6bd22b"
+      },
+      "created_at": "2026-11-07 16:35:01.653619+00"
+    },
+    {
+      "id": "tx_20261107163501_1098092b",
+      "user_id": null,
+      "wallet_address": "0xTestAuditor770",
+      "transaction_type": "game_win",
+      "amount": "60",
+      "balance_before": "475.00",
+      "balance_after": "535.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107163501_6bd22b_win",
+      "description": "Payout from CRASH (2.4x)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-2",
+        "round_id": "rnd_crash_20261107163501_6bd22b",
+        "multiplier": 2.4
+      },
+      "created_at": "2026-11-07 16:35:01.653619+00"
+    },
+    {
+      "id": "tx_20261107163535_4b7c0cca",
+      "user_id": null,
+      "wallet_address": "0x8888888888888888888888888888888888888888",
+      "transaction_type": "lucky_wheel_spin",
+      "amount": "250.00",
+      "balance_before": "100",
+      "balance_after": "350.00",
+      "currency": "Flow Coin",
+      "reference_id": "wheel-2026-11-07-88888888",
+      "description": "Daily Lucky Wheel Prize: 250.00 FC (Bronze Tier 1.0x)",
+      "metadata": {
+        "base": 250,
+        "slice": 4,
+        "vip_mult": 1
+      },
+      "created_at": "2026-11-07 16:35:35.917597+00"
+    },
+    {
+      "id": "tx_20261107165423_7d6aded1",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "18270.00",
+      "balance_after": "18260.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107165423_804502",
+      "description": "Bet placed on CRASH (crash-room-1)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-1",
+        "round_id": "rnd_crash_20261107165423_804502"
+      },
+      "created_at": "2026-11-07 16:54:23.405284+00"
+    },
+    {
+      "id": "tx_20261107165433_8ebfd859",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "18260.00",
+      "balance_after": "18250.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107165433_72de8f",
+      "description": "Bet placed on CRASH (crash-room-1)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-1",
+        "round_id": "rnd_crash_20261107165433_72de8f"
+      },
+      "created_at": "2026-11-07 16:54:33.899831+00"
+    },
+    {
+      "id": "tx_20261107165441_2673e119",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "18250.00",
+      "balance_after": "18240.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107165441_c7d410",
+      "description": "Bet placed on CRASH (crash-room-1)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-1",
+        "round_id": "rnd_crash_20261107165441_c7d410"
+      },
+      "created_at": "2026-11-07 16:54:41.964861+00"
+    },
+    {
+      "id": "tx_20261107165454_4c3a6183",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "18240.00",
+      "balance_after": "18230.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107165454_fdbc4f",
+      "description": "Bet placed on CRASH (crash-room-1)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-1",
+        "round_id": "rnd_crash_20261107165454_fdbc4f"
+      },
+      "created_at": "2026-11-07 16:54:54.153946+00"
+    },
+    {
+      "id": "tx_20261107165505_2d399a4b",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-40",
+      "balance_before": "18230.00",
+      "balance_after": "18190.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107165505_b7482b",
+      "description": "Bet placed on CRASH (crash-room-1)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-1",
+        "round_id": "rnd_crash_20261107165505_b7482b"
+      },
+      "created_at": "2026-11-07 16:55:05.351987+00"
+    },
+    {
+      "id": "tx_20261107165505_44f19d87",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_win",
+      "amount": "284",
+      "balance_before": "18190.00",
+      "balance_after": "18474.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107165505_b7482b_win",
+      "description": "Payout from CRASH (7.1x)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-1",
+        "round_id": "rnd_crash_20261107165505_b7482b",
+        "multiplier": 7.1
+      },
+      "created_at": "2026-11-07 16:55:05.351987+00"
+    },
+    {
+      "id": "tx_20261107165508_001b89ae",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "game_bet",
+      "amount": "-10",
+      "balance_before": "18474.00",
+      "balance_after": "18464.00",
+      "currency": "Flow Coin",
+      "reference_id": "rnd_crash_20261107165508_389935",
+      "description": "Bet placed on CRASH (crash-room-1)",
+      "metadata": {
+        "game_id": "crash",
+        "room_id": "crash-room-1",
+        "round_id": "rnd_crash_20261107165508_389935"
+      },
+      "created_at": "2026-11-07 16:55:08.615361+00"
+    },
+    {
+      "id": "tx_20261112140858_69c63ca4",
+      "user_id": null,
+      "wallet_address": "0x1111111111111111111111111111111111111111",
+      "transaction_type": "daily_bonus",
+      "amount": "100.00",
+      "balance_before": "50.00",
+      "balance_after": "150.00",
+      "currency": "Flow Coin",
+      "reference_id": "daily-2026-11-12-0x1111111111111111111111111111111111111111",
+      "description": "Free Daily Social Grant: 100 Flow Coins",
+      "metadata": {
+        "source": "daily_faucet"
+      },
+      "created_at": "2026-11-12 14:08:58.005976+00"
+    },
+    {
+      "id": "tx_20261112141034_90e438a6",
+      "user_id": null,
+      "wallet_address": "0x1111111111111111111111111111111111111111",
+      "transaction_type": "daily_reward",
+      "amount": "0.25",
+      "balance_before": "150.00",
+      "balance_after": "150.25",
+      "currency": "Flow Coin",
+      "reference_id": "test_ref_1794492635472",
+      "description": "Daily FLO Coin Reward",
+      "metadata": {
+        "source": "daily_flo_reward",
+        "usdt_value": 0.25
+      },
+      "created_at": "2026-11-12 14:10:34.313897+00"
+    },
+    {
+      "id": "tx_20261112151216_6b4a11ed",
+      "user_id": null,
+      "wallet_address": "0x1A2B3C4D5E6F7890123456789ABCDEF012345678",
+      "transaction_type": "daily_bonus",
+      "amount": "100.00",
+      "balance_before": "0",
+      "balance_after": "100.00",
+      "currency": "Flow Coin",
+      "reference_id": "daily-2026-11-12-0x1A2B3C4D5E6F7890123456789ABCDEF012345678",
+      "description": "Free Daily Social Grant: 100 Flow Coins",
+      "metadata": {
+        "source": "daily_faucet"
+      },
+      "created_at": "2026-11-12 15:12:16.311408+00"
+    },
+    {
+      "id": "tx_20261112154955_c39478b2",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "daily_reward",
+      "amount": "0.10",
+      "balance_before": "18464.00",
+      "balance_after": "18464.10",
+      "currency": "Flow Coin",
+      "reference_id": "daily-flo-2026-11-12-ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "description": "Daily FLO Coin Reward — Day 1 Check-In (0.10 FLO = 0.10 USDT)",
+      "metadata": {
+        "rate": "1 FLO = 1 USDT",
+        "source": "daily_flo_reward",
+        "status": "completed",
+        "claimed_at": "2026-11-12T15:49:55.347488+00:00",
+        "flo_amount": 0.1,
+        "usdt_value": 0.1,
+        "checkin_day": 1
+      },
+      "created_at": "2026-11-12 15:49:55.347488+00"
+    },
+    {
+      "id": "tx_20261112155031_1ab971bc",
+      "user_id": "ba2e7ee1-ffc4-4325-bda3-a8a756c02f0c",
+      "wallet_address": "0x77bb14ac461025008f4e8a9168ce2db36de1ddfe",
+      "transaction_type": "lucky_wheel_spin",
+      "amount": "110.00",
+      "balance_before": "18464.10",
+      "balance_after": "18574.10",
+      "currency": "Flow Coin",
+      "reference_id": "wheel-2026-11-12-77bb14ac",
+      "description": "Daily Lucky Wheel Prize: 110.00 FC (Silver Tier 1.1x)",
+      "metadata": {
+        "base": 100,
+        "slice": 1,
+        "vip_mult": 1.1
+      },
+      "created_at": "2026-11-12 15:50:31.775061+00"
+    },
+    {
+      "id": "tx_20261112155747_147f8674",
+      "user_id": null,
+      "wallet_address": "0x71A9f24E68B8910d54F30C8B38194aE02919B42",
+      "transaction_type": "lucky_wheel_spin",
+      "amount": "150.00",
+      "balance_before": "600.00",
+      "balance_after": "750.00",
+      "currency": "Flow Coin",
+      "reference_id": "wheel-2026-11-12-71A9f24E",
+      "description": "Daily Lucky Wheel Prize: 150.00 FC (Bronze Tier 1.0x)",
+      "metadata": {
+        "base": 150,
+        "slice": 2,
+        "vip_mult": 1
+      },
+      "created_at": "2026-11-12 15:57:47.669145+00"
+    }
+  ]
+}

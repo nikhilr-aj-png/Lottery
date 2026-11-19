@@ -385,12 +385,12 @@ export default function AuthModal() {
         <div className="px-4 xs:px-6 py-3 xs:py-3.5 border-b border-[#1e232f] flex items-center justify-between bg-gradient-to-b from-[#141924] to-[#0f131c]">
           <div className="flex items-center gap-2.5 xs:gap-3">
             <div className="w-8 xs:w-9 h-8 xs:h-9 rounded-full p-0.5 shadow-md shrink-0">
-              <img src="/logo.png" alt="EarnFlow.In" className="w-full h-full rounded-full object-cover border border-[#ffd700]/40" />
+              <img src="/logo.png" alt="EarnFlow.in" className="w-full h-full rounded-full object-cover border border-[#ffd700]/40" />
             </div>
             <div>
               <h3 className="font-display font-bold text-sm xs:text-base text-white">
                 {authMode === 'login' 
-                  ? 'Sign In to EarnFlow.In' 
+                  ? 'Sign In to EarnFlow.in' 
                   : authMode === 'forgot'
                     ? (forgotStep === 1 ? 'Reset Your Password' : 'Enter OTP & Set New Password')
                     : signupStep === 2 

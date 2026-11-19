@@ -633,10 +633,10 @@ export default function SupportView() {
           {/* Legal Compliance Disclaimer */}
           <div className="p-4 rounded-2xl bg-[#0B0F19] border border-[#1F2737] text-[11px] text-[#94A3B8] space-y-1">
             <span className="font-bold text-white block uppercase tracking-wider text-[10px]">
-              Social Gaming Entertainment Disclaimer:
+              Gaming Platform Disclaimer:
             </span>
             <p>
-              EarnFlow.In is strictly a free-to-play social entertainment platform using virtual Flow Coins (FC). Flow Coins cannot be purchased with fiat money, converted to real cash, or transferred between accounts. Players must be at least 18 years of age. Please play responsibly.
+              EarnFlow.in is an online gaming platform that provides users with access to interactive games, gaming events, account management, and USDT-based payment features. All game outcomes are provably fair and verifiable. Players must be at least 18 years of age. Please play responsibly.
             </p>
           </div>
 

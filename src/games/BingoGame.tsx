@@ -271,7 +271,7 @@ export default function BingoGame({
                     <div className={`text-xs font-extrabold uppercase px-3 py-1 rounded-full font-mono-numbers ${
                       lastResult === 'won' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/40'
                     }`}>
-                      {lastResult === 'won' ? `🎉 WIN +${potentialPayout} FC` : 'MISSED · NEXT ROUND'}
+                      {lastResult === 'won' ? `🎉 WIN +${potentialPayout} USDT` : 'MISSED · NEXT ROUND'}
                     </div>
                   )}
                 </div>
@@ -420,7 +420,7 @@ export default function BingoGame({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[#94A3B8]">Stake Amount:</span>
-                <span className="font-mono-numbers text-white font-bold">{betAmount} FC</span>
+                <span className="font-mono-numbers text-white font-bold">{betAmount} USDT</span>
               </div>
 
               <div className="flex items-center gap-1">
@@ -459,9 +459,9 @@ export default function BingoGame({
                     type="button"
                     disabled={isPlaying}
                     onClick={() => setBetAmount(quick)}
-                    className="py-1 rounded bg-[#111827] hover:bg-[#1a2333] text-[10px] font-mono-numbers text-amber-300/90 border border-[#1f2737] cursor-pointer font-bold"
+                    className="py-1 rounded bg-[#111827] hover:bg-[#1a2333] text-[10px] font-mono-numbers text-purple-300 border border-[#1f2737] cursor-pointer font-bold"
                   >
-                    +{quick}FC
+                    +{quick} USDT
                   </button>
                 ))}
               </div>
@@ -471,7 +471,7 @@ export default function BingoGame({
             <div className="flex items-center justify-between p-2 rounded-lg bg-[#07090d] border border-[#1F2737] text-xs">
               <span className="text-[#94A3B8]">Potential Return:</span>
               <strong className="text-emerald-400 font-mono-numbers font-black text-sm">
-                {potentialPayout} FC
+                {potentialPayout} USDT
               </strong>
             </div>
 
@@ -490,7 +490,7 @@ export default function BingoGame({
               ) : (
                 <>
                   <Play className="w-4 h-4 fill-current" />
-                  <span>Place Trade · {betAmount} FC</span>
+                  <span>Place Trade · {betAmount} USDT</span>
                 </>
               )}
             </button>

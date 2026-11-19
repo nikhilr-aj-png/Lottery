@@ -29,7 +29,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       address: guestAddr,
       connected: false,
       balance: 0,
-      network: 'Flow Coin',
+      network: 'TRC-20',
       lifetimeWon: 0,
       depositAddress: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m'
     };
@@ -67,8 +67,8 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     // Winning digits strictly real from database — zero dummy '7429'
     const effectiveWinningDigits = row.winning_digits || null;
 
-    // Currency: FLO or USDT
-    const currency = (row.currency || meta.currency || 'FLO').toUpperCase();
+    // Currency: USDT only
+    const currency = (row.currency || meta.currency || 'USDT').toUpperCase();
 
     // Room Identification
     const roomName = row.room_name || meta.room_name || row.title || 'Room 1';
@@ -169,7 +169,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
       if (!error && Array.isArray(data)) {
         const mergedGames = data.map((dbGame: any) => {
-          const staticGame = GAMES.find(g => g.id === dbGame.game_id || g.slug === dbGame.game_id) || {};
+          const staticGame: any = GAMES.find(g => g.id === dbGame.game_id || g.slug === dbGame.game_id) || {};
           return {
             ...staticGame,
             id: dbGame.game_id,
@@ -745,7 +745,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
       if (data && data.success) {
         const bonusAmount = parseFloat(data.bonus_amount || 0);
-        showToast(`🎉 Day ${data.current_streak} Claimed! +${bonusAmount.toFixed(2)} FLO W (≈ $${bonusAmount.toFixed(2)} USDT)`, 'success');
+        showToast(`🎉 Day ${data.current_streak} Claimed! +${bonusAmount.toFixed(2)} USDT bonus added to wallet!`, 'success');
         confetti({
           particleCount: 80,
           spread: 80,
@@ -1614,10 +1614,10 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     const pParam = search.get('p')?.toLowerCase().replace(/\/+$/, '');
     const effectivePath = pParam ? '/' + pParam : path;
 
-    if (effectivePath === '/privacy-policy' || effectivePath === '/privacy' || hash === 'privacy-policy' || hash === 'privacy' || tabParam === 'privacy') {
+    if (effectivePath === '/legal/privacy' || effectivePath === '/privacy-policy' || effectivePath === '/privacy' || hash === 'legal/privacy' || hash === 'privacy-policy' || hash === 'privacy' || tabParam === 'privacy') {
       return 'privacy';
     }
-    if (effectivePath === '/terms-and-conditions' || effectivePath === '/terms' || hash === 'terms-and-conditions' || hash === 'terms' || tabParam === 'terms') {
+    if (effectivePath === '/legal/terms' || effectivePath === '/terms-and-conditions' || effectivePath === '/terms' || hash === 'legal/terms' || hash === 'terms-and-conditions' || hash === 'terms' || tabParam === 'terms') {
       return 'terms';
     }
     if (effectivePath === '/contact' || effectivePath === '/contact-us' || hash === 'contact' || hash === 'contact-us' || tabParam === 'contact') {
@@ -1642,38 +1642,38 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     if (typeof window === 'undefined') return;
 
     let targetPath = '/';
-    let pageTitle = 'EarnFlow.In USDT | Provably Fair VIP Crypto Lottery Platform';
+    let pageTitle = 'EarnFlow.in – Online Gaming Platform | USDT Games & Lottery';
 
     if (tabName === 'privacy') {
-      targetPath = '/privacy-policy';
-      pageTitle = 'Privacy Policy · EarnFlow.In Sovereign Crypto Lottery Platform';
+      targetPath = '/legal/privacy';
+      pageTitle = 'Privacy Policy · EarnFlow.in';
     } else if (tabName === 'terms') {
-      targetPath = '/terms-and-conditions';
-      pageTitle = 'Terms & Conditions · EarnFlow.In Crypto Lottery Platform';
+      targetPath = '/legal/terms';
+      pageTitle = 'Terms & Conditions · EarnFlow.in';
     } else if (tabName === 'contact') {
       targetPath = '/contact';
-      pageTitle = 'Contact Support Desk · EarnFlow.In Sovereign Lottery';
+      pageTitle = 'Contact Support Desk · EarnFlow.in';
     } else if (tabName === 'results') {
       targetPath = '/?tab=results';
-      pageTitle = 'Draw Results & Verified Winners · EarnFlow.In';
+      pageTitle = 'Draw Results & Verified Winners · EarnFlow.in';
     } else if (tabName === 'tickets') {
       targetPath = '/?tab=tickets';
-      pageTitle = 'My Active Tickets · EarnFlow.In';
+      pageTitle = 'My Lottery Tickets · EarnFlow.in';
     } else if (tabName === 'wallet') {
-      targetPath = '/?tab=wallet';
-      pageTitle = 'USDT Wallet & 24h Payouts · EarnFlow.In';
+      targetPath = '/wallet';
+      pageTitle = 'USDT Wallet & 24h Payouts · EarnFlow.in';
     } else if (tabName === 'profile') {
-      targetPath = '/?tab=profile';
-      pageTitle = 'Player Profile & Settings · EarnFlow.In';
+      targetPath = '/profile';
+      pageTitle = 'Player Profile & Settings · EarnFlow.in';
     } else if (tabName === 'rewards') {
       targetPath = '/?tab=rewards';
-      pageTitle = 'VIP Rewards & Faucets · EarnFlow.In';
+      pageTitle = 'Daily Rewards & Streaks · EarnFlow.in';
     } else if (tabName === 'leaderboard') {
       targetPath = '/?tab=leaderboard';
-      pageTitle = 'Social Leaderboard & High Rollers · EarnFlow.In';
+      pageTitle = 'Leaderboard & High Rollers · EarnFlow.in';
     } else if (tabName === 'transactions' || tabName === 'transaction-history') {
       targetPath = '/transaction-history';
-      pageTitle = 'Transaction History · EarnFlow.In';
+      pageTitle = 'Transaction History · EarnFlow.in';
     }
 
     if (shouldPushHistory) {
@@ -1827,7 +1827,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           connected: true,
           balance: parseFloat(data.balance || 0),
           lifetimeWon: parseFloat(data.lifetime_won || 0),
-          network: data.network || 'Flow Coin'
+          network: data.network || 'TRC-20'
         }));
       } else if (!data && (addressToFetch || wallet.address)) {
         const addrToUse = addressToFetch || wallet.address;
@@ -1836,7 +1836,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           user_id: user?.id || null,
           balance: 0.00,
           lifetime_won: 0,
-          network: 'Flow Coin'
+          network: 'TRC-20'
         });
         setWallet(prev => ({
           ...prev,
@@ -1844,7 +1844,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           connected: true,
           balance: 0.00,
           lifetimeWon: 0,
-          network: 'Flow Coin'
+          network: 'TRC-20'
         }));
       }
     } catch (err) {
@@ -2121,7 +2121,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
     const totalCost = event.ticketPrice * ticketNumbers.length;
     if (wallet.balance < totalCost) {
-      showToast(`Insufficient Flow Coins! Need ${totalCost} FC, have ${wallet.balance.toFixed(2)} FC. Claim your Daily Bonus!`, 'error');
+      showToast(`Insufficient USDT balance! Need ${totalCost.toFixed(2)} USDT, have ${wallet.balance.toFixed(2)} USDT. Deposit USDT to continue!`, 'error');
       return false;
     }
 
@@ -2160,7 +2160,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         colors: ['#ffd700', '#f5c451', '#05d5aa']
       });
 
-      showToast(`Success! Purchased ${data.tickets_bought || ticketNumbers.length} ticket(s) for ${data.total_spent || totalCost} Flow Coins!`, 'success');
+      showToast(`Success! Purchased ${data.tickets_bought || ticketNumbers.length} ticket(s) for ${parseFloat(data.total_spent || totalCost).toFixed(2)} USDT!`, 'success');
 
       // Refresh tickets, events, and ledger from database
       await fetchTickets();
@@ -2561,7 +2561,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         colors: ['#05d5aa', '#ffd700', '#00f2fe', '#ffffff']
       });
 
-      showToast(`Approved! Added ${finalAmount.toFixed(2)} Flow Coins directly to winner's wallet & recorded in ledger ✅`, 'success');
+      showToast(`Approved! Added ${finalAmount.toFixed(2)} USDT directly to winner's wallet & recorded in ledger ✅`, 'success');
       return { success: true };
     } catch (err) {
       console.error('adminApproveWinnerPayout error:', err);
@@ -2639,13 +2639,13 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       const targetAddr = newPayout.winnerAddress;
       
       // Credit wallet and write to wallet_ledger via atomic RPC
-      await creditCredits(cleanAmount, 'admin_adjustment', newPayout.id, note || 'Admin Manual Flow Coin Grant');
+      await creditCredits(cleanAmount, 'admin_adjustment', newPayout.id, note || 'Admin Manual USDT Grant');
 
       if (wallet.address === targetAddr) {
         await fetchWalletLedger();
       }
 
-      showToast(`Successfully added ${cleanAmount.toFixed(2)} Flow Coins to player wallet & recorded in ledger!`, 'success');
+      showToast(`Successfully added ${cleanAmount.toFixed(2)} USDT to player wallet & recorded in ledger!`, 'success');
       return { success: true };
     } catch (err) {
       console.error('adminAddManualWinnerCredit error:', err);
@@ -2814,7 +2814,11 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       const roomName = eventData.roomName || 'Room 1';
       const roomId = eventData.roomId || `room-${newId}`;
       const description = eventData.roomDescription || eventData.description || 'Pick lucky digits from 0000 to 9999.';
-      const currency = (eventData.currency || 'FLO').toUpperCase();
+      if (eventData.currency && eventData.currency.toUpperCase() !== 'USDT') {
+        showToast('Invalid currency! Only USDT is supported on EarnFlow.in.', 'error');
+        return { success: false, error: 'Only USDT currency is supported.' };
+      }
+      const currency = 'USDT';
       const ticketPrice = parseFloat(eventData.ticketPrice || 10);
 
       // Jackpot Configuration

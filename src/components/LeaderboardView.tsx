@@ -37,18 +37,12 @@ import {
 
 const GAME_OPTIONS = [
   { id: 'all', label: 'All Games' },
-  { id: 'lottery', label: 'Lottery' },
-  { id: 'crash', label: 'Crash' },
-  { id: 'dice', label: 'Dice' },
+  { id: 'lottery', label: 'Four-Digit Lottery' },
+  { id: 'crash', label: 'Crash Multiplier' },
+  { id: 'dice', label: 'Provably Fair Dice' },
+  { id: 'coinflip', label: 'Coinflip Dual' },
   { id: 'bingo', label: 'Bingo – Color Trading' },
-  { id: 'horse-racing', label: 'Horse Racing' },
-  { id: 'roulette', label: 'Roulette' },
-  { id: 'coinflip', label: 'Coinflip' },
-  { id: 'slots', label: 'Slots' },
-  { id: 'blackjack', label: 'Blackjack' },
-  { id: 'poker', label: 'Poker' },
-  { id: 'limbo', label: 'Limbo' },
-  { id: 'keno', label: 'Keno' }
+  { id: 'horse-racing', label: 'Horse Racing Sprint' }
 ];
 
 export default function LeaderboardView() {
@@ -225,8 +219,8 @@ export default function LeaderboardView() {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-mono-numbers font-bold">
             {activeLeaderboardType === 'wallet' ? (
               <>
-                <Wallet className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>TOP WALLET BALANCES (1 FLO W = 1 USDT)</span>
+                <Wallet className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                <span>TOP WALLET BALANCES (USDT)</span>
               </>
             ) : (
               <>
@@ -245,7 +239,7 @@ export default function LeaderboardView() {
 
           <p className="text-xs sm:text-sm text-[#94A3B8]">
             {activeLeaderboardType === 'wallet'
-              ? 'Real-time standings of players with the highest FLO Coin balances. 1 FLO W = 1 USDT.'
+              ? 'Real-time standings of players with the highest verified USDT balances.'
               : 'Rankings of top winning players across all games, verified cryptographically.'
             }
           </p>
@@ -278,14 +272,14 @@ export default function LeaderboardView() {
                 {activeLeaderboardType === 'wallet' ? (
                   <>
                     <span className="font-mono-numbers font-black text-xs sm:text-sm text-slate-200 block">
-                      {Number(top2.wallet_balance || 0).toLocaleString()} FLO W
+                      {Number(top2.wallet_balance || 0).toLocaleString()} USDT
                     </span>
-                    <span className="text-[9px] text-[#64748B] uppercase">≈ ${Number(top2.usdt_value || 0).toLocaleString()} USDT</span>
+                    <span className="text-[9px] text-[#64748B] uppercase">TRC-20 Wallet</span>
                   </>
                 ) : (
                   <>
                     <span className="font-mono-numbers font-black text-xs sm:text-sm text-slate-300 block">
-                      {Number(metricFilter === 'multiplier' ? top2.biggest_mult : top2.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
+                      {Number(metricFilter === 'multiplier' ? top2.biggest_mult : top2.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'USDT'}
                     </span>
                     <span className="text-[9px] text-[#64748B] uppercase">Top: {top2.biggest_mult}x · {top2.rounds_count} bets</span>
                   </>
@@ -318,14 +312,14 @@ export default function LeaderboardView() {
                 {activeLeaderboardType === 'wallet' ? (
                   <>
                     <span className="font-mono-numbers font-black text-sm sm:text-base text-amber-300 block">
-                      {Number(top1.wallet_balance || 0).toLocaleString()} FLO W
+                      {Number(top1.wallet_balance || 0).toLocaleString()} USDT
                     </span>
-                    <span className="text-[10px] text-amber-400/80 uppercase font-mono-numbers">≈ ${Number(top1.usdt_value || 0).toLocaleString()} USDT</span>
+                    <span className="text-[10px] text-amber-400/80 uppercase font-mono-numbers">TRC-20 Wallet</span>
                   </>
                 ) : (
                   <>
                     <span className="font-mono-numbers font-black text-sm sm:text-base text-amber-300 block">
-                      {Number(metricFilter === 'multiplier' ? top1.biggest_mult : top1.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
+                      {Number(metricFilter === 'multiplier' ? top1.biggest_mult : top1.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'USDT'}
                     </span>
                     <span className="text-[9px] text-[#64748B] uppercase">Top: {top1.biggest_mult}x · {top1.rounds_count} bets</span>
                   </>
@@ -354,14 +348,14 @@ export default function LeaderboardView() {
                 {activeLeaderboardType === 'wallet' ? (
                   <>
                     <span className="font-mono-numbers font-black text-xs sm:text-sm text-amber-500 block">
-                      {Number(top3.wallet_balance || 0).toLocaleString()} FLO W
+                      {Number(top3.wallet_balance || 0).toLocaleString()} USDT
                     </span>
-                    <span className="text-[9px] text-[#64748B] uppercase">≈ ${Number(top3.usdt_value || 0).toLocaleString()} USDT</span>
+                    <span className="text-[9px] text-[#64748B] uppercase">TRC-20 Wallet</span>
                   </>
                 ) : (
                   <>
                     <span className="font-mono-numbers font-black text-xs sm:text-sm text-amber-500 block">
-                      {Number(metricFilter === 'multiplier' ? top3.biggest_mult : top3.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
+                      {Number(metricFilter === 'multiplier' ? top3.biggest_mult : top3.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'USDT'}
                     </span>
                     <span className="text-[9px] text-[#64748B] uppercase">Top: {top3.biggest_mult}x · {top3.rounds_count} bets</span>
                   </>
@@ -414,16 +408,16 @@ export default function LeaderboardView() {
                   {activeLeaderboardType === 'wallet' ? (
                     <>
                       <span className="font-mono-numbers font-black text-xs xs:text-sm text-amber-300 block whitespace-nowrap">
-                        {Number(top1.wallet_balance || 0).toLocaleString()} FLO W
+                        {Number(top1.wallet_balance || 0).toLocaleString()} USDT
                       </span>
                       <span className="text-[9px] text-amber-400/80 font-mono-numbers block whitespace-nowrap">
-                        ≈ ${Number(top1.usdt_value || 0).toLocaleString()} USDT
+                        TRC-20 Wallet
                       </span>
                     </>
                   ) : (
                     <>
                       <span className="font-mono-numbers font-black text-xs xs:text-sm text-amber-300 block whitespace-nowrap">
-                        {Number(metricFilter === 'multiplier' ? top1.biggest_mult : top1.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
+                        {Number(metricFilter === 'multiplier' ? top1.biggest_mult : top1.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'USDT'}
                       </span>
                       <span className="text-[9px] text-[#64748B] block whitespace-nowrap">
                         Top: {top1.biggest_mult}x · {top1.rounds_count} bets
@@ -463,16 +457,16 @@ export default function LeaderboardView() {
                   {activeLeaderboardType === 'wallet' ? (
                     <>
                       <span className="font-mono-numbers font-black text-[11px] xs:text-xs text-slate-200 block truncate">
-                        {Number(top2.wallet_balance || 0).toLocaleString()} FLO W
+                        {Number(top2.wallet_balance || 0).toLocaleString()} USDT
                       </span>
                       <span className="text-[8px] xs:text-[9px] text-[#64748B] block truncate">
-                        ≈ ${Number(top2.usdt_value || 0).toLocaleString()} USDT
+                        TRC-20 Wallet
                       </span>
                     </>
                   ) : (
                     <>
                       <span className="font-mono-numbers font-black text-[11px] xs:text-xs text-slate-300 block truncate">
-                        {Number(metricFilter === 'multiplier' ? top2.biggest_mult : top2.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
+                        {Number(metricFilter === 'multiplier' ? top2.biggest_mult : top2.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'USDT'}
                       </span>
                       <span className="text-[8px] text-[#64748B] block truncate">
                         {top2.biggest_mult}x · {top2.rounds_count} bets
@@ -508,16 +502,16 @@ export default function LeaderboardView() {
                   {activeLeaderboardType === 'wallet' ? (
                     <>
                       <span className="font-mono-numbers font-black text-[11px] xs:text-xs text-amber-500 block truncate">
-                        {Number(top3.wallet_balance || 0).toLocaleString()} FLO W
+                        {Number(top3.wallet_balance || 0).toLocaleString()} USDT
                       </span>
                       <span className="text-[8px] xs:text-[9px] text-[#64748B] block truncate">
-                        ≈ ${Number(top3.usdt_value || 0).toLocaleString()} USDT
+                        TRC-20 Wallet
                       </span>
                     </>
                   ) : (
                     <>
                       <span className="font-mono-numbers font-black text-[11px] xs:text-xs text-amber-500 block truncate">
-                        {Number(metricFilter === 'multiplier' ? top3.biggest_mult : top3.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'FC'}
+                        {Number(metricFilter === 'multiplier' ? top3.biggest_mult : top3.total_won_fc).toLocaleString()} {metricFilter === 'multiplier' ? 'x' : 'USDT'}
                       </span>
                       <span className="text-[8px] text-[#64748B] block truncate">
                         {top3.biggest_mult}x · {top3.rounds_count} bets
@@ -565,7 +559,7 @@ export default function LeaderboardView() {
 
               <div className="flex items-center gap-1 bg-[#111827] p-1 rounded-xl border border-[#1F2737]">
                 {[
-                  { id: 'earnings', label: 'Most FC Won' },
+                  { id: 'earnings', label: 'Most USDT Won' },
                   { id: 'multiplier', label: 'Top Multiplier' },
                   { id: 'wagered', label: 'Total Wagered' }
                 ].map(tab => (
@@ -643,8 +637,8 @@ export default function LeaderboardView() {
                   <th className="py-3.5 px-4 whitespace-nowrap">Rank</th>
                   <th className="py-3.5 px-4 whitespace-nowrap">Player</th>
                   <th className="py-3.5 px-4 whitespace-nowrap">VIP Tier</th>
-                  <th className="py-3.5 px-4 text-right whitespace-nowrap">Balance (FLO W)</th>
-                  <th className="py-3.5 px-4 text-right whitespace-nowrap">USDT Value (1:1)</th>
+                  <th className="py-3.5 px-4 text-right whitespace-nowrap">Balance (USDT)</th>
+                  <th className="py-3.5 px-4 text-right whitespace-nowrap">Network</th>
                   <th className="py-3.5 px-4 text-right whitespace-nowrap">Lifetime Won</th>
                   <th className="py-3.5 px-4 text-center whitespace-nowrap">Status</th>
                 </tr>
@@ -747,25 +741,24 @@ export default function LeaderboardView() {
                       {/* Columns depend on activeLeaderboardType */}
                       {activeLeaderboardType === 'wallet' ? (
                         <>
-                          {/* Wallet Balance (FLO W) */}
+                          {/* Wallet Balance (USDT) */}
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
                             <span className="font-extrabold text-amber-300 text-sm">
                               {Number(row.wallet_balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>{' '}
-                            <span className="text-[10px] font-bold text-amber-400">FLO W</span>
+                            <span className="text-[10px] font-bold text-purple-400">USDT</span>
                           </td>
 
-                          {/* USDT Value */}
+                          {/* Network */}
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                            <span className="font-bold text-emerald-400 text-xs">
-                              ${Number(row.usdt_value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>{' '}
-                            <span className="text-[9px] text-white/50">USDT</span>
+                            <span className="font-bold text-emerald-400 text-xs font-mono">
+                              TRC-20
+                            </span>
                           </td>
 
                           {/* Lifetime Won */}
                           <td className="py-3.5 px-4 text-right text-[#94A3B8] whitespace-nowrap">
-                            {Number(row.lifetime_won || 0).toLocaleString()} FC
+                            {Number(row.lifetime_won || 0).toLocaleString()} USDT
                           </td>
 
                           {/* Verified Status */}
@@ -786,11 +779,11 @@ export default function LeaderboardView() {
                               </span>
                             ) : metricFilter === 'wagered' ? (
                               <span className="font-bold text-slate-200 text-xs">
-                                {Number(row.total_wagered || 0).toLocaleString()} <span className="text-[10px] text-amber-400">FC</span>
+                                {Number(row.total_wagered || 0).toLocaleString()} <span className="text-[10px] text-purple-400">USDT</span>
                               </span>
                             ) : (
                               <span className="font-extrabold text-emerald-400 text-xs">
-                                +{Number(row.total_won_fc || 0).toLocaleString()} <span className="text-[10px] text-amber-400">FC</span>
+                                +{Number(row.total_won_fc || 0).toLocaleString()} <span className="text-[10px] text-purple-400">USDT</span>
                               </span>
                             )}
                           </td>

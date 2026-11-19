@@ -82,7 +82,7 @@ export default function UsernameSetupModal() {
         </div>
 
         <p className="text-xs text-[#9b8f7c] leading-relaxed mb-5">
-          Welcome to EarnFlow.In! Please choose your official player User ID. This handle will appear on your draw tickets, leaderboards, and verified prize disbursals.
+          Welcome to EarnFlow.in! Please choose your official player User ID. This handle will appear on your draw tickets, leaderboards, and verified prize disbursals.
         </p>
 
         {/* Setup Form */}

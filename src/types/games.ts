@@ -2,17 +2,11 @@ export type GameId =
   | 'lottery' 
   | 'crash' 
   | 'dice' 
-  | 'roulette' 
   | 'coinflip' 
-  | 'blackjack' 
-  | 'slots' 
-  | 'poker' 
-  | 'keno' 
-  | 'limbo'
-  | 'bingo'
+  | 'bingo' 
   | 'horse-racing';
 
-export type GameCategory = 'all' | 'lottery' | 'instant' | 'table' | 'arcade' | 'card' | 'slots';
+export type GameCategory = 'all' | 'lottery' | 'instant' | 'table' | 'arcade';
 
 export type GameBadge = 
   | 'HOT' 
@@ -46,9 +40,12 @@ export interface GameDefinition {
   description: string;
   rtp: number;
   houseEdge: number;
-  minStakeFC: number;
-  maxStakeFC: number;
-  defaultStakeFC: number;
+  minStakeUSDT: number;
+  maxStakeUSDT: number;
+  defaultStakeUSDT: number;
+  minStakeFC?: number; // legacy alias
+  maxStakeFC?: number;
+  defaultStakeFC?: number;
   maxMultiplier: number;
   isProvablyFair: boolean;
   status: 'active' | 'maintenance' | 'beta';
@@ -98,16 +95,13 @@ export interface GameRoom {
   minStake: number;
   maxStake: number;
   speed: 'normal' | 'turbo' | 'vip';
+  status: 'active' | 'maintenance' | 'full';
+  rulesConfig?: Record<string, unknown>;
 }
 
-export interface RoomChatMessage {
-  id: string;
-  roomId: string;
-  userId: string;
-  username: string;
-  avatarUrl?: string;
-  message: string;
-  timestamp: string | number;
-  isModerator?: boolean;
-  isSystem?: boolean;
+export interface ProvablyFairSeeds {
+  serverSeedHash: string;
+  serverSeed?: string;
+  clientSeed: string;
+  nonce: number;
 }

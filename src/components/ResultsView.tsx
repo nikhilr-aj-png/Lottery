@@ -32,28 +32,31 @@ function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify }: ResultC
     let isMounted = true;
     if (isExpanded && (!event.winners || event.winners.length === 0)) {
       setLoadingWinners(true);
-      supabase
-        .from('winner_payouts')
-        .select('*')
-        .eq('event_id', event.id)
-        .order('position', { ascending: true })
-        .then(({ data, error }) => {
+      (async () => {
+        try {
+          const { data, error } = await supabase
+            .from('winner_payouts')
+            .select('*')
+            .eq('event_id', event.id)
+            .order('position', { ascending: true });
+
           if (!isMounted) return;
           if (!error && Array.isArray(data)) {
             const mapped = data.map((p: any, idx: number) => ({
               rank: p.position || (idx + 1),
               user: p.username ? `@${p.username}` : (p.user_address ? `${p.user_address.slice(0, 6)}...${p.user_address.slice(-4)}` : `@Player_${p.id.slice(-4)}`),
               ticket: `#${p.ticket_number || '----'}`,
-              prize: `${Number(p.net_payout_fc || p.gross_payout_fc || 0).toLocaleString()} ${p.currency || event.currency || 'FLO'}`,
+              prize: `${Number(p.net_payout_fc || p.gross_payout_fc || 0).toLocaleString()} ${p.currency || event.currency || 'USDT'}`,
               status: p.status === 'paid' ? 'Paid' : 'Disbursed'
             }));
             setDbWinners(mapped);
           }
-          setLoadingWinners(false);
-        })
-        .catch(() => {
+        } catch (_) {
+          // ignore
+        } finally {
           if (isMounted) setLoadingWinners(false);
-        });
+        }
+      })();
     }
     return () => {
       isMounted = false;

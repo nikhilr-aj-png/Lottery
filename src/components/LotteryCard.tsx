@@ -121,8 +121,8 @@ export default function LotteryCard({ event, onSelect }: LotteryCardProps) {
               ? `${event.minPrize} – ${event.maxPrize}` 
               : event.poolPrize.toLocaleString()}
           </span>
-          <span className="font-display font-black text-base xs:text-lg text-amber-400 font-mono-numbers">
-            FC
+          <span className="font-display font-black text-base xs:text-lg text-purple-400 font-mono-numbers">
+            USDT
           </span>
         </div>
         <div className="mt-2 pt-1.5 sm:mt-2.5 sm:pt-2 border-t border-[#272a31]/60 flex items-center justify-between text-[10px] xs:text-[11px] text-[#9b8f7c]">
@@ -141,7 +141,7 @@ export default function LotteryCard({ event, onSelect }: LotteryCardProps) {
             Entry Price
           </span>
           <span className="font-mono-numbers font-bold text-xs xs:text-sm text-white truncate block">
-            {event.ticketPrice} FC
+            {event.ticketPrice} USDT
           </span>
         </div>
 
@@ -218,7 +218,7 @@ export default function LotteryCard({ event, onSelect }: LotteryCardProps) {
           className="btn-gold w-full min-h-[44px] py-2.5 xs:py-3 rounded-xl text-xs xs:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
         >
           <Flame className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
-          <span>Buy 4-Digit Ticket ({event.ticketPrice} FC)</span>
+          <span>Buy 4-Digit Ticket ({event.ticketPrice} USDT)</span>
           <ArrowRight className="w-3.5 xs:w-4 h-3.5 xs:h-4 ml-1" />
         </button>
       )}

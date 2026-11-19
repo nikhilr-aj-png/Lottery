@@ -53,7 +53,7 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
 
   // Page title sync
   useEffect(() => {
-    document.title = 'Transaction History · EarnFlow.In';
+    document.title = 'Transaction History · EarnFlow.in';
   }, []);
 
   // 1-second interval to update live countdown timers
@@ -151,7 +151,7 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
               Transaction History
             </h1>
             <p className="text-xs sm:text-sm text-[#9b8f7c] leading-relaxed">
-              Please sign in to view your complete cryptocurrency deposit orders, withdrawal disbursements, and FLO Coin transaction ledger.
+              Please sign in to view your complete cryptocurrency deposit orders, withdrawal disbursements, and USDT transaction ledger.
             </p>
           </div>
 
@@ -221,7 +221,7 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
         <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
           <div className="hidden xs:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#111827] border border-[#1F2737] text-xs font-mono-numbers">
             <span className="text-[#9b8f7c]">Balance:</span>
-            <span className="text-amber-400 font-black">{Number(wallet?.balance || 0).toFixed(2)} FLO</span>
+            <span className="text-purple-400 font-black">{Number(wallet?.balance || 0).toFixed(2)} USDT</span>
           </div>
 
           <button
@@ -295,14 +295,14 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
         </div>
       </div>
 
-      {/* 3. OPTION 1: ALL TRANSACTIONS (FLO COIN & VIRTUAL LEDGER) */}
+      {/* 3. OPTION 1: ALL TRANSACTIONS (USDT LEDGER) */}
       {activeHistoryTab === 'all' && (
         <div className="glass-panel rounded-2xl p-3.5 xs:p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between text-xs text-[#9b8f7c] pb-2 border-b border-[#272a31]">
             <span className="font-semibold text-white/90">
               All Transaction Records ({filteredLedger.length})
             </span>
-            <span className="text-[11px] font-mono-numbers">1 FLO W = 1 USDT</span>
+            <span className="text-[11px] font-mono-numbers text-purple-400 font-bold">USDT (TRC-20) Settlement</span>
           </div>
 
           <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
@@ -311,8 +311,8 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
                 <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Tx ID</th>
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Transaction Type</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (FLO W)</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">USDT Value (1:1)</th>
+                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
+                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Network</th>
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Balance After</th>
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status</th>
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Description / Reference</th>
@@ -331,8 +331,8 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
                     const isCredit = Number(tx.amount) > 0;
                     const typeConfig = {
                       welcome_grant: { label: 'WELCOME BONUS', bg: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
-                      daily_reward: { label: 'DAILY FLO W REWARD', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
-                      daily_bonus: { label: 'DAILY FLO W REWARD', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+                      daily_reward: { label: 'DAILY REWARD', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+                      daily_bonus: { label: 'DAILY REWARD', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
                       ticket_purchase: { label: 'TICKET PURCHASE', bg: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
                       lottery_win: { label: 'LOTTERY WIN', bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
                       game_bet: { label: 'GAME WAGER', bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
@@ -357,16 +357,16 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
                         </td>
                         <td className="py-3.5 px-2 xs:px-3 font-mono-numbers font-black text-sm whitespace-nowrap">
                           <span className={isCredit ? 'text-emerald-400' : 'text-rose-400'}>
-                            {isCredit ? '+' : ''}{Number(tx.amount).toFixed(2)} FLO W
+                            {isCredit ? '+' : ''}{Number(tx.amount).toFixed(2)} USDT
                           </span>
                         </td>
                         <td className="py-3.5 px-2 xs:px-3 font-mono-numbers font-bold text-xs whitespace-nowrap">
-                          <span className={isCredit ? 'text-emerald-300' : 'text-rose-300'}>
-                            {isCredit ? '+' : '-'}${Math.abs(Number(tx.amount || 0)).toFixed(2)} USDT
+                          <span className="text-purple-300 font-mono">
+                            TRC-20
                           </span>
                         </td>
                         <td className="py-3.5 px-2 xs:px-3 font-mono-numbers text-xs text-white/90 whitespace-nowrap">
-                          <span className="text-[#ffd700] font-bold">{Number(tx.balance_after || 0).toFixed(2)} FLO</span>
+                          <span className="text-purple-300 font-bold">{Number(tx.balance_after || 0).toFixed(2)} USDT</span>
                         </td>
                         <td className="py-3.5 px-2 xs:px-3 whitespace-nowrap">
                           <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">

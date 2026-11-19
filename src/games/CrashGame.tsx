@@ -341,7 +341,7 @@ export default function CrashGame({
                   disabled={gameState === 'flying' || gameState === 'countdown'}
                   className="flex-1 bg-transparent px-2 text-white font-mono-numbers font-black text-sm outline-none disabled:opacity-50"
                 />
-                <span className="text-amber-400 font-black text-xs px-2 font-mono-numbers">FC</span>
+                <span className="text-purple-400 font-black text-xs px-2 font-mono-numbers">USDT</span>
               </div>
             </div>
 
@@ -430,8 +430,8 @@ export default function CrashGame({
                 <Coins className="w-4 h-4 fill-current" />
                 <span>
                   {cashedOutAt
-                    ? `Cashed Out @ ${cashedOutAt.toFixed(2)}x (+${(betAmount * cashedOutAt).toFixed(2)} FC)`
-                    : `Cashout ${(betAmount * currentMultiplier).toFixed(2)} FC (${currentMultiplier.toFixed(2)}x)`
+                    ? `Cashed Out @ ${cashedOutAt.toFixed(2)}x (+${(betAmount * cashedOutAt).toFixed(2)} USDT)`
+                    : `Cashout ${(betAmount * currentMultiplier).toFixed(2)} USDT (${currentMultiplier.toFixed(2)}x)`
                   }
                 </span>
               </button>
@@ -447,7 +447,7 @@ export default function CrashGame({
                 ) : (
                   <>
                     <Rocket className="w-4 h-4 fill-current" />
-                    <span>Launch Rocket ({betAmount} FC)</span>
+                    <span>Launch Rocket ({betAmount} USDT)</span>
                   </>
                 )}
               </button>

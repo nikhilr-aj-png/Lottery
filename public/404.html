@@ -2,20 +2,19 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>EarnFlow.In | Redirecting...</title>
+    <title>EarnFlow.in | Redirecting...</title>
     <script type="text/javascript">
       // GitHub Pages SPA single page app redirect script
-      // Preserves path, search, and hash so that direct URLs like /privacy-policy and /terms-and-conditions load smoothly
-      var pathSegmentsToKeep = 0;
+      // Preserves path, search, and hash so that direct URLs like /legal/privacy load smoothly
       var l = window.location;
-      var path = l.pathname.slice(1);
-      
-      // If path is a known static route, redirect to that folder
-      if (path === 'privacy-policy' || path === 'privacy-policy/') {
-        l.replace('/privacy-policy/index.html' + l.search + l.hash);
-      } else if (path === 'terms-and-conditions' || path === 'terms-and-conditions/') {
-        l.replace('/terms-and-conditions/index.html' + l.search + l.hash);
-      } else if (path === 'contact' || path === 'contact/') {
+      var cleanPath = l.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+
+      // Static routes redirection
+      if (cleanPath === 'legal/privacy' || cleanPath === 'privacy' || cleanPath === 'privacy-policy') {
+        l.replace('/legal/privacy/index.html' + l.search + l.hash);
+      } else if (cleanPath === 'legal/terms' || cleanPath === 'terms' || cleanPath === 'terms-and-conditions') {
+        l.replace('/legal/terms/index.html' + l.search + l.hash);
+      } else if (cleanPath === 'contact') {
         l.replace('/contact/index.html' + l.search + l.hash);
       } else {
         // Fallback to root SPA with query param
@@ -28,7 +27,7 @@
       }
     </script>
   </head>
-  <body style="background:#07090d; color:#ffd700; font-family:sans-serif; text-align:center; padding-top:20vh;">
-    <p>Redirecting to EarnFlow.In...</p>
+  <body style="background:#0b0e14; color:#f5c451; font-family:sans-serif; text-align:center; padding-top:20vh;">
+    <p>Redirecting to EarnFlow.in...</p>
   </body>
 </html>

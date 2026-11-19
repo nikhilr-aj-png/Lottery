@@ -1886,7 +1886,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
 
                   // Pre-filled email subject and body
                   const emailSubject = `Re: [EarnFlow Support] ${ticket.subject} (Ticket #${ticket.id})`;
-                  const emailBody = `Hello ${ticket.name},\n\nThank you for reaching out to EarnFlow.In Support regarding Ticket #${ticket.id}.\n\nYour Inquiry:\n"${ticket.message}"\n\nResponse:\n\n\n--\nEarnFlow.in Administrative Support Desk\nsupport@earnflow.in`;
+                  const emailBody = `Hello ${ticket.name},\n\nThank you for reaching out to EarnFlow.in Support regarding Ticket #${ticket.id}.\n\nYour Inquiry:\n"${ticket.message}"\n\nResponse:\n\n\n--\nEarnFlow.in Administrative Support Desk\nsupport@earnflow.in`;
 
                   // Direct Gmail Web Compose link
                   const gmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(ticket.email)}&su=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
@@ -2146,14 +2146,14 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
 
               <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 space-y-1">
                 <div className="flex items-center justify-between text-xs text-[#8b92a2]">
-                  <span className="font-bold uppercase tracking-wider">Total FLO Coins Awarded</span>
+                  <span className="font-bold uppercase tracking-wider">Total USDT Rewards Awarded</span>
                   <Coins className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div className="text-2xl font-black font-mono-numbers text-emerald-400">
-                  {Number(rewardsAnalytics?.total_distributed_flo || 0).toFixed(2)} FLO
+                  {Number(rewardsAnalytics?.total_distributed_flo || 0).toFixed(2)} USDT
                 </div>
                 <div className="text-[11px] text-white/60 font-mono-numbers">
-                  ≈ ${Number(rewardsAnalytics?.total_distributed_flo || 0).toFixed(2)} USDT (1 FLO = 1 USDT)
+                  TRC-20 Promotional Ledger
                 </div>
               </div>
 
@@ -2208,7 +2208,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                     <div className="grid grid-cols-3 gap-2">
                       {[
                         { id: 'streak', label: '7-Day Streak', desc: 'Progression ladder' },
-                        { id: 'random', label: 'Random Range', desc: 'Min to Max FLO' },
+                        { id: 'random', label: 'Random Range', desc: 'Min to Max USDT' },
                         { id: 'fixed', label: 'Flat Fixed', desc: 'Static amount' }
                       ].map((mode) => (
                         <button
@@ -2232,7 +2232,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                   {bonusRewardSettings.reward_mode === 'fixed' && (
                     <div>
                       <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-1.5">
-                        Fixed Bonus Amount (FLO Coins)
+                        Fixed Bonus Amount (USDT)
                       </label>
                       <input
                         type="number"
@@ -2244,7 +2244,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                         className="w-full px-3.5 py-2.5 bg-[#141924] border border-[#272a31] rounded-xl text-white text-xs font-mono-numbers focus:border-amber-400 outline-none"
                       />
                       <span className="text-[10px] text-[#8b92a2] mt-1 block">
-                        Strict limit: 1 FLO = 1 USDT. Maximum allowable bonus is 1.00 FLO.
+                        Maximum allowable single bonus is 1.00 USDT.
                       </span>
                     </div>
                   )}
@@ -2253,7 +2253,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-1.5">
-                          Min Amount (FLO)
+                          Min Amount (USDT)
                         </label>
                         <input
                           type="number"
@@ -2267,7 +2267,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-1.5">
-                          Max Amount (FLO)
+                          Max Amount (USDT)
                         </label>
                         <input
                           type="number"
@@ -2381,7 +2381,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                   {/* 7 Days Reward Inputs */}
                   <div>
                     <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-2">
-                      Daily Streak Reward Ladder (FLO Coins = USDT)
+                      Daily Streak Reward Ladder (USDT TRC-20)
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                       {[1, 2, 3, 4, 5, 6, 7].map((day) => {
@@ -2421,10 +2421,10 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                     </div>
                   </div>
 
-                  {/* 1 FLO = 1 USDT Notice */}
-                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 shrink-0 text-amber-400" />
-                    <span>Fixed rate enforced: 1 FLO Coin = 1 USDT across all reward claims and ledger credits.</span>
+                  {/* USDT Rewards Notice */}
+                  <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-purple-400" />
+                    <span>Exclusive currency policy: All rewards, bonuses, and faucet credits are disbursed in USDT (TRC-20).</span>
                   </div>
                 </div>
               </div>
@@ -2466,14 +2466,14 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                           <td className="py-3 px-3 text-white font-medium">
                             {claim.wallet_address ? `${claim.wallet_address.slice(0, 6)}...${claim.wallet_address.slice(-4)}` : 'System'}
                           </td>
-                          <td className="py-3 px-3 text-amber-400 font-bold">
-                            +{parseFloat(claim.amount || 0).toFixed(2)} FLO
+                          <td className="py-3 px-3 text-emerald-400 font-bold">
+                            +{parseFloat(claim.amount || 0).toFixed(2)} USDT
                           </td>
-                          <td className="py-3 px-3 text-emerald-400 font-semibold">
-                            ${parseFloat(claim.amount || 0).toFixed(2)} USDT
+                          <td className="py-3 px-3 text-purple-300 font-mono text-xs">
+                            TRC-20
                           </td>
                           <td className="py-3 px-3 text-[#8b92a2] font-sans truncate max-w-xs">
-                            {claim.description || 'Daily FLO Reward'}
+                            {claim.description || 'Daily USDT Reward'}
                           </td>
                           <td className="py-3 px-3 text-[#8b92a2]">
                             {new Date(claim.created_at).toLocaleString()}

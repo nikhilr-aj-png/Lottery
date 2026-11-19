@@ -196,7 +196,7 @@ export default function DiceGame({
                   disabled={isRolling}
                   className="flex-1 bg-transparent px-2 text-white font-mono-numbers font-black text-sm outline-none disabled:opacity-50"
                 />
-                <span className="text-amber-400 font-black text-xs px-2 font-mono-numbers">FC</span>
+                <span className="text-purple-400 font-black text-xs px-2 font-mono-numbers">USDT</span>
               </div>
             </div>
 
@@ -253,7 +253,7 @@ export default function DiceGame({
             <div className="bg-[#0B0F19] p-1.5 rounded-lg border border-[#1F2737] text-xs font-mono-numbers flex items-center justify-between">
               <span className="text-[#94A3B8] text-[11px]">Profit:</span>
               <span className="font-black text-emerald-300 text-xs">
-                +{(betAmount * calc.multiplier - betAmount).toFixed(2)} FC
+                +{(betAmount * calc.multiplier - betAmount).toFixed(2)} USDT
               </span>
             </div>
           </div>
@@ -267,7 +267,7 @@ export default function DiceGame({
               className="w-full py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-md shadow-blue-500/25 disabled:opacity-50"
             >
               <Dices className={`w-4 h-4 ${isRolling ? 'animate-spin' : ''}`} />
-              <span>{isRolling ? 'Rolling...' : `Roll Dice (${betAmount} FC)`}</span>
+              <span>{isRolling ? 'Rolling...' : `Roll Dice (${betAmount} USDT)`}</span>
             </button>
           </div>
 
@@ -317,7 +317,7 @@ export default function DiceGame({
               <div className="text-xs font-mono-numbers font-extrabold animate-in fade-in">
                 {lastOutcome === 'won' ? (
                   <span className="text-emerald-400">
-                    Won +{(betAmount * calc.multiplier).toFixed(2)} FC
+                    Won +{(betAmount * calc.multiplier).toFixed(2)} USDT
                   </span>
                 ) : (
                   <span className="text-red-400">
@@ -353,7 +353,7 @@ export default function DiceGame({
 
             <div className="flex items-center justify-between text-[9px] text-[#94A3B8] font-mono-numbers">
               <span>Provably Fair 1% House Edge</span>
-              <span>Stake: 1 - 2,000 FC</span>
+              <span>Stake: 1 - 2,000 USDT</span>
             </div>
           </div>
 

@@ -91,7 +91,7 @@ export default function AdminAuthGate({ onAuthenticated, onCancel }: AdminAuthGa
             Super Admin Access Only
           </span>
           <h1 className="font-display font-black text-lg xs:text-xl sm:text-2xl text-white mt-2">
-            EarnFlow.In Back-End
+            EarnFlow.in Back-End
           </h1>
           <p className="text-xs text-[#9b8f7c] mt-1">
             Draw Oracle & Smart Contract Governance Console

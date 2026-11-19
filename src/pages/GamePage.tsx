@@ -50,15 +50,9 @@ import {
   LotteryWorkstation,
   CrashGame,
   DiceGame,
-  BingoGame,
-  HorseRacingGame,
-  RouletteGame,
   CoinflipGame,
-  BlackjackGame,
-  SlotsGame,
-  PokerGame,
-  KenoGame,
-  LimboGame
+  BingoGame,
+  HorseRacingGame
 } from '../games';
 
 export interface GamePageProps {
@@ -105,10 +99,12 @@ export default function GamePage({
       name: evt.roomName || evt.title || `Room ${idx + 1}`,
       type: evt.badge?.toLowerCase().includes('vip') ? ROOM_TYPES.VIP : (evt.badge?.toLowerCase().includes('high') ? ROOM_TYPES.HIGH_ROLLER : ROOM_TYPES.STANDARD),
       status: evt.status === 'completed' ? ROOM_STATUSES.COMPLETED : ROOM_STATUSES.ACTIVE,
-      description: evt.description || `Pick 4 lucky digits from 0000 to 9999. Payouts distributed in ${evt.currency || 'FLO'}.`,
+      description: evt.description || `Pick 4 lucky digits from 0000 to 9999. Payouts distributed in ${evt.currency || 'USDT'}.`,
+      minStakeUSDT: evt.ticketPrice || 10,
+      maxStakeUSDT: evt.ticketPrice || 10,
       minStakeFC: evt.ticketPrice || 10,
       maxStakeFC: evt.ticketPrice || 10,
-      currency: evt.currency || 'FLO',
+      currency: evt.currency || 'USDT',
       playerCapacity: evt.maxTotalTickets || 1000,
       currentPlayers: evt.participantsCount || 0,
       ticketsSold: evt.ticketsSold || 0,
@@ -299,7 +295,7 @@ export default function GamePage({
   const handleEnterRoom = (targetRoomId) => {
     if (!user) {
       setIsAuthModalOpen(true);
-      showToast('Please log in with Flow Coins to enter this room!', 'info');
+      showToast('Please log in to enter this room!', 'info');
       return;
     }
     if (onNavigate) {
@@ -379,7 +375,7 @@ export default function GamePage({
                       {r.username || `@${r.walletAddress?.slice(-4)}`}
                     </span>
                     <span className="text-[#94A3B8]">
-                      {r.betAmount}FC
+                      {r.betAmount} USDT
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -387,7 +383,7 @@ export default function GamePage({
                       {r.multiplier > 0 ? `${r.multiplier}x` : '—'}
                     </span>
                     <span className={`font-bold ${isWin ? 'text-emerald-400' : 'text-[#64748B]'}`}>
-                      {isWin ? `+${r.payout}FC` : '0FC'}
+                      {isWin ? `+${r.payout} USDT` : '0 USDT'}
                     </span>
                     <button
                       type="button"
@@ -435,7 +431,7 @@ export default function GamePage({
             </div>
             <div className="flex items-center gap-2 text-[11px] font-mono-numbers shrink-0">
               <span className="text-[#94A3B8] hidden sm:inline">Limits:</span>
-              <span className="text-amber-400 font-bold">{selectedRoom.minStakeFC} - {selectedRoom.maxStakeFC} FC</span>
+              <span className="text-amber-400 font-bold">{selectedRoom.minStakeUSDT || selectedRoom.minStakeFC || 1} - {selectedRoom.maxStakeUSDT || selectedRoom.maxStakeFC || 1000} USDT</span>
             </div>
           </div>
         )}
@@ -444,15 +440,9 @@ export default function GamePage({
         <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col">
           {game.id === 'crash' && <CrashGame room={selectedRoom} activityBox={activityBox} />}
           {game.id === 'dice' && <DiceGame room={selectedRoom} activityBox={activityBox} />}
+          {game.id === 'coinflip' && <CoinflipGame room={selectedRoom} activityBox={activityBox} />}
           {game.id === 'bingo' && <BingoGame room={selectedRoom} activityBox={activityBox} />}
           {game.id === 'horse-racing' && <HorseRacingGame room={selectedRoom} activityBox={activityBox} />}
-          {game.id === 'roulette' && <RouletteGame room={selectedRoom} activityBox={activityBox} />}
-          {game.id === 'coinflip' && <CoinflipGame room={selectedRoom} activityBox={activityBox} />}
-          {game.id === 'blackjack' && <BlackjackGame room={selectedRoom} activityBox={activityBox} />}
-          {game.id === 'slots' && <SlotsGame room={selectedRoom} activityBox={activityBox} />}
-          {game.id === 'poker' && <PokerGame room={selectedRoom} activityBox={activityBox} />}
-          {game.id === 'keno' && <KenoGame room={selectedRoom} activityBox={activityBox} />}
-          {game.id === 'limbo' && <LimboGame room={selectedRoom} activityBox={activityBox} />}
           {game.id === 'lottery' && (
             <LotteryWorkstation
               room={selectedRoom}
@@ -525,13 +515,7 @@ export default function GamePage({
                 game.id === 'dice' ? '🎲' :
                   game.id === 'bingo' ? '🎨' :
                     game.id === 'horse-racing' ? '🏇' :
-                      game.id === 'roulette' ? '🎡' :
-                        game.id === 'coinflip' ? '🪙' :
-                          game.id === 'blackjack' ? '🃏' :
-                            game.id === 'slots' ? '🎰' :
-                              game.id === 'poker' ? '♠️' :
-                                game.id === 'keno' ? '🎱' :
-                                  game.id === 'limbo' ? '⚡' : '🎟️'}
+                      game.id === 'coinflip' ? '🪙' : '🎟️'}
             </span>
           </div>
 
@@ -623,7 +607,7 @@ export default function GamePage({
                   <span>Available Game Rooms & Tables</span>
                 </h2>
                 <p className="text-xs text-[#9b8f7c]">
-                  Select a room matching your desired Flow Coin stake boundaries and table volatility
+                  Select a room matching your desired USDT stake boundaries and table volatility
                 </p>
               </div>
 
@@ -877,49 +861,6 @@ export default function GamePage({
                     </div>
                   )}
 
-                  {/* European Roulette Specific Info (Wheel & Spins) */}
-                  {game.id === 'roulette' && (
-                    <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-[11px] text-[#9b8f7c]">
-                        <span className="flex items-center gap-1">
-                          <RotateCcw className="w-3 h-3 text-emerald-400" />
-                          <span>Wheel Layout:</span>
-                        </span>
-                        <strong className="text-emerald-300 font-mono-numbers">
-                          {room.wheelConfig || 'European Single Zero (0 - 36)'}
-                        </strong>
-                      </div>
-
-                      {room.recentSpins && (
-                        <div className="flex items-center justify-between text-[11px] text-[#9b8f7c] pt-1 border-t border-[#1f2737]">
-                          <span>Recent Spins:</span>
-                          <div className="flex items-center gap-1">
-                            {room.recentSpins.map((s, i) => {
-                              const num = typeof s === 'object' ? s.number : s;
-                              const isGreen = num === 0 || num === '0';
-                              return (
-                                <span
-                                  key={i}
-                                  className={`font-mono-numbers font-bold px-1.5 py-0.2 rounded border ${isGreen
-                                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                                      : 'bg-[#141924] text-amber-300 border-[#272a31]'
-                                    }`}
-                                >
-                                  {num}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {room.rulesSummary && (
-                        <div className="text-[10px] text-[#8b92a2] text-left pt-0.5">
-                          ℹ️ {room.rulesSummary}
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   {/* Coinflip Specific Info (Flip Config & Recent) */}
                   {game.id === 'coinflip' && (
@@ -958,190 +899,7 @@ export default function GamePage({
                     </div>
                   )}
 
-                  {/* Blackjack Specific Info (Deck & Outcomes) */}
-                  {game.id === 'blackjack' && (
-                    <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-[11px] text-[#9b8f7c]">
-                        <span className="flex items-center gap-1">
-                          <Award className="w-3 h-3 text-emerald-400" />
-                          <span>Table Rules:</span>
-                        </span>
-                        <strong className="text-emerald-300 font-mono-numbers">
-                          {room.deckConfig || '6-Deck Shoe (Dealer stands on 17)'}
-                        </strong>
-                      </div>
 
-                      {room.recentOutcomes && (
-                        <div className="flex items-center justify-between text-[11px] text-[#9b8f7c] pt-1 border-t border-[#1f2737]">
-                          <span>Recent Hands:</span>
-                          <div className="flex items-center gap-1">
-                            {room.recentOutcomes.map((out, i) => (
-                              <span
-                                key={i}
-                                className="font-mono-numbers font-bold px-1.5 py-0.2 rounded border bg-[#141924] text-emerald-400 border-[#272a31]"
-                              >
-                                {out}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {room.rulesSummary && (
-                        <div className="text-[10px] text-[#8b92a2] text-left pt-0.5">
-                          ℹ️ {room.rulesSummary}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Slots Specific Info (Reels & Top Hits) */}
-                  {game.id === 'slots' && (
-                    <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-[11px] text-[#9b8f7c]">
-                        <span className="flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-amber-400" />
-                          <span>Slot Machine:</span>
-                        </span>
-                        <strong className="text-amber-300 font-mono-numbers">
-                          {room.reelsConfig || '3 Reels · 5 Paylines · 250x Top Jackpot'}
-                        </strong>
-                      </div>
-
-                      {room.recentPayouts && (
-                        <div className="flex items-center justify-between text-[11px] text-[#9b8f7c] pt-1 border-t border-[#1f2737]">
-                          <span>Recent Wins:</span>
-                          <div className="flex items-center gap-1">
-                            {room.recentPayouts.map((win, i) => (
-                              <span
-                                key={i}
-                                className="font-mono-numbers font-bold px-1.5 py-0.2 rounded border bg-[#141924] text-purple-300 border-[#272a31]"
-                              >
-                                {win}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {room.rulesSummary && (
-                        <div className="text-[10px] text-[#8b92a2] text-left pt-0.5">
-                          ℹ️ {room.rulesSummary}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Texas Hold'em Poker Specific Info (Table & Hand Preview) */}
-                  {game.id === 'poker' && (
-                    <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-[11px] text-[#9b8f7c]">
-                        <span className="flex items-center gap-1">
-                          <Users className="w-3 h-3 text-indigo-400" />
-                          <span>Table Format:</span>
-                        </span>
-                        <strong className="text-indigo-300 font-mono-numbers">
-                          {room.tableConfig || '6-Max Table · Blinds 5/10 FC'}
-                        </strong>
-                      </div>
-
-                      {room.recentHands && (
-                        <div className="flex items-center justify-between text-[11px] text-[#9b8f7c] pt-1 border-t border-[#1f2737]">
-                          <span>Recent Showdowns:</span>
-                          <div className="flex items-center gap-1">
-                            {room.recentHands.map((hand, i) => (
-                              <span
-                                key={i}
-                                className="font-mono-numbers font-bold px-1.5 py-0.2 rounded border bg-[#141924] text-indigo-300 border-[#272a31]"
-                              >
-                                {hand}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {room.rulesSummary && (
-                        <div className="text-[10px] text-[#8b92a2] text-left pt-0.5">
-                          ℹ️ {room.rulesSummary}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Classic Keno Specific Info (Grid & Multipliers) */}
-                  {game.id === 'keno' && (
-                    <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-[11px] text-[#9b8f7c]">
-                        <span className="flex items-center gap-1">
-                          <Hash className="w-3 h-3 text-teal-400" />
-                          <span>Draw Format:</span>
-                        </span>
-                        <strong className="text-teal-300 font-mono-numbers">
-                          {room.gridConfig || '40-Ball Board · Pick 1 to 10 Numbers'}
-                        </strong>
-                      </div>
-
-                      {room.recentDraws && (
-                        <div className="flex items-center justify-between text-[11px] text-[#9b8f7c] pt-1 border-t border-[#1f2737]">
-                          <span>Recent Hits:</span>
-                          <div className="flex items-center gap-1">
-                            {room.recentDraws.map((draw, i) => (
-                              <span
-                                key={i}
-                                className="font-mono-numbers font-bold px-1.5 py-0.2 rounded border bg-[#141924] text-teal-300 border-[#272a31]"
-                              >
-                                {draw}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {room.rulesSummary && (
-                        <div className="text-[10px] text-[#8b92a2] text-left pt-0.5">
-                          ℹ️ {room.rulesSummary}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Limbo Specific Info (Multiplier Range & Odds) */}
-                  {game.id === 'limbo' && (
-                    <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-[11px] text-[#9b8f7c]">
-                        <span className="flex items-center gap-1">
-                          <Percent className="w-3 h-3 text-yellow-400" />
-                          <span>Target Capacity:</span>
-                        </span>
-                        <strong className="text-yellow-300 font-mono-numbers">
-                          {room.targetRange || '1.01x to 10,000x Multiplier'}
-                        </strong>
-                      </div>
-
-                      {room.recentMultipliers && (
-                        <div className="flex items-center justify-between text-[11px] text-[#9b8f7c] pt-1 border-t border-[#1f2737]">
-                          <span>Recent Flights:</span>
-                          <div className="flex items-center gap-1">
-                            {room.recentMultipliers.map((m, i) => (
-                              <span
-                                key={i}
-                                className="font-mono-numbers font-bold px-1.5 py-0.2 rounded border bg-[#141924] text-yellow-300 border-[#272a31]"
-                              >
-                                {m}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {room.rulesSummary && (
-                        <div className="text-[10px] text-[#8b92a2] text-left pt-0.5">
-                          ℹ️ {room.rulesSummary}
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   {/* Room Stats */}
                   <div className="grid grid-cols-2 gap-2 text-xs font-mono-numbers pt-2 border-t border-[#1f2737]">
@@ -1150,7 +908,7 @@ export default function GamePage({
                         {game.id === 'lottery' ? 'Ticket Price' : 'Stake Limits'}
                       </span>
                       <strong className="text-white">
-                        {game.id === 'lottery' ? `${room.minStakeFC} ${room.currency || 'FLO'} / Ticket` : `${room.minStakeFC} - ${room.maxStakeFC} FC`}
+                        {game.id === 'lottery' ? `${room.minStakeUSDT || room.minStakeFC || 10} ${room.currency || 'USDT'} / Ticket` : `${room.minStakeUSDT || room.minStakeFC || 1} - ${room.maxStakeUSDT || room.maxStakeFC || 1000} USDT`}
                       </strong>
                     </div>
 

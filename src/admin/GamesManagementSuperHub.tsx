@@ -38,7 +38,8 @@ import {
   Percent,
   Calendar,
   Sparkles,
-  Zap
+  Zap,
+  TrendingUp
 } from 'lucide-react';
 import { useLottery } from '../context/LotteryContext';
 import { GAMES, gameRoomManager, ROOM_TYPES, ROOM_STATUSES, getGameIconUrl } from '../engine';
@@ -140,7 +141,7 @@ export default function GamesManagementSuperHub({
     cooldownValue: 0,
     cooldownUnit: 'minutes',
     ticketPrice: 10,
-    currency: 'FLO',
+    currency: 'USDT',
     jackpotMode: 'fixed',
     fixedJackpot: 5000,
     minJackpot: 1000,
@@ -378,9 +379,7 @@ export default function GamesManagementSuperHub({
               { id: 'lottery', label: 'Lottery' },
               { id: 'instant', label: 'Instant' },
               { id: 'arcade', label: 'Arcade' },
-              { id: 'table', label: 'Table' },
-              { id: 'card', label: 'Card' },
-              { id: 'slots', label: 'Slots' }
+              { id: 'table', label: 'Table' }
             ].map(cat => (
               <button
                 key={cat.id}
@@ -486,7 +485,7 @@ export default function GamesManagementSuperHub({
                     <div>
                       <span className="text-[9px] text-[#8b92a2] block uppercase">Stake Bounds</span>
                       <strong className="text-white">
-                        {game.minStakeFC}-{game.maxStakeFC} FC
+                        {game.minStakeFC}-{game.maxStakeFC} USDT
                       </strong>
                     </div>
                     <div>
@@ -740,7 +739,7 @@ export default function GamesManagementSuperHub({
                     const isActive = evt.status === 'active' && (!evt.drawTime || evt.drawTime > Date.now());
                     const isPending = evt.status === 'result_pending' || (evt.status === 'active' && evt.drawTime && evt.drawTime <= Date.now());
                     const isConcluded = evt.status === 'completed';
-                    const currency = evt.currency || 'FLO';
+                    const currency = evt.currency || 'USDT';
 
                     return (
                       <div
@@ -971,7 +970,7 @@ export default function GamesManagementSuperHub({
                         type="text"
                         value={wizardData.eventName}
                         onChange={(e) => setWizardData({ ...wizardData, eventName: e.target.value })}
-                        placeholder="e.g. Diwali Mega Bumper 50,000 FC"
+                        placeholder="e.g. Diwali Mega Bumper 50,000 USDT"
                         className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-400"
                         required
                       />
@@ -1096,42 +1095,21 @@ export default function GamesManagementSuperHub({
 
                   <div>
                     <label className="block text-xs text-[#8b92a2] font-semibold mb-2">
-                      Select Ticket Currency
+                      Event Currency
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div
-                        onClick={() => setWizardData({ ...wizardData, currency: 'FLO' })}
-                        className={`p-4 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
-                          wizardData.currency === 'FLO'
-                            ? 'bg-amber-500/20 border-amber-400 ring-1 ring-amber-400 text-white'
-                            : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:border-amber-500/40'
-                        }`}
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400 font-black">
-                          FLO
-                        </div>
-                        <div>
-                          <strong className="text-white block text-sm">Flow Coin (FLO)</strong>
-                          <span className="text-[10px] text-[#94A3B8]">Platform currency (1 FLO ≈ 1 USDT)</span>
-                        </div>
-                      </div>
-
-                      <div
-                        onClick={() => setWizardData({ ...wizardData, currency: 'USDT' })}
-                        className={`p-4 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
-                          wizardData.currency === 'USDT'
-                            ? 'bg-emerald-500/20 border-emerald-400 ring-1 ring-emerald-400 text-white'
-                            : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:border-emerald-500/40'
-                        }`}
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-black">
+                    <div className="p-3.5 rounded-xl bg-[#07090d] border border-emerald-500/30 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-black text-lg">
                           ₮
                         </div>
                         <div>
-                          <strong className="text-white block text-sm">USDT (TRC-20)</strong>
-                          <span className="text-[10px] text-[#94A3B8]">Direct stablecoin settlement</span>
+                          <strong className="text-white block text-sm">Currency: USDT</strong>
+                          <span className="text-[10px] text-emerald-400 font-semibold">Tether TRC-20 · Exclusive Platform Currency</span>
                         </div>
                       </div>
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono-numbers font-bold uppercase">
+                        USDT Only
+                      </span>
                     </div>
                   </div>
 
@@ -1969,7 +1947,7 @@ export default function GamesManagementSuperHub({
                   : targetEvent.poolPrize;
                 const sharePercent = targetEvent.winnerPayoutSharePercent || targetEvent.winnerSharePercent || 90;
                 const distributablePool = (grossPool * sharePercent) / 100;
-                const currency = targetEvent.currency || 'FLO';
+                const currency = targetEvent.currency || 'USDT';
 
                 return (
                   <div className="space-y-5 animate-in fade-in duration-200">
@@ -2262,11 +2240,11 @@ export default function GamesManagementSuperHub({
                         </div>
                         <div>
                           <span className="text-[#64748B] block text-[10px]">Ticket Price:</span>
-                          <strong className="text-white">{drawEvt.ticketPrice} {drawEvt.currency || 'FLO'}</strong>
+                          <strong className="text-white">{drawEvt.ticketPrice} {drawEvt.currency || 'USDT'}</strong>
                         </div>
                         <div>
                           <span className="text-[#64748B] block text-[10px]">Jackpot Pool:</span>
-                          <strong className="text-amber-400 font-bold">{(drawEvt.poolPrize || 1000).toLocaleString()} {drawEvt.currency || 'FLO'}</strong>
+                          <strong className="text-amber-400 font-bold">{(drawEvt.poolPrize || 1000).toLocaleString()} {drawEvt.currency || 'USDT'}</strong>
                         </div>
                         <div>
                           <span className="text-[#64748B] block text-[10px]">Draw Mode:</span>
@@ -2391,7 +2369,7 @@ export default function GamesManagementSuperHub({
                                 </span>
                               </td>
                               <td className="py-2 px-2.5 text-white font-bold">{(evt.poolPrize || 1000).toLocaleString()}</td>
-                              <td className="py-2 px-2.5 text-amber-300 font-bold">{evt.currency || 'FLO'}</td>
+                              <td className="py-2 px-2.5 text-emerald-400 font-bold">{evt.currency || 'USDT'}</td>
                               <td className="py-2 px-2.5 text-[#64748B] truncate max-w-[120px]" title={evt.sha256Seed}>
                                 {evt.sha256Seed ? evt.sha256Seed.slice(0, 10) + '...' : 'Verified'}
                               </td>
@@ -2519,7 +2497,7 @@ export default function GamesManagementSuperHub({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                      Minimum Permitted Stake (FC)
+                      Minimum Permitted Stake (USDT)
                     </label>
                     <input
                       type="number"
@@ -2533,7 +2511,7 @@ export default function GamesManagementSuperHub({
 
                   <div>
                     <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                      Maximum Bet Ceiling (FC)
+                      Maximum Bet Ceiling (USDT)
                     </label>
                     <input
                       type="number"
@@ -2646,7 +2624,7 @@ export default function GamesManagementSuperHub({
                     <div className="grid grid-cols-2 gap-2 p-2 rounded-xl bg-[#07090d] border border-[#1f2737] text-xs font-mono-numbers">
                       <div>
                         <span className="text-[9px] text-[#8b92a2] block">Limits:</span>
-                        <strong className="text-white">{room.min_stake_fc || room.minStakeFC}-{room.max_stake_fc || room.maxStakeFC} FC</strong>
+                        <strong className="text-white">{room.min_stake_fc || room.minStakeFC}-{room.max_stake_fc || room.maxStakeFC} USDT</strong>
                       </div>
                       <div>
                         <span className="text-[9px] text-[#8b92a2] block">Capacity:</span>
@@ -2705,9 +2683,9 @@ export default function GamesManagementSuperHub({
                     <tr>
                       <th className="py-2.5 px-3">Round ID</th>
                       <th className="py-2.5 px-3">User / Player</th>
-                      <th className="py-2.5 px-3">Stake (FC)</th>
+                      <th className="py-2.5 px-3">Stake (USDT)</th>
                       <th className="py-2.5 px-3">Multiplier</th>
-                      <th className="py-2.5 px-3">Payout (FC)</th>
+                      <th className="py-2.5 px-3">Payout (USDT)</th>
                       <th className="py-2.5 px-3">Status</th>
                     </tr>
                   </thead>
@@ -2716,9 +2694,9 @@ export default function GamesManagementSuperHub({
                       <tr key={r.id} className="hover:bg-white/2">
                         <td className="py-2.5 px-3 font-mono-numbers text-amber-300 font-bold">#{r.id.slice(-6)}</td>
                         <td className="py-2.5 px-3 font-semibold text-white">{r.username || `@${r.wallet_address?.slice(-4)}`}</td>
-                        <td className="py-2.5 px-3 font-mono-numbers text-white">{r.bet_amount} FC</td>
+                        <td className="py-2.5 px-3 font-mono-numbers text-white">{r.bet_amount} USDT</td>
                         <td className="py-2.5 px-3 font-mono-numbers text-blue-300 font-bold">{r.multiplier}x</td>
-                        <td className="py-2.5 px-3 font-mono-numbers font-bold text-emerald-400">+{r.payout} FC</td>
+                        <td className="py-2.5 px-3 font-mono-numbers font-bold text-emerald-400">+{r.payout} USDT</td>
                         <td className="py-2.5 px-3">
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                             SETTLED

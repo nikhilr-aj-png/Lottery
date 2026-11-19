@@ -246,23 +246,23 @@ export default function WalletView({ onOpenDeposit, onOpenWithdraw, onOpenTransa
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         
         {/* Card 1: Available Balance */}
-        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-6 rounded-2xl border-l-4 border-l-[#ffd700] relative overflow-hidden">
+        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-6 rounded-2xl border-l-4 border-l-[#a855f7] relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider">
-              Available FLO Coins
+              Available USDT Balance
             </span>
-            <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700]">
+            <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[rgba(168,85,247,0.15)] flex items-center justify-center text-[#a855f7]">
               <Coins className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-1.5 xs:gap-2">
-            <span className="font-display font-black text-2xl xs:text-3xl sm:text-4xl text-gold-gradient font-mono-numbers">
+            <span className="font-display font-black text-2xl xs:text-3xl sm:text-4xl text-purple-300 font-mono-numbers">
               {wallet.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            <span className="text-xs text-amber-400 font-bold font-mono-numbers">FLO</span>
+            <span className="text-xs text-purple-400 font-bold font-mono-numbers">USDT</span>
           </div>
           <span className="text-[10px] xs:text-[11px] text-[#9b8f7c] mt-1 block font-mono-numbers">
-            ≈ ${wallet.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT · 1 FLO = 1 USDT
+            TRC-20 Network Settlement
           </span>
         </div>
 

@@ -21,13 +21,7 @@ import {
   DiceGame, 
   BingoGame, 
   HorseRacingGame,
-  LimboGame,
-  CoinflipGame,
-  RouletteGame,
-  KenoGame,
-  BlackjackGame,
-  SlotsGame,
-  PokerGame
+  CoinflipGame
 } from '../games';
 import { getGameIconUrl } from '../engine';
 
@@ -94,13 +88,7 @@ export default function GameModal({ gameId, onClose }) {
                  game.id === 'dice' ? '🎲' : 
                  game.id === 'bingo' ? '🎨' : 
                  game.id === 'horse-racing' ? '🏇' : 
-                 game.id === 'roulette' ? '🎡' : 
-                 game.id === 'coinflip' ? '🪙' : 
-                 game.id === 'blackjack' ? '🃏' : 
-                 game.id === 'slots' ? '🎰' : 
-                 game.id === 'poker' ? '♠️' : 
-                 game.id === 'keno' ? '🎱' : 
-                 game.id === 'limbo' ? '⚡' : '🎟️'}
+                 game.id === 'coinflip' ? '🪙' : '🎟️'}
               </span>
             </div>
             <div>
@@ -199,20 +187,8 @@ export default function GameModal({ gameId, onClose }) {
             <BingoGame room={null} />
           ) : game.id === 'horse-racing' ? (
             <HorseRacingGame room={null} />
-          ) : game.id === 'limbo' ? (
-            <LimboGame room={null} />
           ) : game.id === 'coinflip' ? (
             <CoinflipGame room={null} />
-          ) : game.id === 'roulette' ? (
-            <RouletteGame room={null} />
-          ) : game.id === 'keno' ? (
-            <KenoGame room={null} />
-          ) : game.id === 'blackjack' ? (
-            <BlackjackGame room={null} />
-          ) : game.id === 'slots' ? (
-            <SlotsGame room={null} />
-          ) : game.id === 'poker' ? (
-            <PokerGame room={null} />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
               
@@ -224,7 +200,7 @@ export default function GameModal({ gameId, onClose }) {
                   <div className="flex items-center justify-between text-xs mb-1.5 font-bold font-mono-numbers">
                     <span className="text-[#94A3B8]">Bet Amount:</span>
                     <span className="text-amber-300">
-                      Balance: {walletBalance.toLocaleString()} FC
+                      Balance: {walletBalance.toLocaleString()} USDT
                     </span>
                   </div>
 
@@ -235,11 +211,11 @@ export default function GameModal({ gameId, onClose }) {
                       max={game.maxStakeFC}
                       step="1"
                       value={betAmount}
-                      onChange={(e) => setBetAmount(Math.max(game.minStakeFC, parseFloat(e.target.value) || 0))}
+                      onChange={(e) => setBetAmount(Math.max(game.minStakeFC || 1, parseFloat(e.target.value) || 0))}
                       disabled={isPlaying}
                       className="flex-1 bg-transparent px-2.5 text-white font-mono-numbers font-black text-base outline-none disabled:opacity-50"
                     />
-                    <span className="text-amber-400 font-black text-xs px-2 font-mono-numbers">FC</span>
+                    <span className="text-purple-400 font-black text-xs px-2 font-mono-numbers">USDT</span>
                   </div>
                 </div>
 
@@ -311,7 +287,7 @@ export default function GameModal({ gameId, onClose }) {
                   ) : (
                     <>
                       <Play className="w-4 h-4 fill-current" />
-                      <span>Place Bet ({betAmount} FC)</span>
+                      <span>Place Bet ({betAmount} USDT)</span>
                     </>
                   )}
                 </button>
@@ -325,20 +301,17 @@ export default function GameModal({ gameId, onClose }) {
                 {/* Game State Header */}
                 <div className="w-full flex items-center justify-between text-xs text-[#94A3B8] font-mono-numbers pb-3 border-b border-[#1F2737]">
                   <span>Round Status: <strong className={isPlaying ? 'text-amber-400 uppercase animate-pulse' : 'text-emerald-400 uppercase'}>{session.status}</strong></span>
-                  <span>Stake: <strong className="text-white">{session.betAmount || betAmount} FC</strong></span>
+                  <span>Stake: <strong className="text-white">{session.betAmount || betAmount} USDT</strong></span>
                 </div>
 
                 {/* Animated Game Stage Center */}
                 <div className="my-auto py-8 space-y-4">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-[#111827] border-2 border-amber-500/40 flex items-center justify-center text-5xl sm:text-6xl mx-auto shadow-[0_0_30px_rgba(245,196,81,0.2)]">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-[#111827] border-2 border-purple-500/40 flex items-center justify-center text-5xl sm:text-6xl mx-auto shadow-[0_0_30px_rgba(168,85,247,0.2)]">
                     {((game.id as string) === 'bingo') ? '🎨' : 
                      ((game.id as string) === 'horse-racing') ? '🏇' : 
-                     ((game.id as string) === 'roulette') ? '🎡' : 
                      ((game.id as string) === 'coinflip') ? '🪙' : 
-                     ((game.id as string) === 'blackjack') ? '🃏' : 
-                     ((game.id as string) === 'slots') ? '🎰' : 
-                     ((game.id as string) === 'poker') ? '♠️' : 
-                     ((game.id as string) === 'keno') ? '🎱' : '🎟️'}
+                     ((game.id as string) === 'dice') ? '🎲' : 
+                     ((game.id as string) === 'crash') ? '🚀' : '🎟️'}
                   </div>
 
                   <div>
@@ -352,7 +325,7 @@ export default function GameModal({ gameId, onClose }) {
 
                   {session.status === 'won' && (
                     <div className="bg-emerald-950/60 border border-emerald-500/40 px-4 py-2 rounded-xl text-emerald-300 font-mono-numbers font-black text-lg animate-in zoom-in-95">
-                      Won +{session.payout} Flow Coins ({session.multiplier}x)!
+                      Won +{session.payout} USDT ({session.multiplier}x)!
                     </div>
                   )}
                 </div>
@@ -391,10 +364,10 @@ export default function GameModal({ gameId, onClose }) {
                 {myBets.slice(0, 5).map((b) => (
                   <tr key={b.id} className="hover:bg-white/2">
                     <td className="py-2 px-2 text-amber-300 font-bold">{b.id.slice(-8)}</td>
-                    <td className="py-2 px-2 text-white">{b.betAmount} FC</td>
+                    <td className="py-2 px-2 text-white">{b.betAmount} USDT</td>
                     <td className="py-2 px-2 text-blue-300">{b.multiplier ? `${b.multiplier}x` : '—'}</td>
                     <td className={`py-2 px-2 font-black ${b.payout > 0 ? 'text-emerald-400' : 'text-[#64748B]'}`}>
-                      {b.payout > 0 ? `+${b.payout} FC` : '0 FC'}
+                      {b.payout > 0 ? `+${b.payout} USDT` : '0 USDT'}
                     </td>
                     <td className="py-2 px-2 text-right">
                       <button

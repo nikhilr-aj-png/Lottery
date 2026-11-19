@@ -186,7 +186,7 @@ export default function CoinflipGame({
                   disabled={isFlipping}
                   className="flex-1 bg-transparent px-2 text-white font-mono-numbers font-black text-sm outline-none disabled:opacity-50"
                 />
-                <span className="text-amber-400 font-black text-xs px-2 font-mono-numbers">FC</span>
+                <span className="text-purple-400 font-black text-xs px-2 font-mono-numbers">USDT</span>
               </div>
             </div>
 
@@ -290,7 +290,7 @@ export default function CoinflipGame({
               ) : (
                 <>
                   <Play className="w-4 h-4 fill-current" />
-                  <span>Flip Coin ({betAmount} FC)</span>
+                  <span>Flip Coin ({betAmount} USDT)</span>
                 </>
               )}
             </button>
@@ -311,7 +311,7 @@ export default function CoinflipGame({
               <span>Selection: <strong className="text-white uppercase font-bold">{selectedSide}</strong></span>
             </div>
             <span>
-              Profit: <strong className="text-amber-300">+{potentialPayout.toLocaleString()} FC</strong>
+              Profit: <strong className="text-purple-300">+{potentialPayout.toLocaleString()} USDT</strong>
             </span>
           </div>
 
@@ -347,7 +347,7 @@ export default function CoinflipGame({
                 <div className="space-y-0.5 animate-in zoom-in-75">
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-mono-numbers font-black">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    {landedSide.toUpperCase()}! Won +{potentialPayout.toLocaleString()} FC
+                    {landedSide.toUpperCase()}! Won +{potentialPayout.toLocaleString()} USDT
                   </span>
                 </div>
               ) : lastResult === 'lost' ? (

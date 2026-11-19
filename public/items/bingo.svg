@@ -1,0 +1,145 @@
+<svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradients -->
+    <radialGradient id="bgGlow" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#4c1d95" stop-opacity="0.8"/>
+      <stop offset="45%" stop-color="#1e113a" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#090514"/>
+    </radialGradient>
+    
+    <linearGradient id="violetGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="50%" stop-color="#9333ea"/>
+      <stop offset="100%" stop-color="#581c87"/>
+    </linearGradient>
+
+    <linearGradient id="greenOrb" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="40%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+
+    <linearGradient id="redOrb" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f87171"/>
+      <stop offset="40%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#991b1b"/>
+    </linearGradient>
+
+    <linearGradient id="violetOrb" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e879f9"/>
+      <stop offset="40%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#6b21a8"/>
+    </linearGradient>
+
+    <linearGradient id="goldMetallic" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="25%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="75%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#faf5ff"/>
+      <stop offset="70%" stop-color="#d8b4fe"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+
+    <!-- Filters -->
+    <filter id="glowEffect" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <filter id="shadowFilter" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="800" height="800" rx="36" fill="url(#bgGlow)"/>
+
+  <!-- Subtle Radial Rings / Trading Target Grid -->
+  <circle cx="400" cy="360" r="320" stroke="#7c3aed" stroke-opacity="0.12" stroke-width="2" stroke-dasharray="8 8"/>
+  <circle cx="400" cy="360" r="260" stroke="#8b5cf6" stroke-opacity="0.18" stroke-width="2"/>
+  <circle cx="400" cy="360" r="190" stroke="#a855f7" stroke-opacity="0.25" stroke-width="2" stroke-dasharray="6 6"/>
+
+  <!-- Trading Market Wave Line (Subtle background graphic) -->
+  <path d="M 60 480 Q 180 430, 280 460 T 460 380 T 600 390 T 740 320" fill="none" stroke="#a855f7" stroke-opacity="0.3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 60 520 Q 200 500, 320 440 T 520 460 T 660 360 T 740 280" fill="none" stroke="#ffd700" stroke-opacity="0.25" stroke-width="2" stroke-dasharray="4 4"/>
+
+  <!-- CENTRAL BINGO BALL SPHERE (Deep 3D) -->
+  <g filter="url(#shadowFilter)">
+    <!-- Outer Glow -->
+    <circle cx="400" cy="330" r="150" fill="#7c3aed" opacity="0.25" filter="url(#glowEffect)"/>
+    <!-- Sphere Body -->
+    <circle cx="400" cy="330" r="140" fill="url(#violetGlow)"/>
+    <!-- Specular Highlight for 3D depth -->
+    <ellipse cx="360" cy="250" rx="75" ry="40" fill="#ffffff" opacity="0.35" transform="rotate(-25 360 250)"/>
+    <!-- Central Number Window / Badge -->
+    <circle cx="400" cy="330" r="76" fill="#0f0724" stroke="url(#goldMetallic)" stroke-width="6"/>
+    <!-- Winning Number 7 / Lucky Symbol inside Ball -->
+    <text x="400" y="358" font-family="'Outfit', 'Plus Jakarta Sans', Arial, sans-serif" font-size="82" font-weight="900" fill="url(#goldMetallic)" text-anchor="middle" letter-spacing="-2">7</text>
+  </g>
+
+  <!-- 3 COLOR TRADING ORBS (GREEN, VIOLET, RED) orbiting the center -->
+  
+  <!-- LEFT: GREEN TRADING ORB (2x) -->
+  <g filter="url(#shadowFilter)">
+    <circle cx="210" cy="360" r="62" fill="url(#greenOrb)"/>
+    <ellipse cx="190" cy="325" rx="30" ry="16" fill="#ffffff" opacity="0.45" transform="rotate(-30 190 325)"/>
+    <circle cx="210" cy="360" r="58" stroke="#6ee7b7" stroke-width="2" fill="none" opacity="0.6"/>
+    <text x="210" y="355" font-family="'Outfit', Arial, sans-serif" font-size="14" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="1">GREEN</text>
+    <text x="210" y="378" font-family="'JetBrains Mono', monospace" font-size="18" font-weight="900" fill="#d1fae5" text-anchor="middle">2.0×</text>
+  </g>
+
+  <!-- RIGHT: RED TRADING ORB (2x) -->
+  <g filter="url(#shadowFilter)">
+    <circle cx="590" cy="360" r="62" fill="url(#redOrb)"/>
+    <ellipse cx="570" cy="325" rx="30" ry="16" fill="#ffffff" opacity="0.45" transform="rotate(-30 570 325)"/>
+    <circle cx="590" cy="360" r="58" stroke="#fca5a5" stroke-width="2" fill="none" opacity="0.6"/>
+    <text x="590" y="355" font-family="'Outfit', Arial, sans-serif" font-size="14" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="1">RED</text>
+    <text x="590" y="378" font-family="'JetBrains Mono', monospace" font-size="18" font-weight="900" fill="#fee2e2" text-anchor="middle">2.0×</text>
+  </g>
+
+  <!-- TOP-CENTER: VIOLET TRADING ORB (4.5x) -->
+  <g filter="url(#shadowFilter)">
+    <circle cx="400" cy="140" r="55" fill="url(#violetOrb)"/>
+    <ellipse cx="385" cy="110" rx="26" ry="14" fill="#ffffff" opacity="0.5" transform="rotate(-30 385 110)"/>
+    <circle cx="400" cy="140" r="51" stroke="#f0abfc" stroke-width="2" fill="none" opacity="0.6"/>
+    <text x="400" y="136" font-family="'Outfit', Arial, sans-serif" font-size="13" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="1">VIOLET</text>
+    <text x="400" y="157" font-family="'JetBrains Mono', monospace" font-size="16" font-weight="900" fill="#fae8ff" text-anchor="middle">4.5×</text>
+  </g>
+
+  <!-- Golden Stars & Sparkles -->
+  <path d="M 170 210 L 175 225 L 190 230 L 175 235 L 170 250 L 165 235 L 150 230 L 165 225 Z" fill="#ffd700" opacity="0.85"/>
+  <path d="M 640 210 L 644 220 L 654 224 L 644 228 L 640 238 L 636 228 L 626 224 L 636 220 Z" fill="#ffd700" opacity="0.85"/>
+  <path d="M 290 150 L 293 158 L 301 161 L 293 164 L 290 172 L 287 164 L 279 161 L 287 158 Z" fill="#a855f7" opacity="0.75"/>
+  <path d="M 510 150 L 513 158 L 521 161 L 513 164 L 510 172 L 507 164 L 499 161 L 507 158 Z" fill="#a855f7" opacity="0.75"/>
+
+  <!-- BOTTOM TYPOGRAPHY BANNER -->
+  <g filter="url(#shadowFilter)">
+    <!-- Brand Ribbon Background -->
+    <rect x="90" y="525" width="620" height="225" rx="24" fill="#0b0817" fill-opacity="0.9" stroke="url(#goldMetallic)" stroke-width="2"/>
+    
+    <!-- MAIN TITLE: BINGO -->
+    <text x="400" y="618" font-family="'Sora', 'Outfit', 'Plus Jakarta Sans', Arial, sans-serif" font-size="82" font-weight="900" fill="url(#textGrad)" text-anchor="middle" letter-spacing="4" filter="url(#shadowFilter)">
+      BINGO
+    </text>
+
+    <!-- SUBTITLE PILL: COLOR TRADING -->
+    <rect x="230" y="642" width="340" height="42" rx="21" fill="url(#violetGlow)" stroke="#c084fc" stroke-width="1.5"/>
+    <circle cx="262" cy="663" r="6" fill="#10b981"/>
+    <circle cx="280" cy="663" r="6" fill="#a855f7"/>
+    <circle cx="298" cy="663" r="6" fill="#ef4444"/>
+    <text x="424" y="671" font-family="'Outfit', Arial, sans-serif" font-size="18" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="3">
+      COLOR TRADING
+    </text>
+
+    <!-- FOOTER TAG: 60s RAPID DRAW · PROVABLY FAIR -->
+    <text x="400" y="722" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" fill="#a78bfa" text-anchor="middle" letter-spacing="2">
+      ⚡ 60s RAPID DRAW · 100% PROVABLY FAIR
+    </text>
+  </g>
+</svg>

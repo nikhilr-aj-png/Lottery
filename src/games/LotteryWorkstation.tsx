@@ -64,7 +64,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
       id: room.drawId || room.id || 'evt-default',
       title: room.name || 'Four-Digit Lottery Draw',
       ticketPrice: room.minStakeFC || 10,
-      currency: room.currency || 'FLO',
+      currency: room.currency || 'USDT',
       poolPrize: room.poolPrize || 1000,
       drawTime: Date.now() + (room.drawDurationHours || 24) * 3600 * 1000,
       status: 'active',
@@ -250,7 +250,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
     const totalCost = ticketPrice * selectedTicketCount;
 
     if (Number(wallet.balance || 0) < totalCost) {
-      showToast(`Insufficient Flow Coins. Required: ${totalCost} FC, Available: ${wallet.balance} FC`, 'error');
+      showToast(`Insufficient USDT balance. Required: ${totalCost.toFixed(2)} USDT, Available: ${Number(wallet.balance || 0).toFixed(2)} USDT`, 'error');
       return;
     }
 
@@ -272,7 +272,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
             origin: { y: 0.65 },
             colors: ['#ffd700', '#f5c451', '#22c55e', '#ffffff']
           });
-          showToast(`🎉 Purchased Ticket #${currentNumberStr} for ${ticketPrice} FC!`, 'success');
+          showToast(`🎉 Purchased Ticket #${currentNumberStr} for ${ticketPrice} USDT!`, 'success');
           
           if (getUnsoldRandomNumber) {
             const next = getUnsoldRandomNumber(event.id);
@@ -326,7 +326,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           origin: { y: 0.65 },
           colors: ['#ffd700', '#f5c451', '#22c55e', '#ffffff']
         });
-        showToast(`🎉 Successfully purchased ${generatedTickets.length} unique tickets for ${totalCost} FC!`, 'success');
+        showToast(`🎉 Successfully purchased ${generatedTickets.length} unique tickets for ${totalCost} USDT!`, 'success');
 
         if (getUnsoldRandomNumber) {
           const next = getUnsoldRandomNumber(event.id);
@@ -414,12 +414,12 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
         <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono-numbers shrink-0">
           <div className="bg-[#0b0e14] px-1.5 xs:px-2 py-0.5 rounded border border-[#272a31] flex items-center gap-1 shrink-0">
             <span className="text-[#8b92a2] hidden xs:inline">Ticket:</span>
-            <strong className="text-amber-400 font-bold">{ticketPrice} FC</strong>
+            <strong className="text-purple-400 font-bold">{ticketPrice} USDT</strong>
           </div>
 
           <div className="bg-[#0b0e14] px-1.5 xs:px-2 py-0.5 rounded border border-[#272a31] flex items-center gap-1 shrink-0">
             <span className="text-[#8b92a2] hidden sm:inline">Jackpot:</span>
-            <strong className="text-emerald-400 font-bold">{Number(event.poolPrize || 5000).toLocaleString()} FC</strong>
+            <strong className="text-emerald-400 font-bold">{Number(event.poolPrize || 5000).toLocaleString()} USDT</strong>
           </div>
 
           <div className="bg-[#0b0e14] px-1.5 xs:px-2 py-0.5 rounded border border-[#272a31] flex items-center gap-1 text-amber-300 font-bold shrink-0">
@@ -483,7 +483,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs font-mono-numbers">
               <div className="bg-[#0b0e14] p-2.5 rounded-xl border border-[#272a31]">
                 <span className="text-[#8b92a2] text-[10px] block">Prize Pool</span>
-                <strong className="text-amber-400 text-sm font-black">{Number(event.poolPrize || 5000).toLocaleString()} FC</strong>
+                <strong className="text-purple-400 text-sm font-black">{Number(event.poolPrize || 5000).toLocaleString()} USDT</strong>
               </div>
               <div className="bg-[#0b0e14] p-2.5 rounded-xl border border-[#272a31]">
                 <span className="text-[#8b92a2] text-[10px] block">Winning Digits</span>
@@ -522,7 +522,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                         {isWin ? (
                           <span className="text-emerald-400 font-extrabold flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>WINNER ({t.wonAmount || event.poolPrize} FC)</span>
+                            <span>WINNER ({t.wonAmount || event.poolPrize} USDT)</span>
                           </span>
                         ) : (
                           <span className="text-[#64748b]">Unmatched</span>
@@ -696,7 +696,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                 </h3>
               </div>
               <span className="text-[8px] xs:text-[9px] sm:text-[10px] font-mono-numbers text-[#8b92a2] shrink-0">
-                {ticketPrice} FC
+                {ticketPrice} USDT
               </span>
             </div>
 
@@ -716,17 +716,17 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                     onClick={() => setSelectedTicketCount(opt.count)}
                     className={`w-full py-0.5 xs:py-1 px-1 xs:px-1.5 rounded-md border text-left transition-all cursor-pointer flex items-center justify-between min-w-0 ${
                       isSelected
-                        ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/10 border-amber-400 shadow-[0_0_8px_rgba(245,196,81,0.2)]'
-                        : 'bg-[#0b0e14] border-[#272a31] hover:border-amber-500/40 text-[#9b8f7c] hover:text-white'
+                        ? 'bg-gradient-to-r from-purple-500/20 to-purple-600/10 border-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.2)]'
+                        : 'bg-[#0b0e14] border-[#272a31] hover:border-purple-500/40 text-[#9b8f7c] hover:text-white'
                     }`}
                   >
                     <div className="flex items-center gap-1 min-w-0">
-                      <span className={`text-[8px] xs:text-[9px] sm:text-[10px] font-black truncate ${isSelected ? 'text-amber-300' : 'text-white'}`}>
+                      <span className={`text-[8px] xs:text-[9px] sm:text-[10px] font-black truncate ${isSelected ? 'text-purple-300' : 'text-white'}`}>
                         {opt.label}
                       </span>
                     </div>
                     <span className={`text-[8px] xs:text-[9px] sm:text-[10px] font-mono-numbers font-bold shrink-0 ${isSelected ? 'text-white' : 'text-[#8b92a2]'}`}>
-                      {cost} FC
+                      {cost} USDT
                     </span>
                   </button>
                 );
@@ -740,9 +740,9 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                 <span className="text-white font-bold">{selectedTicketCount}</span>
               </div>
               <div className="flex items-center justify-between pt-0.5 border-t border-[#1f2737]">
-                <span className="text-amber-400 font-bold">Total:</span>
-                <span className="text-amber-300 font-black text-[9px] xs:text-[10px] sm:text-xs">
-                  {totalPurchaseCost} FC
+                <span className="text-purple-400 font-bold">Total:</span>
+                <span className="text-purple-300 font-black text-[9px] xs:text-[10px] sm:text-xs">
+                  {totalPurchaseCost} USDT
                 </span>
               </div>
             </div>
@@ -766,7 +766,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
               <span className="truncate">
                 {selectedTicketCount === 1 && isAlreadyPurchasedByMe
                   ? 'Owned'
-                  : `Buy (${totalPurchaseCost} FC)`}
+                  : `Buy (${totalPurchaseCost} USDT)`}
               </span>
             </button>
 
@@ -827,7 +827,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                           #{String(tkt.ticketNumber).padStart(4, '0')}
                         </span>
                         <span className="text-[7px] text-[#8b92a2]">
-                          {tkt.price || ticketPrice} FC
+                          {tkt.price || ticketPrice} USDT
                         </span>
                       </div>
                     </div>

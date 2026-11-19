@@ -1,29 +1,22 @@
 /**
  * ============================================================================
- * CASINO GAMES REGISTRY & EXPORTS
+ * CASINO GAMES REGISTRY & EXPORTS — 6 ACTIVE GAMES (USDT ONLY)
  * ============================================================================
- * Phase 6: Instant Games (Crash, Dice, Mines, Limbo)
- * Phase 7: Table & Arcade Games (Coinflip, Plinko, Roulette, Keno)
- * Phase 8: Card & Reel Games (Blackjack, Slots, Poker Demo)
+ * Active Games:
+ *   - Four-Digit Lottery (Dedicated Workstation)
+ *   - Crash (Canvas Realtime Multiplier)
+ *   - Dice (Provably Fair Slider)
+ *   - Coinflip (3D Heads or Tails)
+ *   - Bingo – Color Trading (60s Color Prediction)
+ *   - Horse Racing (Live Virtual Turf Derby)
  */
 
 // Four-Digit Lottery Dedicated Workstation
 export { default as LotteryWorkstation } from './LotteryWorkstation';
 
-// Phase 6: Instant & Arcade Games
+// Active Instant & Arcade Games
 export { default as CrashGame } from './CrashGame';
 export { default as DiceGame } from './DiceGame';
-export { default as LimboGame } from './LimboGame';
+export { default as CoinflipGame } from './CoinflipGame';
 export { default as BingoGame } from './BingoGame';
 export { default as HorseRacingGame } from './HorseRacingGame';
-
-// Phase 7: Table & Card Games
-export { default as CoinflipGame } from './CoinflipGame';
-export { default as RouletteGame } from './RouletteGame';
-export { default as KenoGame } from './KenoGame';
-
-// Phase 8: Card & Reel Games
-export { default as BlackjackGame } from './BlackjackGame';
-export { default as SlotsGame } from './SlotsGame';
-export { default as PokerGame } from './PokerGame';
-

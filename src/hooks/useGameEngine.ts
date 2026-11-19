@@ -219,7 +219,7 @@ export function useGameEngine(gameId: string): UseGameEngineReturn {
           colors: ['#ffd700', '#22c55e', '#8b5cf6', '#ffffff']
         });
       }
-      showToast(`🎉 Won +${payout.toLocaleString()} Flow Coins (${multiplier}x)!`, 'success');
+      showToast(`🎉 Won +${payout.toLocaleString()} USDT (${multiplier}x)!`, 'success');
     }
 
     // Refresh wallet ledger & bets
@@ -247,7 +247,7 @@ export function useGameEngine(gameId: string): UseGameEngineReturn {
   }, [gameId]);
 
   return {
-    game,
+    game: game || null,
     session,
     isPlaying: session.status === 'playing',
     betAmount,

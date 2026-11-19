@@ -56,54 +56,12 @@ export default function GameCard({ game, onPlay }: GameCardProps) {
           borderHover: 'hover:border-emerald-400/60',
           accent: '#10B981'
         };
-      case 'roulette':
-        return {
-          emoji: '🎡',
-          gradient: 'from-emerald-500/25 via-teal-500/10 to-transparent',
-          borderHover: 'hover:border-emerald-400/60',
-          accent: '#10B981'
-        };
       case 'coinflip':
         return {
           emoji: '🪙',
           gradient: 'from-yellow-500/25 via-amber-500/10 to-transparent',
           borderHover: 'hover:border-yellow-400/60',
           accent: '#EAB308'
-        };
-      case 'blackjack':
-        return {
-          emoji: '🃏',
-          gradient: 'from-green-500/25 via-emerald-500/10 to-transparent',
-          borderHover: 'hover:border-green-400/60',
-          accent: '#22C55E'
-        };
-      case 'slots':
-        return {
-          emoji: '🎰',
-          gradient: 'from-purple-500/25 via-violet-500/10 to-transparent',
-          borderHover: 'hover:border-purple-400/60',
-          accent: '#8B5CF6'
-        };
-      case 'poker':
-        return {
-          emoji: '♠️',
-          gradient: 'from-cyan-500/25 via-sky-500/10 to-transparent',
-          borderHover: 'hover:border-cyan-400/60',
-          accent: '#06B6D4'
-        };
-      case 'keno':
-        return {
-          emoji: '🎱',
-          gradient: 'from-teal-500/25 via-emerald-500/10 to-transparent',
-          borderHover: 'hover:border-teal-400/60',
-          accent: '#14B8A6'
-        };
-      case 'limbo':
-        return {
-          emoji: '⚡',
-          gradient: 'from-indigo-500/25 via-purple-500/10 to-transparent',
-          borderHover: 'hover:border-indigo-400/60',
-          accent: '#6366F1'
         };
       default:
         return {

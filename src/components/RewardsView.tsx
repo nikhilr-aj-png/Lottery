@@ -37,32 +37,32 @@ import {
 import confetti from 'canvas-confetti';
 
 const WHEEL_SLICES = [
-  { index: 0, amount: 50, label: '50 FC', color: '#B45309', textColor: '#FEF3C7', border: '#D97706' },
-  { index: 1, amount: 100, label: '100 FC', color: '#475569', textColor: '#F1F5F9', border: '#64748B' },
-  { index: 2, amount: 150, label: '150 FC', color: '#854D0E', textColor: '#FEF9C3', border: '#CA8A04' },
-  { index: 3, amount: 200, label: '200 FC', color: '#065F46', textColor: '#D1FAE5', border: '#059669' },
-  { index: 4, amount: 250, label: '250 FC', color: '#1E40AF', textColor: '#DBEAFE', border: '#2563EB' },
-  { index: 5, amount: 300, label: '300 FC', color: '#991B1B', textColor: '#FEE2E2', border: '#DC2626' },
-  { index: 6, amount: 500, label: '500 FC', color: '#581C87', textColor: '#F3E8FF', border: '#7C3AED' },
-  { index: 7, amount: 1000, label: '1,000 FC', color: '#B45309', textColor: '#FFFBEB', border: '#F59E0B', isJackpot: true }
+  { index: 0, amount: 0.10, label: '0.10 USDT', color: '#B45309', textColor: '#FEF3C7', border: '#D97706' },
+  { index: 1, amount: 0.20, label: '0.20 USDT', color: '#475569', textColor: '#F1F5F9', border: '#64748B' },
+  { index: 2, amount: 0.25, label: '0.25 USDT', color: '#854D0E', textColor: '#FEF9C3', border: '#CA8A04' },
+  { index: 3, amount: 0.50, label: '0.50 USDT', color: '#065F46', textColor: '#D1FAE5', border: '#059669' },
+  { index: 4, amount: 0.75, label: '0.75 USDT', color: '#1E40AF', textColor: '#DBEAFE', border: '#2563EB' },
+  { index: 5, amount: 1.00, label: '1.00 USDT', color: '#991B1B', textColor: '#FEE2E2', border: '#DC2626' },
+  { index: 6, amount: 2.00, label: '2.00 USDT', color: '#581C87', textColor: '#F3E8FF', border: '#7C3AED' },
+  { index: 7, amount: 5.00, label: '5.00 USDT', color: '#B45309', textColor: '#FFFBEB', border: '#F59E0B', isJackpot: true }
 ];
 
 const STREAK_DAYS = [
-  { day: 1, amount: 100, label: 'Day 1' },
-  { day: 2, amount: 125, label: 'Day 2' },
-  { day: 3, amount: 150, label: 'Day 3' },
-  { day: 4, amount: 175, label: 'Day 4' },
-  { day: 5, amount: 200, label: 'Day 5' },
-  { day: 6, amount: 250, label: 'Day 6' },
-  { day: 7, amount: 500, label: 'Day 7 Jackpot', isJackpot: true }
+  { day: 1, amount: 0.10, label: 'Day 1' },
+  { day: 2, amount: 0.15, label: 'Day 2' },
+  { day: 3, amount: 0.20, label: 'Day 3' },
+  { day: 4, amount: 0.25, label: 'Day 4' },
+  { day: 5, amount: 0.35, label: 'Day 5' },
+  { day: 6, amount: 0.50, label: 'Day 6' },
+  { day: 7, amount: 1.00, label: 'Day 7 Jackpot', isJackpot: true }
 ];
 
 const ACHIEVEMENTS = [
   {
     id: 'first_bet',
     title: 'First Roll',
-    description: 'Place your first bet on any casino game or lottery',
-    reward: 50,
+    description: 'Place your first bet on any gaming event or lottery',
+    reward: 0.5,
     progress: 0,
     unlocked: false,
     icon: '🎲'
@@ -70,8 +70,8 @@ const ACHIEVEMENTS = [
   {
     id: 'high_roller',
     title: 'High Roller',
-    description: 'Place a single wager of 50 FC or higher',
-    reward: 100,
+    description: 'Place a single wager of 10 USDT or higher',
+    reward: 1.0,
     progress: 0,
     unlocked: false,
     icon: '👑'
@@ -80,25 +80,25 @@ const ACHIEVEMENTS = [
     id: 'lucky_streak',
     title: 'Lucky Multiplier',
     description: 'Hit any outcome with multiplier >= 5.0x',
-    reward: 150,
+    reward: 1.5,
     progress: 0,
     unlocked: false,
     icon: '⚡'
   },
   {
     id: 'games_veteran',
-    title: 'Casino Explorer',
-    description: 'Play 5 or more different games from the 12-game catalog',
-    reward: 200,
+    title: 'Game Explorer',
+    description: 'Participate across available games on EarnFlow.in',
+    reward: 2.0,
     progress: 0,
     unlocked: false,
     icon: '🌟'
   },
   {
     id: 'century_club',
-    title: 'Flow Coin Whale',
-    description: 'Accumulate a balance of 1,000 Flow Coins or more',
-    reward: 500,
+    title: 'USDT High Roller',
+    description: 'Accumulate a balance of 100 USDT or more',
+    reward: 5.0,
     progress: 0,
     unlocked: false,
     icon: '💎'
@@ -178,7 +178,7 @@ export default function RewardsView() {
     if (isClaimingStreak || !dailyRewardStatus.canClaim) return;
 
     if (!user || !wallet?.address) {
-      showToast('Please log in with Flow Coins to claim your daily reward!', 'info');
+      showToast('Please log in with your account to claim your daily reward!', 'info');
       setIsAuthModalOpen(true);
       return;
     }
@@ -256,7 +256,7 @@ export default function RewardsView() {
     if (isSpinningWheel) return;
 
     if (!user || !wallet?.address) {
-      showToast('Please log in with Flow Coins to spin the Lucky Wheel!', 'info');
+      showToast('Please log in with your account to spin the Lucky Wheel!', 'info');
       setIsAuthModalOpen(true);
       return;
     }
@@ -322,7 +322,7 @@ export default function RewardsView() {
           colors: ['#ffd700', '#f5c451', '#22c55e', '#a855f7']
         });
 
-        showToast(`🎉 You won ${data.final_prize} Flow Coins on the Lucky Wheel!`, 'success');
+        showToast(`🎉 You won ${data.final_prize} USDT on the Lucky Wheel!`, 'success');
 
         if (data.new_balance !== undefined) {
           setWallet(prev => ({ ...prev, balance: parseFloat(data.new_balance) }));
@@ -359,7 +359,7 @@ export default function RewardsView() {
     playClick();
     setClaimedAchievements(prev => [...prev, ach.id]);
     playWinFanfare('standard');
-    showToast(`Achievement Unlocked: +${ach.reward} Flow Coins added!`, 'success');
+    showToast(`Achievement Unlocked: +${ach.reward} USDT added!`, 'success');
 
     try {
       confetti({
@@ -404,7 +404,7 @@ export default function RewardsView() {
                   </span>
                 </div>
                 <p className="text-xs text-[#CBD5E1]">
-                  Every 1 FC wagered earns 10 XP points. Higher tiers unlock higher faucet multipliers!
+                  Every 1 USDT wagered earns 10 XP points. Higher tiers unlock higher faucet multipliers!
                 </p>
               </div>
             </div>
@@ -425,7 +425,7 @@ export default function RewardsView() {
               </div>
               <div className="flex items-center justify-between text-[10px] text-[#94A3B8]">
                 <span>Progress: {vipData?.progress_pct || 0}%</span>
-                <span>Wagered: {Number(vipData?.total_wagered || 0).toLocaleString()} FC</span>
+                <span>Wagered: {Number(vipData?.total_wagered || 0).toLocaleString()} USDT</span>
               </div>
             </div>
           </div>
@@ -525,10 +525,10 @@ export default function RewardsView() {
                 })}
 
                 {/* Center Hub */}
-                <circle cx="150" cy="150" r="32" fill="#0B0F19" stroke="#F5C451" strokeWidth="4" />
-                <circle cx="150" cy="150" r="22" fill="#F5C451" />
-                <text x="150" y="150" fill="#0B0F19" fontSize="14" fontWeight="900" textAnchor="middle" dominantBaseline="central">
-                  FC
+                <circle cx="150" cy="150" r="32" fill="#0B0F19" stroke="#A855F7" strokeWidth="4" />
+                <circle cx="150" cy="150" r="22" fill="#A855F7" />
+                <text x="150" y="150" fill="#FFFFFF" fontSize="12" fontWeight="900" textAnchor="middle" dominantBaseline="central">
+                  USDT
                 </text>
               </svg>
             </div>
@@ -536,26 +536,26 @@ export default function RewardsView() {
 
           {/* Wheel Action & Information */}
           <div className="space-y-4 max-w-lg text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold">
-              <Gift className="w-3.5 h-3.5 text-amber-400" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-mono font-bold">
+              <Gift className="w-3.5 h-3.5 text-purple-400" />
               <span>FREE 24-HOUR DAILY FAUCET SPIN</span>
             </div>
 
             <h2 className="font-display font-black text-2xl text-white">
-              Spin & Win Up to 1,000 FC Every Day
+              Spin & Win USDT Every Day
             </h2>
 
             <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
-              Every registered player gets 1 guaranteed free spin every 24 hours. Your VIP status multiplies your win by up to <strong className="text-amber-300">{vipData?.faucet_multiplier || 1.0}x</strong>!
+              Every registered player gets 1 guaranteed free spin every 24 hours. Your VIP status multiplies your win by up to <strong className="text-purple-300">{vipData?.faucet_multiplier || 1.0}x</strong>!
             </p>
 
             {recentPrize && (
-              <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-400/50 text-xs font-mono animate-in zoom-in-95 duration-200">
-                <span className="text-amber-300 font-bold block text-sm">
-                  🎉 You won {recentPrize.final_prize} Flow Coins!
+              <div className="p-3.5 rounded-2xl bg-purple-500/15 border border-purple-400/50 text-xs font-mono animate-in zoom-in-95 duration-200">
+                <span className="text-purple-300 font-bold block text-sm">
+                  🎉 You won {recentPrize.final_prize} USDT!
                 </span>
                 <span className="text-[11px] text-[#94A3B8]">
-                  Base Prize: {recentPrize.base_prize} FC · VIP Multiplier: {recentPrize.vip_multiplier}x
+                  Base Prize: {recentPrize.base_prize} USDT · VIP Multiplier: {recentPrize.vip_multiplier}x
                 </span>
               </div>
             )}
@@ -598,8 +598,8 @@ export default function RewardsView() {
                 <span className="whitespace-nowrap">Seven-Day Check-In</span>
               </h2>
               <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-                <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/20 text-[#ffd700] border border-amber-500/40 uppercase font-bold tracking-wider whitespace-nowrap shrink-0">
-                  1 FLO W = 1 USDT
+                <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase font-bold tracking-wider whitespace-nowrap shrink-0">
+                  USDT (TRC-20)
                 </span>
                 <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 uppercase font-bold tracking-wider whitespace-nowrap shrink-0">
                   Day {dailyRewardStatus.currentStreak || 1} of 7
@@ -608,8 +608,8 @@ export default function RewardsView() {
             </div>
             <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-relaxed">
               {dailyRewardStatus.canClaim
-                ? `Ready to claim! Available today: +${(dailyRewardStatus.availableReward || 0.10).toFixed(2)} FLO W (≈ $${(dailyRewardStatus.availableReward || 0.10).toFixed(2)} USDT).`
-                : `Reward claimed for today! Day ${dailyRewardStatus.nextStreak || 2} reward (+${(dailyRewardStatus.nextRewardAmount || 0.15).toFixed(2)} FLO W) unlocks in ${formatCooldown(dailyRewardStatus.secondsRemaining)}.`
+                ? `Ready to claim! Available today: +${(dailyRewardStatus.availableReward || 0.10).toFixed(2)} USDT.`
+                : `Reward claimed for today! Day ${dailyRewardStatus.nextStreak || 2} reward (+${(dailyRewardStatus.nextRewardAmount || 0.15).toFixed(2)} USDT) unlocks in ${formatCooldown(dailyRewardStatus.secondsRemaining)}.`
               }
             </p>
           </div>
@@ -632,7 +632,7 @@ export default function RewardsView() {
             ) : dailyRewardStatus.canClaim ? (
               <>
                 <Gift className="w-4 h-4 text-black animate-bounce shrink-0" />
-                <span className="whitespace-nowrap">Claim Day {dailyRewardStatus.currentStreak || 1} (+{(dailyRewardStatus.availableReward || 0.10).toFixed(2)} FLO W)</span>
+                <span className="whitespace-nowrap">Claim Day {dailyRewardStatus.currentStreak || 1} (+{(dailyRewardStatus.availableReward || 0.10).toFixed(2)} USDT)</span>
               </>
             ) : (
               <>
@@ -699,7 +699,7 @@ export default function RewardsView() {
                         <span className={`font-mono-numbers font-black text-xs xs:text-sm block whitespace-nowrap ${
                           isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-purple-300'
                         }`}>
-                          +{rewardVal.toFixed(2)} FLO W
+                          +{rewardVal.toFixed(2)} USDT
                         </span>
                         <span className="text-[9px] uppercase tracking-wider block opacity-80 font-bold whitespace-nowrap">
                           {isCompleted ? 'Claimed' : isCurrent ? 'Available' : 'Locked'}
@@ -726,10 +726,10 @@ export default function RewardsView() {
                         <span className={`font-mono-numbers font-black text-sm block whitespace-nowrap ${
                           isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-purple-300'
                         }`}>
-                          +{rewardVal.toFixed(2)} FLO W
+                          +{rewardVal.toFixed(2)} USDT
                         </span>
                         <span className="text-[10px] text-white/50 font-mono-numbers block mt-0.5 whitespace-nowrap">
-                          ≈ ${rewardVal.toFixed(2)} USDT
+                          TRC-20 Bonus
                         </span>
                         <span className="text-[9px] uppercase tracking-wider block opacity-80 mt-1 font-bold whitespace-nowrap">
                           {isCompleted ? 'Claimed' : isCurrent ? 'Available' : 'Jackpot'}
@@ -756,10 +756,10 @@ export default function RewardsView() {
                       <span className={`font-mono-numbers font-black text-[11px] sm:text-sm block whitespace-nowrap ${
                         isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-white'
                       }`}>
-                        +{rewardVal.toFixed(2)} FLO W
+                        +{rewardVal.toFixed(2)} USDT
                       </span>
                       <span className="text-[9px] sm:text-[10px] text-white/50 font-mono-numbers block mt-0.5 whitespace-nowrap">
-                        ≈ ${rewardVal.toFixed(2)}
+                        TRC-20 Bonus
                       </span>
                       <span className="text-[8px] sm:text-[9px] uppercase tracking-wider block opacity-80 mt-0.5 sm:mt-1 font-bold whitespace-nowrap">
                         {isCompleted ? 'Claimed' : isCurrent ? 'Available' : 'Locked'}
@@ -781,7 +781,7 @@ export default function RewardsView() {
             <span>Milestone Achievements</span>
           </h2>
           <p className="text-xs text-[#94A3B8]">
-            Complete casino goals to unlock one-time Flow Coin grants.
+            Complete gaming milestones to unlock bonus USDT rewards.
           </p>
         </div>
 
@@ -792,7 +792,7 @@ export default function RewardsView() {
             return (
               <div
                 key={ach.id}
-                className="rounded-2xl bg-[#0B0F19] border border-[#1F2737] p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:border-amber-500/30 transition-all shadow-md"
+                className="rounded-2xl bg-[#0B0F19] border border-[#1F2737] p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:border-purple-500/30 transition-all shadow-md"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#151C2B] border border-[#2A374A] flex items-center justify-center text-xl sm:text-2xl shadow-inner shrink-0">
@@ -803,8 +803,8 @@ export default function RewardsView() {
                       <h3 className="font-display font-bold text-xs sm:text-sm text-white truncate">
                         {ach.title}
                       </h3>
-                      <span className="text-[10px] font-mono-numbers px-1.5 sm:px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 font-bold whitespace-nowrap shrink-0">
-                        +{ach.reward} FC
+                      <span className="text-[10px] font-mono-numbers px-1.5 sm:px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-300 font-bold whitespace-nowrap shrink-0">
+                        +{ach.reward} USDT
                       </span>
                     </div>
                     <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-snug line-clamp-2">

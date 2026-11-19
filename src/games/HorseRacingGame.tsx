@@ -366,9 +366,9 @@ export default function HorseRacingGame({
                     type="button"
                     disabled={isRacing}
                     onClick={() => setBetAmount(preset)}
-                    className="py-1 rounded bg-[#111827] hover:bg-[#1a2333] text-[10px] font-mono-numbers text-amber-300/90 border border-[#1f2737] cursor-pointer font-bold"
+                    className="py-1 rounded bg-[#111827] hover:bg-[#1a2333] text-[10px] font-mono-numbers text-purple-300 border border-[#1f2737] cursor-pointer font-bold"
                   >
-                    +{preset}FC
+                    +{preset} USDT
                   </button>
                 ))}
               </div>
@@ -378,7 +378,7 @@ export default function HorseRacingGame({
             <div className="flex items-center justify-between p-2 rounded-lg bg-[#07090d] border border-[#1F2737] text-xs">
               <span className="text-[#94A3B8]">Est. Win Payout:</span>
               <strong className="text-emerald-400 font-mono-numbers font-black text-sm">
-                {potentialPayout} FC
+                {potentialPayout} USDT
               </strong>
             </div>
 
@@ -397,7 +397,7 @@ export default function HorseRacingGame({
               ) : (
                 <>
                   <Play className="w-4 h-4 fill-current" />
-                  <span>Place Bet &amp; Run · {betAmount} FC</span>
+                  <span>Place Bet &amp; Run · {betAmount} USDT</span>
                 </>
               )}
             </button>
@@ -410,7 +410,7 @@ export default function HorseRacingGame({
                   : 'bg-red-500/15 border-red-500/30 text-red-300'
               }`}>
                 {lastResult === 'won' ? (
-                  <span>🏆 WON +{potentialPayout} FC on #{selectedHorse.number} {selectedHorse.name}!</span>
+                  <span>🏆 WON +{potentialPayout} USDT on #{selectedHorse.number} {selectedHorse.name}!</span>
                 ) : (
                   <span>Finished #{raceWinner?.number} {raceWinner?.name} ({raceWinner?.odds}x)</span>
                 )}

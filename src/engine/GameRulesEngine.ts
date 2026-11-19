@@ -35,16 +35,18 @@ export function validateBet(gameId: string, betAmountFC: number | string, userBa
   }
 
   if (game) {
-    if (amount < game.minStakeFC) {
-      return { valid: false, error: `Minimum bet for ${game.name} is ${game.minStakeFC} FC.` };
+    const minStake = game.minStakeUSDT || game.minStakeFC || 1;
+    const maxStake = game.maxStakeUSDT || game.maxStakeFC || 2000;
+    if (amount < minStake) {
+      return { valid: false, error: `Minimum bet for ${game.name} is ${minStake} USDT.` };
     }
-    if (amount > game.maxStakeFC) {
-      return { valid: false, error: `Maximum bet for ${game.name} is ${game.maxStakeFC} FC.` };
+    if (amount > maxStake) {
+      return { valid: false, error: `Maximum bet for ${game.name} is ${maxStake} USDT.` };
     }
   }
 
   if (amount > Number(userBalanceFC || 0)) {
-    return { valid: false, error: 'Insufficient Flow Coin balance. Claim your daily bonus or faucet!' };
+    return { valid: false, error: 'Insufficient USDT balance. Deposit USDT to continue!' };
   }
 
   return { valid: true, amount };

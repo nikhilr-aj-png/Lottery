@@ -4,7 +4,7 @@ export interface WalletState {
   balance: number;
   pendingBalance: number;
   lockedBalance: number;
-  currency: 'FLO' | 'USDT';
+  currency: 'USDT';
   address: string | null;
   isConnected: boolean;
   isLoading: boolean;

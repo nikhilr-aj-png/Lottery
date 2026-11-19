@@ -87,15 +87,9 @@ export default function Sidebar({
       case 'lottery': return Ticket;
       case 'crash': return Rocket;
       case 'dice': return Dices;
+      case 'coinflip': return Coins;
       case 'bingo': return Sparkles;
       case 'horse-racing': return Trophy;
-      case 'roulette': return CircleDot;
-      case 'coinflip': return Coins;
-      case 'blackjack': return Layers;
-      case 'slots': return Sparkles;
-      case 'poker': return Spade;
-      case 'keno': return CircleDot;
-      case 'limbo': return Zap;
       default: return Gamepad2;
     }
   };
@@ -241,13 +235,13 @@ export default function Sidebar({
       <div className="shrink-0 pt-2.5 mt-auto border-t border-[#1F2737] bg-[#0B0F19] z-20">
         {!isCollapsed ? (
           <div className="bg-[#111827] border border-[#1F2737] p-2.5 rounded-2xl">
-            <span className="text-[9px] uppercase font-bold text-[#94A3B8] block">Wallet Balance</span>
+            <span className="text-[9px] uppercase font-bold text-[#94A3B8] block">USDT Wallet Balance</span>
             <div className="flex items-center justify-between mt-1">
-              <span className="font-mono-numbers font-black text-xs sm:text-sm text-[#F5C451] truncate">
-                {Number(wallet?.balance || 0).toLocaleString()} FLO
+              <span className="font-mono-numbers font-black text-xs sm:text-sm text-emerald-400 truncate">
+                {Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
               </span>
-              <span className="text-[10px] text-[#94A3B8] font-mono-numbers">
-                ≈ ${Number(wallet?.balance || 0).toLocaleString()}
+              <span className="text-[10px] text-emerald-400 font-mono-numbers font-bold">
+                TRC-20
               </span>
             </div>
           </div>
@@ -257,7 +251,7 @@ export default function Sidebar({
             <button
               onClick={() => onSelectTab && onSelectTab('wallet')}
               className="w-10 h-10 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-400 border border-[#1F2737] flex items-center justify-center transition-colors cursor-pointer"
-              title="Open Wallet (1 FLO = 1 USDT)"
+              title="Open USDT Wallet"
               aria-label="Open Wallet"
             >
               <Wallet className="w-4 h-4" />
@@ -302,13 +296,13 @@ export default function Sidebar({
                 <div className="w-7.5 h-7.5 xs:w-8 xs:h-8 rounded-full p-0.5 shadow-[0_0_10px_rgba(245,196,81,0.3)] flex items-center justify-center shrink-0">
                   <img 
                     src="/logo.png" 
-                    alt="EarnFlow.In" 
+                    alt="EarnFlow.in" 
                     className="w-full h-full rounded-full object-cover border border-[#ffd700]/40" 
                   />
                 </div>
                 <div className="flex flex-col justify-center shrink-0">
                   <span className="font-display font-extrabold text-sm xs:text-base tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-tight whitespace-nowrap">
-                    EarnFlow<span className="text-[#F5C451]">.In</span>
+                    EarnFlow<span className="text-[#F5C451]">.in</span>
                   </span>
                   <span className="text-[9px] text-[#94A3B8] font-medium leading-none mt-0.5 whitespace-nowrap">
                     Casino & Games

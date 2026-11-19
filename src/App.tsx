@@ -263,15 +263,24 @@ function LotteryAppContent() {
     setIsTransactionRoute(onTx);
     if (onTx) {
       setActiveTab('transactions', false);
-      document.title = 'Transaction History · EarnFlow.In';
+      document.title = 'Transaction History · EarnFlow.in';
     } else if (path === '/' || path === '') {
       setActiveTab('lotteries', false);
     } else if (path === '/profile' || path.includes('tab=profile')) {
       setActiveTab('profile', false);
-      document.title = 'Player Profile & Settings · EarnFlow.In';
+      document.title = 'Player Profile & Settings · EarnFlow.in';
     } else if (path === '/wallet' || path.includes('tab=wallet')) {
       setActiveTab('wallet', false);
-      document.title = 'USDT Wallet & 24h Payouts · EarnFlow.In';
+      document.title = 'USDT Wallet & 24h Payouts · EarnFlow.in';
+    } else if (path === '/legal/privacy' || path === '/privacy' || path === '/privacy-policy') {
+      setActiveTab('privacy', false);
+      document.title = 'Privacy Policy · EarnFlow.in';
+    } else if (path === '/legal/terms' || path === '/terms' || path === '/terms-and-conditions') {
+      setActiveTab('terms', false);
+      document.title = 'Terms & Conditions · EarnFlow.in';
+    } else if (path === '/contact') {
+      setActiveTab('contact', false);
+      document.title = 'Contact Support Desk · EarnFlow.in';
     }
 
     const mainEl = document.getElementById('main-content');
@@ -360,11 +369,21 @@ function LotteryAppContent() {
                    search.get('tab') === 'transactions' ||
                    search.get('tab') === 'transaction-history';
       setIsTransactionRoute(onTx);
+      const cleanPath = window.location.pathname.replace(/\/+$/, '');
       if (onTx) {
         setActiveTab('transactions', false);
-        document.title = 'Transaction History · EarnFlow.In';
-      } else if (!gr && (window.location.pathname === '/' || window.location.pathname === '' || window.location.pathname === '/profile' || window.location.pathname === '/wallet')) {
-        const tab = search.get('tab') || (window.location.pathname === '/profile' ? 'profile' : window.location.pathname === '/wallet' ? 'wallet' : null);
+        document.title = 'Transaction History · EarnFlow.in';
+      } else if (cleanPath === '/legal/privacy' || cleanPath === '/privacy' || cleanPath === '/privacy-policy' || search.get('tab') === 'privacy') {
+        setActiveTab('privacy', false);
+        document.title = 'Privacy Policy · EarnFlow.in';
+      } else if (cleanPath === '/legal/terms' || cleanPath === '/terms' || cleanPath === '/terms-and-conditions' || search.get('tab') === 'terms') {
+        setActiveTab('terms', false);
+        document.title = 'Terms & Conditions · EarnFlow.in';
+      } else if (cleanPath === '/contact' || search.get('tab') === 'contact' || search.get('tab') === 'support') {
+        setActiveTab('contact', false);
+        document.title = 'Contact Support Desk · EarnFlow.in';
+      } else if (!gr && (cleanPath === '/' || cleanPath === '' || cleanPath === '/profile' || cleanPath === '/wallet')) {
+        const tab = search.get('tab') || (cleanPath === '/profile' ? 'profile' : cleanPath === '/wallet' ? 'wallet' : null);
         if (tab) {
           setActiveTab(tab, false);
         } else {
@@ -644,27 +663,27 @@ function LotteryAppContent() {
                   >
                     <img 
                       src="/logo.png" 
-                      alt="EarnFlow.In" 
-                      className="w-7 xs:w-8 h-7 xs:h-8 rounded-full border border-[#ffd700]/40 object-cover shadow-md shrink-0 group-hover:scale-105 transition-transform" 
+                      alt="EarnFlow.in" 
+                      className="w-7 xs:w-8 h-7 xs:h-8 rounded-full border border-purple-500/40 object-cover shadow-md shrink-0 group-hover:scale-105 transition-transform" 
                     />
                     <div>
                       <span className="font-display font-black text-sm xs:text-base text-white">
-                        EarnFlow<span className="text-[#f5c451]">.In</span>
+                        EarnFlow<span className="text-[#a855f7]">.in</span>
                       </span>
                       <p className="text-[10px] xs:text-[11px] text-[#9b8f7c]">
-                        Provably Fair Casino & Lottery Platform · Flow Coins (FC)
+                        Online Gaming Platform · USDT (TRC-20) Settlement
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 xs:gap-3 text-[10px] xs:text-[11px] text-[#9b8f7c] flex-wrap justify-center">
-                    <span className="flex items-center gap-1 text-[#05d5aa]">
+                    <span className="flex items-center gap-1 text-[#22c55e]">
                       <ShieldCheck className="w-3 xs:w-3.5 h-3 xs:h-3.5" />
                       CertiK Audited
                     </span>
                     <span>•</span>
-                    <span className="flex items-center gap-1 text-[#ffd700]">
-                      24-Hour Payout Guarantee
+                    <span className="flex items-center gap-1 text-[#a855f7]">
+                      24-Hour USDT Payouts
                     </span>
                   </div>
                 </div>
@@ -672,7 +691,7 @@ function LotteryAppContent() {
                 {/* Legal Navigation Links */}
                 <div className="mt-2 sm:mt-2.5 pt-1.5 sm:pt-2 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 text-[10px] xs:text-[11px] text-[#9b8f7c]">
                   <div className="text-center sm:text-left leading-relaxed">
-                    © 2026 EarnFlow.In Platform. All drawings and games are provably fair, verifiable on the public ledger with Flow Coins (FC).
+                    © 2026 EarnFlow.in Platform. All drawings and games are provably fair, verifiable on the public ledger with USDT (TRC-20).
                   </div>
 
                   <div className="flex items-center gap-2.5 xs:gap-3.5 font-semibold text-[10px] xs:text-[11px] shrink-0 flex-wrap justify-center sm:justify-end">
@@ -686,13 +705,13 @@ function LotteryAppContent() {
                         if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="hover:text-[#ffd700] transition-colors cursor-pointer text-[#ffd700]"
+                      className="hover:text-purple-400 transition-colors cursor-pointer text-[#a855f7]"
                     >
                       Contact Support
                     </a>
                     <span>•</span>
                     <a
-                      href="/terms-and-conditions"
+                      href="/legal/terms"
                       onClick={(e) => {
                         e.preventDefault();
                         setIsTransactionRoute(false);
@@ -701,13 +720,13 @@ function LotteryAppContent() {
                         if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="hover:text-[#ffd700] transition-colors cursor-pointer"
+                      className="hover:text-purple-400 transition-colors cursor-pointer"
                     >
                       Terms & Conditions
                     </a>
                     <span>•</span>
                     <a
-                      href="/privacy-policy"
+                      href="/legal/privacy"
                       onClick={(e) => {
                         e.preventDefault();
                         setIsTransactionRoute(false);
@@ -716,7 +735,7 @@ function LotteryAppContent() {
                         if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="hover:text-[#05d5aa] transition-colors cursor-pointer"
+                      className="hover:text-emerald-400 transition-colors cursor-pointer"
                     >
                       Privacy Policy
                     </a>

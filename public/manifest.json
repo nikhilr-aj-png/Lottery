@@ -1,7 +1,7 @@
 {
-  "name": "EarnFlow.In USDT Lottery",
-  "short_name": "EarnFlow",
-  "description": "Provably Fair VIP Crypto Lottery & USDT Jackpots with guaranteed 24-hour payouts on TRON (TRC-20).",
+  "name": "EarnFlow.in",
+  "short_name": "EarnFlow.in",
+  "description": "EarnFlow.in is an online gaming platform that provides users with access to interactive games, gaming events, account management, and USDT-based payment features.",
   "id": "/",
   "start_url": "/?source=pwa",
   "scope": "/",

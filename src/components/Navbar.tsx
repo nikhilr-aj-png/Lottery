@@ -81,7 +81,7 @@ export default function Navbar({
       const tabNames = {
         tickets: 'My Tickets',
         results: 'Lottery Results & Past Winners',
-        wallet: 'Flow Coin Wallet',
+        wallet: 'USDT Wallet & Payouts',
         profile: 'User Profile'
       };
       showToast(`Please log in to access ${tabNames[tabId] || 'this section'}!`, 'info');
@@ -125,7 +125,7 @@ export default function Navbar({
         <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2 xs:px-3 sm:px-4 lg:px-6 xl:px-8">
           <div className="flex items-center justify-between h-13 xs:h-14 sm:h-16">
             
-            {/* LEFT: Sidebar Toggle & EarnFlow.In Branding */}
+            {/* LEFT: Sidebar Toggle & EarnFlow.in Branding */}
             <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 shrink-0">
               
               {/* Sidebar Drawer Toggle (Mobile / Tablet / Desktop) */}
@@ -150,23 +150,23 @@ export default function Navbar({
                 className="flex items-center gap-1.5 xs:gap-2 sm:gap-2.5 cursor-pointer group shrink-0 select-none"
                 role="button"
                 tabIndex={0}
-                title="Return to EarnFlow Home Page"
+                title="Return to EarnFlow.in Home Page"
               >
                 <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-9.5 sm:h-9.5 rounded-full p-0.5 shadow-[0_0_12px_rgba(245,196,81,0.3)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
                   <img 
                     src="/logo.png" 
-                    alt="EarnFlow.In" 
+                    alt="EarnFlow.in" 
                     className="w-full h-full rounded-full object-cover border border-[#ffd700]/40" 
                   />
                 </div>
                 
                 <div className="flex flex-col justify-center shrink-0">
                   <span className="font-display font-extrabold text-[13px] xs:text-base sm:text-lg lg:text-xl tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-tight whitespace-nowrap shrink-0">
-                    EarnFlow<span className="text-[#F5C451]">.In</span>
+                    EarnFlow<span className="text-[#F5C451]">.in</span>
                   </span>
                   {/* Subtitle visible ONLY on xl (1280px+) where ample space exists */}
                   <span className="text-[10px] text-[#94A3B8] font-medium hidden xl:block leading-none mt-0.5 whitespace-nowrap">
-                    Casino & Multi-Game Platform
+                    Online Gaming Platform · USDT
                   </span>
                 </div>
               </div>
@@ -260,18 +260,18 @@ export default function Navbar({
 
               {isLoggedIn ? (
                 <>
-                  {/* Flow Coin Balance Pill: Desktop/Tablet view ONLY (>= 640px) */}
+                  {/* USDT Balance Pill: Desktop/Tablet view ONLY (>= 640px) */}
                   <div 
                     onClick={() => handleNavClick('wallet')}
-                    title="Click to view Flow Coin Virtual Wallet & Ledger (1 FLO = 1 USDT)"
-                    className="hidden sm:flex cursor-pointer bg-[#10131A] hover:bg-[#151C2B] border border-[rgba(245,196,81,0.25)] hover:border-[#f5c451] rounded-xl px-2.5 sm:px-3 py-1 sm:py-1.5 items-center gap-1.5 transition-all shadow-inner"
+                    title="Click to view USDT Wallet & 24h Payouts"
+                    className="hidden sm:flex cursor-pointer bg-[#10131A] hover:bg-[#151C2B] border border-emerald-500/30 hover:border-emerald-400 rounded-xl px-2.5 sm:px-3 py-1 sm:py-1.5 items-center gap-1.5 transition-all shadow-inner"
                   >
-                    <Coins className="w-3.5 h-3.5 text-[#ffd700] shrink-0" />
-                    <span className="font-mono-numbers font-bold text-xs sm:text-sm text-[#ffd700] whitespace-nowrap">
-                      {Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                    <Coins className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span className="font-mono-numbers font-bold text-xs sm:text-sm text-emerald-400 whitespace-nowrap">
+                      {Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
-                    <span className="text-[10px] sm:text-xs text-amber-400 font-extrabold font-mono-numbers">
-                      FLO
+                    <span className="text-[10px] sm:text-xs text-emerald-400 font-extrabold font-mono-numbers">
+                      USDT
                     </span>
                   </div>
 
