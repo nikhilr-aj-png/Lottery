@@ -140,18 +140,48 @@ export default function GamesManagementSuperHub({
   const [lotteryStatusFilter, setLotteryStatusFilter] = useState('all');
   const [lotterySearchQuery, setLotterySearchQuery] = useState('');
 
-  // 8-Step Event Creation Wizard Modal State (Parts 1 - 6)
+  // Real-time authoritative clock for live countdowns across all cards
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatCountdown = (drawTime?: number) => {
+    if (!drawTime) return '00:00:00';
+    const diff = drawTime - currentTime;
+    if (diff <= 0) return '00:00:00';
+    const totalSeconds = Math.floor(diff / 1000);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
+
+  const generateAutoDescription = (data: { eventName: string; durationHours: number; durationMinutes: number; ticketAvailability: string; maxTotalTickets: number; ticketPrice: number; jackpotMode: string; fixedJackpot: number; minJackpot: number; maxJackpot: number }) => {
+    const name = data.eventName.trim() || 'Four Digit Lottery Pot';
+    const pot = data.jackpotMode === 'fixed' ? `${data.fixedJackpot} USDT guaranteed prize pool` : `${data.minJackpot} to ${data.maxJackpot} USDT dynamic jackpot range`;
+    const durParts: string[] = [];
+    if (data.durationHours > 0) durParts.push(`${data.durationHours} hr${data.durationHours > 1 ? 's' : ''}`);
+    if (data.durationMinutes > 0) durParts.push(`${data.durationMinutes} min${data.durationMinutes > 1 ? 's' : ''}`);
+    const durStr = durParts.join(' ') || '30 mins';
+    const tktStr = data.ticketAvailability === 'limited' ? `Limited to ${data.maxTotalTickets} tickets` : 'Unlimited tickets';
+    return `Autonomous 4-digit draw for ${name}. Featuring ${pot} with ${data.ticketPrice} USDT ticket price. ${tktStr}. Active duration: ${durStr}.`;
+  };
+
+  // 4-Step Event Creation Wizard Modal State (Parts 1 - 4)
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
   const [wizardData, setWizardData] = useState({
     eventId: 'evt-' + Date.now().toString(36) + '-' + Math.floor(100 + Math.random() * 900),
     eventName: '',
+    eventTag: 'BATCH-' + Math.floor(1000 + Math.random() * 9000),
     roomName: 'Room 1: Grand Pot Arena',
-    roomDescription: 'Autonomous 4-digit draw with guaranteed jackpot pot. Pick lucky digits from 0000 to 9999.',
-    durationValue: 24,
-    durationUnit: 'hours',
-    cooldownValue: 0,
-    cooldownUnit: 'minutes',
+    roomDescription: '',
+    ticketAvailability: 'unlimited' as 'unlimited' | 'limited',
+    maxTotalTickets: 500,
+    durationHours: 2,
+    durationMinutes: 30,
     ticketPrice: 10,
     currency: 'USDT',
     jackpotMode: 'fixed' as 'fixed' | 'range',
@@ -160,17 +190,11 @@ export default function GamesManagementSuperHub({
     maxJackpot: 10000,
     jackpotSelectionMethod: 'manual' as 'manual' | 'random',
     selectedJackpotAmount: 5000,
-    ticketLimitMode: 'unlimited' as 'unlimited' | 'limited',
-    maxTotalTickets: 500,
-    maxTicketsPerUser: 10,
     winnerMode: 'single' as 'single' | 'multiple',
-    codesTiming: 'create' as 'create' | 'later',
-    drawMode: 'random' as 'random' | 'preset',
-    presetWinningDigits: '',
-    winningCodes: ['2538'] as string[],
-    winningCodeCount: 1,
-    winnerPayoutSharePercent: 90,
     winnerCount: 1,
+    winningCodesOption: 'preset' as 'preset' | 'later',
+    winningCodes: ['2538'] as string[],
+    winnerPayoutSharePercent: 90,
     distributionRule: 'tiered' as 'equal' | 'tiered',
     winnerDistribution: [{ position: 1, percent: 100 }] as Array<{ position: number; percent: number }>,
     badge: 'VIP LOTTERY',
@@ -180,27 +204,16 @@ export default function GamesManagementSuperHub({
 
   // Modals for Contextual Actions on Events
   const [viewDetailsEvent, setViewDetailsEvent] = useState<any | null>(null);
-  const [editEventTarget, setEditEventTarget] = useState<any | null>(null);
   const [winnerConfigEvent, setWinnerConfigEvent] = useState<any | null>(null);
-  const [drawOracleEvent, setDrawOracleEvent] = useState<any | null>(null);
-  const [viewPayoutsEvent, setViewPayoutsEvent] = useState<any | null>(null);
-  const [pauseReasonModal, setPauseReasonModal] = useState<{ event: any; isPausing: boolean; reason: string } | null>(null);
 
-  // Winner Configuration Modal Inner State (Part 9)
+  // Winning Digits Management Modal Inner State
   const [wcWinnerMode, setWcWinnerMode] = useState<'single' | 'multiple'>('single');
-  const [wcWinnerCount, setWcWinnerCount] = useState(3);
+  const [wcWinnerCount, setWcWinnerCount] = useState(1);
   const [wcDrawMode, setWcDrawMode] = useState<'random' | 'preset'>('preset');
   const [wcWinningCodes, setWcWinningCodes] = useState<string[]>(['2538']);
   const [wcDistribution, setWcDistribution] = useState<Array<{ position: number; percent: number }>>([{ position: 1, percent: 100 }]);
   const [wcPayoutSharePercent, setWcPayoutSharePercent] = useState(90);
   const [wcSaving, setWcSaving] = useState(false);
-  const [wcEmergencyPauseReason, setWcEmergencyPauseReason] = useState('');
-  const [wcShowPauseInput, setWcShowPauseInput] = useState(false);
-
-  // Draw Oracle Modal Inner State (Part 10)
-  const [doWinningCodes, setDoWinningCodes] = useState<string[]>([]);
-  const [doIsExecuting, setDoIsExecuting] = useState(false);
-  const [doShowConfirm, setDoShowConfirm] = useState(false);
 
   // Helper: Generate distinct 4-digit codes
   const generateDistinctCodes = (count: number): string[] => {
@@ -218,11 +231,9 @@ export default function GamesManagementSuperHub({
     return new Set(valid).size !== valid.length;
   };
 
-  // Helper: Open Winner Config Modal for specific event
+  // Helper: Open Winning Digits Management Modal for specific event
   const openWinnerConfig = (evt: any) => {
     setWinnerConfigEvent(evt);
-    setWcShowPauseInput(false);
-    setWcEmergencyPauseReason('');
     const mode = evt.winnerMode === 'multiple' ? 'multiple' : 'single';
     setWcWinnerMode(mode);
     const count = evt.winningCodeCount || evt.winnerCount || (mode === 'multiple' ? 3 : 1);
@@ -236,6 +247,8 @@ export default function GamesManagementSuperHub({
         .filter((c: string) => c.length === 4);
     } else if (evt.presetWinningDigits) {
       codes = [String(evt.presetWinningDigits).replace(/\D/g, '').padStart(4, '0')];
+    } else if (evt.winningDigits) {
+      codes = [String(evt.winningDigits).replace(/\D/g, '').padStart(4, '0')];
     } else if (mode === 'single') {
       codes = ['2538'];
     } else {
@@ -256,24 +269,6 @@ export default function GamesManagementSuperHub({
       }));
       setWcDistribution(dist);
     }
-  };
-
-  // Helper: Open Draw Oracle Modal for specific event
-  const openDrawOracle = (evt: any) => {
-    setDrawOracleEvent(evt);
-    setDoShowConfirm(false);
-    let codes: string[] = [];
-    if (Array.isArray(evt.winningCodes) && evt.winningCodes.length > 0) {
-      codes = evt.winningCodes.map((c: any) => String(c).replace(/\D/g, '').padStart(4, '0'));
-    } else if (evt.presetWinningDigits) {
-      codes = [String(evt.presetWinningDigits).replace(/\D/g, '').padStart(4, '0')];
-    } else if (evt.winningDigits) {
-      codes = [String(evt.winningDigits).replace(/\D/g, '').padStart(4, '0')];
-    } else {
-      const count = evt.winningCodeCount || evt.winnerCount || (evt.winnerMode === 'multiple' ? 3 : 1);
-      codes = generateDistinctCodes(count);
-    }
-    setDoWinningCodes(codes);
   };
 
   // Fetch all configurations, rooms, and rounds from Supabase
@@ -761,22 +756,34 @@ export default function GamesManagementSuperHub({
           .filter((e: any) => e.status !== 'deleted')
           .filter((e: any) => {
             if (lotteryRoomFilter !== 'all' && e.roomName !== lotteryRoomFilter) return false;
+            
+            const isConcluded = e.status === 'completed';
+            const isDrawProcessing = e.status === 'result_pending' || (e.status === 'active' && e.drawTime && e.drawTime <= currentTime);
+            const hasWinningDigits = (Array.isArray(e.winningCodes) && e.winningCodes.length > 0) || Boolean(e.presetWinningDigits) || Boolean(e.winningDigits);
+            const isWaitingForDigits = isDrawProcessing && !hasWinningDigits && e.drawMode !== 'random';
+            const diff = e.drawTime ? e.drawTime - currentTime : 0;
+            const isExpiringSoon = !isConcluded && !isDrawProcessing && diff > 0 && diff <= 15 * 60 * 1000;
+            const isActive = !isConcluded && !isDrawProcessing;
+
             if (lotteryStatusFilter === 'active') {
-              if (e.isPaused || e.status !== 'active') return false;
-            } else if (lotteryStatusFilter === 'paused') {
-              if (!e.isPaused && e.status !== 'paused') return false;
+              if (!isActive) return false;
+            } else if (lotteryStatusFilter === 'expiring_soon') {
+              if (!isExpiringSoon) return false;
+            } else if (lotteryStatusFilter === 'action_required') {
+              if (!isWaitingForDigits) return false;
             } else if (lotteryStatusFilter === 'result_pending') {
-              const isPending = e.status === 'result_pending' || (e.status === 'active' && e.drawTime && e.drawTime <= Date.now());
-              if (!isPending) return false;
+              if (!isDrawProcessing) return false;
             } else if (lotteryStatusFilter === 'completed') {
-              if (e.status !== 'completed') return false;
+              if (!isConcluded) return false;
             }
+
             if (lotterySearchQuery.trim()) {
               const q = lotterySearchQuery.toLowerCase();
               const mId = e.id?.toLowerCase().includes(q);
               const mTitle = e.title?.toLowerCase().includes(q);
               const mRoom = e.roomName?.toLowerCase().includes(q);
-              if (!mId && !mTitle && !mRoom) return false;
+              const mTag = e.batchTag?.toLowerCase().includes(q) || e.badge?.toLowerCase().includes(q);
+              if (!mId && !mTitle && !mRoom && !mTag) return false;
             }
             return true;
           });
@@ -823,13 +830,14 @@ export default function GamesManagementSuperHub({
                     <select
                       value={lotteryStatusFilter}
                       onChange={(e) => setLotteryStatusFilter(e.target.value)}
-                      className="bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs font-bold text-white outline-none cursor-pointer focus:border-purple-400 min-w-[140px]"
+                      className="bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs font-bold text-white outline-none cursor-pointer focus:border-purple-400 min-w-[150px]"
                     >
                       <option value="all">All Statuses</option>
                       <option value="active">● Active</option>
-                      <option value="paused">⏸ Paused</option>
-                      <option value="result_pending">⏳ Pending Draw</option>
-                      <option value="completed">✓ Concluded</option>
+                      <option value="expiring_soon">⏳ Expiring Soon (&lt;15m)</option>
+                      <option value="action_required">⚠️ Action Required (Set Digits)</option>
+                      <option value="result_pending">⏳ Expired / Draw Processing</option>
+                      <option value="completed">✓ Settled &amp; Paid</option>
                     </select>
                   </div>
 
@@ -844,7 +852,7 @@ export default function GamesManagementSuperHub({
                         type="text"
                         value={lotterySearchQuery}
                         onChange={(e) => setLotterySearchQuery(e.target.value)}
-                        placeholder="Search by Event Name or ID..."
+                        placeholder="Search by Event Name, Tag or ID..."
                         className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-400"
                       />
                       {lotterySearchQuery && (
@@ -865,40 +873,38 @@ export default function GamesManagementSuperHub({
                 <button
                   type="button"
                   onClick={() => {
-                    setWizardStep(1);
-                    setWizardData({
+                    const initialTag = 'BATCH-' + Math.floor(1000 + Math.random() * 9000);
+                    const initialData = {
                       eventId: 'evt-' + Date.now().toString(36) + '-' + Math.floor(100 + Math.random() * 900),
                       eventName: '',
+                      eventTag: initialTag,
                       roomName: uniqueRooms[0] || 'Room 1: Grand Pot Arena',
-                      roomDescription: 'Autonomous 4-digit draw with guaranteed jackpot pot. Pick lucky digits from 0000 to 9999.',
-                      durationValue: 24,
-                      durationUnit: 'hours',
-                      cooldownValue: 0,
-                      cooldownUnit: 'minutes',
+                      roomDescription: '',
+                      ticketAvailability: 'unlimited' as const,
+                      maxTotalTickets: 500,
+                      durationHours: 2,
+                      durationMinutes: 30,
                       ticketPrice: 10,
                       currency: 'USDT',
-                      jackpotMode: 'fixed',
+                      jackpotMode: 'fixed' as const,
                       fixedJackpot: 5000,
                       minJackpot: 1000,
                       maxJackpot: 10000,
-                      jackpotSelectionMethod: 'manual',
+                      jackpotSelectionMethod: 'manual' as const,
                       selectedJackpotAmount: 5000,
-                      ticketLimitMode: 'unlimited',
-                      maxTotalTickets: 500,
-                      maxTicketsPerUser: 10,
-                      winnerMode: 'single',
-                      codesTiming: 'create',
-                      drawMode: 'random',
-                      presetWinningDigits: '',
-                      winningCodes: ['2538'],
-                      winningCodeCount: 1,
-                      winnerPayoutSharePercent: 90,
+                      winnerMode: 'single' as const,
                       winnerCount: 1,
-                      distributionRule: 'tiered',
+                      winningCodesOption: 'preset' as const,
+                      winningCodes: ['2538'],
+                      winnerPayoutSharePercent: 90,
+                      distributionRule: 'tiered' as const,
                       winnerDistribution: [{ position: 1, percent: 100 }],
                       badge: 'VIP LOTTERY',
                       bannerImage: ''
-                    });
+                    };
+                    initialData.roomDescription = generateAutoDescription(initialData);
+                    setWizardData(initialData);
+                    setWizardStep(1);
                     setIsWizardOpen(true);
                   }}
                   className="px-4 py-2.5 rounded-xl btn-gold text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg shrink-0 self-stretch sm:self-auto"
@@ -958,10 +964,13 @@ export default function GamesManagementSuperHub({
                 <div className="p-4 sm:p-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
                     {filteredLotteryEvents.map((evt: any) => {
-                      const isActive = evt.status === 'active' && !evt.isPaused && (!evt.drawTime || evt.drawTime > Date.now());
-                      const isPaused = evt.isPaused || evt.status === 'paused';
-                      const isPending = evt.status === 'result_pending' || (evt.status === 'active' && evt.drawTime && evt.drawTime <= Date.now());
                       const isConcluded = evt.status === 'completed';
+                      const isDrawProcessing = evt.status === 'result_pending' || (evt.status === 'active' && evt.drawTime && evt.drawTime <= currentTime);
+                      const hasWinningDigits = (Array.isArray(evt.winningCodes) && evt.winningCodes.length > 0) || Boolean(evt.presetWinningDigits) || Boolean(evt.winningDigits);
+                      const isWaitingForDigits = isDrawProcessing && !hasWinningDigits && evt.drawMode !== 'random';
+                      const diff = evt.drawTime ? evt.drawTime - currentTime : 0;
+                      const isExpiringSoon = !isConcluded && !isDrawProcessing && diff > 0 && diff <= 15 * 60 * 1000;
+                      const isActive = !isConcluded && !isDrawProcessing;
                       const currency = evt.currency || 'USDT';
 
                       // Winning codes display
@@ -976,42 +985,54 @@ export default function GamesManagementSuperHub({
                           key={evt.id}
                           className="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col justify-between border border-[#272a31] hover:border-amber-500/40 transition-all duration-200 shadow-md hover:shadow-xl group"
                         >
-                          {/* Card Top: Room Badge & Status Pill */}
+                          {/* Card Top: Batch Tag & Status Pill */}
                           <div>
                             <div className="flex items-center justify-between gap-2 mb-2">
-                              <span className="text-[9px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 uppercase font-bold truncate max-w-[140px]">
-                                {evt.badge || 'VIP DRAW'}
-                              </span>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="text-[9px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 uppercase font-black truncate max-w-[130px]" title={evt.batchTag || evt.badge || 'VIP LOTTERY'}>
+                                  {evt.batchTag || evt.badge || 'VIP DRAW'}
+                                </span>
+                                <span className="text-[9px] text-[#64748B] font-mono-numbers truncate">
+                                  {evt.roomName || 'Arena 1'}
+                                </span>
+                              </div>
 
-                              {isActive ? (
-                                <span className="px-2 py-0.5 rounded border bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] font-bold">
-                                  ● ACTIVE
+                              {/* Dynamic Single-Source Status Pill */}
+                              {isConcluded ? (
+                                <span className="px-2 py-0.5 rounded border bg-purple-500/15 text-purple-300 border-purple-500/30 text-[10px] font-black inline-flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3 text-purple-400" />
+                                  <span>SETTLED &amp; PAID</span>
                                 </span>
-                              ) : isPaused ? (
-                                <span
-                                  className="px-2 py-0.5 rounded border bg-amber-500/15 text-amber-300 border-amber-500/40 text-[10px] font-bold"
-                                  title={evt.pauseReason ? `Paused: ${evt.pauseReason}` : 'Event Paused'}
-                                >
-                                  ⏸ PAUSED
+                              ) : isWaitingForDigits ? (
+                                <span className="px-2 py-0.5 rounded border bg-amber-500/20 text-amber-300 border-amber-500/40 text-[10px] font-black inline-flex items-center gap-1 animate-pulse">
+                                  <AlertTriangle className="w-3 h-3 text-amber-400" />
+                                  <span>ACTION REQUIRED</span>
                                 </span>
-                              ) : isPending ? (
-                                <span className="px-2 py-0.5 rounded border bg-amber-500/10 text-amber-400 border-amber-500/30 text-[10px] font-bold animate-pulse">
-                                  ⏳ PENDING DRAW
+                              ) : isDrawProcessing ? (
+                                <span className="px-2 py-0.5 rounded border bg-indigo-500/20 text-indigo-300 border-indigo-500/40 text-[10px] font-black inline-flex items-center gap-1 animate-pulse">
+                                  <Clock className="w-3 h-3 text-indigo-400" />
+                                  <span>DRAW PROCESSING</span>
+                                </span>
+                              ) : isExpiringSoon ? (
+                                <span className="px-2 py-0.5 rounded border bg-amber-500/15 text-amber-300 border-amber-500/40 text-[10px] font-black inline-flex items-center gap-1 animate-pulse">
+                                  <Clock className="w-3 h-3 text-amber-400" />
+                                  <span>EXPIRING SOON</span>
                                 </span>
                               ) : (
-                                <span className="px-2 py-0.5 rounded border bg-purple-500/10 text-purple-400 border-purple-500/30 text-[10px] font-bold">
-                                  ✓ CONCLUDED
+                                <span className="px-2 py-0.5 rounded border bg-emerald-500/15 text-emerald-300 border-emerald-500/40 text-[10px] font-black inline-flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
+                                  <span>ACTIVE</span>
                                 </span>
                               )}
                             </div>
 
-                            {/* Event Title & Room Name */}
+                            {/* Event Title */}
                             <div>
                               <h4 className="font-display font-extrabold text-white text-sm sm:text-base line-clamp-1 group-hover:text-amber-400 transition-colors" title={evt.title}>
                                 {evt.title}
                               </h4>
-                              <p className="font-sans text-[11px] text-[#94A3B8] truncate mt-0.5" title={evt.roomName}>
-                                {evt.roomName || 'Room 1: Grand Pot Arena'}
+                              <p className="font-sans text-[11px] text-[#94A3B8] line-clamp-1 mt-0.5" title={evt.description || evt.roomDescription}>
+                                {evt.description || evt.roomDescription || 'Autonomous 4-digit lottery draw'}
                               </p>
                             </div>
 
@@ -1036,7 +1057,7 @@ export default function GamesManagementSuperHub({
                                 <strong className="text-white text-xs">{evt.ticketPrice || 10} {currency}</strong>
                               </div>
                               <div>
-                                <span className="text-[9px] text-[#8b92a2] block uppercase">Sold / Limit</span>
+                                <span className="text-[9px] text-[#8b92a2] block uppercase">Tickets Sold / Limit</span>
                                 <div>
                                   <span className="text-emerald-400 font-bold">{evt.ticketsSold || 0}</span>
                                   <span className="text-[#64748B]"> / {evt.ticketLimitMode === 'limited' ? (evt.maxTotalTickets || evt.maxTickets || 500) : '∞'}</span>
@@ -1072,7 +1093,7 @@ export default function GamesManagementSuperHub({
                                   ) : (
                                     <span className="inline-flex items-center gap-1 text-purple-300 font-bold text-[11px]">
                                       <Users className="w-3 h-3 text-purple-400" />
-                                      <span>{evt.winningCodeCount || evt.winnerCount || 3} Codes</span>
+                                      <span>{evt.winningCodeCount || evt.winnerCount || 3} Winners</span>
                                     </span>
                                   )}
                                 </div>
@@ -1082,177 +1103,115 @@ export default function GamesManagementSuperHub({
                               </div>
                             </div>
 
-                            {/* Winning Codes & Result Status Row */}
-                            <div className="p-2.5 rounded-xl bg-[#141924]/60 border border-[#272a31]/60 flex items-center justify-between gap-2 mb-3">
-                              <div className="flex-1 min-w-0">
-                                <span className="text-[9px] text-[#8b92a2] block uppercase font-bold mb-1">Winning Digits:</span>
-                                {isConcluded && evt.winningDigits ? (
-                                  <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono-numbers font-black text-xs inline-block">
-                                    Drawn: [{evt.winningDigits}]
+                            {/* Real-Time Countdown / Final Result Banner */}
+                            <div className="p-2.5 rounded-xl bg-[#141924]/60 border border-[#272a31]/60 space-y-1.5 mb-3">
+                              {isActive ? (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] text-[#94A3B8] font-bold uppercase flex items-center gap-1">
+                                    <Clock className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                                    <span>Live Countdown:</span>
                                   </span>
-                                ) : codesList.length > 0 ? (
-                                  <div className="flex flex-wrap gap-1">
-                                    {codesList.slice(0, 3).map((c: string, idx: number) => (
-                                      <span key={idx} className="px-1.5 py-0.5 rounded bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono-numbers font-bold text-[10px]">
-                                        [{c}]
-                                      </span>
-                                    ))}
-                                    {codesList.length > 3 && (
-                                      <span className="px-1.5 py-0.5 rounded bg-[#0d1117] border border-[#272a31] text-[#94A3B8] text-[9px] font-bold" title={codesList.join(', ')}>
-                                        +{codesList.length - 3}
-                                      </span>
-                                    )}
+                                  <span className="font-mono-numbers font-black text-sm text-amber-400 tracking-wider">
+                                    {formatCountdown(evt.drawTime)}
+                                  </span>
+                                </div>
+                              ) : isConcluded ? (
+                                <div className="space-y-1">
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="text-[10px] text-[#94A3B8] uppercase font-bold">Drawn Digits:</span>
+                                    <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono-numbers font-black text-xs">
+                                      [{evt.winningDigits || (codesList.length > 0 ? codesList.join(', ') : 'N/A')}]
+                                    </span>
                                   </div>
-                                ) : (
-                                  <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-bold inline-flex items-center gap-1">
-                                    <AlertTriangle className="w-3 h-3" />
-                                    <span>To Be Configured</span>
+                                  <div className="flex items-center justify-between text-[11px] text-[#94A3B8]">
+                                    <span>Settlement Status:</span>
+                                    <strong className="text-emerald-400 font-bold">✓ Settled &amp; Paid</strong>
+                                  </div>
+                                </div>
+                              ) : isWaitingForDigits ? (
+                                <div className="space-y-1">
+                                  <div className="text-amber-400 font-bold text-xs flex items-center gap-1">
+                                    <AlertTriangle className="w-3.5 h-3.5" />
+                                    <span>Duration Expired · Digits Required</span>
+                                  </div>
+                                  <p className="text-[10px] text-[#94A3B8]">
+                                    Configure winning digits below to automatically finalize the draw and disburse payouts.
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-[#94A3B8] flex items-center gap-1">
+                                    <RefreshCw className="w-3 h-3 text-indigo-400 animate-spin" />
+                                    <span>Draw Processing...</span>
                                   </span>
-                                )}
-                              </div>
-
-                              <div className="text-right shrink-0">
-                                <span className="text-[9px] text-[#8b92a2] block uppercase font-bold mb-1">Settlement:</span>
-                                {isConcluded ? (
-                                  <span className="text-emerald-400 font-bold text-[10px] inline-flex items-center gap-1">
-                                    <CheckCircle2 className="w-3 h-3" />
-                                    <span>Settled &amp; Paid</span>
-                                  </span>
-                                ) : isPending ? (
-                                  <span className="text-amber-400 font-bold text-[10px]">
-                                    Draw Ready
-                                  </span>
-                                ) : (
-                                  <span className="text-[#94A3B8] text-[10px]">
-                                    Sales Open
-                                  </span>
-                                )}
-                              </div>
+                                  <span className="font-mono-numbers text-indigo-300 font-bold">Matching Tickets</span>
+                                </div>
+                              )}
                             </div>
                           </div>
 
-                          {/* Card Actions: Primary Button + Secondary Action Toolbar */}
+                          {/* Card Actions: Primary Button + Strictly 3 Contextual Actions */}
                           <div className="space-y-2 pt-2 border-t border-[#1f2737]">
-                            {/* Primary Action Button */}
-                            {isPending ? (
-                              <button
-                                type="button"
-                                onClick={() => openDrawOracle(evt)}
-                                className="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all"
-                              >
-                                <Dices className="w-3.5 h-3.5" />
-                                <span>Launch Draw Oracle</span>
-                              </button>
-                            ) : isConcluded ? (
-                              <button
-                                type="button"
-                                onClick={() => setViewPayoutsEvent(evt)}
-                                className="w-full py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-                              >
-                                <Coins className="w-3.5 h-3.5" />
-                                <span>View Disbursed Payouts</span>
-                              </button>
-                            ) : codesList.length === 0 ? (
+                            {/* Prominent Action Button for Waiting Digits */}
+                            {isWaitingForDigits && (
                               <button
                                 type="button"
                                 onClick={() => openWinnerConfig(evt)}
-                                className="w-full py-2 rounded-xl btn-gold text-black font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all"
+                                className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg animate-pulse"
                               >
-                                <Trophy className="w-3.5 h-3.5" />
-                                <span>Configure Winning Codes</span>
+                                <AlertTriangle className="w-4 h-4" />
+                                <span>Configure Winning Digits to Finalize Draw</span>
                               </button>
-                            ) : null}
+                            )}
 
-                            {/* Secondary Action Toolbar */}
-                            <div className="flex items-center justify-between gap-1 pt-1">
-                              <div className="flex items-center gap-1 flex-wrap">
-                                {/* View Details */}
-                                <button
-                                  type="button"
-                                  onClick={() => setViewDetailsEvent(evt)}
-                                  className="p-1.5 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-[#94A3B8] hover:text-white border border-[#272a31] transition-colors cursor-pointer"
-                                  title="View Full Event Details"
-                                >
-                                  <Eye className="w-3.5 h-3.5" />
-                                </button>
+                            {isConcluded && (
+                              <button
+                                type="button"
+                                onClick={() => setViewDetailsEvent(evt)}
+                                className="w-full py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all"
+                              >
+                                <Coins className="w-3.5 h-3.5" />
+                                <span>View Settled Winners &amp; Disbursed USDT</span>
+                              </button>
+                            )}
 
-                                {/* Edit Event */}
-                                <button
-                                  type="button"
-                                  onClick={() => setEditEventTarget(evt)}
-                                  className="p-1.5 rounded-lg bg-[#141924] hover:bg-[#1a2130] text-[#94A3B8] hover:text-white border border-[#272a31] transition-colors cursor-pointer"
-                                  title="Edit Event Parameters"
-                                >
-                                  <Edit3 className="w-3.5 h-3.5" />
-                                </button>
+                            {/* STRICTLY 3 ACTIONS TOOLBAR: A. View Details | B. Winning Digits | C. Delete Event */}
+                            <div className="flex items-center gap-2 pt-1">
+                              {/* Action A: View Details */}
+                              <button
+                                type="button"
+                                onClick={() => setViewDetailsEvent(evt)}
+                                className="flex-1 py-2 px-3 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-[#94A3B8] hover:text-white border border-[#272a31] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                title="View Full Event Details & Payouts"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-amber-400" />
+                                <span className="text-xs font-bold">Details</span>
+                              </button>
 
-                                {/* Configure Winners / Winning Codes */}
-                                <button
-                                  type="button"
-                                  onClick={() => openWinnerConfig(evt)}
-                                  className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-colors cursor-pointer"
-                                  title="Configure Winners & Winning Codes"
-                                >
-                                  <Trophy className="w-3.5 h-3.5" />
-                                </button>
+                              {/* Action B: Winning Digits Management */}
+                              <button
+                                type="button"
+                                onClick={() => openWinnerConfig(evt)}
+                                className="flex-1 py-2 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                title={isConcluded ? 'View Winning Digits (Locked)' : 'Manage Winning Digits'}
+                              >
+                                <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                                <span className="text-xs font-bold">Winning Digits</span>
+                              </button>
 
-                                {/* Draw Oracle / Manage Draw Results */}
-                                <button
-                                  type="button"
-                                  onClick={() => openDrawOracle(evt)}
-                                  className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition-colors cursor-pointer"
-                                  title="Draw Oracle & Finalize Settlement"
-                                >
-                                  <Dices className="w-3.5 h-3.5" />
-                                </button>
-
-                                {/* View Payouts */}
-                                <button
-                                  type="button"
-                                  onClick={() => setViewPayoutsEvent(evt)}
-                                  className="p-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 transition-colors cursor-pointer"
-                                  title="View Disbursed Payouts"
-                                >
-                                  <Coins className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-
-                              <div className="flex items-center gap-1 shrink-0">
-                                {/* Emergency Pause / Resume */}
-                                <button
-                                  type="button"
-                                  disabled={isConcluded}
-                                  onClick={() => {
-                                    if (isPaused) {
-                                      directPauseEvent(evt.id, false, '');
-                                    } else {
-                                      setPauseReasonModal({ event: evt, isPausing: true, reason: '' });
-                                    }
-                                  }}
-                                  className={`p-1.5 rounded-lg border transition-colors cursor-pointer disabled:opacity-30 ${
-                                    isPaused
-                                      ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border-emerald-500/30'
-                                      : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30'
-                                  }`}
-                                  title={isPaused ? 'Resume Event' : 'Emergency Pause Event'}
-                                >
-                                  {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
-                                </button>
-
-                                {/* Delete Event */}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (confirm(`Are you sure you want to delete event "${evt.title}" (${evt.id})? This will immediately remove it from the User Panel.`)) {
-                                      directDeleteEvent(evt.id);
-                                    }
-                                  }}
-                                  className="p-1.5 rounded-lg bg-red-950/30 hover:bg-red-900/50 text-red-400 border border-red-500/30 transition-colors cursor-pointer"
-                                  title="Delete Event"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
+                              {/* Action C: Delete Event (Financial Safety Guaranteed) */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm(`Are you sure you want to delete event "${evt.title}" (${evt.id})?\n\nCRITICAL FINANCIAL INTEGRITY GUARANTEE:\n• All user wallet balances remain 100% permanently intact.\n• Past credited winnings will NEVER be reversed or deducted.\n• Event is safely archived from the active management view.`)) {
+                                    directDeleteEvent(evt.id);
+                                  }
+                                }}
+                                className="p-2 rounded-xl bg-red-950/20 hover:bg-red-900/40 text-red-400 border border-red-500/30 transition-all cursor-pointer flex items-center justify-center"
+                                title="Delete Event"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -1264,11 +1223,11 @@ export default function GamesManagementSuperHub({
             </div>
 
             {/* ================================================================ */}
-            {/* MODAL 1: 8-STEP EVENT CREATION WIZARD (PARTS 1 - 6)              */}
+            {/* MODAL 1: 4-STEP EVENT CREATION WIZARD                             */}
             {/* ================================================================ */}
             {isWizardOpen && (
               <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
-                <div className="max-w-3xl w-full bg-[#0d1117] border border-[#272a31] rounded-3xl p-5 sm:p-7 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar my-auto">
+                <div className="max-w-2xl w-full bg-[#0d1117] border border-[#272a31] rounded-3xl p-5 sm:p-7 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar my-auto">
                   
                   {/* Wizard Header & Stepper */}
                   <div className="space-y-3 pb-4 border-b border-[#1f2737]">
@@ -1282,15 +1241,11 @@ export default function GamesManagementSuperHub({
                             Create New Four-Digit Lottery Event
                           </h3>
                           <p className="text-xs text-[#94A3B8]">
-                            Step {wizardStep} of 8: {
-                              wizardStep === 1 ? 'Basic Information & Room Setup' :
-                              wizardStep === 2 ? 'Ticket Price & Currency (USDT)' :
-                              wizardStep === 3 ? 'Jackpot Configuration & Determination' :
-                              wizardStep === 4 ? 'Ticket Purchase Boundaries' :
-                              wizardStep === 5 ? 'Winning Rules & Combination Codes' :
-                              wizardStep === 6 ? 'Payout Distribution & Winner Split' :
-                              wizardStep === 7 ? 'Review Configuration & Summary' :
-                              'Deploy & Publish Event'
+                            Step {wizardStep} of 4: {
+                              wizardStep === 1 ? 'Basic Event Information' :
+                              wizardStep === 2 ? 'Ticket & Jackpot Configuration' :
+                              wizardStep === 3 ? 'Winning Digits Configuration' :
+                              'Review & Deploy Event'
                             }
                           </p>
                         </div>
@@ -1307,8 +1262,8 @@ export default function GamesManagementSuperHub({
                     </div>
 
                     {/* Step progress pills */}
-                    <div className="grid grid-cols-8 gap-1.5 pt-1">
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                    <div className="grid grid-cols-4 gap-2 pt-1">
+                      {[1, 2, 3, 4].map(s => (
                         <div
                           key={s}
                           className={`h-1.5 rounded-full transition-all ${
@@ -1323,1160 +1278,678 @@ export default function GamesManagementSuperHub({
                     </div>
                   </div>
 
-                  {/* STEP 1: BASIC INFORMATION & ROOM */}
+                  {/* STEP 1: BASIC EVENT INFORMATION */}
                   {wizardStep === 1 && (
-                    <div className="space-y-4 animate-in fade-in duration-200">
+                    <div className="space-y-4 animate-in fade-in duration-200 text-xs">
                       <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
-                        ℹ️ Step 1 establishes the unique identity, room classification, and countdown schedule for this lottery draw.
+                        ℹ️ Step 1 establishes permanent event name, ticket availability, batch tag, and countdown duration.
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                            Event ID (Auto-Generated Unique Identifier)
-                          </label>
-                          <div className="flex items-center gap-2">
+                      {/* 1. Event Name */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-[#8b92a2] flex items-center justify-between">
+                          <span>1. Event Name *</span>
+                          <span className="text-[10px] text-amber-400 font-semibold">🔒 Permanent &amp; Immutable After Creation</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={wizardData.eventName}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setWizardData(prev => {
+                              const updated = { ...prev, eventName: val };
+                              updated.roomDescription = generateAutoDescription(updated);
+                              return updated;
+                            });
+                          }}
+                          placeholder="e.g. Grand Pot VIP Draw #108"
+                          className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-amber-400"
+                        />
+                        <p className="text-[10px] text-[#64748B]">
+                          This name is permanently saved to the event ledger and cannot be edited after event creation.
+                        </p>
+                      </div>
+
+                      {/* 2. Ticket Availability */}
+                      <div className="space-y-2 pt-1">
+                        <label className="text-[11px] font-bold text-[#8b92a2] block">
+                          2. Ticket Availability Type
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setWizardData(prev => {
+                                const updated = { ...prev, ticketAvailability: 'unlimited' as const };
+                                updated.roomDescription = generateAutoDescription(updated);
+                                return updated;
+                              });
+                            }}
+                            className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                              wizardData.ticketAvailability === 'unlimited'
+                                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                            }`}
+                          >
+                            <span className="font-bold text-xs block">Unlimited Tickets</span>
+                            <span className="text-[10px] opacity-75">No ceiling on ticket sales</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setWizardData(prev => {
+                                const updated = { ...prev, ticketAvailability: 'limited' as const };
+                                updated.roomDescription = generateAutoDescription(updated);
+                                return updated;
+                              });
+                            }}
+                            className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                              wizardData.ticketAvailability === 'limited'
+                                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                            }`}
+                          >
+                            <span className="font-bold text-xs block">Limited Tickets</span>
+                            <span className="text-[10px] opacity-75">Cap maximum tickets available</span>
+                          </button>
+                        </div>
+
+                        {wizardData.ticketAvailability === 'limited' && (
+                          <div className="pt-2 animate-in fade-in duration-150">
+                            <label className="text-[10px] text-[#8b92a2] block mb-1">Maximum Ticket Quantity *</label>
                             <input
-                              type="text"
-                              value={wizardData.eventId}
-                              onChange={(e) => setWizardData({ ...wizardData, eventId: e.target.value })}
-                              className="flex-1 bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-amber-300 font-mono-numbers outline-none focus:border-amber-400"
-                              required
+                              type="number"
+                              min={10}
+                              max={100000}
+                              value={wizardData.maxTotalTickets}
+                              onChange={(e) => {
+                                const val = Math.max(1, parseInt(e.target.value) || 1);
+                                setWizardData(prev => {
+                                  const updated = { ...prev, maxTotalTickets: val };
+                                  updated.roomDescription = generateAutoDescription(updated);
+                                  return updated;
+                                });
+                              }}
+                              className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
                             />
-                            <button
-                              type="button"
-                              onClick={() => setWizardData({ ...wizardData, eventId: 'evt-' + Date.now().toString(36) + '-' + Math.floor(100 + Math.random() * 900) })}
-                              className="px-2.5 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] border border-[#272a31] text-xs text-amber-400 cursor-pointer"
-                              title="Generate New ID"
-                            >
-                              <RefreshCw className="w-3.5 h-3.5" />
-                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 3. Event Duration (Hours & Minutes) */}
+                      <div className="space-y-2 pt-1">
+                        <label className="text-[11px] font-bold text-[#8b92a2] flex items-center justify-between">
+                          <span>3. Event Duration</span>
+                          <span className="text-[10px] text-emerald-400 font-mono-numbers">Authoritative Expiration</span>
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <span className="text-[10px] text-[#64748B] block mb-1">Hours</span>
+                            <input
+                              type="number"
+                              min={0}
+                              max={720}
+                              value={wizardData.durationHours}
+                              onChange={(e) => {
+                                const val = Math.max(0, parseInt(e.target.value) || 0);
+                                setWizardData(prev => {
+                                  const updated = { ...prev, durationHours: val };
+                                  updated.roomDescription = generateAutoDescription(updated);
+                                  return updated;
+                                });
+                              }}
+                              className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-[#64748B] block mb-1">Minutes</span>
+                            <input
+                              type="number"
+                              min={0}
+                              max={59}
+                              value={wizardData.durationMinutes}
+                              onChange={(e) => {
+                                const val = Math.max(0, Math.min(59, parseInt(e.target.value) || 0));
+                                setWizardData(prev => {
+                                  const updated = { ...prev, durationMinutes: val };
+                                  updated.roomDescription = generateAutoDescription(updated);
+                                  return updated;
+                                });
+                              }}
+                              className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
+                            />
                           </div>
                         </div>
 
-                        <div>
-                          <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                            Event Name / Title *
-                          </label>
-                          <input
-                            type="text"
-                            value={wizardData.eventName}
-                            onChange={(e) => setWizardData({ ...wizardData, eventName: e.target.value })}
-                            placeholder="e.g. Diwali Mega Bumper 50,000 USDT"
-                            className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-400"
-                            required
-                          />
+                        {/* Live countdown preview */}
+                        <div className="p-2.5 rounded-xl bg-[#07090d] border border-[#1f2737] flex items-center justify-between text-xs">
+                          <span className="text-[#94A3B8] flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Total Duration:</span>
+                            <strong className="text-white">
+                              {wizardData.durationHours}h {wizardData.durationMinutes}m
+                            </strong>
+                          </span>
+                          <span className="text-[11px] text-amber-400 font-mono-numbers">
+                            Countdown: {String(wizardData.durationHours).padStart(2, '0')}:{String(wizardData.durationMinutes).padStart(2, '0')}:00
+                          </span>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                            Designated Room *
-                          </label>
+                      {/* 4. Event Tag / Batch Tag */}
+                      <div className="space-y-1 pt-1">
+                        <label className="text-[11px] font-bold text-[#8b92a2] flex items-center justify-between">
+                          <span>4. Event Tag / Batch Tag</span>
+                          <span className="text-[10px] text-[#94A3B8]">Auto-Generated Unique Identifier</span>
+                        </label>
+                        <div className="flex items-center gap-2">
                           <input
                             type="text"
-                            value={wizardData.roomName}
-                            onChange={(e) => setWizardData({ ...wizardData, roomName: e.target.value })}
-                            placeholder="e.g. Room 1: Grand Pot Arena"
-                            className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-400"
-                            required
+                            value={wizardData.eventTag}
+                            onChange={(e) => setWizardData(prev => ({ ...prev, eventTag: e.target.value.toUpperCase() }))}
+                            className="flex-1 bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers font-bold outline-none focus:border-amber-400 uppercase tracking-wider"
                           />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                            Badge Tag
-                          </label>
-                          <input
-                            type="text"
-                            value={wizardData.badge}
-                            onChange={(e) => setWizardData({ ...wizardData, badge: e.target.value })}
-                            placeholder="e.g. VIP DRAW"
-                            className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-400"
-                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newTag = 'BATCH-' + Math.floor(1000 + Math.random() * 9000);
+                              setWizardData(prev => ({ ...prev, eventTag: newTag }));
+                            }}
+                            className="px-3 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-[#94A3B8] hover:text-white border border-[#272a31] text-xs font-bold cursor-pointer"
+                          >
+                            Regenerate
+                          </button>
                         </div>
                       </div>
 
-                      <div>
-                        <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                          Room Description
+                      {/* 5. Event Description */}
+                      <div className="space-y-1 pt-1">
+                        <label className="text-[11px] font-bold text-[#8b92a2] flex items-center justify-between">
+                          <span>5. Event Description</span>
+                          <span className="text-[10px] text-[#94A3B8]">Review &amp; Edit Before Deployment</span>
                         </label>
                         <textarea
                           rows={2}
                           value={wizardData.roomDescription}
-                          onChange={(e) => setWizardData({ ...wizardData, roomDescription: e.target.value })}
-                          placeholder="Describe the rules, pool distribution, or special perks..."
-                          className="w-full bg-[#07090d] border border-[#272a31] rounded-xl p-3 text-xs text-white outline-none focus:border-amber-400"
+                          onChange={(e) => setWizardData(prev => ({ ...prev, roomDescription: e.target.value }))}
+                          placeholder="Auto-generated description..."
+                          className="w-full bg-[#07090d] border border-[#272a31] rounded-xl p-2.5 text-xs text-white outline-none focus:border-amber-400"
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                        <div>
-                          <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                            Event Duration (Countdown)
-                          </label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <input
-                              type="number"
-                              min="1"
-                              value={wizardData.durationValue}
-                              onChange={(e) => setWizardData({ ...wizardData, durationValue: Math.max(1, parseFloat(e.target.value) || 1) })}
-                              className="bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
-                              required
-                            />
-                            <select
-                              value={wizardData.durationUnit}
-                              onChange={(e) => setWizardData({ ...wizardData, durationUnit: e.target.value })}
-                              className="bg-[#07090d] border border-[#272a31] rounded-xl px-2 py-2 text-xs text-white outline-none cursor-pointer"
-                            >
-                              <option value="minutes">Minutes</option>
-                              <option value="hours">Hours</option>
-                              <option value="days">Days</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                            Cooldown Before Start
-                          </label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <input
-                              type="number"
-                              min="0"
-                              value={wizardData.cooldownValue}
-                              onChange={(e) => setWizardData({ ...wizardData, cooldownValue: Math.max(0, parseFloat(e.target.value) || 0) })}
-                              className="bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
-                            />
-                            <select
-                              value={wizardData.cooldownUnit}
-                              onChange={(e) => setWizardData({ ...wizardData, cooldownUnit: e.target.value })}
-                              className="bg-[#07090d] border border-[#272a31] rounded-xl px-2 py-2 text-xs text-white outline-none cursor-pointer"
-                            >
-                              <option value="minutes">Minutes</option>
-                              <option value="hours">Hours</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-4 border-t border-[#1f2737]">
+                      <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1f2737]">
                         <button
                           type="button"
-                          onClick={() => setIsWizardOpen(false)}
-                          className="px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-[#94A3B8] hover:text-white border border-[#272a31] cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          disabled={!wizardData.eventName.trim() || !wizardData.roomName.trim()}
+                          disabled={!wizardData.eventName.trim() || (wizardData.durationHours === 0 && wizardData.durationMinutes === 0)}
                           onClick={() => setWizardStep(2)}
                           className="px-5 py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
                         >
-                          <span>Next: Ticket Price &amp; Currency</span>
+                          <span>Proceed to Step 2: Jackpot &amp; Tickets</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   )}
 
-                  {/* STEP 2: TICKET PRICE & CURRENCY */}
+                  {/* STEP 2: TICKET AND JACKPOT CONFIGURATION */}
                   {wizardStep === 2 && (
-                    <div className="space-y-4 animate-in fade-in duration-200">
+                    <div className="space-y-4 animate-in fade-in duration-200 text-xs">
                       <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
-                        ℹ️ Step 2 configures the purchase cost per ticket. Platform economy is strictly USDT.
+                        ℹ️ Step 2 configures ticket price, guaranteed pot mode, and winner distribution policy in USDT.
                       </div>
 
-                      <div>
-                        <label className="block text-xs text-[#8b92a2] font-semibold mb-2">
-                          Platform Currency
-                        </label>
-                        <div className="p-3.5 rounded-xl bg-[#07090d] border border-emerald-500/30 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-black text-lg">
-                              ₮
-                            </div>
-                            <div>
-                              <strong className="text-white block text-sm">Currency: USDT</strong>
-                              <span className="text-[10px] text-emerald-400 font-semibold">Tether TRC-20 · Exclusive Platform Currency</span>
-                            </div>
-                          </div>
-                          <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono-numbers font-bold uppercase">
-                            USDT Only
-                          </span>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
+                      {/* Ticket Price */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-[#8b92a2] block">
                           Ticket Price (USDT) *
                         </label>
                         <div className="relative">
                           <input
                             type="number"
-                            min="1"
+                            min={0.1}
+                            step={0.1}
                             value={wizardData.ticketPrice}
-                            onChange={(e) => setWizardData({ ...wizardData, ticketPrice: Math.max(1, parseFloat(e.target.value) || 1) })}
-                            className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2.5 text-sm text-white font-mono-numbers outline-none focus:border-amber-400"
-                            required
+                            onChange={(e) => {
+                              const val = Math.max(0.1, parseFloat(e.target.value) || 1);
+                              setWizardData(prev => {
+                                const updated = { ...prev, ticketPrice: val };
+                                updated.roomDescription = generateAutoDescription(updated);
+                                return updated;
+                              });
+                            }}
+                            className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400 pr-16"
                           />
-                          <span className="absolute right-3 top-2.5 text-xs text-[#64748B] font-bold">
-                            USDT / Ticket
+                          <span className="absolute right-3 top-2 text-[10px] font-bold text-amber-400">
+                            USDT
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-4 border-t border-[#1f2737]">
+                      {/* Jackpot Configuration */}
+                      <div className="space-y-2 pt-1">
+                        <label className="text-[11px] font-bold text-[#8b92a2] block">
+                          Jackpot Determination Mode
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setWizardData(prev => {
+                                const updated = { ...prev, jackpotMode: 'fixed' as const };
+                                updated.roomDescription = generateAutoDescription(updated);
+                                return updated;
+                              });
+                            }}
+                            className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                              wizardData.jackpotMode === 'fixed'
+                                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                            }`}
+                          >
+                            <span className="font-bold text-xs block">Fixed Jackpot</span>
+                            <span className="text-[10px] opacity-75">Guaranteed static pot</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setWizardData(prev => {
+                                const updated = { ...prev, jackpotMode: 'range' as const };
+                                updated.roomDescription = generateAutoDescription(updated);
+                                return updated;
+                              });
+                            }}
+                            className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                              wizardData.jackpotMode === 'range'
+                                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                            }`}
+                          >
+                            <span className="font-bold text-xs block">Jackpot Range</span>
+                            <span className="text-[10px] opacity-75">Dynamic [Min - Max] bounds</span>
+                          </button>
+                        </div>
+
+                        {wizardData.jackpotMode === 'fixed' ? (
+                          <div className="pt-2">
+                            <label className="text-[10px] text-[#8b92a2] block mb-1">Fixed Jackpot Amount (USDT) *</label>
+                            <input
+                              type="number"
+                              min={10}
+                              value={wizardData.fixedJackpot}
+                              onChange={(e) => {
+                                const val = Math.max(1, parseFloat(e.target.value) || 1);
+                                setWizardData(prev => {
+                                  const updated = { ...prev, fixedJackpot: val, selectedJackpotAmount: val };
+                                  updated.roomDescription = generateAutoDescription(updated);
+                                  return updated;
+                                });
+                              }}
+                              className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
+                            />
+                          </div>
+                        ) : (
+                          <div className="pt-2 space-y-2">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-[10px] text-[#8b92a2] block mb-1">Minimum Jackpot (USDT)</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={wizardData.minJackpot}
+                                  onChange={(e) => {
+                                    const val = Math.max(1, parseFloat(e.target.value) || 1);
+                                    setWizardData(prev => {
+                                      const updated = { ...prev, minJackpot: val };
+                                      updated.roomDescription = generateAutoDescription(updated);
+                                      return updated;
+                                    });
+                                  }}
+                                  className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] text-[#8b92a2] block mb-1">Maximum Jackpot (USDT)</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={wizardData.maxJackpot}
+                                  onChange={(e) => {
+                                    const val = Math.max(1, parseFloat(e.target.value) || 1);
+                                    setWizardData(prev => {
+                                      const updated = { ...prev, maxJackpot: val };
+                                      updated.roomDescription = generateAutoDescription(updated);
+                                      return updated;
+                                    });
+                                  }}
+                                  className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] text-[#8b92a2] block mb-1">Determination Method</label>
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setWizardData(prev => ({ ...prev, jackpotSelectionMethod: 'manual' }))}
+                                  className={`p-2 rounded-lg border text-left cursor-pointer text-xs ${
+                                    wizardData.jackpotSelectionMethod === 'manual'
+                                      ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                                      : 'bg-[#07090d] border-[#272a31] text-[#94A3B8]'
+                                  }`}
+                                >
+                                  <strong>Manual Exact Pot</strong>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setWizardData(prev => ({ ...prev, jackpotSelectionMethod: 'random' }))}
+                                  className={`p-2 rounded-lg border text-left cursor-pointer text-xs ${
+                                    wizardData.jackpotSelectionMethod === 'random'
+                                      ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                                      : 'bg-[#07090d] border-[#272a31] text-[#94A3B8]'
+                                  }`}
+                                >
+                                  <strong>Random RNG Determination</strong>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Winner Mode */}
+                      <div className="space-y-2 pt-1">
+                        <label className="text-[11px] font-bold text-[#8b92a2] block">
+                          Winner Mode &amp; Payout Distribution
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setWizardData(prev => ({ ...prev, winnerMode: 'single', winnerCount: 1 }))}
+                            className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                              wizardData.winnerMode === 'single'
+                                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                            }`}
+                          >
+                            <span className="font-bold text-xs block">Single Winner</span>
+                            <span className="text-[10px] opacity-75">100% pot to 1 winning code</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setWizardData(prev => ({ ...prev, winnerMode: 'multiple', winnerCount: 3 }))}
+                            className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                              wizardData.winnerMode === 'multiple'
+                                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                            }`}
+                          >
+                            <span className="font-bold text-xs block">Multiple Winners</span>
+                            <span className="text-[10px] opacity-75">Split across multiple winning codes</span>
+                          </button>
+                        </div>
+
+                        {wizardData.winnerMode === 'multiple' && (
+                          <div className="pt-2 grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-[10px] text-[#8b92a2] block mb-1">Number of Winners</label>
+                              <input
+                                type="number"
+                                min={2}
+                                max={10}
+                                value={wizardData.winnerCount}
+                                onChange={(e) => {
+                                  const c = Math.max(2, Math.min(10, parseInt(e.target.value) || 2));
+                                  setWizardData(prev => ({
+                                    ...prev,
+                                    winnerCount: c,
+                                    winningCodes: generateDistinctCodes(c)
+                                  }));
+                                }}
+                                className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-[#8b92a2] block mb-1">Payout Share (%)</label>
+                              <input
+                                type="number"
+                                min={50}
+                                max={100}
+                                value={wizardData.winnerPayoutSharePercent}
+                                onChange={(e) => setWizardData(prev => ({ ...prev, winnerPayoutSharePercent: parseFloat(e.target.value) || 90 }))}
+                                className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-[#1f2737]">
                         <button
                           type="button"
                           onClick={() => setWizardStep(1)}
                           className="px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-[#94A3B8] hover:text-white border border-[#272a31] flex items-center gap-1 cursor-pointer"
                         >
                           <ArrowLeft className="w-3.5 h-3.5" />
-                          <span>Back</span>
+                          <span>Back to Step 1</span>
                         </button>
                         <button
                           type="button"
-                          disabled={wizardData.ticketPrice <= 0}
                           onClick={() => setWizardStep(3)}
                           className="px-5 py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md"
                         >
-                          <span>Next: Jackpot Configuration</span>
+                          <span>Proceed to Step 3: Winning Digits</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   )}
 
-                  {/* STEP 3: JACKPOT AMOUNT & DETERMINATION (PART 1) */}
+                  {/* STEP 3: WINNING DIGITS CONFIGURATION */}
                   {wizardStep === 3 && (
-                    <div className="space-y-4 animate-in fade-in duration-200">
+                    <div className="space-y-4 animate-in fade-in duration-200 text-xs">
                       <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
-                        ℹ️ Step 3 configures the jackpot determination method. You can choose a guaranteed Fixed Jackpot or a bounded Range (Manual vs Random).
+                        ℹ️ Step 3 is flexible: preset your winning digits now or leave blank to configure later before expiration.
                       </div>
 
-                      <div>
-                        <label className="block text-xs text-[#8b92a2] font-semibold mb-2">
-                          Jackpot Structure
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div
-                            onClick={() => setWizardData({ ...wizardData, jackpotMode: 'fixed' })}
-                            className={`p-4 rounded-xl border flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
-                              wizardData.jackpotMode === 'fixed'
-                                ? 'bg-amber-500/20 border-amber-400 ring-1 ring-amber-400 text-white'
-                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8]'
-                            }`}
-                          >
-                            <Coins className="w-5 h-5 text-amber-400 mb-1" />
-                            <strong className="text-white text-sm">Fixed Jackpot</strong>
-                            <span className="text-[10px] text-[#94A3B8]">Guaranteed exact prize pool</span>
-                          </div>
+                      {/* Option Choice */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setWizardData(prev => ({ ...prev, winningCodesOption: 'preset' }))}
+                          className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all ${
+                            wizardData.winningCodesOption === 'preset'
+                              ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                              : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                          }`}
+                        >
+                          <span className="font-bold text-xs block mb-1">Option A: Preset Winning Digits</span>
+                          <span className="text-[10px] opacity-75">Enter valid 4-digit combination(s) right now</span>
+                        </button>
 
-                          <div
-                            onClick={() => setWizardData({ ...wizardData, jackpotMode: 'range' })}
-                            className={`p-4 rounded-xl border flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
-                              wizardData.jackpotMode === 'range'
-                                ? 'bg-amber-500/20 border-amber-400 ring-1 ring-amber-400 text-white'
-                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8]'
-                            }`}
-                          >
-                            <TrendingUp className="w-5 h-5 text-emerald-400 mb-1" />
-                            <strong className="text-white text-sm">Jackpot Range</strong>
-                            <span className="text-[10px] text-[#94A3B8]">Minimum &amp; Maximum Boundaries</span>
-                          </div>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setWizardData(prev => ({ ...prev, winningCodesOption: 'later' }))}
+                          className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all ${
+                            wizardData.winningCodesOption === 'later'
+                              ? 'bg-purple-500/15 border-purple-500/40 text-purple-300'
+                              : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                          }`}
+                        >
+                          <span className="font-bold text-xs block mb-1">Option B: Configure Later</span>
+                          <span className="text-[10px] opacity-75">Leave blank &amp; configure before expiration</span>
+                        </button>
                       </div>
 
-                      {wizardData.jackpotMode === 'fixed' ? (
-                        <div>
-                          <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                            Fixed Guaranteed Jackpot Amount (USDT) *
-                          </label>
-                          <input
-                            type="number"
-                            min="10"
-                            value={wizardData.fixedJackpot}
-                            onChange={(e) => setWizardData({ ...wizardData, fixedJackpot: Math.max(1, parseFloat(e.target.value) || 1) })}
-                            className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2.5 text-sm text-white font-mono-numbers outline-none focus:border-amber-400"
-                            required
-                          />
-                        </div>
-                      ) : (
-                        <div className="space-y-4 p-4 rounded-xl bg-[#07090d] border border-[#272a31]">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                                Minimum Jackpot (Floor) *
-                              </label>
-                              <input
-                                type="number"
-                                min="1"
-                                value={wizardData.minJackpot}
-                                onChange={(e) => {
-                                  const minVal = Math.max(1, parseFloat(e.target.value) || 1);
-                                  setWizardData({
-                                    ...wizardData,
-                                    minJackpot: minVal,
-                                    selectedJackpotAmount: Math.max(minVal, wizardData.selectedJackpotAmount)
-                                  });
-                                }}
-                                className="w-full bg-[#0b0e14] border border-[#1f2737] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
-                                required
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                                Maximum Jackpot (Ceiling) *
-                              </label>
-                              <input
-                                type="number"
-                                min="1"
-                                value={wizardData.maxJackpot}
-                                onChange={(e) => {
-                                  const maxVal = Math.max(1, parseFloat(e.target.value) || 1);
-                                  setWizardData({
-                                    ...wizardData,
-                                    maxJackpot: maxVal,
-                                    selectedJackpotAmount: Math.min(maxVal, wizardData.selectedJackpotAmount)
-                                  });
-                                }}
-                                className="w-full bg-[#0b0e14] border border-[#1f2737] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
-                                required
-                              />
-                            </div>
-                          </div>
-
-                          {/* Determination Method Choice */}
-                          <div className="space-y-2">
-                            <label className="block text-xs text-white font-bold">
-                              Jackpot Determination Method (Part 1)
+                      {wizardData.winningCodesOption === 'preset' ? (
+                        <div className="space-y-3 pt-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-bold text-[#8b92a2]">
+                              Preset Winning 4-Digit Combination(s):
                             </label>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div
-                                onClick={() => setWizardData({ ...wizardData, jackpotSelectionMethod: 'manual' })}
-                                className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                                  wizardData.jackpotSelectionMethod === 'manual'
-                                    ? 'bg-amber-500/20 border-amber-400 text-white'
-                                    : 'bg-[#0b0e14] border-[#1f2737] text-[#94A3B8]'
-                                }`}
-                              >
-                                <strong className="text-xs block text-white">1. Manual Selection</strong>
-                                <span className="text-[10px] text-[#94A3B8]">Administrator specifies exact amount in range</span>
-                              </div>
-
-                              <div
-                                onClick={() => setWizardData({ ...wizardData, jackpotSelectionMethod: 'random' })}
-                                className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                                  wizardData.jackpotSelectionMethod === 'random'
-                                    ? 'bg-amber-500/20 border-amber-400 text-white'
-                                    : 'bg-[#0b0e14] border-[#1f2737] text-[#94A3B8]'
-                                }`}
-                              >
-                                <strong className="text-xs block text-white">2. Random Determination</strong>
-                                <span className="text-[10px] text-[#94A3B8]">Backend deterministically locks RNG jackpot</span>
-                              </div>
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const count = wizardData.winnerMode === 'single' ? 1 : wizardData.winnerCount;
+                                setWizardData(prev => ({ ...prev, winningCodes: generateDistinctCodes(count) }));
+                              }}
+                              className="text-[11px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer"
+                            >
+                              ⚡ Randomize Codes
+                            </button>
                           </div>
 
-                          {/* Manual Selection Input with Validation */}
-                          {wizardData.jackpotSelectionMethod === 'manual' ? (
-                            <div className="space-y-2 pt-2 border-t border-[#1f2737]">
-                              <div className="flex items-center justify-between">
-                                <label className="text-xs text-amber-300 font-bold">
-                                  Exact Jackpot Amount to Use (USDT) *
-                                </label>
-                                <span className="text-[10px] text-[#94A3B8]">
-                                  Allowed Range: {wizardData.minJackpot} - {wizardData.maxJackpot} USDT
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {(wizardData.winnerMode === 'single' ? [wizardData.winningCodes[0] || '2538'] : wizardData.winningCodes).map((code, idx) => (
+                              <div key={idx} className="p-2.5 rounded-xl bg-[#07090d] border border-[#272a31] space-y-1">
+                                <span className="text-[10px] text-[#94A3B8] block font-bold">
+                                  Position #{idx + 1}:
                                 </span>
-                              </div>
-                              <input
-                                type="number"
-                                min={wizardData.minJackpot}
-                                max={wizardData.maxJackpot}
-                                value={wizardData.selectedJackpotAmount}
-                                onChange={(e) => setWizardData({ ...wizardData, selectedJackpotAmount: parseFloat(e.target.value) || wizardData.minJackpot })}
-                                className={`w-full bg-[#0b0e14] border rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none ${
-                                  wizardData.selectedJackpotAmount < wizardData.minJackpot || wizardData.selectedJackpotAmount > wizardData.maxJackpot
-                                    ? 'border-red-500 text-red-300'
-                                    : 'border-amber-500/50'
-                                }`}
-                                required
-                              />
-
-                              {/* Validation message */}
-                              {wizardData.selectedJackpotAmount < wizardData.minJackpot || wizardData.selectedJackpotAmount > wizardData.maxJackpot ? (
-                                <p className="text-[11px] text-red-400 font-bold flex items-center gap-1">
-                                  ⚠️ Amount must be between {wizardData.minJackpot} USDT and {wizardData.maxJackpot} USDT.
-                                </p>
-                              ) : (
-                                <p className="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
-                                  ✓ Selected Jackpot: {wizardData.selectedJackpotAmount.toLocaleString()} USDT (Valid)
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="p-3.5 rounded-xl bg-[#0b0e14] border border-emerald-500/30 space-y-2 text-xs">
-                              <span className="font-bold text-emerald-300 block">Random Determination Specification:</span>
-                              <p className="text-[#94A3B8] text-[11px]">
-                                Upon event publishing, the Supabase backend will calculate and permanently lock a Provably Fair random jackpot within the range:
-                              </p>
-                              <div className="flex items-center justify-between p-2 rounded-lg bg-[#07090d] border border-[#1f2737]">
-                                <span className="text-white font-bold">{wizardData.minJackpot} USDT — {wizardData.maxJackpot} USDT</span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const sample = Math.round(wizardData.minJackpot + Math.random() * (wizardData.maxJackpot - wizardData.minJackpot));
-                                    if (showToast) showToast(`Simulated RNG Result: ${sample} USDT`, 'info');
+                                <input
+                                  type="text"
+                                  maxLength={4}
+                                  value={code}
+                                  onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                    const codes = [...wizardData.winningCodes];
+                                    codes[idx] = val;
+                                    setWizardData(prev => ({ ...prev, winningCodes: codes }));
                                   }}
-                                  className="px-2.5 py-1 rounded bg-[#141924] hover:bg-[#1a2130] text-[10px] text-amber-400 font-bold border border-[#272a31] cursor-pointer"
-                                >
-                                  Test RNG Formula
-                                </button>
+                                  className="w-full bg-[#141924] border border-[#272a31] rounded-lg px-2 py-1.5 text-center font-mono-numbers text-white font-bold text-sm tracking-[4px] outline-none focus:border-amber-400"
+                                />
                               </div>
+                            ))}
+                          </div>
+
+                          {hasDuplicateCodes(wizardData.winningCodes) && (
+                            <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-bold">
+                              ⚠️ All winning codes must be unique! Duplicate combination detected.
                             </div>
                           )}
-
+                        </div>
+                      ) : (
+                        <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-[#CBD5E1] space-y-1.5">
+                          <strong className="text-purple-300 block text-xs">Winning Digits Will Be Configured Later:</strong>
+                          <p className="text-[11px] leading-relaxed">
+                            The event will launch and allow users to purchase tickets normally. You can configure the winning digits anytime before the countdown expires using the event&apos;s dedicated <strong>Winning Digits</strong> management action.
+                          </p>
+                          <p className="text-[10px] text-amber-400 font-bold">
+                            ⚠️ If duration expires while digits are blank, the draw will pause safely with status &quot;Action Required&quot; until you enter the winning digits. No fake results will ever be generated.
+                          </p>
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between pt-4 border-t border-[#1f2737]">
+                      {/* Strict Rule Callout */}
+                      <div className="p-3.5 rounded-xl bg-[#07090d] border border-amber-500/30 text-[#94A3B8] space-y-1">
+                        <span className="text-[10px] uppercase font-black text-amber-400 block tracking-wider">
+                          📌 Strict Editing Permissions Rule
+                        </span>
+                        <p className="text-[11px] leading-relaxed">
+                          Only winning digit combinations can be edited after event creation. Once the final result is declared, winning digits become permanently locked. Event Name, Description, Ticket Price, Ticket Limit, and Duration cannot be modified after creation.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-[#1f2737]">
                         <button
                           type="button"
                           onClick={() => setWizardStep(2)}
                           className="px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-[#94A3B8] hover:text-white border border-[#272a31] flex items-center gap-1 cursor-pointer"
                         >
                           <ArrowLeft className="w-3.5 h-3.5" />
-                          <span>Back</span>
+                          <span>Back to Step 2</span>
                         </button>
                         <button
                           type="button"
                           disabled={
-                            wizardData.jackpotMode === 'range' &&
-                            wizardData.jackpotSelectionMethod === 'manual' &&
-                            (wizardData.selectedJackpotAmount < wizardData.minJackpot || wizardData.selectedJackpotAmount > wizardData.maxJackpot)
+                            wizardData.winningCodesOption === 'preset' && (
+                              wizardData.winningCodes.some(c => c.length !== 4) ||
+                              hasDuplicateCodes(wizardData.winningCodes)
+                            )
                           }
                           onClick={() => setWizardStep(4)}
                           className="px-5 py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
                         >
-                          <span>Next: Ticket Limits</span>
+                          <span>Proceed to Step 4: Review</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   )}
 
-                  {/* STEP 4: TICKET LIMITS */}
+                  {/* STEP 4: REVIEW AND CREATE EVENT */}
                   {wizardStep === 4 && (
-                    <div className="space-y-4 animate-in fade-in duration-200">
-                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
-                        ℹ️ Step 4 controls pool scarcity: select whether ticket purchases are unlimited or bounded by limits.
+                    <div className="space-y-4 animate-in fade-in duration-200 text-xs">
+                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
+                        ✓ Step 4: Complete Event Summary. Confirm all parameters and publish to the live database.
                       </div>
 
-                      <div>
-                        <label className="block text-xs text-[#8b92a2] font-semibold mb-2">
-                          Ticket Purchase Boundary Mode
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div
-                            onClick={() => setWizardData({ ...wizardData, ticketLimitMode: 'unlimited' })}
-                            className={`p-4 rounded-xl border flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
-                              wizardData.ticketLimitMode === 'unlimited'
-                                ? 'bg-amber-500/20 border-amber-400 ring-1 ring-amber-400 text-white'
-                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8]'
-                            }`}
-                          >
-                            <Unlock className="w-5 h-5 text-amber-400 mb-1" />
-                            <strong className="text-white text-sm">Unlimited Tickets</strong>
-                            <span className="text-[10px] text-[#94A3B8]">No ceiling on total ticket volume</span>
-                          </div>
-
-                          <div
-                            onClick={() => setWizardData({ ...wizardData, ticketLimitMode: 'limited' })}
-                            className={`p-4 rounded-xl border flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
-                              wizardData.ticketLimitMode === 'limited'
-                                ? 'bg-amber-500/20 border-amber-400 ring-1 ring-amber-400 text-white'
-                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8]'
-                            }`}
-                          >
-                            <Lock className="w-5 h-5 text-purple-400 mb-1" />
-                            <strong className="text-white text-sm">Limited Tickets</strong>
-                            <span className="text-[10px] text-[#94A3B8]">Hard total &amp; per-user caps</span>
-                          </div>
+                      {/* Parameter summary grid */}
+                      <div className="p-4 rounded-2xl bg-[#07090d] border border-[#272a31] space-y-2.5 font-mono-numbers">
+                        <div className="flex justify-between items-center text-xs pb-2 border-b border-[#1f2737]">
+                          <span className="text-[#94A3B8]">Event Name:</span>
+                          <strong className="text-white font-bold">{wizardData.eventName}</strong>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[#94A3B8]">Batch Tag:</span>
+                          <strong className="text-amber-400 font-bold">{wizardData.eventTag}</strong>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[#94A3B8]">Ticket Availability:</span>
+                          <strong className="text-white">
+                            {wizardData.ticketAvailability === 'limited' ? `Limited (${wizardData.maxTotalTickets} Max)` : 'Unlimited'}
+                          </strong>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[#94A3B8]">Duration:</span>
+                          <strong className="text-emerald-400">
+                            {wizardData.durationHours}h {wizardData.durationMinutes}m
+                          </strong>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[#94A3B8]">Ticket Price:</span>
+                          <strong className="text-white">{wizardData.ticketPrice} USDT</strong>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[#94A3B8]">Jackpot Pot:</span>
+                          <strong className="text-amber-400">
+                            {wizardData.jackpotMode === 'fixed'
+                              ? `${wizardData.fixedJackpot} USDT (Fixed)`
+                              : `${wizardData.minJackpot} - ${wizardData.maxJackpot} USDT (${wizardData.jackpotSelectionMethod.toUpperCase()})`}
+                          </strong>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[#94A3B8]">Winner Mode:</span>
+                          <strong className="text-white">
+                            {wizardData.winnerMode === 'single' ? 'Single Winner (100%)' : `Multiple Winners (${wizardData.winnerCount} Codes · ${wizardData.winnerPayoutSharePercent}%)`}
+                          </strong>
+                        </div>
+                        <div className="flex justify-between items-center text-xs pt-2 border-t border-[#1f2737]">
+                          <span className="text-[#94A3B8]">Winning Digits:</span>
+                          {wizardData.winningCodesOption === 'preset' ? (
+                            <div className="flex gap-1.5">
+                              {wizardData.winningCodes.map((c, i) => (
+                                <span key={i} className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold">
+                                  [{c}]
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-amber-400 font-bold">⚠️ To Be Configured Later</span>
+                          )}
                         </div>
                       </div>
 
-                      {wizardData.ticketLimitMode === 'limited' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl bg-[#07090d] border border-[#272a31]">
-                          <div>
-                            <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                              Maximum Total Tickets Allowed
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={wizardData.maxTotalTickets}
-                              onChange={(e) => setWizardData({ ...wizardData, maxTotalTickets: Math.max(1, parseInt(e.target.value) || 1) })}
-                              className="w-full bg-[#0b0e14] border border-[#1f2737] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                              Maximum Tickets Per User
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={wizardData.maxTicketsPerUser}
-                              onChange={(e) => setWizardData({ ...wizardData, maxTicketsPerUser: Math.max(1, parseInt(e.target.value) || 1) })}
-                              className="w-full bg-[#0b0e14] border border-[#1f2737] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
-                              required
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between pt-4 border-t border-[#1f2737]">
+                      <div className="flex items-center justify-between pt-3 border-t border-[#1f2737]">
                         <button
                           type="button"
                           onClick={() => setWizardStep(3)}
                           className="px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-[#94A3B8] hover:text-white border border-[#272a31] flex items-center gap-1 cursor-pointer"
                         >
                           <ArrowLeft className="w-3.5 h-3.5" />
-                          <span>Back</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setWizardStep(5)}
-                          className="px-5 py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md"
-                        >
-                          <span>Next: Winning Rules &amp; Codes</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* STEP 5: WINNING RULES, CODES & TIMING (PARTS 2, 3, 4) */}
-                  {wizardStep === 5 && (
-                    <div className="space-y-4 animate-in fade-in duration-200">
-                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
-                        ℹ️ Step 5 configures single vs multi-winning codes, timing (Now vs Later), and Draw Mode (Preset vs Random RNG).
-                      </div>
-
-                      {/* Part 2: Winner Mode Toggle */}
-                      <div>
-                        <label className="block text-xs text-[#8b92a2] font-semibold mb-2">
-                          Winner Mode (Part 2)
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div
-                            onClick={() => {
-                              setWizardData({
-                                ...wizardData,
-                                winnerMode: 'single',
-                                winnerCount: 1,
-                                winningCodeCount: 1,
-                                winningCodes: [wizardData.winningCodes[0] || '2538'],
-                                winnerDistribution: [{ position: 1, percent: 100 }]
-                              });
-                            }}
-                            className={`p-4 rounded-xl border flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
-                              wizardData.winnerMode === 'single'
-                                ? 'bg-amber-500/20 border-amber-400 ring-1 ring-amber-400 text-white'
-                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8]'
-                            }`}
-                          >
-                            <Trophy className="w-5 h-5 text-amber-400 mb-1" />
-                            <strong className="text-white text-sm">Single Winner</strong>
-                            <span className="text-[10px] text-[#94A3B8]">1 exact four-digit winning code</span>
-                          </div>
-
-                          <div
-                            onClick={() => {
-                              const count = 3;
-                              const codes = ['2538', '7412', '9065'];
-                              setWizardData({
-                                ...wizardData,
-                                winnerMode: 'multiple',
-                                winnerCount: count,
-                                winningCodeCount: count,
-                                winningCodes: codes,
-                                winnerDistribution: [
-                                  { position: 1, percent: 50 },
-                                  { position: 2, percent: 30 },
-                                  { position: 3, percent: 20 }
-                                ]
-                              });
-                            }}
-                            className={`p-4 rounded-xl border flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
-                              wizardData.winnerMode === 'multiple'
-                                ? 'bg-amber-500/20 border-amber-400 ring-1 ring-amber-400 text-white'
-                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8]'
-                            }`}
-                          >
-                            <Users className="w-5 h-5 text-purple-400 mb-1" />
-                            <strong className="text-white text-sm">Multiple Winners</strong>
-                            <span className="text-[10px] text-[#94A3B8]">Configurable N distinct winning codes</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Part 3: Configuration Timing */}
-                      <div>
-                        <label className="block text-xs text-[#8b92a2] font-semibold mb-2">
-                          Winning Code Configuration Timing (Part 3)
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div
-                            onClick={() => setWizardData({ ...wizardData, codesTiming: 'create' })}
-                            className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                              wizardData.codesTiming === 'create'
-                                ? 'bg-emerald-500/20 border-emerald-400 text-white'
-                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8]'
-                            }`}
-                          >
-                            <strong className="text-xs block text-white">Option A: Configure Now</strong>
-                            <span className="text-[10px] text-[#94A3B8]">Lock codes before publishing</span>
-                          </div>
-
-                          <div
-                            onClick={() => setWizardData({ ...wizardData, codesTiming: 'later' })}
-                            className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                              wizardData.codesTiming === 'later'
-                                ? 'bg-amber-500/20 border-amber-400 text-white'
-                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8]'
-                            }`}
-                          >
-                            <strong className="text-xs block text-white">Option B: Configure Later</strong>
-                            <span className="text-[10px] text-[#94A3B8]">Publish with status "To Be Configured"</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* If Configure Now: Draw Mode Selection (Part 4) */}
-                      {wizardData.codesTiming === 'create' ? (
-                        <div className="space-y-4 p-4 rounded-xl bg-[#07090d] border border-[#272a31]">
-                          
-                          <div>
-                            <label className="block text-xs text-white font-bold mb-2">
-                              Draw Mode (Part 4)
-                            </label>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div
-                                onClick={() => setWizardData({ ...wizardData, drawMode: 'random' })}
-                                className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                                  wizardData.drawMode === 'random'
-                                    ? 'bg-emerald-500/20 border-emerald-400 text-white'
-                                    : 'bg-[#0b0e14] border-[#1f2737] text-[#94A3B8]'
-                                }`}
-                              >
-                                <strong className="text-xs block text-white">Random Draw Mode</strong>
-                                <span className="text-[10px] text-[#94A3B8]">Provably Fair cryptographic RNG at draw</span>
-                              </div>
-
-                              <div
-                                onClick={() => setWizardData({ ...wizardData, drawMode: 'preset' })}
-                                className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                                  wizardData.drawMode === 'preset'
-                                    ? 'bg-purple-500/20 border-purple-400 text-white'
-                                    : 'bg-[#0b0e14] border-[#1f2737] text-[#94A3B8]'
-                                }`}
-                              >
-                                <strong className="text-xs block text-white">Preset Mode</strong>
-                                <span className="text-[10px] text-[#94A3B8]">Admin manually configures winning digits</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* PART 4 REQUIREMENT: Preset Mode Warning Notice */}
-                          {wizardData.drawMode === 'preset' && (
-                            <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-start gap-2 text-xs text-purple-300">
-                              <AlertTriangle className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
-                              <div>
-                                <strong className="block text-white">Admin-Configured Winning Codes (Not Randomly Drawn)</strong>
-                                <span className="text-[11px] text-[#94A3B8]">
-                                  These codes will be explicitly tracked as administrator-preset and will not be claimed as random RNG outcomes in player audits.
-                                </span>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Single Winner Code Input */}
-                          {wizardData.winnerMode === 'single' && wizardData.drawMode === 'preset' && (
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <label className="text-xs text-amber-300 font-bold">
-                                  Winning 4-Digit Combination (0000 - 9999) *
-                                </label>
-                                <span className="text-[10px] text-[#94A3B8]">Leading zeros supported (e.g. 0047)</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="text"
-                                  maxLength={4}
-                                  value={wizardData.winningCodes[0] || ''}
-                                  onChange={(e) => {
-                                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-                                    setWizardData({ ...wizardData, winningCodes: [val], presetWinningDigits: val });
-                                  }}
-                                  placeholder="e.g. 2538"
-                                  className="flex-1 bg-[#0b0e14] border border-amber-500/50 rounded-xl px-4 py-2.5 text-center text-white font-mono-numbers font-black text-lg tracking-[8px] outline-none"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const c = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-                                    setWizardData({ ...wizardData, winningCodes: [c], presetWinningDigits: c });
-                                  }}
-                                  className="px-3 py-2.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] border border-[#272a31] text-xs font-bold text-amber-400 flex items-center gap-1 cursor-pointer"
-                                >
-                                  <RefreshCw className="w-3.5 h-3.5" />
-                                  <span>RNG</span>
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Multiple Winners Codes Configuration (Part 2.2) */}
-                          {wizardData.winnerMode === 'multiple' && (
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between">
-                                <label className="text-xs text-white font-bold">
-                                  Number of Winning Codes (N):
-                                </label>
-                                <select
-                                  value={wizardData.winningCodeCount}
-                                  onChange={(e) => {
-                                    const count = Math.max(2, parseInt(e.target.value) || 2);
-                                    const newCodes = [...wizardData.winningCodes];
-                                    while (newCodes.length < count) {
-                                      const r = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-                                      if (!newCodes.includes(r)) newCodes.push(r);
-                                    }
-                                    const trimmedCodes = newCodes.slice(0, count);
-                                    const equalShare = parseFloat((100 / count).toFixed(2));
-                                    const newDist = Array.from({ length: count }, (_, i) => ({
-                                      position: i + 1,
-                                      percent: i === count - 1 ? parseFloat((100 - equalShare * (count - 1)).toFixed(2)) : equalShare
-                                    }));
-                                    setWizardData({
-                                      ...wizardData,
-                                      winnerCount: count,
-                                      winningCodeCount: count,
-                                      winningCodes: trimmedCodes,
-                                      winnerDistribution: newDist
-                                    });
-                                  }}
-                                  className="bg-[#0b0e14] border border-[#1f2737] rounded-lg px-2.5 py-1 text-xs text-amber-300 font-bold outline-none cursor-pointer"
-                                >
-                                  {[2, 3, 4, 5, 6, 8, 10].map(n => (
-                                    <option key={n} value={n}>{n} Winning Codes</option>
-                                  ))}
-                                </select>
-                              </div>
-
-                              {wizardData.drawMode === 'preset' ? (
-                                <div className="space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[11px] text-[#94A3B8]">Configure each distinct 4-digit combination:</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const randCodes = generateDistinctCodes(wizardData.winningCodeCount);
-                                        setWizardData({ ...wizardData, winningCodes: randCodes });
-                                      }}
-                                      className="text-[10px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer"
-                                    >
-                                      Generate Random Distinct Codes
-                                    </button>
-                                  </div>
-
-                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                    {wizardData.winningCodes.map((code, idx) => (
-                                      <div key={idx} className="p-2 rounded-xl bg-[#0b0e14] border border-[#1f2737] space-y-1">
-                                        <div className="flex justify-between text-[10px] text-[#94A3B8]">
-                                          <span>Winning Code #{idx + 1}</span>
-                                          {code.length === 4 && <span className="text-emerald-400 font-bold">✓ 4 digits</span>}
-                                        </div>
-                                        <input
-                                          type="text"
-                                          maxLength={4}
-                                          value={code}
-                                          onChange={(e) => {
-                                            const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-                                            const updated = [...wizardData.winningCodes];
-                                            updated[idx] = val;
-                                            setWizardData({ ...wizardData, winningCodes: updated });
-                                          }}
-                                          placeholder={`e.g. 741${idx}`}
-                                          className="w-full bg-[#07090d] border border-[#272a31] rounded-lg px-2.5 py-1.5 text-center font-mono-numbers text-white font-bold text-sm tracking-[4px] outline-none focus:border-amber-400"
-                                        />
-                                      </div>
-                                    ))}
-                                  </div>
-
-                                  {/* Duplicate code check error */}
-                                  {hasDuplicateCodes(wizardData.winningCodes) && (
-                                    <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-bold flex items-center gap-1.5">
-                                      <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-                                      <span>All winning codes must be unique! Duplicate combination detected.</span>
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <div className="p-3 rounded-lg bg-[#0b0e14] border border-[#1f2737] text-xs text-[#94A3B8]">
-                                  At settlement time, the draw oracle will generate <strong className="text-white">{wizardData.winningCodeCount} distinct 4-digit winning combinations</strong> using Provably Fair cryptographic RNG.
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                        </div>
-                      ) : (
-                        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2 text-xs text-amber-300">
-                          <strong className="block text-white">Winning Codes Status: "To Be Configured"</strong>
-                          <p className="text-[#94A3B8]">
-                            The event will be published with winning codes unassigned. You can configure winning combinations anytime before ticket sales commence or prior to draw execution via the <strong>Configure Winners</strong> action in the Event Table.
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between pt-4 border-t border-[#1f2737]">
-                        <button
-                          type="button"
-                          onClick={() => setWizardStep(4)}
-                          className="px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-[#94A3B8] hover:text-white border border-[#272a31] flex items-center gap-1 cursor-pointer"
-                        >
-                          <ArrowLeft className="w-3.5 h-3.5" />
-                          <span>Back</span>
-                        </button>
-                        <button
-                          type="button"
-                          disabled={
-                            wizardData.codesTiming === 'create' &&
-                            wizardData.drawMode === 'preset' &&
-                            (
-                              (wizardData.winnerMode === 'single' && (wizardData.winningCodes[0] || '').length !== 4) ||
-                              (wizardData.winnerMode === 'multiple' && (
-                                wizardData.winningCodes.some(c => c.length !== 4) ||
-                                hasDuplicateCodes(wizardData.winningCodes)
-                              ))
-                            )
-                          }
-                          onClick={() => setWizardStep(6)}
-                          className="px-5 py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
-                        >
-                          <span>Next: Payout Distribution</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* STEP 6: PAYOUT DISTRIBUTION & WINNER SPLIT (PART 5) */}
-                  {wizardStep === 6 && (
-                    <div className="space-y-4 animate-in fade-in duration-200">
-                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
-                        ℹ️ Step 5 configures payout percentage allocation across winning positions. Percentages must sum to exactly 100%.
-                      </div>
-
-                      {/* Distributable Pool Percentage */}
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs text-[#8b92a2] font-semibold">
-                            Winner Payout Pool Share (% of Gross Pool)
-                          </label>
-                          <strong className="text-amber-400 font-mono-numbers text-sm">
-                            {wizardData.winnerPayoutSharePercent}% (Platform Fee: {100 - wizardData.winnerPayoutSharePercent}%)
-                          </strong>
-                        </div>
-                        <input
-                          type="range"
-                          min="50"
-                          max="100"
-                          step="1"
-                          value={wizardData.winnerPayoutSharePercent}
-                          onChange={(e) => setWizardData({ ...wizardData, winnerPayoutSharePercent: parseInt(e.target.value) || 90 })}
-                          className="w-full accent-amber-400 cursor-pointer"
-                        />
-                      </div>
-
-                      {/* Position Rows & Percentage Inputs */}
-                      {wizardData.winnerMode === 'multiple' ? (
-                        <div className="space-y-4 p-4 rounded-xl bg-[#07090d] border border-[#272a31]">
-                          <div className="flex items-center justify-between pb-2 border-b border-[#1f2737]">
-                            <span className="text-xs font-bold text-white">Multi-Winner Position Distribution:</span>
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const count = wizardData.winnerDistribution.length;
-                                  const eq = parseFloat((100 / count).toFixed(2));
-                                  const newDist = Array.from({ length: count }, (_, i) => ({
-                                    position: i + 1,
-                                    percent: i === count - 1 ? parseFloat((100 - eq * (count - 1)).toFixed(2)) : eq
-                                  }));
-                                  setWizardData({ ...wizardData, winnerDistribution: newDist });
-                                }}
-                                className="px-2 py-1 rounded bg-[#141924] hover:bg-[#1a2130] text-[10px] text-amber-400 font-bold border border-[#272a31] cursor-pointer"
-                              >
-                                Equal Split
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const count = wizardData.winnerDistribution.length;
-                                  if (count === 3) {
-                                    setWizardData({
-                                      ...wizardData,
-                                      winnerDistribution: [
-                                        { position: 1, percent: 50 },
-                                        { position: 2, percent: 30 },
-                                        { position: 3, percent: 20 }
-                                      ]
-                                    });
-                                  } else {
-                                    const weights = Array.from({ length: count }, (_, i) => Math.pow(0.65, i));
-                                    const total = weights.reduce((a, b) => a + b, 0);
-                                    const newDist = weights.map((w, i) => ({
-                                      position: i + 1,
-                                      percent: parseFloat(((w / total) * 100).toFixed(1))
-                                    }));
-                                    const sum = newDist.reduce((a, b) => a + b.percent, 0);
-                                    if (newDist.length > 0) newDist[0].percent += parseFloat((100 - sum).toFixed(1));
-                                    setWizardData({ ...wizardData, winnerDistribution: newDist });
-                                  }
-                                }}
-                                className="px-2 py-1 rounded bg-[#141924] hover:bg-[#1a2130] text-[10px] text-purple-300 font-bold border border-[#272a31] cursor-pointer"
-                              >
-                                Tiered Ranking
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                            {wizardData.winnerDistribution.map((row, idx) => {
-                              const grossAmount = wizardData.jackpotMode === 'fixed'
-                                ? wizardData.fixedJackpot
-                                : wizardData.jackpotSelectionMethod === 'manual'
-                                  ? wizardData.selectedJackpotAmount
-                                  : wizardData.maxJackpot;
-                              const distributable = (grossAmount * wizardData.winnerPayoutSharePercent) / 100;
-                              const estPayout = (distributable * (row.percent || 0)) / 100;
-
-                              return (
-                                <div key={idx} className="p-2.5 rounded-xl bg-[#0b0e14] border border-[#1f2737] space-y-1">
-                                  <div className="flex items-center justify-between text-[11px]">
-                                    <span className="font-bold text-amber-300">Position #{row.position}</span>
-                                    <span className="text-emerald-400 font-mono-numbers text-[10px]">
-                                      ≈ {estPayout.toLocaleString()} USDT
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1.5">
-                                    <input
-                                      type="number"
-                                      step="0.1"
-                                      min="0.1"
-                                      max="100"
-                                      value={row.percent}
-                                      onChange={(e) => {
-                                        const val = parseFloat(e.target.value) || 0;
-                                        const updated = [...wizardData.winnerDistribution];
-                                        updated[idx] = { ...updated[idx], percent: val };
-                                        setWizardData({ ...wizardData, winnerDistribution: updated });
-                                      }}
-                                      className="w-full bg-[#07090d] border border-[#272a31] rounded-lg px-2.5 py-1 text-xs font-mono-numbers text-white outline-none focus:border-amber-400"
-                                    />
-                                    <span className="text-xs text-[#94A3B8] font-bold">%</span>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                          {/* Sum Validation Banner */}
-                          {(() => {
-                            const totalPct = wizardData.winnerDistribution.reduce((a, b) => a + (parseFloat(String(b.percent)) || 0), 0);
-                            const isValid = Math.abs(totalPct - 100) < 0.1;
-                            return (
-                              <div className={`p-3 rounded-xl border flex items-center justify-between text-xs font-mono-numbers ${
-                                isValid
-                                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                                  : 'bg-red-500/10 border-red-500/30 text-red-300'
-                              }`}>
-                                <span>Total Payout Allocation: <strong>{totalPct.toFixed(1)}% / 100%</strong></span>
-                                <span>{isValid ? '✓ Distribution Valid' : '⚠️ Must sum to exactly 100%'}</span>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      ) : (
-                        <div className="p-4 rounded-xl bg-[#07090d] border border-[#272a31] space-y-1 text-xs text-[#94A3B8]">
-                          <span className="text-white font-bold block">Single Winner Allocation:</span>
-                          <p>
-                            100% of the distributable winner pool ({wizardData.winnerPayoutSharePercent}% of gross) is awarded to the matching ticket holder.
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between pt-4 border-t border-[#1f2737]">
-                        <button
-                          type="button"
-                          onClick={() => setWizardStep(5)}
-                          className="px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-[#94A3B8] hover:text-white border border-[#272a31] flex items-center gap-1 cursor-pointer"
-                        >
-                          <ArrowLeft className="w-3.5 h-3.5" />
-                          <span>Back</span>
-                        </button>
-                        <button
-                          type="button"
-                          disabled={
-                            wizardData.winnerMode === 'multiple' &&
-                            Math.abs(wizardData.winnerDistribution.reduce((a, b) => a + (parseFloat(String(b.percent)) || 0), 0) - 100) >= 0.1
-                          }
-                          onClick={() => setWizardStep(7)}
-                          className="px-5 py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
-                        >
-                          <span>Next: Review &amp; Summary</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* STEP 7: REVIEW CONFIGURATION & SUMMARY (PART 6) */}
-                  {wizardStep === 7 && (
-                    <div className="space-y-4 animate-in fade-in duration-200">
-                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span>Please review all configuration parameters before deploying this event to the live platform.</span>
-                      </div>
-
-                      <div className="p-4 rounded-xl bg-[#07090d] border border-[#272a31] space-y-3 text-xs">
-                        
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-3 border-b border-[#1f2737]">
-                          <div>
-                            <span className="text-[#64748B] block text-[11px]">Event Identifier:</span>
-                            <strong className="text-amber-400 font-mono-numbers">{wizardData.eventId}</strong>
-                          </div>
-                          <div>
-                            <span className="text-[#64748B] block text-[11px]">Event Name:</span>
-                            <strong className="text-white">{wizardData.eventName}</strong>
-                          </div>
-                          <div>
-                            <span className="text-[#64748B] block text-[11px]">Assigned Room:</span>
-                            <strong className="text-white">{wizardData.roomName}</strong>
-                          </div>
-                          <div>
-                            <span className="text-[#64748B] block text-[11px]">Duration / Schedule:</span>
-                            <strong className="text-white">{wizardData.durationValue} {wizardData.durationUnit}</strong>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pb-3 border-b border-[#1f2737]">
-                          <div>
-                            <span className="text-[#64748B] block text-[11px]">Ticket Price:</span>
-                            <strong className="text-white font-mono-numbers">{wizardData.ticketPrice} USDT</strong>
-                          </div>
-                          <div>
-                            <span className="text-[#64748B] block text-[11px]">Jackpot Determination:</span>
-                            <strong className="text-amber-400 font-mono-numbers">
-                              {wizardData.jackpotMode === 'fixed'
-                                ? `${wizardData.fixedJackpot.toLocaleString()} USDT (Fixed)`
-                                : wizardData.jackpotSelectionMethod === 'manual'
-                                  ? `${wizardData.selectedJackpotAmount.toLocaleString()} USDT (Manual in ${wizardData.minJackpot}-${wizardData.maxJackpot})`
-                                  : `${wizardData.minJackpot.toLocaleString()} - ${wizardData.maxJackpot.toLocaleString()} USDT (Random)`}
-                            </strong>
-                          </div>
-                          <div>
-                            <span className="text-[#64748B] block text-[11px]">Ticket Limits:</span>
-                            <strong className="text-white">
-                              {wizardData.ticketLimitMode === 'unlimited' ? 'Unlimited' : `Max ${wizardData.maxTotalTickets} (User Cap: ${wizardData.maxTicketsPerUser})`}
-                            </strong>
-                          </div>
-                        </div>
-
-                        {/* Winning codes & distribution preview (Part 6) */}
-                        <div className="space-y-2 pt-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[#64748B] text-[11px]">Winning Codes Configuration:</span>
-                            <strong className="text-purple-300 uppercase">
-                              {wizardData.codesTiming === 'later'
-                                ? 'Winning Codes: To Be Configured'
-                                : wizardData.drawMode === 'preset'
-                                  ? 'Preset Winning Combinations'
-                                  : 'Provably Fair RNG at Draw'}
-                            </strong>
-                          </div>
-
-                          {wizardData.codesTiming === 'create' && wizardData.drawMode === 'preset' && (
-                            <div className="flex flex-wrap gap-2">
-                              {wizardData.winningCodes.map((code, idx) => (
-                                <span key={idx} className="px-2.5 py-1 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-300 font-mono-numbers font-black text-xs">
-                                  Position #{idx + 1}: [{code}]
-                                </span>
-                              ))}
-                            </div>
-                          )}
-
-                          {wizardData.codesTiming === 'later' && (
-                            <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold">
-                              ⚠️ Status on Launch: "Winning Codes: To Be Configured"
-                            </div>
-                          )}
-                        </div>
-
-                      </div>
-
-                      <div className="flex items-center justify-between pt-4 border-t border-[#1f2737]">
-                        <button
-                          type="button"
-                          onClick={() => setWizardStep(6)}
-                          className="px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-[#94A3B8] hover:text-white border border-[#272a31] flex items-center gap-1 cursor-pointer"
-                        >
-                          <ArrowLeft className="w-3.5 h-3.5" />
-                          <span>Back</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setWizardStep(8)}
-                          className="px-5 py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md"
-                        >
-                          <span>Proceed to Publish</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* STEP 8: DEPLOY & PUBLISH EVENT */}
-                  {wizardStep === 8 && (
-                    <div className="space-y-5 animate-in fade-in duration-200 text-center py-4">
-                      <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400 shadow-[0_0_25px_rgba(245,196,81,0.25)]">
-                        <Sparkles className="w-8 h-8" />
-                      </div>
-
-                      <div className="space-y-1">
-                        <h3 className="font-display font-extrabold text-xl text-white">
-                          Ready to Deploy to Live Platform
-                        </h3>
-                        <p className="text-xs text-[#94A3B8] max-w-md mx-auto">
-                          Publishing this event will commit the cryptographic SHA-256 seed to the database and make the room immediately visible in the Four-Digit Lottery lobby.
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-center gap-3 pt-3">
-                        <button
-                          type="button"
-                          onClick={() => setWizardStep(7)}
-                          className="px-4 py-2.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-[#94A3B8] hover:text-white border border-[#272a31] cursor-pointer"
-                        >
-                          Back to Review
+                          <span>Back to Step 3</span>
                         </button>
                         <button
                           type="button"
@@ -2486,7 +1959,13 @@ export default function GamesManagementSuperHub({
                             try {
                               const res = await directCreateEvent({
                                 ...wizardData,
-                                title: wizardData.eventName
+                                title: wizardData.eventName,
+                                durationHours: wizardData.durationHours,
+                                durationMinutes: wizardData.durationMinutes,
+                                batchTag: wizardData.eventTag,
+                                drawMode: wizardData.winningCodesOption === 'preset' ? 'preset' : 'random',
+                                presetWinningDigits: wizardData.winningCodesOption === 'preset' && wizardData.winningCodes.length > 0 ? wizardData.winningCodes[0] : null,
+                                winningCodes: wizardData.winningCodesOption === 'preset' ? wizardData.winningCodes : []
                               });
                               if (res?.success) {
                                 setIsWizardOpen(false);
@@ -2523,283 +2002,148 @@ export default function GamesManagementSuperHub({
             )}
 
             {/* ================================================================ */}
-            {/* MODAL 2: EVENT-SPECIFIC WINNER CONFIGURATION MODAL (PART 9)       */}
+            {/* MODAL 2: WINNING DIGITS MANAGEMENT MODAL (DEDICATED ACTION)       */}
             {/* ================================================================ */}
-            {winnerConfigEvent && (
-              <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
-                <div className="max-w-2xl w-full bg-[#0d1117] border border-[#272a31] rounded-3xl p-5 sm:p-7 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar my-auto">
-                  
-                  {/* Header */}
-                  <div className="flex items-center justify-between pb-3 border-b border-[#1f2737]">
-                    <div className="flex items-center gap-2.5">
-                      <Trophy className="w-5 h-5 text-amber-400" />
-                      <div>
-                        <h3 className="font-display font-extrabold text-base text-white">
-                          Winner Configuration &amp; Winning Codes
-                        </h3>
-                        <p className="text-xs text-[#94A3B8]">
-                          Event-Specific Configuration linked to Event ID and Room ID
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setWinnerConfigEvent(null)}
-                      className="p-1.5 rounded-lg text-[#94A3B8] hover:text-white bg-[#141924] border border-[#272a31] cursor-pointer"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
+            {winnerConfigEvent && (() => {
+              const isConcluded = winnerConfigEvent.status === 'completed';
+              const isDrawProcessing = winnerConfigEvent.status === 'result_pending' || (winnerConfigEvent.drawTime && winnerConfigEvent.drawTime <= currentTime);
 
-                  {/* Target Event Info Card */}
-                  <div className="p-3.5 rounded-xl bg-[#07090d] border border-[#272a31] grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono-numbers">
-                    <div>
-                      <span className="text-[#64748B] block text-[10px]">Event ID:</span>
-                      <strong className="text-amber-400 font-bold">{winnerConfigEvent.id}</strong>
-                    </div>
-                    <div>
-                      <span className="text-[#64748B] block text-[10px]">Room Name:</span>
-                      <strong className="text-white font-sans truncate block">{winnerConfigEvent.roomName || 'Room 1'}</strong>
-                    </div>
-                    <div>
-                      <span className="text-[#64748B] block text-[10px]">Event Status:</span>
-                      <strong className="text-emerald-400 uppercase">{winnerConfigEvent.status}</strong>
-                    </div>
-                    <div>
-                      <span className="text-[#64748B] block text-[10px]">Tickets Sold:</span>
-                      <strong className="text-white font-bold">{winnerConfigEvent.ticketsSold || 0}</strong>
-                    </div>
-                  </div>
-
-                  {/* Lifecycle Lock Check */}
-                  {winnerConfigEvent.status === 'completed' ? (
-                    <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs space-y-1">
-                      <strong className="block text-white">Event Concluded &amp; Settled</strong>
-                      <span>This event is finalized and payouts have been disbursed. Winning codes and payout distributions are permanently immutable.</span>
-                    </div>
-                  ) : winnerConfigEvent.ticketsSold > 0 && !winnerConfigEvent.isPaused ? (
-                    <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-3">
-                      <div className="flex items-start gap-2.5">
-                        <Lock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              return (
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
+                  <div className="max-w-xl w-full bg-[#0d1117] border border-[#272a31] rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar my-auto text-xs">
+                    
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-3 border-b border-[#1f2737]">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-5 h-5 text-amber-400" />
                         <div>
-                          <strong className="block text-white">Configuration Locked (Ticket Sales Active)</strong>
-                          <span>Ticket sales have commenced ({winnerConfigEvent.ticketsSold} tickets sold). Modifications are locked to protect player trust and fairness.</span>
+                          <h3 className="font-display font-extrabold text-sm text-white">
+                            Winning Digits Management
+                          </h3>
+                          <p className="text-[11px] text-[#94A3B8]">
+                            Event: <strong className="text-white">{winnerConfigEvent.title}</strong> · [{winnerConfigEvent.id}]
+                          </p>
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => setWinnerConfigEvent(null)}
+                        className="p-1.5 rounded-lg text-[#94A3B8] hover:text-white bg-[#141924] border border-[#272a31] cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
 
-                      {!wcShowPauseInput ? (
+                    {/* Concluded vs Active State View */}
+                    {isConcluded ? (
+                      <div className="space-y-4 py-2">
+                        <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-300 space-y-1">
+                          <span className="font-bold text-xs flex items-center gap-1.5">
+                            <Lock className="w-4 h-4 text-purple-400" />
+                            <span>Result Declared &amp; Settled</span>
+                          </span>
+                          <p className="text-[11px] text-[#94A3B8]">
+                            Winning digits are permanently locked and cannot be edited after final result declaration and USDT disbursement.
+                          </p>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-[#07090d] border border-[#272a31] space-y-2">
+                          <span className="text-[10px] text-[#8b92a2] uppercase font-bold block">Final Drawn Winning Digits:</span>
+                          <div className="flex flex-wrap gap-2">
+                            {wcWinningCodes.map((code, idx) => (
+                              <span key={idx} className="px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono-numbers font-black text-sm tracking-[3px]">
+                                [{code}]
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
                         <button
                           type="button"
-                          onClick={() => setWcShowPauseInput(true)}
-                          className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-black text-xs font-bold cursor-pointer hover:bg-amber-400 transition-colors"
+                          onClick={() => setWinnerConfigEvent(null)}
+                          className="w-full py-2.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] cursor-pointer"
                         >
-                          Emergency Pause Event to Edit
+                          Close
                         </button>
-                      ) : (
-                        <div className="space-y-2 pt-2 border-t border-amber-500/20">
-                          <label className="text-[11px] font-bold text-white block">
-                            Documented Emergency Pause Reason * (Required for audit log)
-                          </label>
-                          <textarea
-                            rows={2}
-                            value={wcEmergencyPauseReason}
-                            onChange={(e) => setWcEmergencyPauseReason(e.target.value)}
-                            placeholder="State reason for pause (e.g. Critical misconfiguration fix)..."
-                            className="w-full bg-[#07090d] border border-amber-500/50 rounded-xl p-2.5 text-xs text-white outline-none"
-                          />
-                          <div className="flex items-center gap-2">
+                      </div>
+                    ) : (
+                      <div className="space-y-4 py-1">
+                        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[#CBD5E1] space-y-1">
+                          <span className="text-amber-300 font-bold block text-xs">Configure Winning Digit Combinations:</span>
+                          <p className="text-[11px] leading-relaxed">
+                            Winning digits can be added, edited, or removed before final draw settlement. All modifications are logged in the Admin Audit Log with administrator identity and timestamp.
+                          </p>
+                        </div>
+
+                        {/* Mode Selector */}
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-bold text-[#8b92a2] block">Winner Mode</label>
+                          <div className="grid grid-cols-2 gap-2">
                             <button
                               type="button"
-                              onClick={async () => {
-                                if (!wcEmergencyPauseReason.trim()) {
-                                  if (showToast) showToast('Please enter an emergency pause reason.', 'error');
-                                  return;
-                                }
-                                setWcSaving(true);
-                                try {
-                                  const res = await directPauseEvent(winnerConfigEvent.id, true, wcEmergencyPauseReason.trim());
-                                  if (res?.success) {
-                                    setWinnerConfigEvent((prev: any) => prev ? { ...prev, isPaused: true, pauseReason: wcEmergencyPauseReason.trim(), status: 'paused' } : null);
-                                    setWcShowPauseInput(false);
-                                  }
-                                } finally {
-                                  setWcSaving(false);
-                                }
+                              onClick={() => {
+                                setWcWinnerMode('single');
+                                setWcWinningCodes(prev => [prev[0] || '2538']);
+                                setWcWinnerCount(1);
                               }}
-                              disabled={wcSaving}
-                              className="px-3.5 py-1.5 rounded-xl btn-gold text-xs font-bold cursor-pointer"
+                              className={`p-2.5 rounded-xl border text-left cursor-pointer ${
+                                wcWinnerMode === 'single'
+                                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-bold'
+                                  : 'bg-[#07090d] border-[#272a31] text-[#94A3B8]'
+                              }`}
                             >
-                              {wcSaving ? 'Pausing Event...' : 'Confirm Emergency Pause'}
+                              Single Winner (1 Code)
                             </button>
                             <button
                               type="button"
-                              onClick={() => setWcShowPauseInput(false)}
-                              className="px-3 py-1.5 rounded-xl bg-[#141924] text-xs text-[#94A3B8] hover:text-white border border-[#272a31] cursor-pointer"
+                              onClick={() => {
+                                setWcWinnerMode('multiple');
+                                if (wcWinningCodes.length < 2) {
+                                  setWcWinningCodes(['2538', '7412', '9065']);
+                                  setWcWinnerCount(3);
+                                }
+                              }}
+                              className={`p-2.5 rounded-xl border text-left cursor-pointer ${
+                                wcWinnerMode === 'multiple'
+                                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-bold'
+                                  : 'bg-[#07090d] border-[#272a31] text-[#94A3B8]'
+                              }`}
                             >
-                              Cancel
+                              Multiple Winners
                             </button>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  ) : (
-                    /* EDITABLE FORM WHEN 0 TICKETS SOLD OR PAUSED */
-                    <div className="space-y-4">
-                      
-                      {winnerConfigEvent.isPaused && (
-                        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between">
-                          <span>Event is currently <strong>PAUSED</strong> ({winnerConfigEvent.pauseReason || 'Admin hold'}). You may edit winning codes and distribution.</span>
-                        </div>
-                      )}
 
-                      {/* Winner Mode Toggle */}
-                      <div>
-                        <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                          Winning Mode
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setWcWinnerMode('single');
-                              setWcWinnerCount(1);
-                              setWcWinningCodes([wcWinningCodes[0] || '2538']);
-                              setWcDistribution([{ position: 1, percent: 100 }]);
-                            }}
-                            className={`p-3 rounded-xl font-bold flex flex-col items-center justify-center transition-all cursor-pointer border ${
-                              wcWinnerMode === 'single'
-                                ? 'bg-amber-500/20 text-amber-300 border-amber-400 ring-1 ring-amber-400'
-                                : 'bg-[#141924] text-[#94A3B8] border-[#272a31]'
-                            }`}
-                          >
-                            <span className="text-xs font-extrabold">Single Winner</span>
-                            <span className="text-[10px] text-[#94A3B8]">1 winning code (100% payout)</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setWcWinnerMode('multiple');
-                              const count = 3;
-                              setWcWinnerCount(count);
-                              const codes = ['2538', '7412', '9065'];
-                              setWcWinningCodes(codes);
-                              setWcDistribution([
-                                { position: 1, percent: 50 },
-                                { position: 2, percent: 30 },
-                                { position: 3, percent: 20 }
-                              ]);
-                            }}
-                            className={`p-3 rounded-xl font-bold flex flex-col items-center justify-center transition-all cursor-pointer border ${
-                              wcWinnerMode === 'multiple'
-                                ? 'bg-amber-500/20 text-amber-300 border-amber-400 ring-1 ring-amber-400'
-                                : 'bg-[#141924] text-[#94A3B8] border-[#272a31]'
-                            }`}
-                          >
-                            <span className="text-xs font-extrabold">Multiple Winners</span>
-                            <span className="text-[10px] text-[#94A3B8]">N distinct winning codes</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Draw Mode Choice */}
-                      <div>
-                        <label className="block text-xs text-white font-bold mb-1">
-                          Result Determination Mode (Part 4)
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setWcDrawMode('preset')}
-                            className={`p-2.5 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
-                              wcDrawMode === 'preset'
-                                ? 'bg-purple-500/20 border-purple-400 text-white'
-                                : 'bg-[#141924] border-[#272a31] text-[#94A3B8]'
-                            }`}
-                          >
-                            Preset Codes Mode
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setWcDrawMode('random')}
-                            className={`p-2.5 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
-                              wcDrawMode === 'random'
-                                ? 'bg-emerald-500/20 border-emerald-400 text-white'
-                                : 'bg-[#141924] border-[#272a31] text-[#94A3B8]'
-                            }`}
-                          >
-                            Cryptographic RNG Mode
-                          </button>
-                        </div>
-                      </div>
-
-                      {wcDrawMode === 'preset' && (
-                        <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 text-[11px]">
-                          <strong>Admin-Configured Winning Codes - Not Randomly Drawn</strong>
-                        </div>
-                      )}
-
-                      {/* Codes Editor */}
-                      {wcWinnerMode === 'single' ? (
-                        <div className="space-y-1.5">
-                          <label className="text-xs text-white font-bold block">
-                            Winning 4-Digit Combination (0000 - 9999) *
-                          </label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              maxLength={4}
-                              value={wcWinningCodes[0] || ''}
-                              onChange={(e) => {
-                                const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-                                setWcWinningCodes([val]);
-                              }}
-                              placeholder="e.g. 2538"
-                              className="flex-1 bg-[#07090d] border border-amber-500/40 rounded-xl px-4 py-2 text-center text-white font-mono-numbers font-black text-base tracking-[6px] outline-none"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setWcWinningCodes([String(Math.floor(Math.random() * 10000)).padStart(4, '0')])}
-                              className="px-3 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] border border-[#272a31] text-xs font-bold text-amber-400 flex items-center gap-1 cursor-pointer"
-                            >
-                              <RefreshCw className="w-3.5 h-3.5" />
-                              <span>RNG</span>
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
+                        {/* Codes Inputs */}
+                        <div className="space-y-2 pt-1">
                           <div className="flex items-center justify-between">
-                            <label className="text-xs text-white font-bold">Number of Winning Codes (N):</label>
-                            <select
-                              value={wcWinnerCount}
-                              onChange={(e) => {
-                                const count = Math.max(2, parseInt(e.target.value) || 2);
-                                setWcWinnerCount(count);
-                                const newCodes = [...wcWinningCodes];
-                                while (newCodes.length < count) {
-                                  const r = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-                                  if (!newCodes.includes(r)) newCodes.push(r);
-                                }
-                                setWcWinningCodes(newCodes.slice(0, count));
-                                const eq = parseFloat((100 / count).toFixed(2));
-                                setWcDistribution(Array.from({ length: count }, (_, i) => ({
-                                  position: i + 1,
-                                  percent: i === count - 1 ? parseFloat((100 - eq * (count - 1)).toFixed(2)) : eq
-                                })));
-                              }}
-                              className="bg-[#0b0e14] border border-[#1f2737] rounded-lg px-2.5 py-1 text-xs text-amber-300 font-bold outline-none cursor-pointer"
+                            <label className="text-[11px] font-bold text-[#8b92a2]">
+                              Winning 4-Digit Combinations:
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setWcWinningCodes(generateDistinctCodes(wcWinningCodes.length))}
+                              className="text-[11px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer"
                             >
-                              {[2, 3, 4, 5, 6, 8, 10].map(n => (
-                                <option key={n} value={n}>{n} Codes</option>
-                              ))}
-                            </select>
+                              ⚡ Randomize Codes
+                            </button>
                           </div>
 
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                             {wcWinningCodes.map((code, idx) => (
-                              <div key={idx} className="p-2 rounded-xl bg-[#0b0e14] border border-[#1f2737] space-y-1">
-                                <span className="text-[10px] text-[#94A3B8] block">Code #{idx + 1}:</span>
+                              <div key={idx} className="p-2.5 rounded-xl bg-[#07090d] border border-[#272a31] space-y-1">
+                                <div className="flex items-center justify-between text-[10px] text-[#94A3B8]">
+                                  <span>Position #{idx + 1}</span>
+                                  {wcWinningCodes.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setWcWinningCodes(prev => prev.filter((_, i) => i !== idx))}
+                                      className="text-red-400 hover:text-red-300 cursor-pointer"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
                                 <input
                                   type="text"
                                   maxLength={4}
@@ -2810,11 +2154,25 @@ export default function GamesManagementSuperHub({
                                     c[idx] = val;
                                     setWcWinningCodes(c);
                                   }}
-                                  className="w-full bg-[#07090d] border border-[#272a31] rounded-lg px-2 py-1 text-center font-mono-numbers text-white font-bold text-xs tracking-[3px] outline-none focus:border-amber-400"
+                                  className="w-full bg-[#141924] border border-[#272a31] rounded-lg px-2 py-1 text-center font-mono-numbers text-white font-bold text-sm tracking-[3px] outline-none focus:border-amber-400"
                                 />
                               </div>
                             ))}
                           </div>
+
+                          {wcWinnerMode === 'multiple' && wcWinningCodes.length < 10 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newCode = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+                                setWcWinningCodes(prev => [...prev, newCode]);
+                              }}
+                              className="w-full py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-[#94A3B8] hover:text-white border border-[#272a31] text-xs font-bold cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                              <PlusCircle className="w-3.5 h-3.5" />
+                              <span>Add Winning Code Position</span>
+                            </button>
+                          )}
 
                           {hasDuplicateCodes(wcWinningCodes) && (
                             <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-bold">
@@ -2822,269 +2180,82 @@ export default function GamesManagementSuperHub({
                             </div>
                           )}
                         </div>
-                      )}
 
-                      {/* Save Button */}
-                      <div className="pt-2 flex flex-col sm:flex-row gap-2">
-                        <button
-                          type="button"
-                          disabled={
-                            wcSaving ||
-                            wcWinningCodes.some(c => c.length !== 4) ||
-                            hasDuplicateCodes(wcWinningCodes)
-                          }
-                          onClick={async () => {
-                            setWcSaving(true);
-                            try {
-                              const res = await directUpdateWinnerConfig(winnerConfigEvent.id, {
-                                winnerMode: wcWinnerMode,
-                                drawMode: wcDrawMode,
-                                winningCodes: wcWinningCodes,
-                                winningCodeCount: wcWinnerMode === 'single' ? 1 : wcWinnerCount,
-                                winnerCount: wcWinnerMode === 'single' ? 1 : wcWinnerCount,
-                                winnerPayoutSharePercent: wcPayoutSharePercent,
-                                winnerDistribution: wcDistribution,
-                                codesTiming: 'configured'
-                              });
-                              if (res?.success) {
-                                setWinnerConfigEvent(null);
-                                if (lotteryCtx?.refreshEvents) await lotteryCtx.refreshEvents();
-                                if (showToast) showToast('Winner configuration updated successfully!', 'success');
-                              }
-                            } catch (err: any) {
-                              if (showToast) showToast('Failed to save config: ' + err.message, 'error');
-                            } finally {
-                              setWcSaving(false);
-                            }
-                          }}
-                          className="flex-1 py-2.5 rounded-xl btn-gold text-xs font-bold cursor-pointer shadow-md disabled:opacity-50"
-                        >
-                          {wcSaving ? 'Saving Configuration...' : 'Save Configuration to Database'}
-                        </button>
-
-                        {winnerConfigEvent.isPaused && (
+                        {/* Actions */}
+                        <div className="pt-2 flex flex-col sm:flex-row gap-2">
                           <button
                             type="button"
+                            disabled={
+                              wcSaving ||
+                              wcWinningCodes.some(c => c.length !== 4) ||
+                              hasDuplicateCodes(wcWinningCodes)
+                            }
                             onClick={async () => {
                               setWcSaving(true);
                               try {
-                                await directUpdateWinnerConfig(winnerConfigEvent.id, {
+                                const res = await directUpdateWinnerConfig(winnerConfigEvent.id, {
                                   winnerMode: wcWinnerMode,
-                                  drawMode: wcDrawMode,
+                                  drawMode: 'preset',
                                   winningCodes: wcWinningCodes,
-                                  winningCodeCount: wcWinnerMode === 'single' ? 1 : wcWinnerCount,
-                                  winnerCount: wcWinnerMode === 'single' ? 1 : wcWinnerCount,
+                                  winningCodeCount: wcWinningCodes.length,
+                                  winnerCount: wcWinningCodes.length,
                                   winnerPayoutSharePercent: wcPayoutSharePercent,
                                   winnerDistribution: wcDistribution,
                                   codesTiming: 'configured'
                                 });
-                                await directPauseEvent(winnerConfigEvent.id, false, '');
-                                setWinnerConfigEvent(null);
-                                if (lotteryCtx?.refreshEvents) await lotteryCtx.refreshEvents();
-                                if (showToast) showToast('Saved and event resumed to active status!', 'success');
+                                if (res?.success) {
+                                  setWinnerConfigEvent(null);
+                                  if (lotteryCtx?.refreshEvents) await lotteryCtx.refreshEvents();
+                                  if (showToast) showToast('Winner configuration updated and saved to database!', 'success');
+                                }
+                              } catch (err: any) {
+                                if (showToast) showToast('Failed to save config: ' + err.message, 'error');
                               } finally {
                                 setWcSaving(false);
                               }
                             }}
-                            className="px-4 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold cursor-pointer"
+                            className="flex-1 py-2.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] cursor-pointer disabled:opacity-50"
                           >
-                            Save &amp; Resume Event
+                            {wcSaving ? 'Saving...' : 'Save Digits to Database'}
                           </button>
-                        )}
-                      </div>
 
-                    </div>
-                  )}
-
-                </div>
-              </div>
-            )}
-
-            {/* ================================================================ */}
-            {/* MODAL 3: CRYPTOGRAPHIC DRAW ORACLE (PART 10)                      */}
-            {/* ================================================================ */}
-            {drawOracleEvent && (() => {
-              const eligibleTickets = allTickets.filter((t: any) => t.eventId === drawOracleEvent.id && t.status === 'active');
-              const isConcluded = drawOracleEvent.status === 'completed';
-              const grossPool = drawOracleEvent.ticketsSold > 0
-                ? (drawOracleEvent.ticketsSold * drawOracleEvent.ticketPrice)
-                : (drawOracleEvent.lockedJackpot || drawOracleEvent.poolPrize || 5000);
-              const sharePercent = drawOracleEvent.winnerPayoutSharePercent || drawOracleEvent.winnerSharePercent || 90;
-              const distributablePool = (grossPool * sharePercent) / 100;
-              const currency = drawOracleEvent.currency || 'USDT';
-
-              return (
-                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
-                  <div className="max-w-2xl w-full bg-[#0d1117] border border-[#272a31] rounded-3xl p-5 sm:p-7 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar my-auto">
-                    
-                    {/* Header */}
-                    <div className="flex items-center justify-between pb-3 border-b border-[#1f2737]">
-                      <div className="flex items-center gap-2.5">
-                        <Dices className="w-5 h-5 text-emerald-400" />
-                        <div>
-                          <h3 className="font-display font-extrabold text-base text-white">
-                            Cryptographic Draw Settlement Oracle
-                          </h3>
-                          <p className="text-xs text-[#94A3B8]">
-                            Exact-match verification, tie-sharing calculation, and atomic RPC execution
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setDrawOracleEvent(null)}
-                        className="p-1.5 rounded-lg text-[#94A3B8] hover:text-white bg-[#141924] border border-[#272a31] cursor-pointer"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Stats summary */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-[#07090d] border border-[#272a31] text-xs font-mono-numbers">
-                      <div>
-                        <span className="text-[#64748B] block text-[10px]">Eligible Tickets:</span>
-                        <strong className="text-emerald-400 font-bold">{eligibleTickets.length}</strong>
-                      </div>
-                      <div>
-                        <span className="text-[#64748B] block text-[10px]">Ticket Price:</span>
-                        <strong className="text-white">{drawOracleEvent.ticketPrice} {currency}</strong>
-                      </div>
-                      <div>
-                        <span className="text-[#64748B] block text-[10px]">Distributable Pool:</span>
-                        <strong className="text-amber-400 font-bold">{distributablePool.toLocaleString()} {currency}</strong>
-                      </div>
-                      <div>
-                        <span className="text-[#64748B] block text-[10px]">Winning Mode:</span>
-                        <strong className="text-purple-300 uppercase">{drawOracleEvent.winnerMode}</strong>
-                      </div>
-                    </div>
-
-                    {isConcluded ? (
-                      <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs space-y-2 text-purple-300">
-                        <strong className="block text-white">Official Draw Outcome Recorded</strong>
-                        <div className="flex items-center gap-2">
-                          <span>Winning Combination:</span>
-                          <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono-numbers font-black text-sm">
-                            [{drawOracleEvent.winningDigits || drawOracleEvent.drawResultCodes?.join(', ')}]
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-[#94A3B8]">
-                          Payouts were disbursed directly to player wallet balances.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        
-                        {/* Live Matching Ticket Analysis & Tie-Sharing Breakdown */}
-                        <div className="space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                              <span>Winning Codes &amp; Tie-Sharing Analysis:</span>
-                            </h4>
-                            <span className="text-[10px] text-[#94A3B8]">Exact 4-digit matches only</span>
-                          </div>
-
-                          <div className="space-y-2">
-                            {doWinningCodes.map((code, idx) => {
-                              const pos = idx + 1;
-                              const matches = eligibleTickets.filter((t: any) => String(t.ticketNumber).replace(/\D/g, '').padStart(4, '0') === code);
-                              const posShare = drawOracleEvent.winnerDistribution?.[idx]?.percent || (100 / doWinningCodes.length);
-                              const posPool = (distributablePool * posShare) / 100;
-                              const payoutPerTicket = matches.length > 0 ? (posPool / matches.length) : 0;
-
-                              return (
-                                <div key={idx} className="p-3 rounded-xl bg-[#07090d] border border-[#272a31] space-y-2">
-                                  <div className="flex items-center justify-between text-xs">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-amber-400 font-bold">Position #{pos}</span>
-                                      <span className="px-2 py-0.5 rounded bg-purple-500/20 border border-purple-500/30 text-purple-300 font-mono-numbers font-black text-xs tracking-wider">
-                                        [{code}]
-                                      </span>
-                                    </div>
-                                    <div className="text-right">
-                                      <span className="text-[#94A3B8] text-[10px] block">Position Pool: {posPool.toLocaleString()} {currency} ({posShare}%)</span>
-                                      <strong className="text-emerald-400 text-xs">
-                                        {matches.length > 0 ? `${payoutPerTicket.toLocaleString()} ${currency} / ticket` : 'Rollover / House Share'}
-                                      </strong>
-                                    </div>
-                                  </div>
-
-                                  <div className="text-[11px] text-[#94A3B8] flex items-center justify-between pt-1 border-t border-[#1f2737]">
-                                    <span>Matching Tickets: <strong className="text-white">{matches.length}</strong></span>
-                                    {matches.length > 1 && (
-                                      <span className="text-amber-300 font-bold">
-                                        Tie-sharing active ({posPool.toLocaleString()} ÷ {matches.length} = {payoutPerTicket.toFixed(2)} {currency})
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {matches.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5 pt-1">
-                                      {matches.slice(0, 5).map((m: any) => (
-                                        <span key={m.id} className="text-[10px] px-2 py-0.5 rounded bg-[#141924] border border-[#272a31] text-emerald-300 font-mono-numbers">
-                                          Ticket #{m.id.slice(-6)} ({m.username || 'User'})
-                                        </span>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Finalize Execution Button */}
-                        <div className="pt-2">
-                          {!doShowConfirm ? (
+                          {/* If event is draw processing or duration expired, allow instant finalize */}
+                          {isDrawProcessing && (
                             <button
                               type="button"
-                              onClick={() => setDoShowConfirm(true)}
-                              className="w-full py-3 rounded-xl btn-gold text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                              disabled={
+                                wcSaving ||
+                                wcWinningCodes.some(c => c.length !== 4) ||
+                                hasDuplicateCodes(wcWinningCodes)
+                              }
+                              onClick={async () => {
+                                setWcSaving(true);
+                                try {
+                                  await directUpdateWinnerConfig(winnerConfigEvent.id, {
+                                    winnerMode: wcWinnerMode,
+                                    drawMode: 'preset',
+                                    winningCodes: wcWinningCodes,
+                                    winningCodeCount: wcWinningCodes.length,
+                                    winnerCount: wcWinningCodes.length,
+                                    winnerPayoutSharePercent: wcPayoutSharePercent,
+                                    winnerDistribution: wcDistribution,
+                                    codesTiming: 'configured'
+                                  });
+                                  // Directly execute draw and disburse payouts
+                                  await directExecuteDraw(winnerConfigEvent.id, wcWinningCodes);
+                                  setWinnerConfigEvent(null);
+                                  if (lotteryCtx?.refreshEvents) await lotteryCtx.refreshEvents();
+                                  if (showToast) showToast('🏆 Draw settled and winner payouts disbursed!', 'success');
+                                } catch (err: any) {
+                                  if (showToast) showToast('Settlement error: ' + err.message, 'error');
+                                } finally {
+                                  setWcSaving(false);
+                                }
+                              }}
+                              className="flex-1 py-2.5 rounded-xl btn-gold text-xs font-black uppercase tracking-wider cursor-pointer shadow-md disabled:opacity-50"
                             >
-                              <Dices className="w-4 h-4" />
-                              <span>Proceed to Final Draw Confirmation</span>
+                              {wcSaving ? 'Settling Draw...' : 'Save & Finalize Draw Now'}
                             </button>
-                          ) : (
-                            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/40 text-center space-y-3">
-                              <h4 className="font-bold text-white text-sm">
-                                Confirm Atomic Draw Finalization
-                              </h4>
-                              <p className="text-xs text-[#94A3B8]">
-                                Are you sure you want to finalize event <strong className="text-white">[{drawOracleEvent.id}]</strong> with winning codes <strong className="text-amber-400">[{doWinningCodes.join(', ')}]</strong>?
-                              </p>
-                              <div className="flex items-center gap-2 pt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => setDoShowConfirm(false)}
-                                  className="flex-1 py-2 rounded-xl bg-[#141924] text-xs font-bold text-[#94A3B8] hover:text-white border border-[#272a31] cursor-pointer"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={doIsExecuting}
-                                  onClick={async () => {
-                                    setDoIsExecuting(true);
-                                    try {
-                                      const res = await directExecuteDraw(drawOracleEvent.id, doWinningCodes);
-                                      if (res?.success) {
-                                        setDoShowConfirm(false);
-                                        setDrawOracleEvent(null);
-                                        if (lotteryCtx?.refreshEvents) await lotteryCtx.refreshEvents();
-                                        if (showToast) showToast('🎉 Draw finalized and payouts disbursed atomically!', 'success');
-                                      }
-                                    } catch (err: any) {
-                                      if (showToast) showToast('Failed to execute draw: ' + err.message, 'error');
-                                    } finally {
-                                      setDoIsExecuting(false);
-                                    }
-                                  }}
-                                  className="flex-1 py-2 rounded-xl btn-gold text-xs font-black uppercase cursor-pointer shadow-md disabled:opacity-50"
-                                >
-                                  {doIsExecuting ? 'Executing RPC...' : 'Yes, Disburse Payouts'}
-                                </button>
-                              </div>
-                            </div>
                           )}
                         </div>
 
@@ -3097,293 +2268,187 @@ export default function GamesManagementSuperHub({
             })()}
 
             {/* ================================================================ */}
-            {/* MODAL 4: EVENT DETAILS MODAL                                      */}
+            {/* MODAL 4: CONSOLIDATED EVENT DETAILS & DISBURSED PAYOUTS MODAL     */}
             {/* ================================================================ */}
-            {viewDetailsEvent && (
-              <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
-                <div className="max-w-xl w-full bg-[#0d1117] border border-[#272a31] rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar my-auto text-xs">
-                  <div className="flex items-center justify-between pb-3 border-b border-[#1f2737]">
-                    <div className="flex items-center gap-2">
-                      <Eye className="w-4 h-4 text-amber-400" />
-                      <h3 className="font-display font-extrabold text-sm text-white">
-                        Event Specifications &amp; Cryptographic Commits
-                      </h3>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setViewDetailsEvent(null)}
-                      className="p-1 rounded-lg text-[#94A3B8] hover:text-white bg-[#141924] border border-[#272a31] cursor-pointer"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
+            {viewDetailsEvent && (() => {
+              const eventPayouts = allPayouts.filter((p: any) => p.eventId === viewDetailsEvent.id);
+              const isConcluded = viewDetailsEvent.status === 'completed';
+              const codesList: string[] = Array.isArray(viewDetailsEvent.winningCodes) && viewDetailsEvent.winningCodes.length > 0
+                ? viewDetailsEvent.winningCodes
+                : viewDetailsEvent.presetWinningDigits
+                  ? [viewDetailsEvent.presetWinningDigits]
+                  : [];
+              const auditHistory = viewDetailsEvent.metadata?.audit_log || [];
 
-                  <div className="p-3 rounded-xl bg-[#07090d] border border-[#272a31] space-y-2">
-                    <div className="flex justify-between"><span className="text-[#64748B]">Event Name:</span><strong className="text-white">{viewDetailsEvent.title}</strong></div>
-                    <div className="flex justify-between"><span className="text-[#64748B]">Event ID:</span><strong className="text-amber-400 font-mono-numbers">{viewDetailsEvent.id}</strong></div>
-                    <div className="flex justify-between"><span className="text-[#64748B]">Designated Room:</span><strong className="text-white">{viewDetailsEvent.roomName}</strong></div>
-                    <div className="flex justify-between"><span className="text-[#64748B]">Status:</span><strong className="text-emerald-400 uppercase">{viewDetailsEvent.status}</strong></div>
-                    <div className="flex justify-between"><span className="text-[#64748B]">Ticket Price:</span><strong className="text-white">{viewDetailsEvent.ticketPrice} USDT</strong></div>
-                    <div className="flex justify-between"><span className="text-[#64748B]">Tickets Sold:</span><strong className="text-white">{viewDetailsEvent.ticketsSold || 0}</strong></div>
-                    <div className="flex justify-between"><span className="text-[#64748B]">Jackpot Mode:</span><strong className="text-amber-300 uppercase">{viewDetailsEvent.jackpotMode}</strong></div>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-[#07090d] border border-[#272a31] space-y-1.5">
-                    <span className="text-[10px] text-[#64748B] block uppercase font-bold">Provably Fair SHA-256 Commit:</span>
-                    <span className="text-[10px] font-mono-numbers text-amber-300 break-all block bg-[#141924] p-2 rounded-lg border border-[#272a31]">
-                      {viewDetailsEvent.sha256Seed || 'Cryptographically committed at genesis'}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setViewDetailsEvent(null)}
-                    className="w-full py-2 rounded-xl bg-[#141924] text-xs font-bold text-white border border-[#272a31] cursor-pointer"
-                  >
-                    Close Details
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ================================================================ */}
-            {/* MODAL 5: VIEW PAYOUTS MODAL                                       */}
-            {/* ================================================================ */}
-            {viewPayoutsEvent && (() => {
-              const eventPayouts = allPayouts.filter((p: any) => p.eventId === viewPayoutsEvent.id);
               return (
                 <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
-                  <div className="max-w-2xl w-full bg-[#0d1117] border border-[#272a31] rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar my-auto">
+                  <div className="max-w-2xl w-full bg-[#0d1117] border border-[#272a31] rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar my-auto text-xs">
+                    
+                    {/* Header */}
                     <div className="flex items-center justify-between pb-3 border-b border-[#1f2737]">
                       <div className="flex items-center gap-2">
-                        <Coins className="w-4 h-4 text-purple-400" />
-                        <h3 className="font-display font-extrabold text-sm text-white">
-                          Disbursed Winner Payouts · [{viewPayoutsEvent.id}]
-                        </h3>
+                        <Eye className="w-4 h-4 text-amber-400" />
+                        <div>
+                          <h3 className="font-display font-extrabold text-sm text-white">
+                            Event Details &amp; Disbursed Payouts
+                          </h3>
+                          <p className="text-[11px] text-[#94A3B8]">
+                            [{viewDetailsEvent.id}] · {viewDetailsEvent.title}
+                          </p>
+                        </div>
                       </div>
                       <button
                         type="button"
-                        onClick={() => setViewPayoutsEvent(null)}
-                        className="p-1 rounded-lg text-[#94A3B8] hover:text-white bg-[#141924] border border-[#272a31] cursor-pointer"
+                        onClick={() => setViewDetailsEvent(null)}
+                        className="p-1.5 rounded-lg text-[#94A3B8] hover:text-white bg-[#141924] border border-[#272a31] cursor-pointer"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
 
-                    {eventPayouts.length === 0 ? (
-                      <div className="p-8 text-center text-xs text-[#94A3B8]">
-                        No winner payouts recorded for this event yet.
+                    {/* Core Specifications */}
+                    <div className="p-3.5 rounded-2xl bg-[#07090d] border border-[#272a31] grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono-numbers">
+                      <div>
+                        <span className="text-[10px] text-[#64748B] block uppercase">Batch Tag</span>
+                        <strong className="text-amber-400 font-bold">{viewDetailsEvent.batchTag || viewDetailsEvent.badge || 'VIP'}</strong>
                       </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto no-scrollbar p-1">
-                        {eventPayouts.map((p: any) => (
-                          <div
-                            key={p.id}
-                            className="p-3.5 rounded-xl bg-[#07090d] border border-[#272a31] hover:border-purple-500/40 space-y-2 transition-colors"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-mono-numbers text-xs text-amber-400 font-bold">
-                                #{p.ticketId || p.id}
-                              </span>
-                              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30">
-                                {p.status || 'PAID'}
-                              </span>
-                            </div>
+                      <div>
+                        <span className="text-[10px] text-[#64748B] block uppercase">Status</span>
+                        <strong className={`font-bold uppercase ${isConcluded ? 'text-purple-400' : 'text-emerald-400'}`}>
+                          {isConcluded ? 'Settled & Paid' : viewDetailsEvent.status}
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-[#64748B] block uppercase">Ticket Price</span>
+                        <strong className="text-white">{viewDetailsEvent.ticketPrice || 10} USDT</strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-[#64748B] block uppercase">Sold / Limit</span>
+                        <strong className="text-white">
+                          {viewDetailsEvent.ticketsSold || 0} / {viewDetailsEvent.ticketLimitMode === 'limited' ? (viewDetailsEvent.maxTotalTickets || 500) : '∞'}
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-[#64748B] block uppercase">Jackpot Pool</span>
+                        <strong className="text-amber-400">
+                          {Number(viewDetailsEvent.lockedJackpot || viewDetailsEvent.fixedJackpot || viewDetailsEvent.poolPrize || 5000).toLocaleString()} USDT
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-[#64748B] block uppercase">Winner Mode</span>
+                        <strong className="text-white">
+                          {viewDetailsEvent.winnerMode === 'single' ? 'Single Winner' : `${viewDetailsEvent.winningCodeCount || 3} Codes`}
+                        </strong>
+                      </div>
+                    </div>
 
-                            <div className="flex items-center justify-between text-xs pt-1 border-t border-[#1f2737]/60">
-                              <span className="text-[#94A3B8]">Winner:</span>
-                              <span className="text-white font-semibold truncate max-w-[140px]">
-                                {p.winnerUsername || p.winnerAddress || 'Winner'}
-                              </span>
-                            </div>
+                    {/* Winning Digits Section */}
+                    <div className="p-3.5 rounded-2xl bg-[#07090d] border border-[#272a31] space-y-1.5">
+                      <span className="text-[10px] text-[#64748B] block uppercase font-bold">
+                        {isConcluded ? 'Drawn Winning Digits:' : 'Configured Winning Digits:'}
+                      </span>
+                      {isConcluded && viewDetailsEvent.winningDigits ? (
+                        <span className="px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono-numbers font-black text-sm inline-block tracking-[3px]">
+                          [{viewDetailsEvent.winningDigits}]
+                        </span>
+                      ) : codesList.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {codesList.map((c: string, idx: number) => (
+                            <span key={idx} className="px-2.5 py-1 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono-numbers font-bold text-xs tracking-[2px]">
+                              [{c}]
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-amber-400 text-xs font-bold">
+                          ⚠️ Winning digits not yet configured (Will be requested before draw settlement)
+                        </span>
+                      )}
+                    </div>
 
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-[#94A3B8]">Winning Digits:</span>
-                              <span className="font-mono-numbers text-emerald-400 font-black px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-                                [{p.winningDigits}]
-                              </span>
-                            </div>
+                    {/* Provably Fair Cryptographic Commit */}
+                    <div className="p-3 rounded-xl bg-[#07090d] border border-[#272a31] space-y-1">
+                      <span className="text-[10px] text-[#64748B] block uppercase font-bold">Provably Fair SHA-256 Commit:</span>
+                      <span className="text-[10px] font-mono-numbers text-amber-300 break-all block bg-[#141924] p-2 rounded-lg border border-[#272a31]">
+                        {viewDetailsEvent.sha256Seed || 'Cryptographically committed at genesis'}
+                      </span>
+                    </div>
 
-                            <div className="flex items-center justify-between text-xs pt-1 border-t border-[#1f2737]/60">
-                              <span className="text-[#94A3B8] font-bold">Disbursed Payout:</span>
-                              <span className="font-mono-numbers text-emerald-400 font-black text-sm">
-                                +{p.payoutAmount} USDT
-                              </span>
+                    {/* Disbursed Payouts Table */}
+                    <div className="space-y-2 pt-1">
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Coins className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Disbursed Winner Payouts ({eventPayouts.length})</span>
+                      </span>
+
+                      {eventPayouts.length === 0 ? (
+                        <div className="p-4 rounded-xl bg-[#07090d] border border-[#272a31] text-center text-[#94A3B8] text-xs">
+                          {isConcluded
+                            ? 'No winning tickets matched the drawn digits for this event.'
+                            : 'Draw has not yet concluded. Payouts will appear here after automated settlement.'}
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-[30vh] overflow-y-auto no-scrollbar">
+                          {eventPayouts.map((p: any) => (
+                            <div
+                              key={p.id}
+                              className="p-3 rounded-xl bg-[#07090d] border border-[#272a31] flex items-center justify-between text-xs"
+                            >
+                              <div>
+                                <span className="font-mono-numbers text-amber-400 font-bold block">
+                                  #{p.ticketId || p.id}
+                                </span>
+                                <span className="text-[#94A3B8] text-[10px]">
+                                  Winner: <strong className="text-white">{p.winnerUsername || p.winnerAddress || 'Winner'}</strong>
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-mono-numbers text-emerald-400 font-black text-sm block">
+                                  +{p.payoutAmount} USDT
+                                </span>
+                                <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 font-bold">
+                                  {p.status || 'PAID'}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Audit Log History (if any) */}
+                    {auditHistory.length > 0 && (
+                      <div className="space-y-1.5 pt-1">
+                        <span className="text-[11px] font-bold text-[#8b92a2]">
+                          Winning Digits Audit History ({auditHistory.length})
+                        </span>
+                        <div className="space-y-1 max-h-[20vh] overflow-y-auto no-scrollbar">
+                          {auditHistory.map((item: any, idx: number) => (
+                            <div key={idx} className="p-2 rounded-lg bg-[#07090d] border border-[#1f2737] text-[10px] space-y-0.5">
+                              <div className="flex justify-between text-[#94A3B8]">
+                                <span>{new Date(item.timestamp).toLocaleString()}</span>
+                                <span className="text-amber-400 font-bold">{item.adminIdentity}</span>
+                              </div>
+                              <div className="text-white">
+                                Digits changed from [{Array.isArray(item.previousCodes) ? item.previousCodes.join(', ') : item.previousCodes}] to [{Array.isArray(item.newCodes) ? item.newCodes.join(', ') : item.newCodes}]
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 
                     <button
                       type="button"
-                      onClick={() => setViewPayoutsEvent(null)}
-                      className="w-full py-2 rounded-xl bg-[#141924] text-xs font-bold text-white border border-[#272a31] cursor-pointer"
+                      onClick={() => setViewDetailsEvent(null)}
+                      className="w-full py-2.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] cursor-pointer"
                     >
-                      Close Payouts
+                      Close Details
                     </button>
                   </div>
                 </div>
               );
             })()}
-
-            {/* ================================================================ */}
-            {/* MODAL 6: EDIT EVENT MODAL                                         */}
-            {/* ================================================================ */}
-            {editEventTarget && (
-              <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
-                <div className="max-w-md w-full bg-[#0d1117] border border-[#272a31] rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar my-auto text-xs">
-                  <div className="flex items-center justify-between pb-3 border-b border-[#1f2737]">
-                    <div className="flex items-center gap-2">
-                      <Edit3 className="w-4 h-4 text-amber-400" />
-                      <h3 className="font-display font-extrabold text-sm text-white">
-                        Edit Event Parameters · [{editEventTarget.id}]
-                      </h3>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setEditEventTarget(null)}
-                      className="p-1 rounded-lg text-[#94A3B8] hover:text-white bg-[#141924] border border-[#272a31] cursor-pointer"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      const form = e.target as any;
-                      const title = form.eventTitle.value;
-                      const roomName = form.roomName.value;
-                      const badge = form.eventBadge.value;
-                      const desc = form.roomDescription.value;
-
-                      try {
-                        const res = await directUpdateEvent(editEventTarget.id, {
-                          title,
-                          room_name: roomName,
-                          badge,
-                          room_description: desc
-                        });
-                        if (res?.success) {
-                          setEditEventTarget(null);
-                        }
-                      } catch (err: any) {
-                        if (showToast) showToast('Failed to update: ' + err.message, 'error');
-                      }
-                    }}
-                    className="space-y-3"
-                  >
-                    <div>
-                      <label className="text-[11px] font-bold text-[#8b92a2] block mb-1">Event Title *</label>
-                      <input
-                        type="text"
-                        name="eventTitle"
-                        defaultValue={editEventTarget.title}
-                        className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-400"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-[#8b92a2] block mb-1">Room Name *</label>
-                      <input
-                        type="text"
-                        name="roomName"
-                        defaultValue={editEventTarget.roomName}
-                        className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-400"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-[#8b92a2] block mb-1">Badge Tag</label>
-                      <input
-                        type="text"
-                        name="eventBadge"
-                        defaultValue={editEventTarget.badge}
-                        className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-400"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-[#8b92a2] block mb-1">Room Description</label>
-                      <textarea
-                        name="roomDescription"
-                        rows={2}
-                        defaultValue={editEventTarget.roomDescription}
-                        className="w-full bg-[#07090d] border border-[#272a31] rounded-xl p-2.5 text-xs text-white outline-none focus:border-amber-400"
-                      />
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setEditEventTarget(null)}
-                        className="flex-1 py-2 rounded-xl bg-[#141924] text-xs font-bold text-[#94A3B8] hover:text-white border border-[#272a31] cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="flex-1 py-2 rounded-xl btn-gold text-xs font-bold cursor-pointer shadow-md"
-                      >
-                        Save Changes
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-
-            {/* ================================================================ */}
-            {/* MODAL 7: EMERGENCY PAUSE REASON PROMPT MODAL                     */}
-            {/* ================================================================ */}
-            {pauseReasonModal && (
-              <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
-                <div className="max-w-md w-full bg-[#0d1117] border border-amber-500/40 rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl text-xs">
-                  <div className="flex items-center gap-2">
-                    <Pause className="w-5 h-5 text-amber-400" />
-                    <h3 className="font-display font-extrabold text-sm text-white">
-                      Document Emergency Pause Reason
-                    </h3>
-                  </div>
-
-                  <p className="text-[#94A3B8]">
-                    Pausing event <strong className="text-white">[{pauseReasonModal.event.id}]</strong> will immediately halt ticket sales in the User Panel. A documented reason is required for administrative audit logs.
-                  </p>
-
-                  <textarea
-                    rows={3}
-                    value={pauseReasonModal.reason}
-                    onChange={(e) => setPauseReasonModal({ ...pauseReasonModal, reason: e.target.value })}
-                    placeholder="Enter reason for emergency hold (e.g. Schedule readjustment, prize tier verification)..."
-                    className="w-full bg-[#07090d] border border-amber-500/40 rounded-xl p-2.5 text-xs text-white outline-none"
-                  />
-
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setPauseReasonModal(null)}
-                      className="flex-1 py-2 rounded-xl bg-[#141924] text-xs font-bold text-[#94A3B8] hover:text-white border border-[#272a31] cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!pauseReasonModal.reason.trim()}
-                      onClick={async () => {
-                        await directPauseEvent(pauseReasonModal.event.id, true, pauseReasonModal.reason.trim());
-                        setPauseReasonModal(null);
-                      }}
-                      className="flex-1 py-2 rounded-xl btn-gold text-xs font-bold cursor-pointer shadow-md disabled:opacity-50"
-                    >
-                      Confirm Pause
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
 
           </div>
         );
