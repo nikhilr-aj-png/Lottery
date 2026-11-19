@@ -262,44 +262,64 @@ export default function TicketModal({ event, onClose }) {
               </div>
             </div>
 
-            {/* Tactile Keypad */}
-            <div className="bg-[#10131a] p-3 xs:p-4 rounded-2xl border border-[#272a31]">
-              <span className="text-[10px] xs:text-[11px] text-[#9b8f7c] block mb-2 font-semibold">
+            {/* Tactile Keypad (3x4 Layout) */}
+            <div className="bg-[#10131a] p-3 xs:p-4 rounded-2xl border border-[#272a31] space-y-2">
+              <span className="text-[10px] xs:text-[11px] text-[#9b8f7c] block font-semibold uppercase tracking-wider">
                 TACTILE NUMERIC KEYPAD
               </span>
-              <div className="grid grid-cols-5 gap-1.5 xs:gap-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((num) => (
+              <div className="grid grid-cols-3 gap-1.5 xs:gap-2">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                   <button
                     key={num}
+                    type="button"
                     onClick={() => handleKeypadPress(num)}
-                    className="h-9 xs:h-11 rounded-xl bg-[#191c22] hover:bg-[#272a31] active:bg-[#f5c451] active:text-[#0b0e14] border border-[#32353c] hover:border-[#ffd700]/50 font-display font-bold text-base xs:text-lg text-white transition-all cursor-pointer"
+                    className="h-10 xs:h-12 rounded-xl bg-[#191c22] hover:bg-[#272a31] active:bg-[#f5c451] active:text-[#0b0e14] border border-[#32353c] hover:border-[#ffd700]/50 font-display font-bold text-base xs:text-lg text-white transition-all cursor-pointer"
                   >
                     {num}
                   </button>
                 ))}
+
+                <button
+                  type="button"
+                  onClick={handleBackspace}
+                  className="h-10 xs:h-12 rounded-xl bg-[#1a1218] hover:bg-[#261822] text-red-300 hover:text-red-200 border border-red-500/30 text-xs font-bold uppercase transition-all cursor-pointer"
+                >
+                  Clear
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleKeypadPress(0)}
+                  className="h-10 xs:h-12 rounded-xl bg-[#191c22] hover:bg-[#272a31] active:bg-[#f5c451] active:text-[#0b0e14] border border-[#32353c] hover:border-[#ffd700]/50 font-display font-bold text-base xs:text-lg text-white transition-all cursor-pointer"
+                >
+                  0
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleQuickPickCurrent}
+                  className="h-10 xs:h-12 rounded-xl bg-[#1c1810] hover:bg-[#2a2214] text-amber-300 hover:text-amber-200 border border-amber-500/40 text-xs font-bold uppercase flex items-center justify-center gap-1 transition-all cursor-pointer"
+                >
+                  <Dices className="w-3.5 h-3.5 text-amber-400" />
+                  <span>RNG</span>
+                </button>
               </div>
 
-              <div className="flex items-center justify-between gap-1.5 xs:gap-2 mt-2 pt-2">
+              <div className="flex items-center justify-end gap-1.5 xs:gap-2 pt-2 border-t border-[#1f2737]">
                 <button
-                  onClick={handleBackspace}
-                  className="px-2 xs:px-3 py-1 xs:py-1.5 rounded-lg bg-[#191c22] hover:bg-[#272a31] text-[11px] xs:text-xs font-mono-numbers text-[#9b8f7c] hover:text-white border border-[#32353c]"
+                  type="button"
+                  onClick={() => handleBulkAdd(5)}
+                  className="px-2.5 py-1.5 rounded-lg bg-[rgba(5,213,170,0.1)] hover:bg-[rgba(5,213,170,0.2)] text-[10px] xs:text-[11px] font-bold text-[#05d5aa] border border-[#05d5aa]/30 cursor-pointer"
                 >
-                  ← Backspace
+                  +5 Quick Picks
                 </button>
-                <div className="flex gap-1.5 xs:gap-2">
-                  <button
-                    onClick={() => handleBulkAdd(5)}
-                    className="px-2 xs:px-2.5 py-1 xs:py-1.5 rounded-lg bg-[rgba(5,213,170,0.1)] hover:bg-[rgba(5,213,170,0.2)] text-[10px] xs:text-[11px] font-bold text-[#05d5aa] border border-[#05d5aa]/30 cursor-pointer"
-                  >
-                    +5 Quick Picks
-                  </button>
-                  <button
-                    onClick={() => handleBulkAdd(10)}
-                    className="px-2 xs:px-2.5 py-1 xs:py-1.5 rounded-lg bg-[rgba(245,196,81,0.1)] hover:bg-[rgba(245,196,81,0.2)] text-[10px] xs:text-[11px] font-bold text-[#ffd700] border border-[#f5c451]/30 cursor-pointer"
-                  >
-                    +10 Quick Picks
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleBulkAdd(10)}
+                  className="px-2.5 py-1.5 rounded-lg bg-[rgba(245,196,81,0.1)] hover:bg-[rgba(245,196,81,0.2)] text-[10px] xs:text-[11px] font-bold text-[#ffd700] border border-[#f5c451]/30 cursor-pointer"
+                >
+                  +10 Quick Picks
+                </button>
               </div>
             </div>
 
