@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundFX } from '../engine/SoundFXService';
+import LotteryShowResultScreen from '../components/LotteryShowResultScreen';
 
 export interface LotteryWorkstationProps {
   room?: any;
@@ -38,6 +39,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   // 1. Resolve matching or active lottery event for this room
   const event = useMemo(() => {
     if (!room) return events[0] || null;
+    if (room.event) return room.event;
     const matching = events.find((e: any) => 
       e.id === room.id || 
       e.id === room.drawId || 
@@ -314,6 +316,19 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   const ticketPrice = Number(event.ticketPrice || 10);
   const totalPurchaseCost = ticketPrice * selectedTicketCount;
 
+  if (isTimedOut) {
+    return (
+      <div className="w-full h-full max-h-full min-h-0 overflow-hidden flex flex-col">
+        <LotteryShowResultScreen
+          event={event}
+          room={room}
+          onBackToLobby={onBackToLobby}
+          myTickets={myTicketsInThisRoom}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full flex flex-col min-h-0 overflow-y-auto no-scrollbar text-left space-y-3 sm:space-y-4 p-2 xs:p-3 sm:p-4 lg:p-5">
       
@@ -379,109 +394,9 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
       </div>
 
       {/* ===================================================================== */}
-      {/* 2. MAIN ROOM INTERFACE: CONCLUDED RESULT OR 3-SECTION ROOM            */}
+      {/* 2. MAIN ROOM INTERFACE: 3 FUNCTIONAL AREAS A, B, C                    */}
       {/* ===================================================================== */}
-      {isTimedOut ? (
-        /* CONCLUDED EVENT RESULT VIEW */
-        <div className="w-full max-w-4xl mx-auto bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 sm:p-6 space-y-5 shadow-2xl">
-          <div className="flex items-center justify-between pb-3 border-b border-[#1f2737]">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(245,196,81,0.6)]" />
-              <h3 className="font-display font-extrabold text-base sm:text-lg text-white">
-                Official Concluded Result – {room?.name || event.title}
-              </h3>
-            </div>
-            <span className="text-xs font-mono-numbers px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold uppercase">
-              Draw Concluded
-            </span>
-          </div>
-
-          <div className="text-center py-4 sm:py-6 bg-[#07090d] rounded-2xl border border-[#1f2737] p-4">
-            <span className="text-xs text-[#8b92a2] uppercase font-bold tracking-wider block mb-3">
-              Official Winning 4-Digit Combination
-            </span>
-            <div className="flex items-center justify-center gap-2 sm:gap-3">
-              {winDigits.split('').map((digit: string, idx: number) => (
-                <div
-                  key={idx}
-                  className="w-14 h-16 sm:w-20 sm:h-24 rounded-2xl bg-gradient-to-b from-[#192233] to-[#0c0f17] border-2 border-emerald-400 flex items-center justify-center font-mono-numbers font-black text-3xl sm:text-4xl text-emerald-300 shadow-[0_0_25px_rgba(5,213,170,0.35)]"
-                >
-                  {digit}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs font-mono-numbers">
-            <div className="bg-[#07090d] p-3 rounded-xl border border-[#272a31]">
-              <span className="text-[#8b92a2] text-[10px] uppercase block">Prize Pool</span>
-              <strong className="text-amber-400 text-sm sm:text-base font-black">{Number(event.poolPrize || 5000).toLocaleString()} USDT</strong>
-            </div>
-            <div className="bg-[#07090d] p-3 rounded-xl border border-[#272a31]">
-              <span className="text-[#8b92a2] text-[10px] uppercase block">Winning Digits</span>
-              <strong className="text-emerald-400 text-sm sm:text-base font-black">#{winDigits}</strong>
-            </div>
-            <div className="bg-[#07090d] p-3 rounded-xl border border-[#272a31] col-span-2 sm:col-span-1">
-              <span className="text-[#8b92a2] text-[10px] uppercase block">Settled Status</span>
-              <strong className="text-purple-300 text-sm sm:text-base font-bold">{event.winners?.length || 1} Winner(s) Paid</strong>
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-[#1f2737] space-y-2">
-            <h4 className="font-bold text-xs sm:text-sm text-white flex items-center gap-2">
-              <Ticket className="w-4 h-4 text-amber-400" />
-              <span>Your Tickets in this Round ({myTicketsInThisRoom.length})</span>
-            </h4>
-
-            {myTicketsInThisRoom.length === 0 ? (
-              <div className="p-4 rounded-xl bg-[#07090d] border border-[#272a31] text-center text-xs text-[#9b8f7c]">
-                You did not participate in this concluded draw.
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-1 no-scrollbar">
-                {myTicketsInThisRoom.map((t: any, idx: number) => {
-                  const isWin = t.ticketNumber === winDigits || t.status === 'won';
-                  return (
-                    <div
-                      key={idx}
-                      className={`p-3 rounded-xl flex items-center justify-between text-xs font-mono-numbers border ${
-                        isWin
-                          ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-300'
-                          : 'bg-[#07090d] border-[#272a31] text-[#9b8f7c]'
-                      }`}
-                    >
-                      <span className="font-bold text-white text-sm">#{t.ticketNumber}</span>
-                      {isWin ? (
-                        <span className="text-emerald-400 font-extrabold flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>WINNER ({t.wonAmount || event.poolPrize} USDT)</span>
-                        </span>
-                      ) : (
-                        <span className="text-[#64748b]">Unmatched</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {onBackToLobby && (
-            <button
-              type="button"
-              onClick={onBackToLobby}
-              className="btn-gold w-full py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Return to Available Lottery Pools</span>
-            </button>
-          )}
-        </div>
-      ) : (
-        /* ===================================================================== */
-        /* ACTIVE ROOM: 3 FUNCTIONAL AREAS A, B, C WITH RESPONSIVE ADAPTATIONS   */
-        /* ===================================================================== */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-4 lg:gap-5 w-full max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-4 lg:gap-5 w-full max-w-7xl mx-auto">
           
           {/* =================================================================== */}
           {/* AREA A: DIGIT SELECTION & NUMERIC KEYPAD                            */}
@@ -875,7 +790,6 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           </section>
 
         </div>
-      )}
 
       {/* ===================================================================== */}
       {/* 3. PROVABLY FAIR VERIFICATION STRIP                                   */}

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import { supabase } from '../lib/supabase';
 import ProvablyFairModal from './ProvablyFairModal';
+import LotteryShowResultScreen from './LotteryShowResultScreen';
 import { 
   Trophy, 
   Calendar, 
@@ -20,9 +21,10 @@ interface ResultCardProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   onOpenVerify: (event: any) => void;
+  onOpenShowResult: (event: any) => void;
 }
 
-function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify }: ResultCardProps) {
+function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify, onOpenShowResult }: ResultCardProps) {
   const winDigits = String(event.winningDigits || '----');
   const [dbWinners, setDbWinners] = useState<any[]>([]);
   const [loadingWinners, setLoadingWinners] = useState(false);
@@ -212,17 +214,29 @@ function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify }: ResultC
 
       </div>
 
-      {/* Card Action Controls: Verify & Expand/Collapse */}
-      <div className="pt-3 border-t border-[#1f2737] flex items-center justify-between gap-2 mt-3 shrink-0">
-        <button
-          type="button"
-          onClick={() => onOpenVerify(event)}
-          className="text-[11px] font-bold flex items-center gap-1 py-1 px-2 rounded-lg border bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30 cursor-pointer transition-colors"
-          title="Verify Provably Fair Hash"
-        >
-          <ShieldCheck className="w-3 h-3" />
-          <span>Fairness</span>
-        </button>
+      {/* Card Action Controls: Verify, Show Result Screen & Expand/Collapse */}
+      <div className="pt-3 border-t border-[#1f2737] flex flex-wrap items-center justify-between gap-2 mt-3 shrink-0">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onOpenVerify(event)}
+            className="text-[11px] font-bold flex items-center gap-1 py-1.5 px-2 rounded-lg border bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30 cursor-pointer transition-colors"
+            title="Verify Provably Fair Hash"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Fairness</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onOpenShowResult(event)}
+            className="text-[11px] font-bold flex items-center gap-1 py-1.5 px-2 rounded-lg border bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border-purple-500/30 cursor-pointer transition-colors shadow-sm"
+            title="View Responsive Show Result Screen"
+          >
+            <Trophy className="w-3.5 h-3.5 text-amber-400" />
+            <span>Show Result Screen</span>
+          </button>
+        </div>
 
         <button
           type="button"
@@ -233,7 +247,7 @@ function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify }: ResultC
               : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/40'
           }`}
         >
-          <span>{isExpanded ? 'Hide Winner Details' : `View Winner Details (${winnerCount})`}</span>
+          <span>{isExpanded ? 'Hide Details' : `Breakdown (${winnerCount})`}</span>
           {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </button>
       </div>
@@ -243,10 +257,11 @@ function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify }: ResultC
 }
 
 export default function ResultsView() {
-  const { events } = useLottery();
+  const { events, tickets } = useLottery();
   const [selectedRoundFilter, setSelectedRoundFilter] = useState('all');
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [verifyModalEvent, setVerifyModalEvent] = useState<any>(null);
+  const [selectedShowResultEvent, setSelectedShowResultEvent] = useState<any>(null);
 
   const toggleExpand = (id: string) => {
     setExpandedCardId(prev => prev === id ? null : id);
@@ -333,8 +348,26 @@ export default function ResultsView() {
               isExpanded={expandedCardId === event.id}
               onToggleExpand={() => toggleExpand(event.id)}
               onOpenVerify={(ev) => setVerifyModalEvent(ev)}
+              onOpenShowResult={(ev) => setSelectedShowResultEvent(ev)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Full-Screen Responsive No-Scroll Show Result Screen Overlay */}
+      {selectedShowResultEvent && (
+        <div className="fixed inset-0 z-50 bg-[#07090e]/95 backdrop-blur-md flex flex-col overflow-hidden p-2 sm:p-4">
+          <div className="w-full h-full max-h-full min-h-0 overflow-hidden flex flex-col">
+            <LotteryShowResultScreen
+              event={selectedShowResultEvent}
+              room={{
+                name: selectedShowResultEvent.roomName || selectedShowResultEvent.title?.split(':')[0] || 'Lottery Room',
+                drawId: selectedShowResultEvent.id
+              }}
+              onBackToLobby={() => setSelectedShowResultEvent(null)}
+              myTickets={tickets?.filter((t: any) => t.eventId === selectedShowResultEvent.id || t.event_id === selectedShowResultEvent.id) || []}
+            />
+          </div>
         </div>
       )}
 
