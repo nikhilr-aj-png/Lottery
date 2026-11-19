@@ -97,8 +97,9 @@ function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify, onOpenSho
               <span className="font-mono-numbers font-extrabold text-[10px] text-amber-300 bg-black/60 px-2 py-0.5 rounded border border-amber-500/40">
                 {roomName}
               </span>
-              <span className="text-[10px] font-mono-numbers text-[#9b8f7c] bg-[#141924] px-1.5 py-0.5 rounded border border-[#272a31]">
-                EVENT: {event.id}
+              <span className="text-[9px] font-mono-numbers font-bold px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30 uppercase flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                <span>END</span>
               </span>
               <span className="text-[10px] text-[#9b8f7c] font-mono-numbers flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
@@ -326,7 +327,7 @@ export default function ResultsView() {
                   : 'text-[#9b8f7c] hover:text-white hover:bg-[#141924]'
               }`}
             >
-              <span>{evt.roomName || evt.title?.split(':')[0] || `Event #${evt.id.replace('evt-', '').toUpperCase()}`}</span>
+              <span>{evt.roomName || evt.title?.split(':')[0] || 'Room'}</span>
             </button>
           ))}
         </div>

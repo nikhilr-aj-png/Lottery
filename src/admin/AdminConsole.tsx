@@ -272,7 +272,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
   const [houseFeePercent, setHouseFeePercent] = useState(() => String(platformSettings?.houseFeePercent ?? '5'));
   const [defaultWinnerSharePercent, setDefaultWinnerSharePercent] = useState(() => String(platformSettings?.defaultWinnerSharePercent ?? '90'));
   const [treasuryTrc20, setTreasuryTrc20] = useState(() => platformSettings?.treasuryTrc20 || 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m');
-  const [supportEmail, setSupportEmail] = useState(() => platformSettings?.supportEmail || 'support@earnflow.in');
+  const [supportEmail, setSupportEmail] = useState(() => platformSettings?.supportEmail || 'earnflow.user@gmail.com');
   const [usernameChangeFee, setUsernameChangeFee] = useState(() => String(platformSettings?.usernameChangeFee ?? '5.00'));
   const [apkDownloadUrl, setApkDownloadUrl] = useState(() => platformSettings?.apkDownloadUrl || '/download/earnflow.apk');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -286,7 +286,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       setHouseFeePercent(String(platformSettings.houseFeePercent ?? '5'));
       setDefaultWinnerSharePercent(String(platformSettings.defaultWinnerSharePercent ?? '90'));
       setTreasuryTrc20(platformSettings.treasuryTrc20 || 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m');
-      setSupportEmail(platformSettings.supportEmail || 'support@earnflow.in');
+      setSupportEmail(platformSettings.supportEmail || 'earnflow.user@gmail.com');
       setUsernameChangeFee(String(platformSettings.usernameChangeFee ?? '5.00'));
       setApkDownloadUrl(platformSettings.apkDownloadUrl || '/download/earnflow.apk');
     }

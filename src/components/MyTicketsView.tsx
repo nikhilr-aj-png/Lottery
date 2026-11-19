@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import { Ticket, Trophy, Clock, CheckCircle2, Sparkles, Layers, Lock, LogIn } from 'lucide-react';
+import { getEventStatusInfo } from '../utils/eventStatus';
 
 interface MyTicketsViewProps {
   onOpenPicker?: () => void;
@@ -153,7 +154,8 @@ export default function MyTicketsView({ onOpenPicker }: MyTicketsViewProps) {
         /* Grouped Tickets by Room & Event */
         <div className="space-y-6">
           {filteredGroups.map(group => {
-            const isCompleted = group.event.status === 'completed' || (group.event.drawTime && group.event.drawTime <= Date.now());
+            const statusInfo = getEventStatusInfo(group.event);
+            const isCompleted = statusInfo.isEnd;
             const winDigits = group.event.winningDigits || group.event.targetWinningDigits;
 
             return (
@@ -165,12 +167,9 @@ export default function MyTicketsView({ onOpenPicker }: MyTicketsViewProps) {
                     <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
                       {group.event?.title || 'Lottery Draw'}
                     </h3>
-                    <span className={`text-[10px] font-mono-numbers px-2 py-0.2 rounded font-bold uppercase ${
-                      isCompleted 
-                        ? 'bg-[#141924] text-amber-300 border border-amber-500/30'
-                        : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                    }`}>
-                      {isCompleted ? 'Concluded' : 'Active Draw'}
+                    <span className={`text-[10px] font-mono-numbers px-2 py-0.5 rounded font-bold uppercase flex items-center gap-1 ${statusInfo.badgeClass}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
+                      <span>{statusInfo.label}</span>
                     </span>
                   </div>
 

@@ -1,5 +1,6 @@
 import fs from 'fs';
-import path from 'path';
+
+const supportEmail = 'earnflow.user@gmail.com';
 
 const privacyHtml = `<!doctype html>
 <html lang="en" class="dark">
@@ -242,7 +243,7 @@ const privacyHtml = `<!doctype html>
           <li><strong>USDT Payments &amp; Prize Disbursals:</strong> Managing wallet balances, crediting deposits, calculating winnings, and processing withdrawals in USDT.</li>
           <li><strong>Fair Play Auditing:</strong> Recording SHA-256 pre-commit seeds so every round can be independently verified.</li>
           <li><strong>Fraud Prevention:</strong> Detecting duplicate accounts, bot exploitation, and maintaining platform security.</li>
-          <li><strong>Customer Support:</strong> Responding to user inquiries submitted to <code>support@earnflow.in</code>.</li>
+          <li><strong>Customer Support:</strong> Responding to user inquiries submitted to <code>\${supportEmail}</code>.</li>
         </ul>
       </section>
 
@@ -288,7 +289,7 @@ const privacyHtml = `<!doctype html>
         <ul>
           <li><strong>Access:</strong> Request an export of your account and transaction ledger data.</li>
           <li><strong>Correction:</strong> Modify your username or linked TRC-20 address directly in your Profile.</li>
-          <li><strong>Deletion:</strong> Request permanent deletion of your account and personal data by emailing <code>support@earnflow.in</code>. Account deletion requests are fulfilled within 30 days.</li>
+          <li><strong>Deletion:</strong> Request permanent deletion of your account and personal data by emailing <code>\${supportEmail}</code>. Account deletion requests are fulfilled within 30 days.</li>
           <li><strong>Revoke Google Access:</strong> Revoke permissions anytime via your <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">Google Account Security page</a>.</li>
         </ul>
       </section>
@@ -316,8 +317,8 @@ const privacyHtml = `<!doctype html>
         <div class="callout">
           <p><strong>Platform:</strong> EarnFlow.in</p>
           <p><strong>Website:</strong> <a href="https://earnflow.in">https://earnflow.in</a></p>
-          <p><strong>Privacy Inquiries &amp; Deletions:</strong> <a href="mailto:support@earnflow.in">support@earnflow.in</a></p>
-          <p><strong>Customer Support:</strong> <a href="mailto:support@earnflow.in">support@earnflow.in</a></p>
+          <p><strong>Privacy Inquiries &amp; Deletions:</strong> <a href="mailto:\${supportEmail}">\${supportEmail}</a></p>
+          <p><strong>Customer Support:</strong> <a href="mailto:\${supportEmail}">\${supportEmail}</a></p>
         </div>
       </section>
     </main>
@@ -539,7 +540,7 @@ const termsHtml = `<!doctype html>
       <section class="section-card">
         <h2 class="section-title"><span class="section-num">06</span> Support &amp; Contact</h2>
         <p>
-          For assistance or disputes, reach out to our team at <a href="mailto:support@earnflow.in">support@earnflow.in</a>.
+          For assistance or disputes, reach out to our team at <a href="mailto:${supportEmail}">${supportEmail}</a>.
         </p>
       </section>
     </main>

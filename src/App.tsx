@@ -4,9 +4,7 @@ import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import CasinoLobby from './components/CasinoLobby';
 import GameModal from './components/GameModal';
-import ProvablyFairModal from './components/ProvablyFairModal';
-import HeroBanner from './components/HeroBanner';
-import LotteryCard from './components/LotteryCard';
+import Footer from './components/Footer';
 import TicketModal from './components/TicketModal';
 import WalletView from './components/WalletView';
 import WalletModal from './components/WalletModal';
@@ -191,7 +189,6 @@ function LotteryAppContent() {
   }, []);
 
   const [activeGameId, setActiveGameId] = useState(null);
-  const [isFairnessModalOpen, setIsFairnessModalOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   // Parse dedicated game routes: /games/:gameSlug or /games/:gameSlug/:roomId
@@ -313,8 +310,6 @@ function LotteryAppContent() {
 
     if (tab === 'transactions') {
       navigate('/transaction-history');
-    } else if (tab === 'fairness') {
-      setIsFairnessModalOpen(true);
     } else if (tab === 'support' || tab === 'contact') {
       setIsTransactionRoute(false);
       navigate('/support');
@@ -683,110 +678,10 @@ function LotteryAppContent() {
 
           {/* Platform Public Footer — Hidden in Active Dedicated Game Rooms */}
           {!currentGameRoute?.roomId && (
-            <footer className="shrink-0 w-full mt-auto border-t border-[rgba(245,196,81,0.15)] bg-[#07090d] pt-2.5 sm:pt-3 pb-14 md:pb-2.5 px-2.5 xs:px-4 sm:px-6 lg:px-8">
-              <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
-                  <div 
-                    onClick={handleGoHome}
-                    className="flex items-center gap-2 xs:gap-2.5 text-center sm:text-left cursor-pointer group select-none"
-                    role="button"
-                    tabIndex={0}
-                    title="Return to EarnFlow Home Page"
-                  >
-                    <img 
-                      src="/logo.png" 
-                      alt="EarnFlow.in" 
-                      className="w-7 xs:w-8 h-7 xs:h-8 rounded-full border border-purple-500/40 object-cover shadow-md shrink-0 group-hover:scale-105 transition-transform" 
-                    />
-                    <div>
-                      <span className="font-display font-black text-sm xs:text-base text-white">
-                        EarnFlow<span className="text-[#a855f7]">.in</span>
-                      </span>
-                      <p className="text-[10px] xs:text-[11px] text-[#9b8f7c]">
-                        Online Gaming Platform · USDT (TRC-20) Settlement
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 xs:gap-3 text-[10px] xs:text-[11px] text-[#9b8f7c] flex-wrap justify-center">
-                    <span className="flex items-center gap-1 text-[#22c55e]">
-                      <ShieldCheck className="w-3 xs:w-3.5 h-3 xs:h-3.5" />
-                      CertiK Audited
-                    </span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1 text-[#a855f7]">
-                      24-Hour USDT Payouts
-                    </span>
-                  </div>
-                </div>
-                
-                {/* Legal Navigation Links */}
-                <div className="mt-2 sm:mt-2.5 pt-1.5 sm:pt-2 border-t border-[#1f2737] flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 text-[10px] xs:text-[11px] text-[#9b8f7c]">
-                  <div className="text-center sm:text-left leading-relaxed">
-                    © 2026 EarnFlow.in Platform. All drawings and games are provably fair, verifiable on the public ledger with USDT (TRC-20).
-                  </div>
-
-                  <div className="flex items-center gap-2.5 xs:gap-3.5 font-semibold text-[10px] xs:text-[11px] shrink-0 flex-wrap justify-center sm:justify-end">
-                    <a
-                      href="/support"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setIsTransactionRoute(false);
-                        navigate('/support');
-                        setActiveTab('support');
-                        const mainEl = document.getElementById('main-content');
-                        if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className="hover:text-purple-400 transition-colors cursor-pointer text-[#a855f7]"
-                    >
-                      Customer Support &amp; FAQ
-                    </a>
-                    <span>•</span>
-                    <a
-                      href="/legal/terms"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setIsTransactionRoute(false);
-                        setActiveTab('terms');
-                        const mainEl = document.getElementById('main-content');
-                        if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className="hover:text-purple-400 transition-colors cursor-pointer"
-                    >
-                      Terms & Conditions
-                    </a>
-                    <span>•</span>
-                    <a
-                      href="/legal/privacy"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setIsTransactionRoute(false);
-                        setActiveTab('privacy');
-                        const mainEl = document.getElementById('main-content');
-                        if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className="hover:text-emerald-400 transition-colors cursor-pointer"
-                    >
-                      Privacy Policy
-                    </a>
-                    {!isInstalled && (
-                      <>
-                        <span>•</span>
-                        <button
-                          onClick={triggerInstall}
-                          className="hover:text-[#ffd700] transition-colors cursor-pointer text-[#ffd700] flex items-center gap-1 font-bold"
-                        >
-                          <span>📲 Install App</span>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </footer>
+            <Footer
+              onSelectTab={handleSelectTab}
+              onGoHome={handleGoHome}
+            />
           )}
 
         </main>
@@ -808,16 +703,6 @@ function LotteryAppContent() {
           onClose={() => setActiveGameId(null)}
         />
       )}
-
-      {/* Provably Fair Auditor Modal */}
-      {isFairnessModalOpen && (
-        <ProvablyFairModal
-          isOpen={isFairnessModalOpen}
-          onClose={() => setIsFairnessModalOpen(false)}
-          event={activeEvents[0] || events[0]}
-        />
-      )}
-
 
       {/* Auth Modal for Email/Password & Google Login */}
       <AuthModal />

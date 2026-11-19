@@ -23,7 +23,7 @@ export interface ContactPageProps {
 
 export default function ContactPage({ onBackToHome }: ContactPageProps) {
   const { user, profile, submitSupportTicket, showToast, platformSettings } = useLottery();
-  const supportEmail = platformSettings?.supportEmail || 'support@earnflow.in';
+  const supportEmail = platformSettings?.supportEmail ? platformSettings.supportEmail.trim() : '';
 
   // Form states
   const [name, setName] = useState('');

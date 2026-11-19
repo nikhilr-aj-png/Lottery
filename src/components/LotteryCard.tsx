@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Users, Ticket, ArrowRight, ShieldCheck, Flame, Trophy } from 'lucide-react';
+import { getEventStatusInfo } from '../utils/eventStatus';
 
 interface LotteryCardProps {
   event: any;
@@ -24,8 +25,9 @@ export default function LotteryCard({ event, onSelect }: LotteryCardProps) {
     return () => clearInterval(timer);
   }, [event.drawTime]);
 
-  const isCompleted = event.status === 'completed';
-  const isTimedOut = isCompleted || (event.drawTime && event.drawTime <= Date.now());
+  const statusInfo = getEventStatusInfo(event);
+  const isCompleted = statusInfo.isEnd;
+  const isTimedOut = statusInfo.isEnd;
 
   const getThemeStyling = () => {
     switch (event.theme) {
@@ -59,12 +61,14 @@ export default function LotteryCard({ event, onSelect }: LotteryCardProps) {
           {/* Overlaid Badges */}
           <div className="absolute top-2.5 xs:top-3 left-2.5 xs:left-3 right-2.5 xs:right-3 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] xs:text-[11px] font-mono-numbers px-2 xs:px-2.5 py-0.5 xs:py-1 rounded-md font-bold tracking-wider bg-black/70 backdrop-blur-md text-[#ffd700] border border-[#f5c451]/40 shadow-lg flex items-center gap-1">
-                {event.badge || 'FESTIVE SPECIAL'}
+              <span className={`text-[10px] xs:text-[11px] font-mono-numbers px-2 xs:px-2.5 py-0.5 xs:py-1 rounded-md font-bold tracking-wider ${statusInfo.badgeClass}`}>
+                {statusInfo.label}
               </span>
-              <span className="text-[9px] xs:text-[10px] font-mono-numbers px-1.5 xs:px-2 py-0.5 rounded bg-black/80 text-amber-300 border border-amber-500/40 font-bold">
-                ROUND #{event.id.replace('evt-', '').toUpperCase()}
-              </span>
+              {event.badge && (
+                <span className="text-[10px] xs:text-[11px] font-mono-numbers px-2 xs:px-2.5 py-0.5 xs:py-1 rounded-md font-bold tracking-wider bg-black/70 backdrop-blur-md text-[#ffd700] border border-[#f5c451]/40 shadow-lg flex items-center gap-1">
+                  {event.badge}
+                </span>
+              )}
             </div>
           </div>
 
@@ -80,16 +84,14 @@ export default function LotteryCard({ event, onSelect }: LotteryCardProps) {
           {/* Default Top Banner Accent */}
           <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
             <div className="flex items-center gap-1.5">
-              <span className={`text-[10px] xs:text-[11px] font-mono-numbers px-2.5 xs:px-3 py-0.5 xs:py-1 rounded-md font-bold tracking-wider ${
-                isCompleted 
-                  ? 'bg-slate-800 text-slate-400 border border-slate-700'
-                  : 'bg-[rgba(245,196,81,0.12)] text-[#ffd700] border border-[#f5c451]/30'
-              }`}>
-                {event.badge || 'LOTTERY POOL'}
+              <span className={`text-[10px] xs:text-[11px] font-mono-numbers px-2.5 xs:px-3 py-0.5 xs:py-1 rounded-md font-bold tracking-wider ${statusInfo.badgeClass}`}>
+                {statusInfo.label}
               </span>
-              <span className="text-[9px] xs:text-[10px] font-mono-numbers px-1.5 xs:px-2 py-0.5 rounded bg-[#141924] text-amber-300 border border-amber-500/40 font-bold">
-                ROUND #{event.id.replace('evt-', '').toUpperCase()}
-              </span>
+              {event.badge && (
+                <span className="text-[10px] xs:text-[11px] font-mono-numbers px-2.5 xs:px-3 py-0.5 xs:py-1 rounded-md font-bold tracking-wider bg-[rgba(245,196,81,0.12)] text-[#ffd700] border border-[#f5c451]/30">
+                  {event.badge}
+                </span>
+              )}
             </div>
           </div>
 
@@ -174,13 +176,13 @@ export default function LotteryCard({ event, onSelect }: LotteryCardProps) {
           </div>
         </div>
       ) : isTimedOut ? (
-        <div className="mb-3.5 sm:mb-5 p-2.5 xs:p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-[11px] xs:text-xs text-amber-300">
+        <div className="mb-3.5 sm:mb-5 p-2.5 xs:p-3 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-between text-[11px] xs:text-xs text-red-400">
           <span className="flex items-center gap-1.5 font-bold">
-            <Clock className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-amber-400" />
-            Draw Time Expired
+            <Clock className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-red-400" />
+            Draw Ended
           </span>
-          <span className="font-mono-numbers text-[10px] xs:text-[11px] text-amber-400 font-semibold uppercase">
-            Closed for Tickets
+          <span className="font-mono-numbers text-[10px] xs:text-[11px] text-red-400 font-bold uppercase">
+            END
           </span>
         </div>
       ) : (

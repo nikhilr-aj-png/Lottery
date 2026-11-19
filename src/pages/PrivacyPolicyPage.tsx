@@ -8,7 +8,7 @@ export interface PrivacyPolicyPageProps {
 
 export default function PrivacyPolicyPage({ onBackToHome }: PrivacyPolicyPageProps) {
   const { platformSettings } = useLottery();
-  const supportEmail = platformSettings?.supportEmail || 'support@earnflow.in';
+  const supportEmail = platformSettings?.supportEmail ? platformSettings.supportEmail.trim() : '';
 
   return (
     <div className="max-w-4xl 2xl:max-w-5xl mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-in fade-in duration-200">

@@ -62,8 +62,9 @@ const FAQS = [
 ];
 
 export default function SupportView() {
-  const { user, profile, wallet, showToast, setIsAuthModalOpen } = useLottery();
+  const { user, profile, wallet, showToast, setIsAuthModalOpen, platformSettings } = useLottery();
   const { playClick, playChipBet } = useSoundFX();
+  const supportEmail = platformSettings?.supportEmail ? platformSettings.supportEmail.trim() : '';
   
   // Active Support Tab: 'faq' | 'tickets' | 'responsible'
   const [activeTab, setActiveTab] = useState('faq');
@@ -144,7 +145,7 @@ export default function SupportView() {
         user_address: wallet?.address || 'Anonymous',
         name: profile?.username || user?.user_metadata?.username || 'Player',
         username: profile?.username || 'Player',
-        email: user?.email || contactEmail || 'support@earnflow.in',
+        email: user?.email || contactEmail || supportEmail || 'support@earnflow.in',
         subject: `[${ticketCategory}] ${ticketSubject.trim()}`,
         message: ticketMessage.trim(),
         status: 'open',
@@ -402,7 +403,11 @@ export default function SupportView() {
             </div>
 
             <div className="pt-3 border-t border-[#1F2737] text-[11px] text-[#64748B]">
-              Direct support email: <span className="text-amber-300 font-mono">support@earnflow.in</span>
+              {supportEmail ? (
+                <>Direct support email: <a href={`mailto:${supportEmail}`} className="text-amber-300 font-mono hover:underline">{supportEmail}</a></>
+              ) : (
+                <span>Official support tickets are monitored 24/7 by our dedicated team.</span>
+              )}
             </div>
           </div>
 

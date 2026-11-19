@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import { X, ArrowLeft, Dices, RotateCcw, Plus, Trash2, ShieldCheck, Check, Sparkles, AlertCircle, LogIn, Lock, Wallet, Clock, Trophy } from 'lucide-react';
+import { getEventStatusInfo } from '../utils/eventStatus';
 
 export default function TicketModal({ event, onClose }) {
   const { user, wallet, buyTickets, isTicketNumberSold, getUnsoldRandomNumber, showToast, setIsAuthModalOpen, setActiveTab } = useLottery();
@@ -16,6 +17,7 @@ export default function TicketModal({ event, onClose }) {
 
   if (!event) return null;
 
+  const statusInfo = getEventStatusInfo(event);
   const currentNumberStr = digits.join('');
   const isCurrentSold = isTicketNumberSold ? isTicketNumberSold(event.id, currentNumberStr) : false;
   const isAlreadyStaged = stagedTickets.includes(currentNumberStr);
@@ -130,9 +132,9 @@ export default function TicketModal({ event, onClose }) {
             
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 xs:gap-2 mb-0.5">
-                <span className="badge-provably-fair px-1.5 xs:px-2 py-0.5 rounded text-[9px] xs:text-[10px] font-bold flex items-center gap-1 shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#05d5aa] animate-ping" />
-                  ROUND #{event.id.replace('evt-', '').toUpperCase()}
+                <span className={`px-1.5 xs:px-2 py-0.5 rounded text-[9px] xs:text-[10px] font-bold flex items-center gap-1 shrink-0 ${statusInfo.badgeClass}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
+                  <span>{statusInfo.label}</span>
                 </span>
                 <span className="text-[11px] xs:text-xs font-mono-numbers text-[#9b8f7c] truncate">
                   Stake: <strong className="text-white">{event.ticketPrice} USDT</strong>
@@ -518,7 +520,7 @@ export default function TicketModal({ event, onClose }) {
 
               <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#9b8f7c] text-center pt-1 font-mono-numbers">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#05d5aa]" />
-                <span>Verified Draw Reference: #{event.id.replace('evt-', '').toUpperCase()}</span>
+                <span>Verified Autonomous On-Chain Draw</span>
               </div>
             </div>
 

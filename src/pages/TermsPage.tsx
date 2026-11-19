@@ -25,7 +25,7 @@ export interface TermsPageProps {
 
 export default function TermsPage({ onBackToHome }: TermsPageProps) {
   const { platformSettings } = useLottery();
-  const supportEmail = platformSettings?.supportEmail || 'support@earnflow.in';
+  const supportEmail = platformSettings?.supportEmail ? platformSettings.supportEmail.trim() : '';
 
   const sections = [
     {
@@ -452,7 +452,11 @@ export default function TermsPage({ onBackToHome }: TermsPageProps) {
             For questions, legal inquiries, technical support, or Provably Fair audit assistance, our team is available 24/7 through our official communication channels:
           </p>
           <div className="p-4 rounded-xl bg-[#0B0F19] border border-[#1F2737] space-y-2 text-xs">
-            <p><strong className="text-white">Official Support Email:</strong> <a href={`mailto:${supportEmail}`} className="text-amber-400 hover:underline">{supportEmail}</a></p>
+            {supportEmail ? (
+              <p><strong className="text-white">Official Support Email:</strong> <a href={`mailto:${supportEmail}`} className="text-amber-400 hover:underline">{supportEmail}</a></p>
+            ) : (
+              <p><strong className="text-white">Official Support:</strong> <span className="text-[#94a3b8] italic">Support tickets available 24/7 via the Support Desk.</span></p>
+            )}
             <p><strong className="text-white">Support Desk Portal:</strong> Available directly via <strong className="text-white">/support</strong></p>
             <p><strong className="text-white">Platform Domain:</strong> <a href="https://earnflow.in" className="text-amber-400 hover:underline">https://earnflow.in</a></p>
             <p><strong className="text-white">Support Response SLA:</strong> Initial response within 6 hours; withdrawal disbursements within 24 hours.</p>
@@ -557,7 +561,11 @@ export default function TermsPage({ onBackToHome }: TermsPageProps) {
           Have questions regarding our Terms &amp; Conditions or cryptographic verification?
         </p>
         <p className="text-xs">
-          Contact our compliance team anytime at <a href={`mailto:${supportEmail}`} className="text-amber-400 font-bold hover:underline">{supportEmail}</a> or open a ticket in <a href="/support" className="text-purple-400 font-bold hover:underline">Customer Support Desk</a>.
+          {supportEmail ? (
+            <>Contact our compliance team anytime at <a href={`mailto:${supportEmail}`} className="text-amber-400 font-bold hover:underline">{supportEmail}</a> or open a ticket in <a href="/support" className="text-purple-400 font-bold hover:underline">Customer Support Desk</a>.</>
+          ) : (
+            <>Contact our compliance team anytime by opening a ticket in the <a href="/support" className="text-purple-400 font-bold hover:underline">Customer Support Desk</a>.</>
+          )}
         </p>
       </div>
 

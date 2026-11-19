@@ -240,15 +240,12 @@ export default function LotteryShowResultScreen({
           )}
 
           <div className="min-w-0 flex items-center gap-1.5 xs:gap-2">
-            <h2 className="font-display font-black text-xs xs:text-sm sm:text-base text-white truncate max-w-[120px] xs:max-w-[180px] sm:max-w-[280px]">
+            <h2 className="font-display font-black text-xs xs:text-sm sm:text-base text-white truncate max-w-[140px] xs:max-w-[200px] sm:max-w-[320px]">
               {room?.name || event?.title || 'Grand Pot Arena'}
             </h2>
-            <span className="text-[9px] xs:text-[10px] font-mono-numbers px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold uppercase shrink-0">
-              {event?.id ? `ID: ${String(event.id).slice(-8)}` : 'SETTLED'}
-            </span>
-            <span className="text-[9px] xs:text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-black uppercase flex items-center gap-1 shrink-0">
-              <CheckCircle2 className="w-3 h-3 text-purple-400" />
-              <span>SETTLED</span>
+            <span className="text-[9px] xs:text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30 font-bold uppercase flex items-center gap-1 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              <span>END</span>
             </span>
           </div>
         </div>

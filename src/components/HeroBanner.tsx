@@ -12,6 +12,7 @@ import {
   Activity,
   ArrowRight
 } from 'lucide-react';
+import { getEventStatusInfo } from '../utils/eventStatus';
 
 interface HeroBannerProps {
   onPlayNowClick?: (event?: any) => void;
@@ -108,6 +109,7 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
   if (!grandEvent) return null;
 
   const winnerCount = grandEvent.winnerCount || 1;
+  const statusInfo = getEventStatusInfo(grandEvent);
 
   return (
     <div className="relative overflow-hidden pt-4 pb-8">
@@ -119,21 +121,16 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
         {/* Top Badges Bar */}
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3 sm:mb-5">
           <div className="flex items-center gap-1.5 xs:gap-2">
-            <div className="badge-gold px-2.5 xs:px-3 py-1 rounded-full text-[10px] xs:text-[11px] font-bold flex items-center gap-1.5 uppercase tracking-wider">
-              <Flame className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-[#f5c451]" />
-              {grandEvent.badge || 'FEATURED JACKPOT'}
+            <div className={`px-2.5 xs:px-3 py-1 rounded-full text-[10px] xs:text-[11px] font-bold flex items-center gap-1.5 uppercase tracking-wider ${statusInfo.badgeClass}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
+              <span>{statusInfo.label}</span>
             </div>
-            <div className="badge-provably-fair px-2.5 xs:px-3 py-1 rounded-full text-[10px] xs:text-[11px] font-bold flex items-center gap-1.5">
-              <ShieldCheck className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-[#05d5aa]" />
-              100% VERIFIED FAIR
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-mono-numbers">
-            <span className="text-[#9b8f7c]">Round ID:</span>
-            <span className="text-white font-bold bg-[#141924] px-1.5 xs:px-2 py-0.5 rounded border border-[#272a31]">
-              #{grandEvent.id.replace('evt-', '').toUpperCase()}
-            </span>
+            {grandEvent.badge && (
+              <div className="badge-gold px-2.5 xs:px-3 py-1 rounded-full text-[10px] xs:text-[11px] font-bold flex items-center gap-1.5 uppercase tracking-wider">
+                <Flame className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-[#f5c451]" />
+                {grandEvent.badge}
+              </div>
+            )}
           </div>
         </div>
 
@@ -147,16 +144,12 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
             <div>
               {/* Status and Title */}
               <div className="flex flex-wrap items-center justify-between gap-1.5 xs:gap-2 mb-2">
-                <span className="text-[10px] xs:text-[11px] font-mono-numbers text-amber-400 font-extrabold tracking-wider uppercase flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${isTimedOut ? 'bg-red-400' : 'bg-[#05d5aa] animate-ping'}`} />
-                  {isTimedOut ? 'DRAW CLOSED · TIME EXPIRED' : 'TRENDING ACTIVE LOTTERY'}
+                <span className={`text-[10px] xs:text-[11px] font-mono-numbers font-extrabold tracking-wider uppercase flex items-center gap-1.5 px-2.5 py-0.5 rounded-md ${statusInfo.badgeClass}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
+                  {statusInfo.label}
                 </span>
 
                 <div className="flex items-center gap-1.5 xs:gap-2">
-                  <span className="font-mono-numbers text-[10px] xs:text-[11px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/40 px-2 xs:px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                    <span className="text-[#9b8f7c] font-normal text-[9px] xs:text-[10px]">ROUND:</span>
-                    <span>#{grandEvent.id.replace('evt-', '').toUpperCase()}</span>
-                  </span>
                   <span className="text-[9px] xs:text-[10px] text-[#05d5aa] font-semibold bg-[#05d5aa]/10 px-2 xs:px-2.5 py-0.5 rounded-full border border-[#05d5aa]/20">
                     {winnerCount > 1 ? `${winnerCount} Lucky Winners` : 'Lucky Winner Pot'}
                   </span>

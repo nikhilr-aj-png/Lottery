@@ -16,6 +16,7 @@ import {
 import confetti from 'canvas-confetti';
 import { soundFX } from '../engine/SoundFXService';
 import LotteryShowResultScreen from '../components/LotteryShowResultScreen';
+import { getEventStatusInfo } from '../utils/eventStatus';
 
 export interface LotteryWorkstationProps {
   room?: any;
@@ -85,7 +86,8 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
 
   // 4. Countdown timer
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
-  const isTimedOut = event.status === 'completed' || (event.drawTime && event.drawTime <= Date.now());
+  const statusInfo = getEventStatusInfo(event);
+  const isTimedOut = statusInfo.isEnd;
 
   useEffect(() => {
     const updateTime = () => {
@@ -355,16 +357,9 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
               <h2 className="font-display font-black text-sm sm:text-base text-white truncate">
                 {room?.name || event.title}
               </h2>
-              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold uppercase shrink-0">
-                {room?.drawId || 'DRAW #' + event.id}
-              </span>
-              <span className={`text-[10px] font-mono-numbers px-2 py-0.5 rounded-md font-bold uppercase flex items-center gap-1 shrink-0 ${
-                isTimedOut 
-                  ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30' 
-                  : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-              }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${isTimedOut ? 'bg-purple-400' : 'bg-emerald-400 animate-pulse'}`} />
-                <span className="hidden sm:inline">{isTimedOut ? 'CONCLUDED' : 'ACTIVE'}</span>
+              <span className={`text-[10px] font-mono-numbers px-2 py-0.5 rounded-md font-bold uppercase flex items-center gap-1 shrink-0 ${statusInfo.badgeClass}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
+                <span>{statusInfo.label}</span>
               </span>
             </div>
             <p className="text-[11px] text-[#94A3B8] truncate hidden sm:block">

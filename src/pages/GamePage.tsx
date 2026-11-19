@@ -11,6 +11,7 @@ import {
 import { supabase } from '../lib/supabase';
 import ProvablyFairModal from '../components/ProvablyFairModal';
 import { useLottery } from '../context/LotteryContext';
+import { getEventStatusInfo } from '../utils/eventStatus';
 import {
   ArrowLeft,
   ShieldCheck,
@@ -638,9 +639,8 @@ export default function GamePage({
             const matchingEvent = game.id === 'lottery' 
               ? (room.event || events.find(e => e.id === room.id || e.id === room.drawId || e.title?.toLowerCase().includes(room.name?.toLowerCase())))
               : null;
-            const isRoomConcluded = game.id === 'lottery'
-              ? (matchingEvent?.status === 'completed' || (matchingEvent?.drawTime && matchingEvent.drawTime <= Date.now()) || room.status === 'completed')
-              : room.status === 'completed';
+            const statusInfo = getEventStatusInfo(matchingEvent || room);
+            const isRoomConcluded = statusInfo.isEnd;
             const safeRoomName = room.name || `Room ${room.id || ''}`;
             const roomNumberName = safeRoomName.match(/Room\s*\d+/i)?.[0] || safeRoomName.split(':')[0] || 'Room';
             return (
@@ -657,20 +657,11 @@ export default function GamePage({
                         }`}>
                         {room.type} Room
                       </span>
-                      {room.drawId && (
-                        <span className="text-[9px] font-mono-numbers px-1.5 py-0.5 rounded bg-black/60 text-amber-400 border border-amber-500/30 font-bold">
-                          {room.drawId}
-                        </span>
-                      )}
                     </div>
 
-                    <div className={`flex items-center gap-1.5 text-[10px] font-mono-numbers font-bold ${
-                      isRoomConcluded ? 'text-amber-400' : 'text-emerald-400'
-                    }`}>
-                      <span className={`w-2 h-2 rounded-full ${
-                        isRoomConcluded ? 'bg-amber-400 shadow-[0_0_6px_rgba(245,196,81,0.6)]' : 'bg-emerald-400 shadow-[0_0_6px_rgba(34,197,94,0.6)]'
-                      }`} />
-                      <span>{isRoomConcluded ? 'CONCLUDED' : 'OPEN'}</span>
+                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono-numbers font-bold uppercase ${statusInfo.badgeClass}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
+                      <span>{statusInfo.label}</span>
                     </div>
                   </div>
 

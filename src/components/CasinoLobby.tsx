@@ -224,10 +224,10 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: Casino
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Trust & Currency Cards */}
+          {/* RIGHT COLUMN: Clean Platform Highlights */}
           <div className="hidden lg:flex flex-col gap-3 w-72 xl:w-80 shrink-0 bg-[#0B0F19]/80 border border-amber-500/20 rounded-2xl p-4 shadow-xl backdrop-blur-md">
             
-            {/* Platform Currency Status Card */}
+            {/* Platform Currency Card */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#111827] border border-[#1F2737]">
               <div>
                 <span className="text-[10px] font-mono-numbers uppercase text-[#94A3B8] font-bold block">
@@ -243,35 +243,27 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: Casino
               </div>
             </div>
 
-            {/* Cryptographic Provably Fair Trust Banner */}
+            {/* Payout SLA Banner */}
             <div className="p-3 rounded-xl bg-[#111827] border border-[#1F2737] space-y-1">
-              <div className="flex items-center gap-1.5 text-amber-400 text-xs font-bold">
-                <ShieldCheck className="w-4 h-4 shrink-0" />
-                <span>100% Provably Fair</span>
+              <div className="flex items-center gap-1.5 text-purple-400 text-xs font-bold">
+                <Coins className="w-4 h-4 shrink-0" />
+                <span>Automated Disbursals</span>
               </div>
               <p className="text-[10px] text-[#94A3B8] leading-tight">
-                SHA-256 pre-committed server seeds and verifiable client seeds. Every round is independently auditable.
+                All game winnings and lottery jackpot pools settle directly to your platform wallet in USDT.
               </p>
             </div>
 
-            {/* Quick Policy & Support Access */}
+            {/* Player Safety */}
             <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-purple-500/10 border border-amber-500/30 flex items-center justify-between">
               <div>
                 <span className="text-[9px] font-mono-numbers text-amber-400 font-bold block uppercase">
-                  Compliance &amp; Safety
+                  Age &amp; Compliance
                 </span>
                 <span className="font-mono-numbers text-xs font-extrabold text-white">
-                  18+ · Audited Rules
+                  18+ Only · Fair Play
                 </span>
               </div>
-              <button
-                onClick={() => {
-                  if (setActiveTab) setActiveTab('privacy');
-                }}
-                className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[10px] cursor-pointer transition-all"
-              >
-                Privacy Policy
-              </button>
             </div>
 
           </div>
@@ -279,49 +271,7 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: Casino
         </div>
       </section>
 
-      {/* 2. PLATFORM OVERVIEW & HOW IT WORKS (Google Reviewer Clarity Section) */}
-      <section className="glass-panel rounded-2xl p-4 xs:p-5 sm:p-6 border border-[#1F2737] bg-[#0E131F]/90">
-        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#1F2737]">
-          <Zap className="w-4 h-4 text-amber-400" />
-          <h2 className="font-display font-bold text-sm sm:text-base text-white">
-            About EarnFlow.in &amp; How The Platform Works
-          </h2>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 text-xs text-[#94A3B8] leading-relaxed">
-          <div className="p-3 rounded-xl bg-[#111827]/80 border border-[#1F2737] space-y-1.5">
-            <div className="flex items-center gap-1.5 text-white font-bold text-xs">
-              <span className="w-5 h-5 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center font-mono-numbers text-[10px]">1</span>
-              <span>Account &amp; Google Sign-In</span>
-            </div>
-            <p className="text-[11px]">
-              Explore active game rooms as a guest, or sign in in 1-click using Google OAuth or email. We only request basic profile info to manage your wallet and game access securely.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-xl bg-[#111827]/80 border border-[#1F2737] space-y-1.5">
-            <div className="flex items-center gap-1.5 text-white font-bold text-xs">
-              <span className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono-numbers text-[10px]">2</span>
-              <span>USDT Currency &amp; Payments</span>
-            </div>
-            <p className="text-[11px]">
-              EarnFlow.in operates strictly using USDT (Tether TRC-20). Deposits credit automatically to your platform wallet balance, and withdrawals disburse to your verified address.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-xl bg-[#111827]/80 border border-[#1F2737] space-y-1.5">
-            <div className="flex items-center gap-1.5 text-white font-bold text-xs">
-              <span className="w-5 h-5 rounded-md bg-purple-500/20 text-purple-400 flex items-center justify-center font-mono-numbers text-[10px]">3</span>
-              <span>Fair Play &amp; Support</span>
-            </div>
-            <p className="text-[11px]">
-              Every draw outcome uses cryptographic SHA-256 commits. Review our public <a href="/legal/privacy" onClick={(e) => { e.preventDefault(); if (setActiveTab) setActiveTab('privacy'); }} className="text-amber-400 hover:underline">Privacy Policy</a> and <a href="/legal/terms" onClick={(e) => { e.preventDefault(); if (setActiveTab) setActiveTab('terms'); }} className="text-amber-400 hover:underline">Terms</a>, or contact <a href="mailto:support@earnflow.in" className="text-amber-400 hover:underline">support@earnflow.in</a>.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. CATEGORY TABS & SEARCH CONTROLS */}
+      {/* 2. CATEGORY TABS & SEARCH CONTROLS */}
       <section id="casino-games-grid" className="space-y-4 sm:space-y-5">
         
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 sm:gap-4">
@@ -393,39 +343,6 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: Casino
           </div>
         )}
 
-      </section>
-
-      {/* 5. PROVABLY FAIR & RESPONSIBLE GAMING SHOWCASE (USDT ONLY) */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-[#1F2737]">
-        <div className="bg-[#111827] p-5 rounded-2xl border border-[#1F2737] space-y-2">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <h3 className="font-display font-bold text-sm text-white">Provably Fair SHA-256</h3>
-          <p className="text-xs text-[#94A3B8] leading-relaxed">
-            Every game round utilizes pre-committed server seeds and active client seeds to guarantee mathematically immutable fairness.
-          </p>
-        </div>
-
-        <div className="bg-[#111827] p-5 rounded-2xl border border-[#1F2737] space-y-2">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
-            <Coins className="w-5 h-5" />
-          </div>
-          <h3 className="font-display font-bold text-sm text-white">USDT Stablecoin Payments</h3>
-          <p className="text-xs text-[#94A3B8] leading-relaxed">
-            All ticket buy-ins, game stakes, and jackpot pool disbursals are denominated exclusively in USDT (TRC-20) for transparent accounting.
-          </p>
-        </div>
-
-        <div className="bg-[#111827] p-5 rounded-2xl border border-[#1F2737] space-y-2">
-          <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-400 flex items-center justify-center">
-            <Mail className="w-5 h-5" />
-          </div>
-          <h3 className="font-display font-bold text-sm text-white">Dedicated Support Desk</h3>
-          <p className="text-xs text-[#94A3B8] leading-relaxed">
-            Have questions regarding payouts, game rules, or your account? Our team is available 24/7 at <a href="mailto:support@earnflow.in" className="text-amber-400 hover:underline">support@earnflow.in</a>.
-          </p>
-        </div>
       </section>
 
     </div>

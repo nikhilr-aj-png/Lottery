@@ -1089,7 +1089,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     houseFeePercent: 5,
     defaultWinnerSharePercent: 90,
     treasuryTrc20: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m',
-    supportEmail: 'support@earnflow.in',
+    supportEmail: 'earnflow.user@gmail.com',
     usernameChangeFee: 5.0,
     apkDownloadUrl: '/download/earnflow.apk'
   };

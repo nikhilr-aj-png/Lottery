@@ -126,7 +126,6 @@ export default function Sidebar({
     {
       title: 'Help & Compliance',
       items: [
-        { id: 'fairness', label: 'Provably Fair Proofs', icon: ShieldCheck },
         { id: 'support', label: 'Customer Support & FAQ', icon: Headphones },
         { id: 'terms', label: 'Terms & Conditions', icon: FileText }
       ]
