@@ -485,65 +485,6 @@ export default function GamePage({
   return (
     <div className="space-y-3.5 sm:space-y-4 animate-in fade-in duration-200 pb-1">
 
-      {/* 1. COMPACT SINGLE-ROW GAME LOBBY BANNER */}
-      <div className="rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#151C2B] via-[#0F1420] to-[#0B0F19] border border-amber-500/30 p-2.5 sm:px-4 sm:py-2.5 flex items-center justify-between gap-3 shadow-lg shrink-0">
-        {/* Left: Back button + Game Logo + Name + Badge */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <button
-            onClick={onBackToHome}
-            className="px-2.5 py-1.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-[11px] font-bold text-[#9b8f7c] hover:text-white border border-[#272a31] transition-colors cursor-pointer flex items-center gap-1 shrink-0"
-            title="Back to All Games"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden xs:inline">All Games</span>
-          </button>
-
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#141924] border border-amber-500/40 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-            <img
-              src={getGameIconUrl(game.id) || game.icon || game.image}
-              alt={game.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                const next = e.currentTarget.nextSibling as HTMLElement | null;
-                if (next && next.style) {
-                  next.style.display = 'inline';
-                }
-              }}
-            />
-            <span className="hidden text-xl">
-              {game.id === 'crash' ? '🚀' :
-                game.id === 'dice' ? '🎲' :
-                  game.id === 'bingo' ? '🎨' :
-                    game.id === 'horse-racing' ? '🏇' :
-                      game.id === 'coinflip' ? '🪙' : '🎟️'}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="font-display font-black text-sm sm:text-base text-white tracking-tight truncate whitespace-nowrap">
-              {game.name}
-            </h1>
-            <span className="text-[9px] font-mono-numbers px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold uppercase shrink-0 whitespace-nowrap">
-              {game.badge || 'PROVABLY FAIR'}
-            </span>
-          </div>
-        </div>
-
-        {/* Right: Compact inline stats */}
-        <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs font-mono-numbers shrink-0">
-          <span className="bg-[#0b0e14] px-2 py-1 rounded-lg border border-[#272a31] text-[#94A3B8]">
-            RTP: <strong className="text-emerald-400 font-bold">{game.rtp}%</strong>
-          </span>
-          <span className="bg-[#0b0e14] px-2 py-1 rounded-lg border border-[#272a31] text-[#94A3B8] hidden sm:inline">
-            Edge: <strong className="text-amber-400 font-bold">{game.houseEdge}%</strong>
-          </span>
-          <span className="bg-[#0b0e14] px-2 py-1 rounded-lg border border-[#272a31] text-[#94A3B8]">
-            Max: <strong className="text-purple-400 font-bold">{game.maxMultiplier}x</strong>
-          </span>
-        </div>
-      </div>
-
       {/* LOTTERY SPECIFIC SUB-NAVIGATION TABS (Available Pools & Rooms vs My Tickets vs Results) */}
       {game.id === 'lottery' && (
         <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#0B0F19]/90 border border-[#1F2737] shrink-0 text-xs">

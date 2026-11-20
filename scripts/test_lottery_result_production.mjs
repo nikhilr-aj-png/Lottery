@@ -24,20 +24,102 @@ async function runProductionTests() {
     }
   }
 
-  // 1. Result Screen: Single-Section Winning Digits Architecture
+  // 1. Navigation Strip Audit: Verify removal of redundant "All Games" back strip
+  const gamePagePath = path.resolve('src/pages/GamePage.tsx');
+  const gamePageCode = fs.readFileSync(gamePagePath, 'utf-8');
+
+  assert(
+    'GamePage: Redundant "All Games" lobby back button completely removed',
+    !gamePageCode.includes('title="Back to All Games"') && !gamePageCode.includes('<span className="hidden xs:inline">All Games</span>')
+  );
+  assert(
+    'GamePage: Redundant single-row game lobby banner completely removed',
+    !gamePageCode.includes('COMPACT SINGLE-ROW GAME LOBBY BANNER')
+  );
+
+  // 2. Result Screen: Full-Screen Winning Digits Only Architecture
   const resultScreenPath = path.resolve('src/components/LotteryShowResultScreen.tsx');
   const resultScreenCode = fs.readFileSync(resultScreenPath, 'utf-8');
-  const jsxPart = resultScreenCode.slice(resultScreenCode.indexOf('return ('));
+  const resultJsxPart = resultScreenCode.slice(resultScreenCode.indexOf('return ('));
 
-  assert('Result Screen: Winning Digits section is present in JSX', jsxPart.includes('Winning Digits'));
-  assert('Result Screen: Winners & Payouts is completely absent from JSX', !jsxPart.includes('Winners &amp; Payouts') && !jsxPart.includes('Winners & Payouts'));
-  assert('Result Screen: Audit Proof button is completely absent from JSX', !jsxPart.includes('Audit Proof'));
-  assert('Result Screen: SHA-256 Commit box is completely absent from JSX', !jsxPart.includes('SHA-256 Commit'));
-  assert('Result Screen: Total Distributed USDT is completely absent from JSX', !jsxPart.includes('Total Distributed'));
-  assert('Result Screen: Internal vertical scrolling container is implemented', jsxPart.includes('overflow-y-auto') && jsxPart.includes('min-h-0'));
-  assert('Result Screen: Pinned section header is implemented', jsxPart.includes('border-b border-[#1F2737]') && jsxPart.includes('shrink-0'));
+  assert(
+    'Result Screen: Official Draw Results header is present in JSX',
+    resultJsxPart.includes('Official Draw Results')
+  );
+  assert(
+    'Result Screen: Small room header card is completely removed from JSX',
+    !resultJsxPart.includes('max-w-3xl mx-auto rounded-2xl p-3 sm:p-4 border')
+  );
+  assert(
+    'Result Screen: Winners & Payouts is completely absent from JSX',
+    !resultJsxPart.includes('Winners &amp; Payouts') && !resultJsxPart.includes('Winners & Payouts')
+  );
+  assert(
+    'Result Screen: Audit Proof button is completely absent from JSX',
+    !resultJsxPart.includes('Audit Proof')
+  );
+  assert(
+    'Result Screen: SHA-256 Commit box is completely absent from JSX',
+    !resultJsxPart.includes('SHA-256 Commit')
+  );
+  assert(
+    'Result Screen: Total Distributed USDT is completely absent from JSX',
+    !resultJsxPart.includes('Total Distributed')
+  );
+  assert(
+    'Result Screen: Equal-sized responsive combination grid is implemented',
+    resultJsxPart.includes('grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4')
+  );
+  assert(
+    'Result Screen: Internal vertical scrolling container is implemented',
+    resultJsxPart.includes('overflow-y-auto') && resultJsxPart.includes('min-h-0')
+  );
+  assert(
+    'Result Screen: Fixed top header bar is implemented',
+    resultJsxPart.includes('flex-none') && resultJsxPart.includes('border-b border-[#1F2737]')
+  );
 
-  // 2. Workstation: Desktop Two-Column Top + Full-Width Bottom Activity Architecture
+  // 3. My Tickets Redesign Audit
+  const myTicketsPath = path.resolve('src/components/MyTicketsView.tsx');
+  const myTicketsCode = fs.readFileSync(myTicketsPath, 'utf-8');
+
+  assert(
+    'My Tickets: Overview metric "Tickets Purchased" card implemented',
+    myTicketsCode.includes('Tickets Purchased') && myTicketsCode.includes('stats.total')
+  );
+  assert(
+    'My Tickets: Overview metric "Active Tickets" card implemented',
+    myTicketsCode.includes('Active Tickets') && myTicketsCode.includes('stats.active')
+  );
+  assert(
+    'My Tickets: Overview metric "Completed / Settled" card implemented',
+    myTicketsCode.includes('Completed / Settled') && myTicketsCode.includes('stats.completed')
+  );
+  assert(
+    'My Tickets: Overview metric "Winning Tickets" card implemented',
+    myTicketsCode.includes('Winning Tickets') && myTicketsCode.includes('stats.won')
+  );
+  assert(
+    'My Tickets: Multi-faceted status filter tabs (all, active, won, completed) implemented',
+    myTicketsCode.includes("setStatusFilter('all')") &&
+    myTicketsCode.includes("setStatusFilter('active')") &&
+    myTicketsCode.includes("setStatusFilter('won')") &&
+    myTicketsCode.includes("setStatusFilter('completed')")
+  );
+  assert(
+    'My Tickets: Search input by ticket ID or digits implemented',
+    myTicketsCode.includes('setSearchQuery') && myTicketsCode.includes('Search Ticket ID or digits...')
+  );
+  assert(
+    'My Tickets: 4 equal-dimension square boxes implemented per card',
+    myTicketsCode.includes('tkt.tktNumber.split') && myTicketsCode.includes('w-12 h-13 sm:w-14 sm:h-15')
+  );
+  assert(
+    'My Tickets: Real Supabase tickets filtered by user.id/wallet.address',
+    myTicketsCode.includes('t.userId === user.id') || myTicketsCode.includes('t.user_id === user.id')
+  );
+
+  // 4. Workstation: Desktop Two-Column Top + Full-Width Bottom Activity Architecture
   const workstationPath = path.resolve('src/games/LotteryWorkstation.tsx');
   const workstationCode = fs.readFileSync(workstationPath, 'utf-8');
 
@@ -46,10 +128,9 @@ async function runProductionTests() {
   assert('Workstation: Ticket Quantity stepper exists', workstationCode.includes('setQuantity'));
   assert('Workstation: Top section uses 2-column grid layout', workstationCode.includes('grid-cols-1 lg:grid-cols-12'));
   assert('Workstation: Full-width Live Room Activity spans below both columns', workstationCode.includes('3. BOTTOM SECTION: FULL-WIDTH LIVE ROOM ACTIVITY'));
-  assert('Workstation: Activity is not placed in a narrow 3rd column', !workstationCode.includes('lg:col-span-4 bg-[#111728]/95 border border-[#1B2238] rounded-2xl p-3.5 sm:p-5 shadow-xl space-y-3 backdrop-blur-md'));
   assert('Workstation: Mobile compact buy strip is implemented', workstationCode.includes('block lg:hidden pt-2 border-t border-[#1F2737]'));
 
-  // 3. Data Integrity: Query genuine winner_payouts & lottery_events from Supabase
+  // 5. Data Integrity: Query genuine winner_payouts & lottery_events from Supabase
   const { data: payouts, error: pErr } = await supabase
     .from('winner_payouts')
     .select('*');
@@ -63,7 +144,7 @@ async function runProductionTests() {
 
   assert('Database: lottery_events query succeeds', !eErr && Array.isArray(events), `Found ${events?.length || 0} events`);
 
-  // 4. Logic Test: Zero dummy winning codes fallback
+  // 6. Logic Test: Zero dummy winning codes fallback
   function parseWinningCodes(event) {
     if (!event) return [];
     const rawCodes = 
@@ -98,7 +179,7 @@ async function runProductionTests() {
   const parsedReal = parseWinningCodes(realEvent);
   assert('Logic: Event with real digits parses correctly', parsedReal.length === 2 && parsedReal[0] === '4921' && parsedReal[1] === '8304');
 
-  // 5. Dynamic Percentage Share Calculation for multi-winner
+  // 7. Dynamic Percentage Share Calculation for multi-winner
   function getPositionShare(event, idx, totalPositions) {
     const dist = event?.winnerDistribution || event?.winner_distribution;
     if (Array.isArray(dist) && dist.length > idx) {
