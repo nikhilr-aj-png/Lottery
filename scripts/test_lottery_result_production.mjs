@@ -8,7 +8,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function runProductionTests() {
   console.log('=================================================================');
-  console.log('EARNFLOW.IN - COMPREHENSIVE PRODUCTION READINESS & REDESIGN AUDIT');
+  console.log('EARNFLOW.IN - UNIFIED LIVE ROOM & PLATFORM REDESIGN AUDIT');
   console.log('=================================================================\n');
 
   let passed = 0;
@@ -24,7 +24,7 @@ async function runProductionTests() {
     }
   }
 
-  // 1. Navigation Strip Audit: Verify removal of redundant "All Games" back strip
+  // 1. Live Room Navigation Strip Audit: Verify removal of redundant strip across all games
   const gamePagePath = path.resolve('src/pages/GamePage.tsx');
   const gamePageCode = fs.readFileSync(gamePagePath, 'utf-8');
 
@@ -36,8 +36,85 @@ async function runProductionTests() {
     'GamePage: Redundant single-row game lobby banner completely removed',
     !gamePageCode.includes('COMPACT SINGLE-ROW GAME LOBBY BANNER')
   );
+  assert(
+    'GamePage: Extra Live Room navigation bar completely removed from all modular games',
+    !gamePageCode.includes('title="Return to Game Lobby"') &&
+    !gamePageCode.includes('Compact In-Room Bar (Modular Games')
+  );
 
-  // 2. Result Screen: Full-Screen Winning Digits Only Architecture
+  // 2. Four Digit Lottery Workstation: Compact In-Game Info Area
+  const workstationPath = path.resolve('src/games/LotteryWorkstation.tsx');
+  const workstationCode = fs.readFileSync(workstationPath, 'utf-8');
+
+  assert(
+    'Workstation: Extra Live Room header card & Lobby back button removed',
+    !workstationCode.includes('title="Return to Lottery Lobby"') &&
+    !workstationCode.includes('w-full max-w-7xl mx-auto rounded-2xl p-3 sm:p-4 border border-[#1B2238] bg-[#111728]/95 backdrop-blur-md shadow-xl shrink-0 space-y-2.5')
+  );
+  assert(
+    'Workstation: Compact in-game telemetry strip implemented at top',
+    workstationCode.includes('COMPACT IN-GAME TELEMETRY STRIP')
+  );
+  assert(
+    'Workstation: Quantity state and stepper completely removed',
+    !workstationCode.includes('setQuantity') && !workstationCode.includes('const [quantity,')
+  );
+  assert(
+    'Workstation: Auto-enter next draw checkbox completely removed',
+    !workstationCode.includes('autoEnterNextDraw') && !workstationCode.includes('Auto-enter next draw')
+  );
+  assert(
+    'Workstation: Strictly single ticket purchase cost logic',
+    workstationCode.includes('const totalPurchaseCost = ticketPrice;')
+  );
+  assert(
+    'Workstation: Single ticket purchase action array',
+    workstationCode.includes('[currentNumberStr]')
+  );
+  assert(
+    'Workstation: Provably Fair Protocol (SHA-256) footer section removed',
+    !workstationCode.includes('Provably Fair Protocol (SHA-256)')
+  );
+  assert(
+    'Workstation: Pick 4 Digits left column exists',
+    workstationCode.includes('Pick 4 Digits')
+  );
+  assert(
+    'Workstation: Direct Purchase right column exists',
+    workstationCode.includes('Direct Purchase')
+  );
+  assert(
+    'Workstation: Full-width Live Room Activity spans below both columns',
+    workstationCode.includes('3. BOTTOM SECTION: FULL-WIDTH LIVE ROOM ACTIVITY')
+  );
+
+  // 3. Compact In-Game Telemetry Area across other 5 games
+  const crashPath = path.resolve('src/games/CrashGame.tsx');
+  const crashCode = fs.readFileSync(crashPath, 'utf-8');
+  assert('Crash Game: Compact in-game telemetry strip implemented', crashCode.includes('COMPACT IN-GAME TELEMETRY STRIP'));
+  assert('Crash Game: User-facing SHA-256 strip removed', !crashCode.includes('Provably Fair SHA-256'));
+
+  const dicePath = path.resolve('src/games/DiceGame.tsx');
+  const diceCode = fs.readFileSync(dicePath, 'utf-8');
+  assert('Dice Game: Compact in-game telemetry strip implemented', diceCode.includes('COMPACT IN-GAME TELEMETRY STRIP'));
+  assert('Dice Game: User-facing Provably Fair badge removed', !diceCode.includes('100-Sided Provably Fair Die'));
+
+  const horsePath = path.resolve('src/games/HorseRacingGame.tsx');
+  const horseCode = fs.readFileSync(horsePath, 'utf-8');
+  assert('Horse Racing Game: Compact in-game telemetry strip implemented', horseCode.includes('COMPACT IN-GAME TELEMETRY STRIP'));
+  assert('Horse Racing Game: User-facing Provably Fair strip removed', !horseCode.includes('Provably Fair RNG Sprint'));
+
+  const bingoPath = path.resolve('src/games/BingoGame.tsx');
+  const bingoCode = fs.readFileSync(bingoPath, 'utf-8');
+  assert('Bingo Game: Compact in-game telemetry strip implemented', bingoCode.includes('COMPACT IN-GAME TELEMETRY STRIP'));
+  assert('Bingo Game: User-facing Provably Fair Oracle strip removed', !bingoCode.includes('Provably Fair Oracle'));
+
+  const coinflipPath = path.resolve('src/games/CoinflipGame.tsx');
+  const coinflipCode = fs.readFileSync(coinflipPath, 'utf-8');
+  assert('Coinflip Game: Compact in-game telemetry strip implemented', coinflipCode.includes('COMPACT IN-GAME TELEMETRY STRIP'));
+  assert('Coinflip Game: User-facing Provably Fair strip removed', !coinflipCode.includes('Provably Fair Binary Randomness'));
+
+  // 4. Result Screen: Full-Screen Winning Digits Only Architecture
   const resultScreenPath = path.resolve('src/components/LotteryShowResultScreen.tsx');
   const resultScreenCode = fs.readFileSync(resultScreenPath, 'utf-8');
   const resultJsxPart = resultScreenCode.slice(resultScreenCode.indexOf('return ('));
@@ -87,7 +164,7 @@ async function runProductionTests() {
     resultJsxPart.includes('overflow-y-auto') && resultJsxPart.includes('min-h-0')
   );
 
-  // 3. My Tickets Redesign Audit
+  // 5. My Tickets Redesign Audit
   const myTicketsPath = path.resolve('src/components/MyTicketsView.tsx');
   const myTicketsCode = fs.readFileSync(myTicketsPath, 'utf-8');
 
@@ -123,44 +200,7 @@ async function runProductionTests() {
     !myTicketsCode.includes('Polygon POS') && !myTicketsCode.includes('VRF PENDING')
   );
 
-  // 4. Workstation: Single Ticket Purchase & Zero Quantity / Auto-Enter UI
-  const workstationPath = path.resolve('src/games/LotteryWorkstation.tsx');
-  const workstationCode = fs.readFileSync(workstationPath, 'utf-8');
-
-  assert(
-    'Workstation: Quantity state and stepper completely removed',
-    !workstationCode.includes('setQuantity') && !workstationCode.includes('const [quantity,')
-  );
-  assert(
-    'Workstation: Auto-enter next draw checkbox completely removed',
-    !workstationCode.includes('autoEnterNextDraw') && !workstationCode.includes('Auto-enter next draw')
-  );
-  assert(
-    'Workstation: Strictly single ticket purchase cost logic',
-    workstationCode.includes('const totalPurchaseCost = ticketPrice;')
-  );
-  assert(
-    'Workstation: Single ticket purchase action array',
-    workstationCode.includes('[currentNumberStr]')
-  );
-  assert(
-    'Workstation: Provably Fair Protocol (SHA-256) footer section removed',
-    !workstationCode.includes('Provably Fair Protocol (SHA-256)')
-  );
-  assert(
-    'Workstation: Pick 4 Digits left column exists',
-    workstationCode.includes('Pick 4 Digits')
-  );
-  assert(
-    'Workstation: Direct Purchase right column exists',
-    workstationCode.includes('Direct Purchase')
-  );
-  assert(
-    'Workstation: Full-width Live Room Activity spans below both columns',
-    workstationCode.includes('3. BOTTOM SECTION: FULL-WIDTH LIVE ROOM ACTIVITY')
-  );
-
-  // 5. Platform-Wide Provably Fair & SHA-256 Cleanup Audit
+  // 6. Platform-Wide Provably Fair & SHA-256 Cleanup Audit
   const casinoLobbyPath = path.resolve('src/components/CasinoLobby.tsx');
   const casinoLobbyCode = fs.readFileSync(casinoLobbyPath, 'utf-8');
   assert('Casino Lobby: Provably Fair SHA-256 removed from description', !casinoLobbyCode.includes('cryptographic Provably Fair SHA-256'));
@@ -185,27 +225,6 @@ async function runProductionTests() {
   const resultsViewCode = fs.readFileSync(resultsViewPath, 'utf-8');
   assert('Results View: SHA-256 and Verified On-Chain removed', !resultsViewCode.includes('Cryptographic SHA-256') && !resultsViewCode.includes('Verified On-Chain'));
   assert('Results View: Audit / Fairness button removed', !resultsViewCode.includes('Verify Provably Fair Hash') && !resultsViewCode.includes('ProvablyFairModal'));
-
-  // 6. Game Modules Telemetry Audit
-  const crashPath = path.resolve('src/games/CrashGame.tsx');
-  const crashCode = fs.readFileSync(crashPath, 'utf-8');
-  assert('Crash Game: User-facing SHA-256 strip removed', !crashCode.includes('Provably Fair SHA-256'));
-
-  const dicePath = path.resolve('src/games/DiceGame.tsx');
-  const diceCode = fs.readFileSync(dicePath, 'utf-8');
-  assert('Dice Game: User-facing Provably Fair badge removed', !diceCode.includes('100-Sided Provably Fair Die'));
-
-  const horsePath = path.resolve('src/games/HorseRacingGame.tsx');
-  const horseCode = fs.readFileSync(horsePath, 'utf-8');
-  assert('Horse Racing Game: User-facing Provably Fair strip removed', !horseCode.includes('Provably Fair RNG Sprint'));
-
-  const bingoPath = path.resolve('src/games/BingoGame.tsx');
-  const bingoCode = fs.readFileSync(bingoPath, 'utf-8');
-  assert('Bingo Game: User-facing Provably Fair Oracle strip removed', !bingoCode.includes('Provably Fair Oracle'));
-
-  const coinflipPath = path.resolve('src/games/CoinflipGame.tsx');
-  const coinflipCode = fs.readFileSync(coinflipPath, 'utf-8');
-  assert('Coinflip Game: User-facing Provably Fair strip removed', !coinflipCode.includes('Provably Fair Binary Randomness'));
 
   // 7. Supabase Database Integrity Checks
   const { data: payouts, error: pErr } = await supabase

@@ -225,21 +225,29 @@ export default function BingoGame({ room, activityBox }: BingoGameProps) {
   return (
     <div className="w-full flex-1 flex flex-col min-h-0 text-left space-y-2 select-none">
       
-      {/* 1. TOP METADATA & ROUND CYCLE BAR */}
-      <div className="p-2 sm:px-3 rounded-xl bg-[#090D16] border border-[#1F2737] flex items-center justify-between gap-2 shrink-0">
-        
-        {/* Left: Live Status & Nonce */}
+      {/* 1. COMPACT IN-GAME TELEMETRY STRIP (NO SEPARATE NAVIGATION STRIP) */}
+      <div className="p-2 sm:px-3 rounded-xl bg-[#111728]/95 border border-[#1B2238] flex flex-wrap items-center justify-between gap-2 shrink-0 shadow-md">
+        {/* Left: Room Title, Live Status, Countdown & Round */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono-numbers font-black text-xs">
+          <span className="font-display font-black text-white text-xs sm:text-sm tracking-wide">
+            {room?.name || 'Bingo Color Trading'}
+          </span>
+          <span className="px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 text-[10px] font-mono-numbers font-extrabold uppercase flex items-center gap-1 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping" />
+            <span>LIVE</span>
+          </span>
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono-numbers font-black text-xs">
             <Clock className="w-3.5 h-3.5 text-amber-400" />
             <span>00:{countdown.toString().padStart(2, '0')}</span>
           </div>
-          <span className="font-extrabold text-white text-xs sm:text-sm tracking-wide hidden xs:inline">
-            Color Trading
-          </span>
-          <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-violet-500/15 text-violet-300 border border-violet-500/30 font-bold uppercase">
+          <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-[#7C3AED]/15 text-[#D2BBFF] border border-[#7C3AED]/30 font-bold uppercase">
             ROUND #{seeds.nonce}
           </span>
+          <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono-numbers text-[#94A3B8] ml-1">
+            <span>Entry: <strong className="text-white">{room?.minStakeFC || 1} - {room?.maxStakeFC || 1000} USDT</strong></span>
+            <span>•</span>
+            <span>Max Odds: <strong className="text-[#F59E0B]">9.0x</strong></span>
+          </div>
         </div>
 
         {/* Right: History Balls Strip */}

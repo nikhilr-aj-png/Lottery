@@ -528,88 +528,44 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
     <div className="w-full h-full flex flex-col min-h-0 overflow-y-auto no-scrollbar text-left p-2.5 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 select-none">
       
       {/* ===================================================================== */}
-      {/* 1. ROOM HEADER: RESPONSIVE MULTI-ROW ARCHITECTURE (ZERO OVERLAPPING)  */}
+      {/* 1. COMPACT IN-GAME TELEMETRY STRIP (NO EXTRA NAVIGATION STRIP)        */}
       {/* ===================================================================== */}
-      <header className="w-full max-w-7xl mx-auto rounded-2xl p-3 sm:p-4 border border-[#1B2238] bg-[#111728]/95 backdrop-blur-md shadow-xl shrink-0 space-y-2.5">
-        
-        {/* ROW 1: Room Navigation + Title + LIVE Beacon */}
-        <div className="flex items-center justify-between gap-3">
-          
-          <div className="flex items-center gap-2.5 min-w-0">
-            {onBackToLobby && (
-              <button
-                type="button"
-                onClick={onBackToLobby}
-                className="px-2.5 py-1.5 rounded-xl bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shrink-0 shadow-sm active:scale-95"
-                title="Return to Lottery Lobby"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 text-[#F59E0B]" />
-                <span className="hidden xs:inline">Lobby</span>
-              </button>
-            )}
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="font-display font-black text-sm sm:text-lg text-white truncate">
-                  {room?.name || event.title}
-                </h2>
-                
-                {/* LIVE Emerald Status Beacon */}
-                <span className="px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 text-[10px] font-mono-numbers font-extrabold uppercase flex items-center gap-1 shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping" />
-                  <span>LIVE</span>
-                </span>
-              </div>
-              <p className="text-[10px] sm:text-xs text-[#94A3B8] font-mono-numbers truncate hidden md:block">
-                On-Chain Cryptographic 4-Digit Lottery Draw · #DRAW-{event.id ? String(event.id).slice(-6).toUpperCase() : '884'}
-              </p>
-            </div>
-          </div>
-
-          {/* Desktop/Tablet Inline Stats */}
-          <div className="hidden md:flex items-center gap-2.5 text-xs font-mono-numbers shrink-0">
-            <div className="bg-[#0B0F19] px-3 py-1.5 rounded-xl border border-[#1F2737] flex items-center gap-2">
-              <span className="text-[#94A3B8] text-[10px] uppercase font-bold">Ticket:</span>
-              <strong className="text-white font-black">{ticketPrice} USDT</strong>
-            </div>
-
-            <div className="bg-[#0B0F19] px-3 py-1.5 rounded-xl border border-[#1F2737] flex items-center gap-2">
-              <Trophy className="w-3.5 h-3.5 text-[#F59E0B]" />
-              <span className="text-[#94A3B8] text-[10px] uppercase font-bold">Jackpot:</span>
-              <strong className="text-[#F59E0B] font-black">{Number(event.poolPrize || 5000).toLocaleString()} USDT</strong>
-            </div>
-
-            <div className="bg-[#0B0F19] px-3 py-1.5 rounded-xl border border-[#7C3AED]/40 flex items-center gap-2 text-[#D2BBFF]">
-              <Clock className="w-3.5 h-3.5 text-[#7C3AED]" />
-              <span className="font-bold">{timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s</span>
-            </div>
-          </div>
-
+      <div className="w-full max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#111728]/95 border border-[#1B2238] shadow-md shrink-0 text-xs">
+        {/* Game Title, Status & Draw ID */}
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="font-display font-black text-white text-xs sm:text-sm truncate">
+            {room?.name || event.title}
+          </span>
+          <span className="px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 text-[10px] font-mono-numbers font-extrabold uppercase flex items-center gap-1 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping" />
+            <span>LIVE</span>
+          </span>
+          <span className="text-[10px] font-mono-numbers text-slate-400 hidden sm:inline">
+            #DRAW-{event.id ? String(event.id).slice(-6).toUpperCase() : '884'}
+          </span>
         </div>
 
-        {/* ROW 2: Mobile Clean Stats Bar (Zero Overlap with Title or LIVE Badge) */}
-        <div className="grid grid-cols-3 divide-x divide-[#1F2737] rounded-xl bg-[#0B0F19] border border-[#1F2737] p-2 text-center text-xs font-mono-numbers md:hidden shadow-inner">
-          <div className="px-1">
-            <span className="text-[9px] uppercase font-extrabold text-[#94A3B8] block">TICKET</span>
-            <span className="font-black text-white text-xs xs:text-sm">{ticketPrice} USDT</span>
+        {/* Compact Telemetry Metrics */}
+        <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono-numbers shrink-0">
+          <div className="flex items-center gap-1 text-[11px]">
+            <span className="text-[#94A3B8]">Entry:</span>
+            <strong className="text-white font-bold">{ticketPrice} USDT</strong>
           </div>
 
-          <div className="px-1">
-            <span className="text-[9px] uppercase font-extrabold text-[#F59E0B]/80 block">JACKPOT</span>
-            <span className="font-black text-[#F59E0B] text-xs xs:text-sm truncate block">
-              {Number(event.poolPrize || 5000).toLocaleString()} USDT
-            </span>
+          <div className="flex items-center gap-1 text-[11px]">
+            <Trophy className="w-3 h-3 text-[#F59E0B]" />
+            <span className="text-[#94A3B8]">Jackpot:</span>
+            <strong className="text-[#F59E0B] font-bold">{Number(event.poolPrize || 5000).toLocaleString()} USDT</strong>
           </div>
 
-          <div className="px-1">
-            <span className="text-[9px] uppercase font-extrabold text-[#10B981]/80 block">CLOSING IN</span>
-            <span className="font-black text-[#10B981] text-xs xs:text-sm truncate block">
-              {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
+          <div className="flex items-center gap-1 text-[11px] bg-[#0B0F19] px-2 py-0.5 rounded-md border border-[#1F2737]">
+            <Clock className="w-3 h-3 text-[#7C3AED]" />
+            <span className="text-[#D2BBFF] font-bold">
+              {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
             </span>
           </div>
         </div>
-
-      </header>
+      </div>
 
       {/* ===================================================================== */}
       {/* 2. TOP SECTION: TWO BALANCED COLUMNS (PICK 4 DIGITS + PURCHASE PANEL) */}
