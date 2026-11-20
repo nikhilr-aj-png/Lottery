@@ -372,7 +372,7 @@ export default function DiceGame({ room, activityBox }: DiceGameProps) {
           <div className="w-full flex items-center justify-between pb-2 border-b border-[#1F2737] shrink-0 z-10">
             <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
               <Dices className="w-4 h-4 text-amber-400" />
-              <span>100-Sided Provably Fair Die</span>
+              <span>100-Sided Lucky Die</span>
             </span>
 
             <button
@@ -464,12 +464,9 @@ export default function DiceGame({ room, activityBox }: DiceGameProps) {
               <span>100</span>
             </div>
 
-            {/* Stage Footer: Provably Fair Note */}
+            {/* Stage Footer: Edge & Odds */}
             <div className="flex items-center justify-between text-[10px] text-[#94A3B8] font-mono-numbers pt-1">
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                <span>Provably Fair 1.0% House Edge</span>
-              </span>
+              <span>1.0% House Edge</span>
               <span className="text-amber-400/80 font-bold">
                 Win Rate: {calc.winChance}%
               </span>

@@ -40,8 +40,8 @@ const FAQS = [
     a: 'EarnFlow.in operates strictly on USDT (Tether TRC-20). All game stakes, lottery tickets, pool prizes, and account balances are denominated exclusively in USDT. Deposits are received via official TRON TRC-20 addresses, and withdrawals are disbursed directly to your external wallet.'
   },
   {
-    q: 'How does the Provably Fair cryptographic system work?',
-    a: 'Every round across our 6 active games (Four-Digit Lottery, Crash, Dice, Coinflip, Bingo – Color Trading, and Horse Racing) uses cryptographic SHA-256 and HMAC-SHA256 commit-reveal protocols. Before any round starts or lottery tickets are sold, the server publishes a SHA-256 hash of its secret server seed. Once the round or draw concludes, the unhashed seed is revealed, allowing any player to verify that outcomes were predetermined and tamper-proof.'
+    q: 'How does the game outcome fairness work?',
+    a: 'Every round across our 6 active games (Four-Digit Lottery, Crash, Dice, Coinflip, Bingo – Color Trading, and Horse Racing) is generated transparently using automated decentralized algorithms. Outcomes are predetermined before play begins, ensuring unbiased and tamper-proof results for all players.'
   },
   {
     q: 'How long do USDT withdrawals take to process?',
@@ -57,7 +57,7 @@ const FAQS = [
   },
   {
     q: 'How do I participate in the Four-Digit Lottery?',
-    a: 'Simply choose any 4-digit sequence between 0000 and 9999 (or use Quick Pick) and purchase your ticket in USDT. When the event countdown concludes, our provably fair Oracle determines winning digits. Winners receive automatic USDT prize payouts according to the configured single or multi-winner prize distribution rules.'
+    a: 'Simply choose any 4-digit sequence between 0000 and 9999 (or use Quick Pick) and purchase your ticket in USDT. When the event countdown concludes, our Oracle determines winning digits. Winners receive automatic USDT prize payouts according to the configured single or multi-winner prize distribution rules.'
   }
 ];
 
@@ -73,7 +73,7 @@ export default function SupportView() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   // Support form state
-  const [ticketCategory, setTicketCategory] = useState('Provably Fair Verification');
+  const [ticketCategory, setTicketCategory] = useState('Draw Outcome & Results');
   const [ticketSubject, setTicketSubject] = useState('');
   const [ticketMessage, setTicketMessage] = useState('');
   const [contactEmail, setContactEmail] = useState('');
@@ -210,7 +210,7 @@ export default function SupportView() {
             Customer Support & Compliance
           </h1>
           <p className="text-xs sm:text-sm text-[#94A3B8]">
-            Need help with game rules, Provably Fair verification, or responsible gaming controls? Our support desk and compliance tools are available 24/7.
+            Need help with game rules, draw outcomes, or responsible gaming controls? Our support desk and compliance tools are available 24/7.
           </p>
         </div>
       </div>
@@ -338,7 +338,7 @@ export default function SupportView() {
                       onChange={(e) => setTicketCategory(e.target.value)}
                       className="w-full bg-[#0B0F19] border border-[#1F2737] focus:border-amber-500/40 rounded-xl px-3 py-2 text-xs text-white outline-none"
                     >
-                      <option value="Provably Fair Verification">Provably Fair Verification</option>
+                      <option value="Draw Outcome & Results">Draw Outcome & Results</option>
                       <option value="Account & Profile">Account & Username</option>
                       <option value="Game Rules & Workstation">Game Rules & Workstation</option>
                       <option value="VIP & Rewards">VIP & Faucet Rewards</option>
@@ -645,7 +645,7 @@ export default function SupportView() {
               Gaming Platform Disclaimer:
             </span>
             <p>
-              EarnFlow.in is an online gaming platform that provides users with access to interactive games, gaming events, account management, and USDT-based payment features. All game outcomes are provably fair and verifiable. Players must be at least 18 years of age. Please play responsibly.
+              EarnFlow.in is an online gaming platform that provides users with access to interactive games, gaming events, account management, and USDT-based payment features. All game outcomes are transparent and fair. Players must be at least 18 years of age. Please play responsibly.
             </p>
           </div>
 

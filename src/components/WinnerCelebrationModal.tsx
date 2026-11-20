@@ -30,7 +30,7 @@ export default function WinnerCelebrationModal(): React.JSX.Element | null {
 
         <span className="badge-provably-fair px-2.5 xs:px-3 py-0.5 xs:py-1 rounded-full text-[10px] xs:text-xs font-bold font-mono-numbers inline-flex items-center gap-1.5 mb-2">
           <Sparkles className="w-3.5 h-3.5 text-[#05d5aa]" />
-          PROVABLY FAIR WINNER
+          OFFICIAL DRAW WINNER
         </span>
 
         <h3 className="font-display font-black text-xl xs:text-2xl sm:text-3xl text-white mb-1">

@@ -131,7 +131,7 @@ export default function LotteryCard({ event, onSelect }: LotteryCardProps) {
           <span className="text-white/90 font-medium truncate pr-1">
             {event.winnerCount > 1 ? `${event.winnerCount} Lucky Winners Share Pot` : 'Lucky 4-Digit Match Wins Full Pot'}
           </span>
-          <span className="text-[#05d5aa] font-medium text-[9px] xs:text-[10px] shrink-0">Provably Fair</span>
+          <span className="text-[#05d5aa] font-medium text-[9px] xs:text-[10px] shrink-0">Live Draw</span>
         </div>
       </div>
 

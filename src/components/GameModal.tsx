@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { useGameEngine } from '../hooks/useGameEngine';
 import { useLottery } from '../context/LotteryContext';
-import ProvablyFairModal from './ProvablyFairModal';
 import { 
   CrashGame, 
   DiceGame, 
@@ -97,7 +96,7 @@ export default function GameModal({ gameId, onClose }) {
                   {game.name}
                 </h2>
                 <span className="text-[10px] font-mono-numbers font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 uppercase">
-                  {game.badge || 'PROVABLY FAIR'}
+                  {game.badge || 'OFFICIAL'}
                 </span>
               </div>
               <p className="text-[11px] text-[#94A3B8] hidden xs:block">
@@ -107,16 +106,6 @@ export default function GameModal({ gameId, onClose }) {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Provably Fair Seed Drawer Toggle */}
-            <button
-              onClick={() => setShowFairnessDrawer(!showFairnessDrawer)}
-              className="px-2.5 py-1.5 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Inspect or customize Provably Fair seeds"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">Fairness</span>
-            </button>
-
             {/* Close Button */}
             <button
               onClick={onClose}
@@ -126,56 +115,6 @@ export default function GameModal({ gameId, onClose }) {
             </button>
           </div>
         </div>
-
-        {/* 2. PROVABLY FAIR SEED DRAWER (Slide-down toggle) */}
-        {showFairnessDrawer && (
-          <div className="bg-[#111827] border-b border-[#1F2737] p-4 text-xs font-mono-numbers space-y-3 animate-in slide-in-from-top-2 duration-200">
-            <div className="flex items-center justify-between text-amber-400 font-bold">
-              <span className="flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5" />
-                <span>Active Provably Fair Seed Pair</span>
-              </span>
-              <span className="text-[10px] text-[#94A3B8]">Nonce: #{seeds.nonce}</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px]">
-              <div>
-                <span className="text-[#94A3B8] block mb-1">Pre-Committed Server Seed Hash (SHA-256):</span>
-                <input
-                  type="text"
-                  readOnly
-                  value={seeds.serverHash}
-                  className="w-full bg-[#0B0F19] border border-[#1F2737] rounded-xl px-3 py-1.5 text-amber-300 select-all outline-none"
-                />
-              </div>
-
-              <div>
-                <span className="text-[#94A3B8] block mb-1">Your Active Client Seed:</span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={customClientSeed}
-                    onChange={(e) => setCustomClientSeed(e.target.value)}
-                    className="flex-1 bg-[#0B0F19] border border-[#1F2737] focus:border-amber-500/40 rounded-xl px-3 py-1.5 text-white outline-none"
-                  />
-                  <button
-                    onClick={handleRotate}
-                    className="px-3 py-1.5 rounded-xl bg-amber-500 text-black font-extrabold text-[10px] cursor-pointer"
-                  >
-                    Rotate
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {seeds.previousServerSeed && (
-              <div className="pt-2 border-t border-[#1F2737]/60 text-[10px] text-[#94A3B8]">
-                <span>Previous Revealed Server Seed: </span>
-                <span className="text-purple-300 select-all font-mono">{seeds.previousServerSeed}</span>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* 3. MAIN GAME INTERACTION AREA */}
         <div className="p-4 sm:p-6">
@@ -319,7 +258,7 @@ export default function GameModal({ gameId, onClose }) {
                       {game.name}
                     </h3>
                     <p className="text-xs text-[#94A3B8] max-w-sm mx-auto mt-1">
-                      {isPlaying ? 'Round active! Outcome will be derived authoritatively from HMAC-SHA256.' : 'Click "Place Bet" to launch round with server-authoritative provably fair seeds.'}
+                      {isPlaying ? 'Round active! Outcome will be derived automatically.' : 'Click "Place Bet" to launch round.'}
                     </p>
                   </div>
 
@@ -331,8 +270,7 @@ export default function GameModal({ gameId, onClose }) {
                 </div>
 
                 {/* Stage Footer: Multiplier & Quick info */}
-                <div className="w-full flex items-center justify-between pt-3 border-t border-[#1F2737] text-[11px] text-[#94A3B8]">
-                  <span>Provably Fair Seed Hash Committed</span>
+                <div className="w-full flex items-center justify-end pt-3 border-t border-[#1F2737] text-[11px] text-[#94A3B8]">
                   <span className="text-amber-400 font-bold font-mono-numbers">{game.houseEdge}% House Edge</span>
                 </div>
 
@@ -399,15 +337,6 @@ export default function GameModal({ gameId, onClose }) {
         </div>
 
       </div>
-
-      {/* Provably Fair Modal for Round Verification */}
-      {auditRecord && (
-        <ProvablyFairModal
-          isOpen={!!auditRecord}
-          onClose={() => setAuditRecord(null)}
-          auditData={auditRecord}
-        />
-      )}
     </div>
   );
 }

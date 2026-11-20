@@ -504,7 +504,7 @@ export default function TermsPage({ onBackToHome }: TermsPageProps) {
           <span>•</span>
           <span className="inline-flex items-center gap-1 text-amber-400 font-mono-numbers font-semibold">
             <ShieldCheck className="w-3.5 h-3.5" />
-            100% Provably Fair Cryptography
+            Transparent Non-Custodial Gaming
           </span>
           <span>•</span>
           <span className="inline-flex items-center gap-1 text-purple-400 font-mono-numbers font-semibold">

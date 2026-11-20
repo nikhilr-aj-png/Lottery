@@ -87,7 +87,7 @@ export default function GameCard({ game, onPlay }: GameCardProps) {
       {/* Card Content Top */}
       <div className="p-4 sm:p-5 relative z-10">
         
-        {/* Header: Badge & Provably Fair Indicator */}
+        {/* Header: Game Category / Badge */}
         <div className="flex items-center justify-between gap-2 mb-3">
           <span 
             className="text-[10px] font-mono-numbers uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-md border"
@@ -98,14 +98,6 @@ export default function GameCard({ game, onPlay }: GameCardProps) {
             }}
           >
             {game.badge || game.category.toUpperCase()}
-          </span>
-
-          <span 
-            className="flex items-center gap-1 text-[10px] font-mono-numbers text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20"
-            title="Provably Fair Cryptographic Results"
-          >
-            <ShieldCheck className="w-3 h-3 text-emerald-400" />
-            <span className="hidden xs:inline">Fair</span>
           </span>
         </div>
 

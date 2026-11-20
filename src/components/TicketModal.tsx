@@ -325,12 +325,12 @@ export default function TicketModal({ event, onClose }) {
               </div>
             </div>
 
-            {/* Provably Fair & Lucky Winners Rules */}
+            {/* Official Rules & Lucky Winners */}
             <div className="bg-[#0b0e14]/60 p-3.5 rounded-xl border border-[#272a31] text-xs space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-[#ffd700] flex items-center gap-1.5 font-display text-xs">
                   <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  Provably Fair & Lucky Winners Rules:
+                  Official Rules & Lucky Winners:
                 </span>
                 <span className="text-[10px] font-mono-numbers text-[#05d5aa] font-bold bg-[#05d5aa]/10 px-2 py-0.5 rounded border border-[#05d5aa]/20">
                   {event.winnerCount > 1 ? `${event.winnerCount} Lucky Winners` : 'Lucky Winner Draw'}
@@ -338,7 +338,7 @@ export default function TicketModal({ event, onClose }) {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                 <div className="bg-[#121721] p-2.5 rounded-lg border border-[#272a31]">
-                  <strong className="text-white block font-display">🎯 Provably Fair Luck</strong>
+                  <strong className="text-white block font-display">🎯 Transparent Draw Outcome</strong>
                   <span className="text-[#05d5aa]">
                     {event.winnerCount > 1 
                       ? `${event.winnerCount} lucky winners share the pool equally based on luck!` 

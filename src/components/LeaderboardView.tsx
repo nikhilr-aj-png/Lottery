@@ -192,7 +192,7 @@ export default function LeaderboardView() {
         else if (u.totalWonUSDT >= 100 || u.confirmedWinsCount >= 3) tier = 'Silver';
 
         const sortedGames = Object.entries(u.gameCounts).sort((a, b) => b[1] - a[1]);
-        const primaryGame = sortedGames[0] ? sortedGames[0][0] : Array.from(u.gamesWon)[0] || 'Provably Fair';
+        const primaryGame = sortedGames[0] ? sortedGames[0][0] : Array.from(u.gamesWon)[0] || 'Four-Digit Lottery';
 
         return {
           username: u.username,
@@ -280,7 +280,7 @@ export default function LeaderboardView() {
           </h1>
 
           <p className="text-xs sm:text-sm text-[#94A3B8]">
-            Authoritative rankings sorted strictly by confirmed wins count across all provably fair games and lottery events.
+            Authoritative rankings sorted strictly by confirmed wins count across all games and lottery events.
           </p>
         </div>
 
@@ -556,7 +556,7 @@ export default function LeaderboardView() {
                   <td colSpan={6} className="py-12 text-center text-[#94A3B8]">
                     <Trophy className="w-8 h-8 text-[#64748B] mx-auto mb-2" />
                     <p className="text-sm font-bold text-white">No confirmed winners recorded for this timeframe</p>
-                    <p className="text-xs text-[#94A3B8] mt-1">Play any active provably fair game or lottery event to claim the top spot!</p>
+                    <p className="text-xs text-[#94A3B8] mt-1">Play any active game or lottery event to claim the top spot!</p>
                   </td>
                 </tr>
               ) : (
@@ -640,7 +640,7 @@ export default function LeaderboardView() {
                         <span className="text-[10px] text-amber-400/80 font-mono-numbers ml-1">USDT</span>
                       </td>
 
-                      {/* Provably Fair Verification Status */}
+                      {/* Draw Verification Status */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <span className="inline-flex items-center gap-1 text-[10px] font-mono-numbers text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                           <CheckCircle2 className="w-3 h-3 text-emerald-400" />

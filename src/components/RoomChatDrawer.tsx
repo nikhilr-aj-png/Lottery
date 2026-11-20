@@ -468,7 +468,7 @@ export default function RoomChatDrawer({
         </form>
 
         <div className="flex items-center justify-between text-[10px] text-[#64748B]">
-          <span>Provably Fair USDT Gaming Community</span>
+          <span>EarnFlow USDT Gaming Community</span>
           <span>150 chars max</span>
         </div>
 

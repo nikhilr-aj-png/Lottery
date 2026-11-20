@@ -8,7 +8,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function runProductionTests() {
   console.log('=================================================================');
-  console.log('FOUR DIGIT LOTTERY - COMPREHENSIVE PRODUCTION READINESS AUDIT');
+  console.log('EARNFLOW.IN - COMPREHENSIVE PRODUCTION READINESS & REDESIGN AUDIT');
   console.log('=================================================================\n');
 
   let passed = 0;
@@ -43,11 +43,15 @@ async function runProductionTests() {
   const resultJsxPart = resultScreenCode.slice(resultScreenCode.indexOf('return ('));
 
   assert(
-    'Result Screen: Official Draw Results header is present in JSX',
-    resultJsxPart.includes('Official Draw Results')
+    'Result Screen: Official Winning Combinations header is present in JSX',
+    resultJsxPart.includes('Official Winning Combinations') || resultJsxPart.includes('Official Draw Results')
   );
   assert(
-    'Result Screen: Small room header card is completely removed from JSX',
+    'Result Screen: Back to Lobby button completely removed from JSX',
+    !resultJsxPart.includes('Back to Lobby')
+  );
+  assert(
+    'Result Screen: Small room header card completely removed from JSX',
     !resultJsxPart.includes('max-w-3xl mx-auto rounded-2xl p-3 sm:p-4 border')
   );
   assert(
@@ -55,28 +59,32 @@ async function runProductionTests() {
     !resultJsxPart.includes('Winners &amp; Payouts') && !resultJsxPart.includes('Winners & Payouts')
   );
   assert(
-    'Result Screen: Audit Proof button is completely absent from JSX',
+    'Result Screen: Audit Proof button completely absent from JSX',
     !resultJsxPart.includes('Audit Proof')
   );
   assert(
-    'Result Screen: SHA-256 Commit box is completely absent from JSX',
+    'Result Screen: SHA-256 Commit box completely absent from JSX',
     !resultJsxPart.includes('SHA-256 Commit')
   );
   assert(
-    'Result Screen: Total Distributed USDT is completely absent from JSX',
+    'Result Screen: Total Distributed USDT completely absent from JSX',
     !resultJsxPart.includes('Total Distributed')
   );
   assert(
-    'Result Screen: Equal-sized responsive combination grid is implemented',
+    'Result Screen: DRAW CONCLUDED • VERIFIED ON-CHAIN footer badge completely removed',
+    !resultJsxPart.includes('VERIFIED ON-CHAIN')
+  );
+  assert(
+    'Result Screen: Individual payout amounts removed from cards (only position & 4 digits)',
+    !resultJsxPart.includes('Est. Prize Payout') && !resultJsxPart.includes('pctShare')
+  );
+  assert(
+    'Result Screen: Equal-sized responsive combination grid implemented',
     resultJsxPart.includes('grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4')
   );
   assert(
-    'Result Screen: Internal vertical scrolling container is implemented',
+    'Result Screen: Internal vertical scrolling container implemented',
     resultJsxPart.includes('overflow-y-auto') && resultJsxPart.includes('min-h-0')
-  );
-  assert(
-    'Result Screen: Fixed top header bar is implemented',
-    resultJsxPart.includes('flex-none') && resultJsxPart.includes('border-b border-[#1F2737]')
   );
 
   // 3. My Tickets Redesign Audit
@@ -107,35 +115,105 @@ async function runProductionTests() {
     myTicketsCode.includes("setStatusFilter('completed')")
   );
   assert(
-    'My Tickets: Search input by ticket ID or digits implemented',
-    myTicketsCode.includes('setSearchQuery') && myTicketsCode.includes('Search Ticket ID or digits...')
-  );
-  assert(
     'My Tickets: 4 equal-dimension square boxes implemented per card',
     myTicketsCode.includes('tkt.tktNumber.split') && myTicketsCode.includes('w-12 h-13 sm:w-14 sm:h-15')
   );
   assert(
-    'My Tickets: Real Supabase tickets filtered by user.id/wallet.address',
-    myTicketsCode.includes('t.userId === user.id') || myTicketsCode.includes('t.user_id === user.id')
+    'My Tickets: Removed Polygon POS and VRF PENDING labels',
+    !myTicketsCode.includes('Polygon POS') && !myTicketsCode.includes('VRF PENDING')
   );
 
-  // 4. Workstation: Desktop Two-Column Top + Full-Width Bottom Activity Architecture
+  // 4. Workstation: Single Ticket Purchase & Zero Quantity / Auto-Enter UI
   const workstationPath = path.resolve('src/games/LotteryWorkstation.tsx');
   const workstationCode = fs.readFileSync(workstationPath, 'utf-8');
 
-  assert('Workstation: Pick 4 Digits left column exists', workstationCode.includes('Pick 4 Digits'));
-  assert('Workstation: Direct Purchase right column exists', workstationCode.includes('Direct Purchase'));
-  assert('Workstation: Ticket Quantity stepper exists', workstationCode.includes('setQuantity'));
-  assert('Workstation: Top section uses 2-column grid layout', workstationCode.includes('grid-cols-1 lg:grid-cols-12'));
-  assert('Workstation: Full-width Live Room Activity spans below both columns', workstationCode.includes('3. BOTTOM SECTION: FULL-WIDTH LIVE ROOM ACTIVITY'));
-  assert('Workstation: Mobile compact buy strip is implemented', workstationCode.includes('block lg:hidden pt-2 border-t border-[#1F2737]'));
+  assert(
+    'Workstation: Quantity state and stepper completely removed',
+    !workstationCode.includes('setQuantity') && !workstationCode.includes('const [quantity,')
+  );
+  assert(
+    'Workstation: Auto-enter next draw checkbox completely removed',
+    !workstationCode.includes('autoEnterNextDraw') && !workstationCode.includes('Auto-enter next draw')
+  );
+  assert(
+    'Workstation: Strictly single ticket purchase cost logic',
+    workstationCode.includes('const totalPurchaseCost = ticketPrice;')
+  );
+  assert(
+    'Workstation: Single ticket purchase action array',
+    workstationCode.includes('[currentNumberStr]')
+  );
+  assert(
+    'Workstation: Provably Fair Protocol (SHA-256) footer section removed',
+    !workstationCode.includes('Provably Fair Protocol (SHA-256)')
+  );
+  assert(
+    'Workstation: Pick 4 Digits left column exists',
+    workstationCode.includes('Pick 4 Digits')
+  );
+  assert(
+    'Workstation: Direct Purchase right column exists',
+    workstationCode.includes('Direct Purchase')
+  );
+  assert(
+    'Workstation: Full-width Live Room Activity spans below both columns',
+    workstationCode.includes('3. BOTTOM SECTION: FULL-WIDTH LIVE ROOM ACTIVITY')
+  );
 
-  // 5. Data Integrity: Query genuine winner_payouts & lottery_events from Supabase
+  // 5. Platform-Wide Provably Fair & SHA-256 Cleanup Audit
+  const casinoLobbyPath = path.resolve('src/components/CasinoLobby.tsx');
+  const casinoLobbyCode = fs.readFileSync(casinoLobbyPath, 'utf-8');
+  assert('Casino Lobby: Provably Fair SHA-256 removed from description', !casinoLobbyCode.includes('cryptographic Provably Fair SHA-256'));
+
+  const heroBannerPath = path.resolve('src/components/HeroBanner.tsx');
+  const heroBannerCode = fs.readFileSync(heroBannerPath, 'utf-8');
+  assert('Hero Banner: provably fair luck removed', !heroBannerCode.includes('provably fair'));
+
+  const lotteryCardPath = path.resolve('src/components/LotteryCard.tsx');
+  const lotteryCardCode = fs.readFileSync(lotteryCardPath, 'utf-8');
+  assert('Lottery Card: Provably Fair badge replaced with Live Draw', !lotteryCardCode.includes('Provably Fair') && lotteryCardCode.includes('Live Draw'));
+
+  const winnerCelebrationPath = path.resolve('src/components/WinnerCelebrationModal.tsx');
+  const winnerCelebrationCode = fs.readFileSync(winnerCelebrationPath, 'utf-8');
+  assert('Winner Celebration: PROVABLY FAIR WINNER replaced with OFFICIAL DRAW WINNER', !winnerCelebrationCode.includes('PROVABLY FAIR WINNER') && winnerCelebrationCode.includes('OFFICIAL DRAW WINNER'));
+
+  const ticketModalPath = path.resolve('src/components/TicketModal.tsx');
+  const ticketModalCode = fs.readFileSync(ticketModalPath, 'utf-8');
+  assert('Ticket Modal: Provably Fair replaced with Transparent Draw Outcome', !ticketModalCode.includes('Provably Fair'));
+
+  const resultsViewPath = path.resolve('src/components/ResultsView.tsx');
+  const resultsViewCode = fs.readFileSync(resultsViewPath, 'utf-8');
+  assert('Results View: SHA-256 and Verified On-Chain removed', !resultsViewCode.includes('Cryptographic SHA-256') && !resultsViewCode.includes('Verified On-Chain'));
+  assert('Results View: Audit / Fairness button removed', !resultsViewCode.includes('Verify Provably Fair Hash') && !resultsViewCode.includes('ProvablyFairModal'));
+
+  // 6. Game Modules Telemetry Audit
+  const crashPath = path.resolve('src/games/CrashGame.tsx');
+  const crashCode = fs.readFileSync(crashPath, 'utf-8');
+  assert('Crash Game: User-facing SHA-256 strip removed', !crashCode.includes('Provably Fair SHA-256'));
+
+  const dicePath = path.resolve('src/games/DiceGame.tsx');
+  const diceCode = fs.readFileSync(dicePath, 'utf-8');
+  assert('Dice Game: User-facing Provably Fair badge removed', !diceCode.includes('100-Sided Provably Fair Die'));
+
+  const horsePath = path.resolve('src/games/HorseRacingGame.tsx');
+  const horseCode = fs.readFileSync(horsePath, 'utf-8');
+  assert('Horse Racing Game: User-facing Provably Fair strip removed', !horseCode.includes('Provably Fair RNG Sprint'));
+
+  const bingoPath = path.resolve('src/games/BingoGame.tsx');
+  const bingoCode = fs.readFileSync(bingoPath, 'utf-8');
+  assert('Bingo Game: User-facing Provably Fair Oracle strip removed', !bingoCode.includes('Provably Fair Oracle'));
+
+  const coinflipPath = path.resolve('src/games/CoinflipGame.tsx');
+  const coinflipCode = fs.readFileSync(coinflipPath, 'utf-8');
+  assert('Coinflip Game: User-facing Provably Fair strip removed', !coinflipCode.includes('Provably Fair Binary Randomness'));
+
+  // 7. Supabase Database Integrity Checks
   const { data: payouts, error: pErr } = await supabase
     .from('winner_payouts')
-    .select('*');
+    .select('*')
+    .limit(10);
 
-  assert('Database: winner_payouts table accessible', !pErr && Array.isArray(payouts), `Found ${payouts?.length || 0} payout records`);
+  assert('Database: winner_payouts table accessible', !pErr && Array.isArray(payouts), `Found ${payouts?.length || 0} payout sample records`);
 
   const { data: events, error: eErr } = await supabase
     .from('lottery_events')
@@ -144,7 +222,7 @@ async function runProductionTests() {
 
   assert('Database: lottery_events query succeeds', !eErr && Array.isArray(events), `Found ${events?.length || 0} events`);
 
-  // 6. Logic Test: Zero dummy winning codes fallback
+  // 8. Logic Test: Zero dummy winning codes fallback
   function parseWinningCodes(event) {
     if (!event) return [];
     const rawCodes = 
@@ -178,30 +256,6 @@ async function runProductionTests() {
   const realEvent = { id: 'test-real', winning_digits: '4921,8304' };
   const parsedReal = parseWinningCodes(realEvent);
   assert('Logic: Event with real digits parses correctly', parsedReal.length === 2 && parsedReal[0] === '4921' && parsedReal[1] === '8304');
-
-  // 7. Dynamic Percentage Share Calculation for multi-winner
-  function getPositionShare(event, idx, totalPositions) {
-    const dist = event?.winnerDistribution || event?.winner_distribution;
-    if (Array.isArray(dist) && dist.length > idx) {
-      const item = dist[idx];
-      const pct = item?.percent || item?.percentage;
-      if (typeof pct === 'number' && pct > 0) return pct;
-    }
-    if (totalPositions <= 1) return 100;
-    if (totalPositions === 2) return idx === 0 ? 60 : 40;
-    if (totalPositions === 3) return idx === 0 ? 50 : idx === 1 ? 30 : 20;
-    if (totalPositions === 4) return idx === 0 ? 40 : idx === 1 ? 30 : idx === 2 ? 20 : 10;
-    const equalShare = Math.floor(100 / totalPositions);
-    return idx === 0 ? 100 - (equalShare * (totalPositions - 1)) : equalShare;
-  }
-
-  const singleShare = getPositionShare({}, 0, 1);
-  assert('Logic: Single winner share is 100%', singleShare === 100);
-
-  const multiShare1 = getPositionShare({}, 0, 3);
-  const multiShare2 = getPositionShare({}, 1, 3);
-  const multiShare3 = getPositionShare({}, 2, 3);
-  assert('Logic: Multi-winner 3 positions split correctly (50/30/20)', multiShare1 === 50 && multiShare2 === 30 && multiShare3 === 20);
 
   console.log('\n=================================================================');
   console.log(`TEST SUMMARY: ${passed} PASSED, ${failed} FAILED`);

@@ -281,7 +281,7 @@ export default function BingoGame({ room, activityBox }: BingoGameProps) {
 
             <div className="absolute top-2.5 left-3 flex items-center gap-1.5 text-[10px] font-mono-numbers text-amber-400 z-10">
               <Zap className="w-3.5 h-3.5" />
-              <span>Provably Fair Draw Oracle</span>
+              <span>Live Draw Oracle</span>
             </div>
 
             {/* Central Reveal Orb */}
@@ -601,12 +601,8 @@ export default function BingoGame({ room, activityBox }: BingoGameProps) {
             </div>
           )}
 
-          {/* Provably Fair Strip */}
-          <div className="flex items-center justify-between pt-1 text-[10px] text-[#94A3B8] font-mono-numbers">
-            <span className="flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-emerald-400" />
-              <span>Provably Fair Oracle</span>
-            </span>
+          {/* Edge Telemetry Strip */}
+          <div className="flex items-center justify-end pt-1 text-[10px] text-[#94A3B8] font-mono-numbers">
             <span className="text-amber-400/80 font-bold">1% House Edge</span>
           </div>
 

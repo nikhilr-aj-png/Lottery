@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import { supabase } from '../lib/supabase';
-import ProvablyFairModal from './ProvablyFairModal';
 import LotteryShowResultScreen from './LotteryShowResultScreen';
 import { 
   Trophy, 
@@ -20,11 +19,10 @@ interface ResultCardProps {
   event: any;
   isExpanded: boolean;
   onToggleExpand: () => void;
-  onOpenVerify: (event: any) => void;
   onOpenShowResult: (event: any) => void;
 }
 
-function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify, onOpenShowResult }: ResultCardProps) {
+function ResultCard({ event, isExpanded, onToggleExpand, onOpenShowResult }: ResultCardProps) {
   const winDigits = String(event.winningDigits || '----');
   const [dbWinners, setDbWinners] = useState<any[]>([]);
   const [loadingWinners, setLoadingWinners] = useState(false);
@@ -149,7 +147,7 @@ function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify, onOpenSho
           </div>
 
           <div className="text-center mt-2 text-[10px] text-[#8b92a2]">
-            Cryptographic SHA-256 Oracle Drawn Result
+            Official Oracle Drawn Result
           </div>
         </div>
 
@@ -174,7 +172,7 @@ function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify, onOpenSho
                 <Users className="w-3.5 h-3.5" />
                 <span>Winner Breakdown ({isMultiWinner ? 'Multiple Winners' : 'Single Winner'})</span>
               </span>
-              <span className="text-[10px] text-emerald-400 font-mono-numbers font-bold">Verified On-Chain</span>
+              <span className="text-[10px] text-emerald-400 font-mono-numbers font-bold">Confirmed Result</span>
             </div>
 
             {loadingWinners ? (
@@ -215,19 +213,9 @@ function ResultCard({ event, isExpanded, onToggleExpand, onOpenVerify, onOpenSho
 
       </div>
 
-      {/* Card Action Controls: Verify, Show Result Screen & Expand/Collapse */}
+      {/* Card Action Controls: Show Result Screen & Expand/Collapse */}
       <div className="pt-3 border-t border-[#1f2737] flex flex-wrap items-center justify-between gap-2 mt-3 shrink-0">
         <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => onOpenVerify(event)}
-            className="text-[11px] font-bold flex items-center gap-1 py-1.5 px-2 rounded-lg border bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30 cursor-pointer transition-colors"
-            title="Verify Provably Fair Hash"
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Fairness</span>
-          </button>
-
           <button
             type="button"
             onClick={() => onOpenShowResult(event)}
@@ -261,7 +249,6 @@ export default function ResultsView() {
   const { events, tickets } = useLottery();
   const [selectedRoundFilter, setSelectedRoundFilter] = useState('all');
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
-  const [verifyModalEvent, setVerifyModalEvent] = useState<any>(null);
   const [selectedShowResultEvent, setSelectedShowResultEvent] = useState<any>(null);
 
   const toggleExpand = (id: string) => {
@@ -298,7 +285,7 @@ export default function ResultsView() {
 
         <span className="badge-provably-fair px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 shrink-0">
           <CheckCircle2 className="w-3.5 h-3.5 text-[#05d5aa]" />
-          <span>Provably Fair Verified</span>
+          <span>Official Concluded Draws</span>
         </span>
       </div>
 
@@ -348,7 +335,6 @@ export default function ResultsView() {
               event={event}
               isExpanded={expandedCardId === event.id}
               onToggleExpand={() => toggleExpand(event.id)}
-              onOpenVerify={(ev) => setVerifyModalEvent(ev)}
               onOpenShowResult={(ev) => setSelectedShowResultEvent(ev)}
             />
           ))}
@@ -370,26 +356,6 @@ export default function ResultsView() {
             />
           </div>
         </div>
-      )}
-
-      {/* Cryptographic Verification Modal */}
-      {verifyModalEvent && (
-        <ProvablyFairModal
-          isOpen={!!verifyModalEvent}
-          onClose={() => setVerifyModalEvent(null)}
-          auditData={{
-            id: verifyModalEvent.id,
-            event_id: verifyModalEvent.id,
-            event_title: verifyModalEvent.title,
-            winning_digits: verifyModalEvent.winningDigits || verifyModalEvent.winning_digits || '',
-            commit_hash: verifyModalEvent.sha256Seed || verifyModalEvent.sha256_seed || '',
-            revealed_seed: verifyModalEvent.revealedSeed || verifyModalEvent.revealed_seed || verifyModalEvent.serverSeed || verifyModalEvent.server_seed || null,
-            client_seed: verifyModalEvent.clientSeed || verifyModalEvent.client_seed || null,
-            nonce: verifyModalEvent.nonce || 1,
-            payout: verifyModalEvent.poolPrize || verifyModalEvent.pool_prize || 0,
-            status: verifyModalEvent.status
-          }}
-        />
       )}
 
     </div>

@@ -205,7 +205,7 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
                 </span>
               </div>
               <p className="text-xs text-[#9b8f7c] mt-0.5">
-                Launch new on-chain pools, draw provably fair winners, manage users & disburse 24h payout queues.
+                Launch new event pools, draw winning numbers, manage users & disburse 24h payout queues.
               </p>
             </div>
           </div>

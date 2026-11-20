@@ -712,12 +712,8 @@ export default function CrashGame({ room, activityBox }: CrashGameProps) {
             className="w-full flex-1 min-h-[140px] block"
           />
 
-          {/* Stage Footer: Provably Fair Telemetry Strip */}
-          <div className="w-full flex items-center justify-between pt-2 border-t border-[#1F2737] text-[10px] text-[#94A3B8] font-mono-numbers shrink-0">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Provably Fair SHA-256</span>
-            </span>
+          {/* Stage Footer */}
+          <div className="w-full flex items-center justify-end pt-2 border-t border-[#1F2737] text-[10px] text-[#94A3B8] font-mono-numbers shrink-0">
             <span className="text-amber-400/80 font-bold">
               1.0% House Edge · Max Cap 1,000x
             </span>

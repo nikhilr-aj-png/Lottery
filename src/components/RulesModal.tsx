@@ -23,7 +23,7 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps): React.
                 4-Digit Lottery Rules & Matching System
               </h3>
               <p className="text-[10px] xs:text-xs text-[#9b8f7c]">
-                Provably fair mathematical payout allocation
+                Official mathematical payout allocation
               </p>
             </div>
           </div>
@@ -43,7 +43,7 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps): React.
               <Sparkles className="w-4 h-4" /> 1. How It Works
             </h4>
             <p className="text-xs text-[#9b8f7c] leading-relaxed">
-              Each participant selects a 4-digit combination from <strong>0000</strong> to <strong>9999</strong> (or uses the <strong>Quick Pick</strong> auto-generator). When the countdown timer ends, a provably fair cryptographic draw reveals the winning 4 digits (e.g., <strong>7-4-2-9</strong>).
+              Each participant selects a 4-digit combination from <strong>0000</strong> to <strong>9999</strong> (or uses the <strong>Quick Pick</strong> auto-generator). When the countdown timer ends, the official draw reveals the winning 4 digits (e.g., <strong>7-4-2-9</strong>).
             </p>
           </div>
 
@@ -75,7 +75,7 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps): React.
               </div>
 
               <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] text-[11px] text-[#d2c5b0] leading-relaxed">
-                💡 <strong>Luck-Based Allocation:</strong> The prize pool is divided equally among the configured number of lucky winners based on provably fair luck. All winnings are automatically credited to your USDT wallet balance instantly upon draw settlement.
+                💡 <strong>Luck-Based Allocation:</strong> The prize pool is divided equally among the configured number of lucky winners. All winnings are automatically credited to your USDT wallet balance instantly upon draw settlement.
               </div>
             </div>
           </div>

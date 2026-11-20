@@ -82,9 +82,6 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   const isMobileLandscape = viewport.width > viewport.height && viewport.height < 540;
   const isMobilePortrait = viewport.width < 768 && !isMobileLandscape;
 
-  const [autoEnterNextDraw, setAutoEnterNextDraw] = useState(false);
-  const [quantity, setQuantity] = useState<number>(1);
-
   // ---------------------------------------------------------------------------
   // 2. Resolve matching or active lottery event for this room
   // ---------------------------------------------------------------------------
@@ -237,10 +234,10 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   }, [handleKeypadPress, handleClearSlot]);
 
   // ---------------------------------------------------------------------------
-  // 7. Direct Ticket Purchase Action
+  // 7. Direct Ticket Purchase Action (STRICT 1 TICKET PER PURCHASE)
   // ---------------------------------------------------------------------------
   const ticketPrice = Number(event.ticketPrice || 10);
-  const totalPurchaseCost = ticketPrice * quantity;
+  const totalPurchaseCost = ticketPrice;
 
   const handlePurchaseAction = async () => {
     if (isSubmitting) return;
@@ -269,7 +266,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
     soundFX.playChipBet();
 
     try {
-      const numbersToBuy = Array(quantity).fill(currentNumberStr);
+      const numbersToBuy = [currentNumberStr];
       const success = await buyTickets(event.id, numbersToBuy);
       if (success) {
         soundFX.playWinFanfare();
@@ -278,7 +275,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           spread: 60,
           origin: { y: 0.6 }
         });
-        showToast(`🎉 Successfully purchased ${quantity} ticket(s) for #${currentNumberStr}!`, 'success');
+        showToast(`🎉 Successfully purchased ticket #${currentNumberStr}!`, 'success');
       }
     } finally {
       setIsSubmitting(false);
@@ -700,7 +697,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
               ) : (
                 <>
                   <Zap className="w-4 h-4 fill-current" />
-                  <span>Buy 1 Ticket ({totalPurchaseCost.toFixed(2)} USDT)</span>
+                  <span>Buy Ticket ({totalPurchaseCost.toFixed(2)} USDT)</span>
                 </>
               )}
             </button>
@@ -747,55 +744,9 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                 </strong>
               </div>
 
-              {/* Quantity Stepper Row */}
-              <div className="flex items-center justify-between text-[#94A3B8]">
-                <span>Ticket Quantity:</span>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center bg-[#141924] border border-[#1F2737] rounded-lg p-0.5">
-                    <button
-                      type="button"
-                      disabled={quantity <= 1}
-                      onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                      className="w-6 h-6 rounded flex items-center justify-center hover:bg-white/10 text-white disabled:opacity-30 cursor-pointer"
-                    >
-                      <Minus className="w-3 h-3" />
-                    </button>
-                    <span className="w-8 text-center font-bold text-white text-xs">
-                      {quantity}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={quantity >= 20}
-                      onClick={() => setQuantity(prev => Math.min(20, prev + 1))}
-                      className="w-6 h-6 rounded flex items-center justify-center hover:bg-white/10 text-white disabled:opacity-30 cursor-pointer"
-                    >
-                      <Plus className="w-3 h-3" />
-                    </button>
-                  </div>
-
-                  {/* Multiplier Quick Pills */}
-                  <div className="hidden xs:flex items-center gap-1">
-                    {[1, 2, 5, 10].map(m => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => setQuantity(m)}
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold border transition-colors cursor-pointer ${
-                          quantity === m
-                            ? 'bg-[#7C3AED] text-white border-[#7C3AED]'
-                            : 'bg-[#141924] text-[#94A3B8] border-[#1F2737] hover:text-white'
-                        }`}
-                      >
-                        {m}x
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
               {/* Unit Price Row */}
               <div className="flex items-center justify-between text-[#94A3B8]">
-                <span>Unit Price:</span>
+                <span>Unit Ticket Price:</span>
                 <strong className="text-white">{ticketPrice.toFixed(2)} USDT</strong>
               </div>
 
@@ -824,19 +775,6 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                 </span>
               </div>
 
-            </div>
-
-            {/* Auto-enter Next Draw Toggle */}
-            <div className="p-2.5 rounded-xl bg-[#0B0F19]/60 border border-[#1F2737] flex items-center justify-between text-xs">
-              <label className="flex items-center gap-2 cursor-pointer text-[#94A3B8] font-bold text-[11px]">
-                <input
-                  type="checkbox"
-                  checked={autoEnterNextDraw}
-                  onChange={(e) => setAutoEnterNextDraw(e.target.checked)}
-                  className="accent-[#7C3AED] rounded cursor-pointer w-4 h-4"
-                />
-                <span>Auto-enter next draw if unclaimed</span>
-              </label>
             </div>
 
           </div>
@@ -875,13 +813,13 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
               ) : (
                 <>
                   <Zap className="w-4 h-4 fill-current" />
-                  <span>Buy {quantity} Ticket{quantity > 1 ? 's' : ''} ({totalPurchaseCost.toFixed(2)} USDT)</span>
+                  <span>Buy Ticket ({totalPurchaseCost.toFixed(2)} USDT)</span>
                 </>
               )}
             </button>
 
             <p className="text-[10px] text-[#64748B] text-center font-mono-numbers">
-              Instant smart contract escrow · SHA-256 verifiable on Polygon POS
+              Instant smart contract escrow • Non-custodial settlement
             </p>
           </div>
 
@@ -927,32 +865,6 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
         {renderActivityFeed()}
 
       </section>
-
-      {/* ===================================================================== */}
-      {/* 4. PROVABLY FAIR PROTOCOL VERIFICATION STRIP                          */}
-      {/* ===================================================================== */}
-      <footer className="px-3 sm:px-4 py-2.5 rounded-xl bg-[#0A0E18] border border-[#1F2737] flex flex-wrap items-center justify-between text-xs text-[#94A3B8] gap-2 max-w-7xl mx-auto w-full shrink-0 shadow-sm">
-        <div className="flex items-center gap-2 min-w-0">
-          <ShieldCheck className="w-4 h-4 text-[#10B981] shrink-0" />
-          <span className="text-white font-bold text-xs">Provably Fair Protocol (SHA-256):</span>
-          <span className="font-mono text-[11px] text-[#64748B] truncate max-w-[180px] xs:max-w-xs sm:max-w-md">
-            {event.sha256Seed || event.sha256_seed || 'Awaiting block seed publication'}
-          </span>
-          <button
-            type="button"
-            onClick={handleCopySeed}
-            className="text-[#94A3B8] hover:text-white p-1 rounded hover:bg-white/5 transition-colors cursor-pointer"
-            title="Copy Seed Hash"
-          >
-            {copiedSeed ? <Check className="w-3.5 h-3.5 text-[#10B981]" /> : <Copy className="w-3.5 h-3.5" />}
-          </button>
-        </div>
-
-        <div className="font-mono-numbers text-[#F59E0B] text-xs font-bold flex items-center gap-1.5 ml-auto">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-          <span>Cryptographically Verified</span>
-        </div>
-      </footer>
 
     </div>
   );

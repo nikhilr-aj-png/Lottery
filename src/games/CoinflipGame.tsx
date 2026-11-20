@@ -456,12 +456,8 @@ export default function CoinflipGame({ room, activityBox }: CoinflipGameProps) {
             </div>
           </div>
 
-          {/* Stage Footer: Provably Fair Telemetry Strip */}
-          <div className="w-full flex items-center justify-between pt-2 border-t border-[#1F2737] text-[10px] text-[#94A3B8] shrink-0 z-10">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Provably Fair Binary Randomness</span>
-            </span>
+          {/* Stage Footer: Edge & Multiplier */}
+          <div className="w-full flex items-center justify-end pt-2 border-t border-[#1F2737] text-[10px] text-[#94A3B8] shrink-0 z-10">
             <span className="text-amber-400/80 font-mono-numbers font-bold">
               House Edge: 1.0% · Payout: 1.98x
             </span>

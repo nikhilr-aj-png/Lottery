@@ -4,14 +4,12 @@ import { useLottery } from '../context/LotteryContext';
 import { 
   Trophy, 
   Coins, 
-  ShieldCheck, 
   Sparkles,
   Zap,
   TrendingUp,
   Clock,
   User
 } from 'lucide-react';
-import ProvablyFairModal from './ProvablyFairModal';
 
 interface LiveBetsTickerProps {
   onSelectGame?: (gameId: string) => void;
@@ -23,7 +21,6 @@ export default function LiveBetsTicker({ onSelectGame }: LiveBetsTickerProps) {
   const [allBets, setAllBets] = useState<any[]>([]);
   const [myBets, setMyBets] = useState<any[]>([]);
   const [highRollers, setHighRollers] = useState<any[]>([]);
-  const [verifyModalBet, setVerifyModalBet] = useState<any>(null);
 
   useEffect(() => {
     // Initial fetch
@@ -186,22 +183,6 @@ export default function LiveBetsTicker({ onSelectGame }: LiveBetsTickerProps) {
         </div>
 
       </div>
-
-      {/* Verification modal for bet auditing */}
-      {verifyModalBet && (
-        <ProvablyFairModal
-          isOpen={!!verifyModalBet}
-          onClose={() => setVerifyModalBet(null)}
-          auditData={{
-            event_id: verifyModalBet.id,
-            event_title: `${verifyModalBet.gameId.toUpperCase()} Round #${verifyModalBet.id.slice(-6)}`,
-            winning_digits: verifyModalBet.multiplier ? `${verifyModalBet.multiplier}x` : '0x',
-            commit_hash: verifyModalBet.serverSeedHash,
-            revealed_seed: verifyModalBet.serverSeed,
-            client_seed: verifyModalBet.clientSeed
-          }}
-        />
-      )}
     </div>
   );
 }

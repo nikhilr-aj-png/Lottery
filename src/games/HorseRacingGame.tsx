@@ -572,12 +572,8 @@ export default function HorseRacingGame({ room, activityBox }: HorseRacingGamePr
             </div>
           )}
 
-          {/* Provably Fair Telemetry Strip */}
-          <div className="flex items-center justify-between pt-1 text-[10px] text-[#94A3B8] font-mono-numbers">
-            <span className="flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-emerald-400" />
-              <span>Provably Fair RNG Sprint</span>
-            </span>
+          {/* Race Telemetry Strip */}
+          <div className="flex items-center justify-end pt-1 text-[10px] text-[#94A3B8] font-mono-numbers">
             <span className="text-amber-400/80 font-bold">1% House Edge</span>
           </div>
 

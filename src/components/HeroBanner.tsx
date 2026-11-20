@@ -184,8 +184,8 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
 
                 <p className="text-[10px] xs:text-[11px] text-[#9b8f7c] mt-1.5 sm:mt-2 leading-relaxed">
                   {winnerCount > 1 
-                    ? `Prize pool is shared equally among ${winnerCount} lucky winners selected by provably fair luck. Winnings go directly to your USDT wallet.`
-                    : 'Lucky ticket combination wins the jackpot pool! Provably fair draw with automated USDT payouts.'}
+                    ? `Prize pool is shared equally among ${winnerCount} lucky winners. Winnings go directly to your USDT wallet.`
+                    : 'Lucky ticket combination wins the jackpot pool with automated USDT payouts.'}
                 </p>
               </div>
 

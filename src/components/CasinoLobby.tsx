@@ -194,7 +194,7 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: Casino
             </p>
 
             <p className="text-xs sm:text-[13px] text-[#94A3B8] leading-relaxed max-w-xl">
-              Play Four-Digit Lottery, Crash, Dice, Coinflip, Bingo – Color Trading, and Horse Racing with cryptographic Provably Fair SHA-256 outcomes and direct USDT (TRC-20) wallet settlements.
+              Play Four-Digit Lottery, Crash, Dice, Coinflip, Bingo – Color Trading, and Horse Racing with direct USDT (TRC-20) wallet settlements.
             </p>
 
             {/* CTA Buttons */}

@@ -9,7 +9,6 @@ import {
   gameHistoryStore
 } from '../engine';
 import { supabase } from '../lib/supabase';
-import ProvablyFairModal from '../components/ProvablyFairModal';
 import { useLottery } from '../context/LotteryContext';
 import { getEventStatusInfo } from '../utils/eventStatus';
 import {
@@ -216,7 +215,7 @@ export default function GamePage({
           previousServerHash: data.previous_commit_hash
         });
         setCustomClientSeed(data.new_client_seed);
-        showToast('Provably Fair seeds rotated! Previous server seed revealed.', 'success');
+        showToast('Game seeds rotated successfully.', 'success');
       } else {
         showToast(error?.message || 'Failed to rotate seeds', 'error');
       }
@@ -386,17 +385,6 @@ export default function GamePage({
                     <span className={`font-bold ${isWin ? 'text-emerald-400' : 'text-[#64748B]'}`}>
                       {isWin ? `+${r.payout} USDT` : '0 USDT'}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedRoundForProof(r);
-                        setIsProofModalOpen(true);
-                      }}
-                      className="px-1.5 py-0.2 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold cursor-pointer transition-colors"
-                      title="Verify Provably Fair"
-                    >
-                      <ShieldCheck className="w-2.5 h-2.5 inline" />
-                    </button>
                   </div>
                 </div>
               );
@@ -452,29 +440,6 @@ export default function GamePage({
             />
           )}
         </div>
-
-        {/* Universal Provably Fair Audit Modal */}
-        {isProofModalOpen && selectedRoundForProof && (
-          <ProvablyFairModal
-            isOpen={isProofModalOpen}
-            onClose={() => {
-              setIsProofModalOpen(false);
-              setSelectedRoundForProof(null);
-            }}
-            auditData={{
-              id: selectedRoundForProof.id,
-              event_id: selectedRoundForProof.id,
-              event_title: `${game.name} — Round #${selectedRoundForProof.id.slice(-8)}`,
-              winning_digits: selectedRoundForProof.multiplier ? `${selectedRoundForProof.multiplier}x` : (selectedRoundForProof.payout > 0 ? 'WIN' : '0.00x'),
-              commit_hash: selectedRoundForProof.serverSeedHash || selectedRoundForProof.server_seed_hash,
-              revealed_seed: selectedRoundForProof.serverSeed || selectedRoundForProof.server_seed || 'Revealed upon seed rotation',
-              client_seed: selectedRoundForProof.clientSeed || selectedRoundForProof.client_seed || '—',
-              nonce: selectedRoundForProof.nonce || 1,
-              payout: selectedRoundForProof.payout,
-              status: selectedRoundForProof.status
-            }}
-          />
-        )}
       </div>
     );
   }
@@ -916,37 +881,10 @@ export default function GamePage({
             <p className="leading-relaxed bg-[#0b0e14] p-3.5 rounded-xl border border-[#272a31]">
               {game.instructions}
             </p>
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2.5 text-[11px] text-amber-300">
-              <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>All game outcomes are determined server-side before execution using cryptographic seed hashing.</span>
-            </div>
           </div>
         </div>
       </section>
       </>
-      )}
-
-      {/* Universal Provably Fair Audit Modal */}
-      {isProofModalOpen && selectedRoundForProof && (
-        <ProvablyFairModal
-          isOpen={isProofModalOpen}
-          onClose={() => {
-            setIsProofModalOpen(false);
-            setSelectedRoundForProof(null);
-          }}
-          auditData={{
-            id: selectedRoundForProof.id,
-            event_id: selectedRoundForProof.id,
-            event_title: `${game.name} — Round #${selectedRoundForProof.id.slice(-8)}`,
-            winning_digits: selectedRoundForProof.multiplier ? `${selectedRoundForProof.multiplier}x` : (selectedRoundForProof.payout > 0 ? 'WIN' : '0.00x'),
-            commit_hash: selectedRoundForProof.serverSeedHash || selectedRoundForProof.server_seed_hash,
-            revealed_seed: selectedRoundForProof.serverSeed || selectedRoundForProof.server_seed || 'Revealed upon seed rotation',
-            client_seed: selectedRoundForProof.clientSeed || selectedRoundForProof.client_seed || '—',
-            nonce: selectedRoundForProof.nonce || 1,
-            payout: selectedRoundForProof.payout,
-            status: selectedRoundForProof.status
-          }}
-        />
       )}
 
     </div>

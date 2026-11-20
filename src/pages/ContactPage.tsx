@@ -134,7 +134,7 @@ export default function ContactPage({ onBackToHome }: ContactPageProps) {
         </div>
 
         <p className="text-xs sm:text-sm text-[#9b8f7c] leading-relaxed mt-4 max-w-2xl">
-          Encountered an issue with your USDT deposit, 24-hour withdrawals, or provably fair lottery tickets? 
+          Encountered an issue with your USDT deposit, 24-hour withdrawals, or lottery tickets? 
           Submit your query below. Our administrative team receives all tickets directly and replies promptly to your email.
         </p>
       </div>
@@ -282,8 +282,8 @@ export default function ContactPage({ onBackToHome }: ContactPageProps) {
                     <option value="Withdrawal / 24-Hour Payout Inquiry">
                       ⏱️ Withdrawal / 24-Hour Payout Inquiry
                     </option>
-                    <option value="Lottery Ticket / Provably Fair Oracle Draw">
-                      🎟️ Lottery Ticket / Provably Fair Oracle Draw
+                    <option value="Lottery Ticket / Oracle Draw">
+                      🎟️ Lottery Ticket / Oracle Draw
                     </option>
                     <option value="Account Access / Login OTP Issue">
                       🔐 Account Access / Login OTP Issue

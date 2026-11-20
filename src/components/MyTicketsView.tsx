@@ -252,7 +252,7 @@ export default function MyTicketsView({ onOpenPicker, onNavigateToRoom }: MyTick
 
           <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#0B0F19] border border-[#1F2737]">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-            <span className="text-[10px] font-mono text-[#94A3B8] uppercase tracking-wider">SYNCED • Polygon POS</span>
+            <span className="text-[10px] font-mono text-[#94A3B8] uppercase tracking-wider">REALTIME • SYNCED</span>
           </div>
         </div>
 
@@ -563,7 +563,7 @@ export default function MyTicketsView({ onOpenPicker, onNavigateToRoom }: MyTick
                   ) : isPending ? (
                     <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
                       <Clock className="w-3 h-3 animate-spin" />
-                      VRF PENDING
+                      DRAW PENDING
                     </span>
                   ) : isActive ? (
                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/35 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
@@ -654,7 +654,7 @@ export default function MyTicketsView({ onOpenPicker, onNavigateToRoom }: MyTick
 
       {/* Bottom Summary Notice */}
       <div className="pt-2 text-center text-xs text-[#64748B] font-mono">
-        All lottery tickets and prize distributions are cryptographically secured on Polygon PoS.
+        All lottery tickets and prize distributions are secured directly in your wallet balance.
       </div>
 
     </div>
