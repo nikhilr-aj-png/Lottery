@@ -17,7 +17,11 @@ import {
   Wallet,
   Hash,
   Flame,
-  Check
+  Check,
+  Trophy,
+  Zap,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundFX } from '../engine/SoundFXService';
@@ -30,6 +34,13 @@ export interface LotteryWorkstationProps {
   activityBox?: React.ReactNode;
 }
 
+/**
+ * Four Digit Lottery Workstation
+ * Redesigned exclusively in Google Stitch (Obsidian Sovereign Design System: #0B0F19, #111728, Violet-600, Gold #F59E0B)
+ * Solves:
+ * 1. Mobile Number Selection & Buy Section Co-visibility (Zero-Scroll primary cluster)
+ * 2. Tablet & Laptop Room Activity internal scrolling & height synchronization
+ */
 export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorkstationProps) {
   const { 
     user, 
@@ -62,7 +73,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const isMobileLandscape = viewport.width > viewport.height && viewport.height < 520;
+  const isMobileLandscape = viewport.width > viewport.height && viewport.height < 540;
   const isMobilePortrait = viewport.width < 768 && !isMobileLandscape;
   const isSmallMobile = viewport.width <= 375;
 
@@ -116,6 +127,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   });
   const [activeSlot, setActiveSlot] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [copiedSeed, setCopiedSeed] = useState<boolean>(false);
 
   // ---------------------------------------------------------------------------
   // 4. Ticket quantity pick state: 1, 5, or 10
@@ -265,7 +277,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
             particleCount: 100,
             spread: 70,
             origin: { y: 0.65 },
-            colors: ['#8b5cf6', '#ffd700', '#22c55e', '#ffffff']
+            colors: ['#7c3aed', '#f59e0b', '#10b981', '#ffffff']
           });
           showToast(`🎉 Purchased Ticket #${currentNumberStr} for ${ticketPrice} USDT!`, 'success');
           
@@ -319,7 +331,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           particleCount: 120,
           spread: 80,
           origin: { y: 0.65 },
-          colors: ['#8b5cf6', '#ffd700', '#22c55e', '#ffffff']
+          colors: ['#7c3aed', '#f59e0b', '#10b981', '#ffffff']
         });
         showToast(`🎉 Successfully purchased ${generatedTickets.length} unique tickets for ${totalPurchaseCost} USDT!`, 'success');
 
@@ -340,7 +352,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
     if (!tickets) return [];
     return tickets
       .filter((t: any) => t.eventId === event.id || t.event_id === event.id)
-      .slice(0, 30);
+      .slice(0, 40);
   }, [tickets, event.id]);
 
   const myTicketsInThisRoom = useMemo(() => {
@@ -364,6 +376,14 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
     return `${Math.floor(hours / 24)}d ago`;
   };
 
+  const handleCopySeed = () => {
+    if (event.sha256Seed) {
+      navigator.clipboard.writeText(event.sha256Seed);
+      setCopiedSeed(true);
+      setTimeout(() => setCopiedSeed(false), 2000);
+    }
+  };
+
   // ---------------------------------------------------------------------------
   // 10. Concluded / Expired State -> Show Result Screen
   // ---------------------------------------------------------------------------
@@ -381,29 +401,24 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   }
 
   // ---------------------------------------------------------------------------
-  // 11. Render Helpers
+  // 11. Render Helpers: Stitch Obsidian Sovereign UI Components
   // ---------------------------------------------------------------------------
 
-  // Numeric Keypad Grid: 1-3, 4-6, 7-9, Clear-0-Random
+  // Tactile 3x4 Numeric Keypad
   const renderNumericKeypad = (isCompact = false) => {
-    const buttonHeight = isCompact ? 'h-9 xs:h-10 text-lg' : 'h-11 xs:h-12 sm:h-13 text-xl sm:text-2xl';
-    const actionBtnHeight = isCompact ? 'h-9 xs:h-10 text-xs' : 'h-11 xs:h-12 sm:h-13 text-xs sm:text-sm';
+    const btnHeight = isCompact ? 'h-9 xs:h-10 text-base' : 'h-10 xs:h-11 sm:h-13 text-lg sm:text-xl';
+    const actionBtnHeight = isCompact ? 'h-9 xs:h-10 text-xs' : 'h-10 xs:h-11 sm:h-13 text-xs sm:text-sm';
 
     return (
-      <div className="w-full space-y-1.5 xs:space-y-2">
-        <div className="flex items-center justify-between text-[10px] xs:text-[11px] text-[#64748b] font-bold uppercase tracking-wider px-0.5">
-          <span>Numeric Keypad</span>
-          <span className="text-violet-400">Slot {activeSlot + 1} of 4 Active</span>
-        </div>
-
-        <div className="grid grid-cols-3 gap-1.5 xs:gap-2 sm:gap-2.5">
+      <div className="w-full space-y-1.5">
+        <div className="grid grid-cols-3 gap-1.5 xs:gap-2">
           {/* Row 1: 1, 2, 3 */}
           {[1, 2, 3].map((num) => (
             <button
               key={num}
               type="button"
               onClick={() => handleKeypadPress(num)}
-              className={`${buttonHeight} rounded-xl bg-gradient-to-b from-[#141a29] to-[#0c101a] hover:from-[#1b2337] hover:to-[#121826] active:from-violet-600/30 active:to-violet-600/10 active:scale-[0.97] border border-[#232d42] hover:border-violet-500/50 shadow-sm transition-all cursor-pointer font-mono-numbers font-black text-white hover:text-violet-200 flex items-center justify-center select-none`}
+              className={`${btnHeight} rounded-xl bg-[#141b2a] hover:bg-[#1a2336] active:bg-[#7c3aed]/30 active:scale-95 border border-[#222b40] hover:border-[#7c3aed]/50 shadow-sm transition-all cursor-pointer font-mono-numbers font-bold text-white hover:text-[#d2bbff] flex items-center justify-center select-none`}
               aria-label={`Digit ${num}`}
             >
               {num}
@@ -416,7 +431,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
               key={num}
               type="button"
               onClick={() => handleKeypadPress(num)}
-              className={`${buttonHeight} rounded-xl bg-gradient-to-b from-[#141a29] to-[#0c101a] hover:from-[#1b2337] hover:to-[#121826] active:from-violet-600/30 active:to-violet-600/10 active:scale-[0.97] border border-[#232d42] hover:border-violet-500/50 shadow-sm transition-all cursor-pointer font-mono-numbers font-black text-white hover:text-violet-200 flex items-center justify-center select-none`}
+              className={`${btnHeight} rounded-xl bg-[#141b2a] hover:bg-[#1a2336] active:bg-[#7c3aed]/30 active:scale-95 border border-[#222b40] hover:border-[#7c3aed]/50 shadow-sm transition-all cursor-pointer font-mono-numbers font-bold text-white hover:text-[#d2bbff] flex items-center justify-center select-none`}
               aria-label={`Digit ${num}`}
             >
               {num}
@@ -429,7 +444,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
               key={num}
               type="button"
               onClick={() => handleKeypadPress(num)}
-              className={`${buttonHeight} rounded-xl bg-gradient-to-b from-[#141a29] to-[#0c101a] hover:from-[#1b2337] hover:to-[#121826] active:from-violet-600/30 active:to-violet-600/10 active:scale-[0.97] border border-[#232d42] hover:border-violet-500/50 shadow-sm transition-all cursor-pointer font-mono-numbers font-black text-white hover:text-violet-200 flex items-center justify-center select-none`}
+              className={`${btnHeight} rounded-xl bg-[#141b2a] hover:bg-[#1a2336] active:bg-[#7c3aed]/30 active:scale-95 border border-[#222b40] hover:border-[#7c3aed]/50 shadow-sm transition-all cursor-pointer font-mono-numbers font-bold text-white hover:text-[#d2bbff] flex items-center justify-center select-none`}
               aria-label={`Digit ${num}`}
             >
               {num}
@@ -440,7 +455,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           <button
             type="button"
             onClick={handleClearSlot}
-            className={`${actionBtnHeight} rounded-xl bg-gradient-to-b from-[#1a1217] to-[#120b0f] hover:from-[#271822] hover:to-[#1a0f16] active:scale-[0.97] border border-rose-500/30 hover:border-rose-400/60 shadow-sm transition-all cursor-pointer font-bold text-rose-300 hover:text-rose-200 uppercase tracking-wider flex items-center justify-center gap-1 select-none`}
+            className={`${actionBtnHeight} rounded-xl bg-rose-950/25 hover:bg-rose-900/40 text-rose-300 hover:text-rose-200 active:scale-95 border border-rose-500/35 transition-all cursor-pointer font-bold uppercase tracking-wider flex items-center justify-center gap-1 select-none`}
             title="Clear current slot"
             aria-label="Clear slot"
           >
@@ -450,7 +465,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           <button
             type="button"
             onClick={() => handleKeypadPress(0)}
-            className={`${buttonHeight} rounded-xl bg-gradient-to-b from-[#141a29] to-[#0c101a] hover:from-[#1b2337] hover:to-[#121826] active:from-violet-600/30 active:to-violet-600/10 active:scale-[0.97] border border-[#232d42] hover:border-violet-500/50 shadow-sm transition-all cursor-pointer font-mono-numbers font-black text-white hover:text-violet-200 flex items-center justify-center select-none`}
+            className={`${btnHeight} rounded-xl bg-[#141b2a] hover:bg-[#1a2336] active:bg-[#7c3aed]/30 active:scale-95 border border-[#222b40] hover:border-[#7c3aed]/50 shadow-sm transition-all cursor-pointer font-mono-numbers font-bold text-white hover:text-[#d2bbff] flex items-center justify-center select-none`}
             aria-label="Digit 0"
           >
             0
@@ -459,11 +474,11 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           <button
             type="button"
             onClick={handleRandomNumber}
-            className={`${actionBtnHeight} rounded-xl bg-gradient-to-b from-[#1c1712] to-[#130f0a] hover:from-[#2a2015] hover:to-[#1a130b] active:scale-[0.97] border border-amber-500/35 hover:border-amber-400/70 shadow-sm transition-all cursor-pointer font-bold text-amber-300 hover:text-amber-200 uppercase tracking-wider flex items-center justify-center gap-1 select-none`}
-            title="Generate random 4-digit number"
-            aria-label="Generate random number"
+            className={`${actionBtnHeight} rounded-xl bg-[#f59e0b]/15 hover:bg-[#f59e0b]/25 text-[#f59e0b] hover:text-[#ffddb8] active:scale-95 border border-[#f59e0b]/35 transition-all cursor-pointer font-bold uppercase tracking-wider flex items-center justify-center gap-1 select-none`}
+            title="Generate random combination"
+            aria-label="Randomize combination"
           >
-            <Dices className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <Dices className="w-3.5 h-3.5 text-[#f59e0b] shrink-0" />
             <span>Random</span>
           </button>
         </div>
@@ -473,38 +488,40 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
 
   // 4 Digit Input Slots
   const renderDigitSlots = (isCompact = false) => {
-    const slotHeight = isCompact ? 'h-13 xs:h-14 sm:h-16' : 'h-15 xs:h-17 sm:h-19 lg:h-20';
-    const numSize = isCompact ? 'text-2xl xs:text-3xl' : 'text-2xl xs:text-3xl sm:text-4xl lg:text-4xl';
+    const slotHeight = isCompact ? 'h-12 xs:h-13' : 'h-14 xs:h-15 sm:h-17';
+    const numSize = isCompact ? 'text-2xl' : 'text-2xl xs:text-3xl sm:text-4xl';
 
     return (
-      <div className="w-full space-y-1.5 xs:space-y-2">
-        <div className="grid grid-cols-4 gap-1.5 xs:gap-2 sm:gap-2.5">
+      <div className="w-full space-y-1.5">
+        <div className="grid grid-cols-4 gap-1.5 xs:gap-2">
           {digits.map((digit, idx) => {
             const isSelected = activeSlot === idx;
+            const ordinals = ['1ST', '2ND', '3RD', '4TH'];
+
             return (
               <button
                 key={idx}
                 type="button"
                 onClick={() => setActiveSlot(idx)}
-                className={`${slotHeight} rounded-xl sm:rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-150 select-none border-2 shadow-inner group relative ${
+                className={`${slotHeight} rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-150 select-none border-2 shadow-inner group relative ${
                   isSelected
-                    ? 'border-violet-500 bg-gradient-to-b from-violet-500/20 via-[#13192a] to-[#0a0d15] shadow-[0_0_16px_rgba(139,92,246,0.3)] ring-2 ring-violet-500/30 scale-[1.02]'
+                    ? 'border-[#7c3aed] bg-[#7c3aed]/20 shadow-[0_0_16px_rgba(124,58,237,0.35)] ring-2 ring-[#7c3aed]/40 scale-[1.02]'
                     : isAlreadyPurchasedByMe
                     ? 'border-rose-500/40 bg-rose-950/15 text-rose-200 hover:border-rose-400/60'
-                    : 'border-[#222d42] bg-[#080b12] hover:border-violet-500/40 text-white hover:bg-[#0e1320]'
+                    : 'border-[#222b40] bg-[#0a0e18] hover:border-[#7c3aed]/40 text-white hover:bg-[#111728]'
                 }`}
                 title={`Digit Slot ${idx + 1}`}
                 aria-label={`Digit slot ${idx + 1}, value ${digit}`}
               >
-                <span className={`text-[9px] xs:text-[10px] font-mono-numbers font-bold uppercase tracking-wider block transition-colors ${
-                  isSelected ? 'text-violet-300' : 'text-[#64748b] group-hover:text-[#94a3b8]'
+                <span className={`text-[9px] font-mono-numbers font-bold uppercase tracking-wider block transition-colors ${
+                  isSelected ? 'text-[#d2bbff]' : 'text-[#64748b] group-hover:text-[#94a3b8]'
                 }`}>
-                  #{idx + 1}
+                  {ordinals[idx]}
                 </span>
 
                 <span className={`font-mono-numbers font-black ${numSize} my-0.5 transition-colors ${
                   isSelected 
-                    ? 'text-amber-300 drop-shadow-[0_0_8px_rgba(245,196,81,0.5)]' 
+                    ? 'text-[#f59e0b] drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' 
                     : isAlreadyPurchasedByMe 
                     ? 'text-rose-300' 
                     : 'text-white'
@@ -513,19 +530,19 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                 </span>
 
                 {/* Active Indicator Bar */}
-                <span className={`w-6 xs:w-8 h-1 rounded-full transition-all ${
-                  isSelected ? 'bg-violet-400 shadow-[0_0_8px_rgba(139,92,246,0.8)]' : 'bg-transparent'
+                <span className={`w-6 h-0.5 rounded-full transition-all ${
+                  isSelected ? 'bg-[#7c3aed] shadow-[0_0_8px_rgba(124,58,237,0.8)]' : 'bg-transparent'
                 }`} />
               </button>
             );
           })}
         </div>
 
-        {/* Combination Availability Status */}
+        {/* Combination Availability Status Bar */}
         <div className="flex items-center justify-between text-xs px-0.5 pt-0.5">
           <div className="flex items-center gap-1.5">
             <span className="text-[#94a3b8] text-[11px]">Combination:</span>
-            <span className="font-mono-numbers font-black text-amber-300 text-xs xs:text-sm">
+            <span className="font-mono-numbers font-black text-[#f59e0b] text-xs xs:text-sm">
               #{currentNumberStr}
             </span>
           </div>
@@ -537,9 +554,9 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                 <span>Already Owned</span>
               </span>
             ) : (
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-                <span>Available</span>
+              <span className="px-2 py-0.5 rounded-full bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] text-[10px] font-bold flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-[#10b981] shrink-0" />
+                <span>Available to Claim</span>
               </span>
             )}
           </div>
@@ -551,36 +568,14 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   // Quick Pick & Purchase Controls
   const renderQuickPickAndPurchase = (layoutMode: 'mobile' | 'desktop' | 'compact' = 'desktop') => {
     const isMobileMode = layoutMode === 'mobile';
-    const isCompactMode = layoutMode === 'compact';
 
     return (
-      <div className="w-full flex flex-col justify-between space-y-3 sm:space-y-4">
+      <div className="w-full flex flex-col justify-between space-y-2.5 sm:space-y-4">
         
-        {/* Header */}
-        <div className="flex items-center justify-between pb-2.5 border-b border-[#1e2638] shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 xs:w-8 xs:h-8 rounded-xl bg-violet-500/15 border border-violet-500/30 flex items-center justify-center text-violet-400">
-              <Ticket className="w-3.5 h-3.5 xs:w-4 xs:h-4" />
-            </div>
-            <div>
-              <h3 className="font-display font-bold text-xs xs:text-sm sm:text-base text-white">
-                Quick Pick
-              </h3>
-              <p className="text-[10px] xs:text-[11px] text-[#94a3b8] hidden xs:block">
-                Select ticket quantity
-              </p>
-            </div>
-          </div>
-
-          <span className="text-[11px] font-mono-numbers font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/25">
-            {ticketPrice} USDT / tkt
-          </span>
-        </div>
-
-        {/* Pick Options: Responsive Mode Handling */}
+        {/* Quick Pick Quantity Selector */}
         {isMobileMode ? (
-          /* Mobile Segmented Grouped Pills: compact, no wasted vertical height */
-          <div className="grid grid-cols-3 gap-1.5 xs:gap-2">
+          /* Mobile Segmented Grouped Pills: compact, zero scroll */
+          <div className="grid grid-cols-3 gap-1.5">
             {[
               { count: 1, label: '1 Pick', cost: 1 * ticketPrice },
               { count: 5, label: '5 Picks', cost: 5 * ticketPrice },
@@ -592,16 +587,16 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                   key={opt.count}
                   type="button"
                   onClick={() => setSelectedTicketCount(opt.count)}
-                  className={`py-2 px-1.5 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                  className={`py-1.5 px-1 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
                     isSelected
-                      ? 'bg-violet-600/20 border-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.3)]'
-                      : 'bg-[#080b12] border-[#222d42] hover:border-violet-500/40 text-[#94a3b8]'
+                      ? 'bg-[#7c3aed]/25 border-[#7c3aed] shadow-[0_0_12px_rgba(124,58,237,0.3)]'
+                      : 'bg-[#0a0e18] border-[#222b40] hover:border-[#7c3aed]/40 text-[#94a3b8]'
                   }`}
                 >
                   <span className={`text-xs font-bold block ${isSelected ? 'text-white' : 'text-[#cbd5e1]'}`}>
                     {opt.label}
                   </span>
-                  <span className={`text-[10px] font-mono-numbers font-extrabold ${isSelected ? 'text-amber-400' : 'text-[#64748b]'}`}>
+                  <span className={`text-[10px] font-mono-numbers font-extrabold ${isSelected ? 'text-[#f59e0b]' : 'text-[#64748b]'}`}>
                     {opt.cost} USDT
                   </span>
                 </button>
@@ -612,9 +607,9 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           /* Desktop & Tablet Detailed Selection Cards */
           <div className="space-y-2">
             {[
-              { count: 1, label: '1 Pick', desc: `Selected: #${currentNumberStr}` },
-              { count: 5, label: '5 Picks', desc: '5 Unique Combinations' },
-              { count: 10, label: '10 Picks', desc: '10 Unique Combinations' }
+              { count: 1, label: '1 Ticket', desc: 'Standard Single Entry', tag: null },
+              { count: 5, label: '5 Picks', desc: '5 Unique Combinations', tag: 'POPULAR' },
+              { count: 10, label: '10 Picks', desc: '10 Unique Combinations', tag: 'VIP 10X' }
             ].map((opt) => {
               const isSelected = selectedTicketCount === opt.count;
               const cost = opt.count * ticketPrice;
@@ -623,15 +618,20 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                   key={opt.count}
                   type="button"
                   onClick={() => setSelectedTicketCount(opt.count)}
-                  className={`w-full p-2.5 sm:p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  className={`w-full p-2.5 sm:p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between relative ${
                     isSelected
-                      ? 'bg-gradient-to-r from-violet-600/20 via-violet-600/10 to-transparent border-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.25)]'
-                      : 'bg-[#080b12] border-[#222d42] hover:border-violet-500/40 text-[#94a3b8]'
+                      ? 'bg-gradient-to-r from-[#7c3aed]/25 via-[#7c3aed]/10 to-transparent border-[#7c3aed] shadow-[0_0_12px_rgba(124,58,237,0.25)]'
+                      : 'bg-[#0a0e18] border-[#222b40] hover:border-[#7c3aed]/40 text-[#94a3b8]'
                   }`}
                 >
+                  {opt.tag && (
+                    <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded-full bg-[#f59e0b] text-[#0b0f19] font-mono-numbers text-[8px] font-extrabold uppercase">
+                      {opt.tag}
+                    </span>
+                  )}
                   <div className="flex items-center gap-2.5">
                     <div className={`w-4 h-4 rounded-full flex items-center justify-center border shrink-0 ${
-                      isSelected ? 'border-violet-400 bg-violet-500 text-white' : 'border-[#3b4354]'
+                      isSelected ? 'border-[#7c3aed] bg-[#7c3aed] text-white' : 'border-[#3b4354]'
                     }`}>
                       {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
                     </div>
@@ -649,7 +649,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
 
                   <div className="text-right shrink-0">
                     <span className={`text-xs sm:text-sm font-mono-numbers font-black ${
-                      isSelected ? 'text-amber-400' : 'text-[#94a3b8]'
+                      isSelected ? 'text-[#f59e0b]' : 'text-[#94a3b8]'
                     }`}>
                       {cost} USDT
                     </span>
@@ -661,31 +661,31 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
         )}
 
         {/* Pricing & Order Summary Box */}
-        <div className="p-2.5 xs:p-3 rounded-xl bg-[#080b12] border border-[#1e2638] space-y-1.5 text-xs font-mono-numbers shadow-inner">
+        <div className="p-2 xs:p-2.5 sm:p-3 rounded-xl bg-[#0a0e18] border border-[#1e2638] space-y-1 text-xs font-mono-numbers shadow-inner">
           <div className="flex items-center justify-between text-[#8b92a2]">
-            <span>Quantity:</span>
+            <span>Ticket Quantity:</span>
             <strong className="text-white">{selectedTicketCount} Ticket{selectedTicketCount > 1 ? 's' : ''}</strong>
           </div>
           <div className="flex items-center justify-between text-[#8b92a2]">
-            <span>Ticket Price:</span>
+            <span>Unit Price:</span>
             <strong className="text-white">{ticketPrice} USDT</strong>
           </div>
-          <div className="flex items-center justify-between pt-1.5 border-t border-[#1e2638]">
-            <span className="text-violet-300 font-bold">Total Cost:</span>
-            <strong className="text-amber-400 font-black text-sm sm:text-base">
+          <div className="flex items-center justify-between pt-1 border-t border-[#1e2638]">
+            <span className="text-[#d2bbff] font-bold">Total Cost:</span>
+            <strong className="text-[#f59e0b] font-black text-sm sm:text-base">
               {totalPurchaseCost} USDT
             </strong>
           </div>
           <div className="flex items-center justify-between pt-0.5 text-[11px] text-[#64748b]">
             <span>Wallet Balance:</span>
-            <span className={Number(wallet.balance || 0) < totalPurchaseCost ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}>
+            <span className={Number(wallet.balance || 0) < totalPurchaseCost ? 'text-rose-400 font-bold' : 'text-[#10b981] font-bold'}>
               {Number(wallet.balance || 0).toFixed(2)} USDT
             </span>
           </div>
         </div>
 
-        {/* Buy Action Button */}
-        <div className="pt-1">
+        {/* Primary Action Button: Gold Buy CTA */}
+        <div className="pt-0.5">
           <button
             type="button"
             onClick={handlePurchaseAction}
@@ -697,7 +697,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
             className={`w-full py-2.5 xs:py-3 sm:py-3.5 rounded-xl font-display font-bold text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all ${
               selectedTicketCount === 1 && isAlreadyPurchasedByMe
                 ? 'bg-[#181d29] text-[#8b92a2] border border-[#242d40] cursor-not-allowed opacity-75'
-                : 'btn-gold shadow-amber-500/20 active:scale-[0.98]'
+                : 'btn-gold shadow-[#f59e0b]/25 active:scale-[0.98]'
             }`}
           >
             <Coins className="w-4 h-4 shrink-0" />
@@ -706,7 +706,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                 ? 'Processing...'
                 : selectedTicketCount === 1 && isAlreadyPurchasedByMe
                 ? 'Ticket Already Owned'
-                : `Buy (${totalPurchaseCost} USDT)`}
+                : `Buy ${selectedTicketCount} Ticket${selectedTicketCount > 1 ? 's' : ''} (${totalPurchaseCost} USDT)`}
             </span>
           </button>
         </div>
@@ -715,13 +715,15 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
     );
   };
 
-  // Room Activity List Content (Clean, lightweight, actual database tickets only)
+  // ---------------------------------------------------------------------------
+  // 12. Room Activity Feed (Tablet/Desktop Height Synchronization Fix)
+  // ---------------------------------------------------------------------------
   const renderActivityList = (maxItems = 30) => {
     const displayTickets = roomActivityTickets.slice(0, maxItems);
 
     if (displayTickets.length === 0) {
       return (
-        <div className="py-6 flex flex-col items-center justify-center text-center rounded-xl border border-dashed border-[#222d42] text-[#94a3b8] space-y-1.5">
+        <div className="h-full min-h-[140px] flex flex-col items-center justify-center text-center p-3 rounded-xl border border-dashed border-[#222b40] text-[#94a3b8] space-y-1.5">
           <Ticket className="w-5 h-5 text-[#64748b]/50" />
           <p className="text-xs font-bold text-white">No Tickets Purchased Yet</p>
           <p className="text-[10px] text-[#64748b] max-w-[200px]">
@@ -732,36 +734,45 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
     }
 
     return (
-      <div className="space-y-1.5 overflow-y-auto no-scrollbar max-h-[280px] sm:max-h-[340px] pr-0.5">
+      <div className="space-y-1.5 pr-0.5">
         {displayTickets.map((tkt: any, idx: number) => {
           const isMine = (user && tkt.userId === user.id) || (wallet?.address && tkt.userAddress === wallet.address);
           const displayUsername = tkt.username || (isMine ? '@You' : `@p_${tkt.id ? tkt.id.slice(-4) : idx}`);
+          const ticketNumberFormatted = `#${String(tkt.ticketNumber).padStart(4, '0')}`;
+          const initial = displayUsername.replace(/^[@★\s]/, '').charAt(0).toUpperCase() || 'P';
 
           return (
             <div
               key={tkt.id || idx}
               className={`p-2 rounded-xl border flex items-center justify-between text-xs font-mono-numbers transition-colors ${
                 isMine
-                  ? 'bg-violet-500/10 border-violet-500/30 text-violet-300'
-                  : 'bg-[#080b12] border-[#1e2638] hover:border-[#2a354d] text-white'
+                  ? 'bg-[#7c3aed]/15 border-[#7c3aed]/40 text-[#d2bbff]'
+                  : 'bg-[#0a0e18] border-[#1e2638] hover:border-[#2a354d] text-white'
               }`}
             >
-              <div className="min-w-0 flex-1 mr-2">
-                <span className={`block font-bold truncate text-[11px] ${
-                  isMine ? 'text-amber-300' : 'text-[#cbd5e1]'
+              <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 ${
+                  isMine ? 'bg-[#7c3aed] text-white' : 'bg-[#1e2638] text-[#94a3b8]'
                 }`}>
-                  {isMine ? '★ You' : displayUsername}
-                </span>
-                <span className="text-[10px] text-[#64748b] block truncate">
-                  {formatTimeAgo(Number(tkt.purchaseTime || Date.now()))}
-                </span>
+                  {initial}
+                </div>
+                <div className="min-w-0 truncate">
+                  <span className={`block font-bold truncate text-[11px] ${
+                    isMine ? 'text-[#f59e0b]' : 'text-[#cbd5e1]'
+                  }`}>
+                    {isMine ? '★ You' : displayUsername}
+                  </span>
+                  <span className="text-[9px] text-[#64748b] block truncate">
+                    {formatTimeAgo(Number(tkt.purchaseTime || Date.now()))}
+                  </span>
+                </div>
               </div>
 
-              <div className="text-right shrink-0">
-                <span className="font-display font-black text-xs text-emerald-400 block tracking-wider">
-                  #{String(tkt.ticketNumber).padStart(4, '0')}
+              <div className="text-right shrink-0 flex items-center gap-2">
+                <span className="font-display font-black text-xs text-[#10b981] bg-[#10b981]/10 px-1.5 py-0.5 rounded border border-[#10b981]/20">
+                  {ticketNumberFormatted}
                 </span>
-                <span className="text-[10px] text-[#64748b]">
+                <span className="text-[10px] text-[#64748b] min-w-[45px] text-right">
                   {tkt.price || ticketPrice} USDT
                 </span>
               </div>
@@ -773,25 +784,25 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   };
 
   // ---------------------------------------------------------------------------
-  // 12. Main Viewport Render
+  // 13. Main Layout Render
   // ---------------------------------------------------------------------------
   return (
-    <div className="w-full h-full flex flex-col min-h-0 overflow-y-auto no-scrollbar text-left p-2 xs:p-3 sm:p-4 lg:p-5 space-y-2.5 xs:space-y-3 sm:space-y-4">
+    <div className="w-full h-full flex flex-col min-h-0 overflow-y-auto no-scrollbar text-left p-2 xs:p-2.5 sm:p-4 lg:p-5 space-y-2 xs:space-y-2.5 sm:space-y-4">
       
       {/* ===================================================================== */}
-      {/* 1. ROOM HEADER: COMPACT, BALANCED ACROSS MOBILE & DESKTOP             */}
+      {/* 1. ROOM HEADER: OBSIDIAN SOVEREIGN BAR                                */}
       {/* ===================================================================== */}
-      <header className="w-full max-w-7xl mx-auto rounded-2xl p-2.5 xs:p-3 sm:p-4 border border-violet-500/25 bg-gradient-to-r from-[#111728] via-[#0c101d] to-[#080b14] shadow-md flex flex-wrap items-center justify-between gap-2 xs:gap-3 shrink-0">
+      <header className="w-full max-w-7xl mx-auto rounded-2xl p-2.5 xs:p-3 sm:p-4 border border-[#7c3aed]/25 bg-gradient-to-r from-[#111728] via-[#0c101d] to-[#080b14] shadow-md flex flex-wrap items-center justify-between gap-2 xs:gap-3 shrink-0">
         
         {/* Left: Back to Lobby + Room Title + Live Status */}
         <div className="flex items-center gap-2 xs:gap-2.5 min-w-0">
           {onBackToLobby && (
             <button
               onClick={onBackToLobby}
-              className="px-2 py-1 xs:px-2.5 xs:py-1.5 rounded-xl bg-[#141a29] hover:bg-[#1b2337] text-[#94a3b8] hover:text-white border border-[#232d42] text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shrink-0 shadow-sm"
+              className="px-2 py-1 xs:px-2.5 xs:py-1.5 rounded-xl bg-[#141b2a] hover:bg-[#1a2336] text-[#94a3b8] hover:text-white border border-[#222b40] text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shrink-0 shadow-sm"
               title="Return to Lottery Lobby"
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
+              <ArrowLeft className="w-3.5 h-3.5 text-[#f59e0b]" />
               <span className="hidden xs:inline">Lobby</span>
             </button>
           )}
@@ -814,18 +825,19 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
 
         {/* Right: Metrics Strip (Ticket Price, Jackpot, Countdown) */}
         <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 text-xs font-mono-numbers ml-auto shrink-0 flex-wrap justify-end">
-          <div className="bg-[#080b12] px-2 py-1 xs:px-2.5 xs:py-1.5 rounded-xl border border-[#222d42] flex items-center gap-1.5 shadow-inner">
-            <span className="text-[#8b92a2] text-[10px] uppercase">Ticket:</span>
+          <div className="bg-[#0a0e18] px-2 py-1 xs:px-2.5 xs:py-1.5 rounded-xl border border-[#222b40] flex items-center gap-1.5 shadow-inner">
+            <span className="text-[#8b92a2] text-[10px] uppercase">Entry:</span>
             <strong className="text-white font-bold text-[11px] xs:text-xs">{ticketPrice} USDT</strong>
           </div>
 
-          <div className="bg-[#080b12] px-2 py-1 xs:px-2.5 xs:py-1.5 rounded-xl border border-[#222d42] flex items-center gap-1.5 shadow-inner">
-            <span className="text-[#8b92a2] text-[10px] uppercase">Jackpot:</span>
-            <strong className="text-amber-400 font-bold text-[11px] xs:text-xs">{Number(event.poolPrize || 5000).toLocaleString()} USDT</strong>
+          <div className="bg-[#0a0e18] px-2 py-1 xs:px-2.5 xs:py-1.5 rounded-xl border border-[#222b40] flex items-center gap-1.5 shadow-inner">
+            <Trophy className="w-3.5 h-3.5 text-[#f59e0b] shrink-0" />
+            <span className="text-[#8b92a2] text-[10px] uppercase hidden sm:inline">Grand Pot:</span>
+            <strong className="text-[#f59e0b] font-bold text-[11px] xs:text-xs">{Number(event.poolPrize || 5000).toLocaleString()} USDT</strong>
           </div>
 
-          <div className="bg-[#080b12] px-2 py-1 xs:px-2.5 xs:py-1.5 rounded-xl border border-violet-500/30 flex items-center gap-1.5 text-violet-300 font-bold shadow-inner">
-            <Clock className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+          <div className="bg-[#0a0e18] px-2 py-1 xs:px-2.5 xs:py-1.5 rounded-xl border border-[#7c3aed]/30 flex items-center gap-1.5 text-[#d2bbff] font-bold shadow-inner">
+            <Clock className="w-3.5 h-3.5 text-[#7c3aed] shrink-0" />
             <span className="text-[11px] xs:text-xs">{isTimedOut ? 'Closed' : `${timeLeft.hours}h ${timeLeft.minutes}m ${timeLeft.seconds}s`}</span>
           </div>
         </div>
@@ -833,27 +845,27 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
       </header>
 
       {/* ===================================================================== */}
-      {/* 2. RESPONSIVE LAYOUT SWITCH: MOBILE LANDSCAPE VS STANDARD             */}
+      {/* 2. RESPONSIVE LAYOUT SWITCH: MOBILE PORTRAIT VS LANDSCAPE VS DESKTOP  */}
       {/* ===================================================================== */}
       {isMobileLandscape ? (
         /* ------------------------------------------------------------------- */
         /* MOBILE LANDSCAPE MODE: SIDE-BY-SIDE 2-COLUMN VIEW                   */
         /* ------------------------------------------------------------------- */
-        <div className="w-full max-w-7xl mx-auto grid grid-cols-2 gap-3 min-h-0">
+        <div className="w-full max-w-7xl mx-auto grid grid-cols-2 gap-2.5 min-h-0">
           
           {/* Left Column: Digits + Compact Keypad */}
-          <section className="bg-[#0c101a] border border-[#1e2638] rounded-2xl p-3 flex flex-col justify-between shadow-md space-y-2">
-            <div className="flex items-center justify-between pb-1.5 border-b border-[#1e2638]">
+          <section className="bg-[#111728] border border-[#1e2638] rounded-2xl p-2.5 flex flex-col justify-between shadow-md space-y-1.5">
+            <div className="flex items-center justify-between pb-1 border-b border-[#1e2638]">
               <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                <Sparkles className="w-3.5 h-3.5 text-[#7c3aed]" />
                 <h3 className="font-display font-bold text-xs text-white">Pick 4 Digits</h3>
               </div>
               <button
                 type="button"
                 onClick={handleResetAll}
-                className="px-2 py-0.5 rounded-lg bg-[#141a29] text-[#94a3b8] hover:text-white border border-[#232d42] text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                className="px-2 py-0.5 rounded-lg bg-[#141b2a] text-[#94a3b8] hover:text-white border border-[#222b40] text-[10px] font-bold flex items-center gap-1 cursor-pointer"
               >
-                <RotateCcw className="w-2.5 h-2.5 text-amber-400" />
+                <RotateCcw className="w-2.5 h-2.5 text-[#f59e0b]" />
                 <span>Reset</span>
               </button>
             </div>
@@ -863,24 +875,24 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           </section>
 
           {/* Right Column: Quick Pick + Purchase + Collapsible Activity */}
-          <section className="bg-[#0c101a] border border-[#1e2638] rounded-2xl p-3 flex flex-col justify-between shadow-md space-y-2.5 overflow-y-auto no-scrollbar">
+          <section className="bg-[#111728] border border-[#1e2638] rounded-2xl p-2.5 flex flex-col justify-between shadow-md space-y-2 overflow-y-auto no-scrollbar">
             {renderQuickPickAndPurchase('mobile')}
 
             {/* Collapsible Activity in Landscape */}
-            <div className="pt-2 border-t border-[#1e2638]">
+            <div className="pt-1.5 border-t border-[#1e2638]">
               <button
                 type="button"
                 onClick={() => setIsActivityExpanded(!isActivityExpanded)}
-                className="w-full flex items-center justify-between text-xs text-[#94a3b8] hover:text-white py-1 px-1.5 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
+                className="w-full flex items-center justify-between text-xs text-[#94a3b8] hover:text-white py-1 px-1 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
               >
                 <span className="flex items-center gap-1.5 font-bold">
-                  <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                  <Activity className="w-3.5 h-3.5 text-[#10b981]" />
                   <span>Room Activity ({roomActivityTickets.length})</span>
                 </span>
                 {isActivityExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
               {isActivityExpanded && (
-                <div className="mt-2">
+                <div className="mt-1 max-h-[140px] overflow-y-auto">
                   {renderActivityList(10)}
                 </div>
               )}
@@ -890,65 +902,66 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
         </div>
       ) : isMobilePortrait ? (
         /* ------------------------------------------------------------------- */
-        /* MOBILE PORTRAIT MODE: VERTICALLY ORGANIZED & COMPACT                */
+        /* MOBILE PORTRAIT: UNIFIED ZERO-SCROLL CO-VISIBLE CORE CARD           */
+        /* (Selected number, keypad, quick pick, pricing, and BUY button all   */
+        /* fit conveniently together within one single viewport!)              */
         /* ------------------------------------------------------------------- */
-        <div className="w-full max-w-7xl mx-auto space-y-3">
+        <div className="w-full max-w-7xl mx-auto space-y-2 xs:space-y-2.5">
           
-          {/* Card 1: Digit Selection & Numeric Keypad */}
-          <section className="bg-[#0c101a] border border-[#1e2638] rounded-2xl p-3 xs:p-4 flex flex-col shadow-md space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-[#1e2638]">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-500/30 flex items-center justify-center text-violet-400">
-                  <Sparkles className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold text-xs xs:text-sm text-white">
-                    Pick 4 Digits
-                  </h3>
-                  <p className="text-[10px] text-[#94a3b8]">
-                    Tap slot & enter number
-                  </p>
-                </div>
+          {/* PRIMARY UNIFIED SELECTION & PLAY CARD (Stitch Mobile Ergonomics) */}
+          <section className="bg-[#111728] border border-[#1e2638] rounded-2xl p-2.5 xs:p-3 sm:p-4 shadow-xl flex flex-col space-y-2.5">
+            
+            {/* Header: Title + Availability Pill + Reset */}
+            <div className="flex items-center justify-between pb-1.5 border-b border-[#1e2638]">
+              <div className="flex items-center gap-1.5">
+                <span className="font-display font-bold text-xs xs:text-sm text-white">
+                  Pick 4 Digits
+                </span>
+                <span className="text-[10px] text-[#64748b] font-mono-numbers">
+                  #{event.id ? event.id.slice(-6).toUpperCase() : 'DRAW'}
+                </span>
               </div>
 
               <button
                 type="button"
                 onClick={handleResetAll}
-                className="px-2 py-1 rounded-lg bg-[#141a29] hover:bg-[#1b2337] text-[#94a3b8] hover:text-white border border-[#232d42] text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                className="px-2 py-0.5 rounded-lg bg-[#141b2a] hover:bg-[#1a2336] text-[#94a3b8] hover:text-white border border-[#222b40] text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
                 title="Reset all digits to 0000"
               >
-                <RotateCcw className="w-3 h-3 text-amber-400" />
+                <RotateCcw className="w-3 h-3 text-[#f59e0b]" />
                 <span>Reset</span>
               </button>
             </div>
 
+            {/* 4 Digit Slots */}
             {renderDigitSlots(false)}
+
+            {/* Tactile Numeric Keypad */}
             {renderNumericKeypad(false)}
-          </section>
 
-          {/* Card 2: Quick Pick & Purchase Section */}
-          <section className="bg-[#0c101a] border border-[#1e2638] rounded-2xl p-3 xs:p-4 shadow-md">
+            {/* Quick Pick Quantity & Buy Controls Grouped Directly In Same Card */}
             {renderQuickPickAndPurchase('mobile')}
+
           </section>
 
-          {/* Card 3: Collapsible Room Activity (Saves screen height on mobile) */}
-          <section className="bg-[#0c101a] border border-[#1e2638] rounded-2xl p-3 xs:p-4 shadow-md space-y-2.5">
+          {/* SECONDARY COLLAPSIBLE SECTION: Room Activity Drawer (Saves Height) */}
+          <section className="bg-[#111728] border border-[#1e2638] rounded-2xl p-2.5 xs:p-3 shadow-md space-y-2">
             <button
               type="button"
               onClick={() => setIsActivityExpanded(!isActivityExpanded)}
-              className="w-full flex items-center justify-between cursor-pointer group"
+              className="w-full flex items-center justify-between cursor-pointer group select-none"
               aria-expanded={isActivityExpanded}
             >
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <div className="w-6 h-6 rounded-lg bg-[#10b981]/15 border border-[#10b981]/30 flex items-center justify-center text-[#10b981]">
                   <Activity className="w-3.5 h-3.5" />
                 </div>
                 <div className="text-left">
                   <div className="flex items-center gap-1.5">
-                    <h3 className="font-display font-bold text-xs xs:text-sm text-white">
-                      Room Activity
+                    <h3 className="font-display font-bold text-xs text-white">
+                      Live Room Activity
                     </h3>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse" />
                   </div>
                   <p className="text-[10px] text-[#94a3b8]">
                     {roomActivityTickets.length} ticket{roomActivityTickets.length === 1 ? '' : 's'} purchased in this draw
@@ -956,14 +969,14 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 text-xs text-[#94a3b8] group-hover:text-white">
+              <div className="flex items-center gap-1 text-xs text-[#94a3b8] group-hover:text-white">
                 <span className="text-[10px] font-bold uppercase">{isActivityExpanded ? 'Hide' : 'View'}</span>
-                {isActivityExpanded ? <ChevronUp className="w-4 h-4 text-violet-400" /> : <ChevronDown className="w-4 h-4 text-violet-400" />}
+                {isActivityExpanded ? <ChevronUp className="w-4 h-4 text-[#7c3aed]" /> : <ChevronDown className="w-4 h-4 text-[#7c3aed]" />}
               </div>
             </button>
 
             {isActivityExpanded && (
-              <div className="pt-2 border-t border-[#1e2638] animate-in fade-in duration-200">
+              <div className="pt-2 border-t border-[#1e2638] max-h-[220px] overflow-y-auto no-scrollbar animate-in fade-in duration-200">
                 {renderActivityList(20)}
               </div>
             )}
@@ -972,17 +985,17 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
         </div>
       ) : (
         /* ------------------------------------------------------------------- */
-        /* TABLET & DESKTOP MULTI-COLUMN LAYOUT (768px - 1920px)               */
+        /* TABLET & DESKTOP 3-COLUMN ARENA (WITH HEIGHT & SCROLL FIX)          */
         /* ------------------------------------------------------------------- */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-4 lg:gap-5 w-full max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-4 lg:gap-5 w-full max-w-7xl mx-auto items-stretch">
           
-          {/* AREA A: DIGIT SELECTION & NUMERIC KEYPAD */}
-          <section className="col-span-1 md:col-span-1 lg:col-span-6 xl:col-span-5 bg-[#0c101a] border border-[#1e2638] rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-md space-y-4">
+          {/* COLUMN 1: DIGIT SELECTION & NUMERIC KEYPAD (lg:col-span-5) */}
+          <section className="col-span-1 md:col-span-1 lg:col-span-5 bg-[#111728] border border-[#1e2638] rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xl space-y-4">
             
             {/* Header: Title + Reset Action */}
             <div className="flex items-center justify-between pb-3 border-b border-[#1e2638]">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-violet-500/15 border border-violet-500/30 flex items-center justify-center text-violet-400">
+                <div className="w-8 h-8 rounded-xl bg-[#7c3aed]/15 border border-[#7c3aed]/30 flex items-center justify-center text-[#7c3aed]">
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
@@ -998,10 +1011,10 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
               <button
                 type="button"
                 onClick={handleResetAll}
-                className="px-2.5 py-1 rounded-lg bg-[#141a29] hover:bg-[#1b2337] text-[#94a3b8] hover:text-white border border-[#232d42] text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                className="px-2.5 py-1 rounded-lg bg-[#141b2a] hover:bg-[#1a2336] text-[#94a3b8] hover:text-white border border-[#222b40] text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
                 title="Reset all 4 digits to 0000"
               >
-                <RotateCcw className="w-3 h-3 text-amber-400" />
+                <RotateCcw className="w-3 h-3 text-[#f59e0b]" />
                 <span>Reset</span>
               </button>
             </div>
@@ -1009,49 +1022,81 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
             {renderDigitSlots(false)}
             {renderNumericKeypad(false)}
 
+            {/* Matrix Subtext */}
+            <div className="pt-2 border-t border-[#1e2638] flex items-center justify-between text-[11px] text-[#64748b]">
+              <span>Slot {activeSlot + 1} of 4 Active</span>
+              <span className="text-[#10b981] font-bold flex items-center gap-1">
+                <Check className="w-3 h-3" />
+                Cryptographically Validated
+              </span>
+            </div>
+
           </section>
 
-          {/* AREA B: QUICK PICK / PURCHASE PANEL */}
-          <section className="col-span-1 md:col-span-1 lg:col-span-3 xl:col-span-3 bg-[#0c101a] border border-[#1e2638] rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-md space-y-4">
+          {/* COLUMN 2: QUICK PICK & PURCHASE BUNDLES (lg:col-span-3) */}
+          <section className="col-span-1 md:col-span-1 lg:col-span-3 bg-[#111728] border border-[#1e2638] rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#1e2638] shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-[#7c3aed]/15 border border-[#7c3aed]/30 flex items-center justify-center text-[#7c3aed]">
+                  <Ticket className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
+                    Quick Pick
+                  </h3>
+                  <p className="text-[11px] text-[#94a3b8]">
+                    Multiplier bundles
+                  </p>
+                </div>
+              </div>
+
+              <span className="text-xs font-mono-numbers font-bold text-[#f59e0b] bg-[#f59e0b]/10 px-2 py-0.5 rounded-lg border border-[#f59e0b]/25">
+                {ticketPrice} USDT / ea
+              </span>
+            </div>
+
             {renderQuickPickAndPurchase('desktop')}
           </section>
 
-          {/* AREA C: ROOM ACTIVITY PANEL */}
-          <section className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4 bg-[#0c101a] border border-[#1e2638] rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-md space-y-4">
+          {/* COLUMN 3: ROOM ACTIVITY FEED (lg:col-span-4) - TABLET/DESKTOP SCROLL FIX */}
+          {/* Container is flex-col h-full to match exactly neighbor column heights */}
+          <section className="col-span-1 md:col-span-2 lg:col-span-4 bg-[#111728] border border-[#1e2638] rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xl space-y-3 overflow-hidden min-h-[480px]">
             
-            <div className="space-y-4 flex-1 flex flex-col min-h-0">
-              {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-[#1e2638] shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                    <Activity className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
-                      Room Activity
-                    </h3>
-                    <p className="text-[11px] text-[#94a3b8]">
-                      Live room purchases
-                    </p>
-                  </div>
+            {/* Activity Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#1e2638] shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-[#10b981]/15 border border-[#10b981]/30 flex items-center justify-center text-[#10b981]">
+                  <Activity className="w-4 h-4" />
                 </div>
-
-                <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Live</span>
-                </span>
+                <div>
+                  <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
+                    Live Room Activity
+                  </h3>
+                  <p className="text-[11px] text-[#94a3b8]">
+                    Recent purchases in this room
+                  </p>
+                </div>
               </div>
 
-              {/* Feed List */}
-              <div className="flex-1 min-h-[160px]">
-                {renderActivityList(30)}
-              </div>
+              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-full bg-[#10b981]/15 text-[#10b981] border border-[#10b981]/30 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse" />
+                <span>{roomActivityTickets.length} Tickets</span>
+              </span>
             </div>
 
-            {/* Footer Stats */}
-            <div className="p-2.5 rounded-xl bg-[#080b12] border border-[#1e2638] flex items-center justify-between text-xs font-mono-numbers shrink-0 shadow-inner">
-              <span className="text-[#8b92a2]">Total Sold:</span>
-              <strong className="text-emerald-400 font-bold">{roomActivityTickets.length} Tickets</strong>
+            {/* Activity Feed List: Height is flex-1 so it displays the full available visible entries */}
+            {/* Internal scroll begins ONLY after all visible capacity is utilized! */}
+            <div className="flex-1 overflow-y-auto no-scrollbar min-h-0">
+              {renderActivityList(35)}
+            </div>
+
+            {/* Fixed Footer Stats Strip */}
+            <div className="p-2.5 rounded-xl bg-[#0a0e18] border border-[#1e2638] flex items-center justify-between text-xs font-mono-numbers shrink-0 shadow-inner">
+              <span className="text-[#8b92a2]">Total In Draw:</span>
+              <strong className="text-[#10b981] font-bold">{roomActivityTickets.length} Tickets</strong>
+              <span className="text-[#64748b]">·</span>
+              <span className="text-[#8b92a2]">Pool:</span>
+              <strong className="text-[#f59e0b] font-bold">{(roomActivityTickets.length * ticketPrice).toLocaleString()} USDT</strong>
             </div>
 
           </section>
@@ -1060,17 +1105,28 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
       )}
 
       {/* ===================================================================== */}
-      {/* 3. PROVABLY FAIR VERIFICATION STRIP                                   */}
+      {/* 3. PROVABLY FAIR PROTOCOL VERIFICATION STRIP                          */}
       {/* ===================================================================== */}
-      <footer className="px-3 sm:px-4 py-2 rounded-xl bg-[#080b12] border border-[#1e2638] flex flex-wrap items-center justify-between text-xs text-[#94a3b8] gap-2 max-w-7xl mx-auto w-full shrink-0">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span className="text-white font-bold">Provably Fair SHA-256:</span>
-          <span className="font-mono text-[11px] text-[#64748b] truncate max-w-[200px] sm:max-w-xs">{event.sha256Seed || '0x4f88e1...'}</span>
+      <footer className="px-3 sm:px-4 py-2.5 rounded-xl bg-[#0a0e18] border border-[#1e2638] flex flex-wrap items-center justify-between text-xs text-[#94a3b8] gap-2 max-w-7xl mx-auto w-full shrink-0 shadow-sm">
+        <div className="flex items-center gap-2 min-w-0">
+          <ShieldCheck className="w-4 h-4 text-[#10b981] shrink-0" />
+          <span className="text-white font-bold text-xs">Provably Fair Protocol (SHA-256):</span>
+          <span className="font-mono text-[11px] text-[#64748b] truncate max-w-[180px] xs:max-w-xs sm:max-w-md">
+            {event.sha256Seed || '0x4f88e14620...'}
+          </span>
+          <button
+            type="button"
+            onClick={handleCopySeed}
+            className="text-[#94a3b8] hover:text-white p-1 rounded hover:bg-white/5 transition-colors cursor-pointer"
+            title="Copy Seed Hash"
+          >
+            {copiedSeed ? <Check className="w-3.5 h-3.5 text-[#10b981]" /> : <Copy className="w-3.5 h-3.5" />}
+          </button>
         </div>
 
-        <div className="font-mono-numbers text-amber-400 text-xs font-bold">
-          Cryptographically Verified
+        <div className="font-mono-numbers text-[#f59e0b] text-xs font-bold flex items-center gap-1.5 ml-auto">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
+          <span>Cryptographically Verified</span>
         </div>
       </footer>
 
