@@ -305,8 +305,9 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
   };
 
   const handleCopySeed = () => {
-    if (event.sha256Seed) {
-      navigator.clipboard.writeText(event.sha256Seed);
+    const seed = event.sha256Seed || event.sha256_seed;
+    if (seed) {
+      navigator.clipboard.writeText(seed);
       setCopiedSeed(true);
       setTimeout(() => setCopiedSeed(false), 2000);
     }
@@ -868,7 +869,7 @@ export default function LotteryWorkstation({ room, onBackToLobby, activityBox }:
           <ShieldCheck className="w-4 h-4 text-[#10B981] shrink-0" />
           <span className="text-white font-bold text-xs">Provably Fair Protocol (SHA-256):</span>
           <span className="font-mono text-[11px] text-[#64748B] truncate max-w-[180px] xs:max-w-xs sm:max-w-md">
-            {event.sha256Seed || '0x4f88e14620b784a899...'}
+            {event.sha256Seed || event.sha256_seed || 'Awaiting block seed publication'}
           </span>
           <button
             type="button"

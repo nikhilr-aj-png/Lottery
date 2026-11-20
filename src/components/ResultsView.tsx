@@ -381,12 +381,12 @@ export default function ResultsView() {
             id: verifyModalEvent.id,
             event_id: verifyModalEvent.id,
             event_title: verifyModalEvent.title,
-            winning_digits: verifyModalEvent.winningDigits || '----',
-            commit_hash: verifyModalEvent.sha256Seed,
-            revealed_seed: verifyModalEvent.revealedSeed || '0x4f88e1...revealed-at-cutoff',
-            client_seed: verifyModalEvent.clientSeed || 'eos-tron-ledger-seed',
+            winning_digits: verifyModalEvent.winningDigits || verifyModalEvent.winning_digits || '',
+            commit_hash: verifyModalEvent.sha256Seed || verifyModalEvent.sha256_seed || '',
+            revealed_seed: verifyModalEvent.revealedSeed || verifyModalEvent.revealed_seed || verifyModalEvent.serverSeed || verifyModalEvent.server_seed || null,
+            client_seed: verifyModalEvent.clientSeed || verifyModalEvent.client_seed || null,
             nonce: verifyModalEvent.nonce || 1,
-            payout: verifyModalEvent.poolPrize,
+            payout: verifyModalEvent.poolPrize || verifyModalEvent.pool_prize || 0,
             status: verifyModalEvent.status
           }}
         />

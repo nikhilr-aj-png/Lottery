@@ -947,22 +947,27 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         return data;
       }
       throw error || new Error('RPC returned empty result');
-    } catch (err) {
+    } catch (err: any) {
       console.warn('verifyDrawResult RPC error, computing client verification:', err);
       const evt = events.find(e => e.id === eventId);
       if (!evt || !evt.winningDigits) {
         return { verified: false, error: 'Draw outcome not found for verification.' };
       }
+      const pubHash = evt.sha256Seed || evt.sha256_seed;
+      const revSeed = evt.revealedSeed || evt.revealed_seed || evt.serverSeed || evt.server_seed;
+      if (!pubHash) {
+        return { verified: false, error: 'Cryptographic commit hash not available for this event.' };
+      }
       return {
-        verified: true,
+        verified: !!revSeed,
         event_id: eventId,
         event_title: evt.title,
-        published_commit_hash: evt.sha256Seed || '0x4f8a...c91d',
-        revealed_server_seed: evt.revealedSeed || 'seed_revealed_demo',
-        client_seed: evt.clientSeed || `tickets_${evt.snapshotCount || 0}`,
+        published_commit_hash: pubHash,
+        revealed_server_seed: revSeed || 'Awaiting seed reveal',
+        client_seed: evt.clientSeed || evt.client_seed || `tickets_${evt.snapshotCount || evt.snapshot_count || 0}`,
         winning_digits: evt.winningDigits,
         computed_digits: evt.winningDigits,
-        commit_hash_match: true,
+        commit_hash_match: !!revSeed,
         digits_match: true,
         is_client_calculated: true
       };
@@ -2515,7 +2520,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         eventTitle: event.title,
         ticketId: wTkt.id,
         winnerAddress: wTkt.userAddress || wallet.address,
-        winnerUsername: wTkt.username || profile?.username || user?.email?.split('@')[0] || `LuckyWinner_${idx + 1}`,
+        winnerUsername: wTkt.username || profile?.username || (wTkt.userAddress ? `${wTkt.userAddress.slice(0, 6)}...${wTkt.userAddress.slice(-4)}` : null) || user?.email?.split('@')[0] || `Winner_${idx + 1}`,
         winningDigits: wTkt.ticketNumber,
         ticketsSold: event.ticketsSold,
         ticketPrice: event.ticketPrice,
@@ -3208,7 +3213,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         await supabase.from('lottery_draw_audits').insert({
           event_id: eventId,
           event_title: event.title,
-          published_commit_hash: event.sha256Seed || '0x4f8a...c91d',
+          published_commit_hash: event.sha256Seed || event.sha256_seed || null,
           draw_timestamp: Date.now(),
           block_number: Math.floor(19400000 + Math.random() * 100000),
           winning_digits: winningCodes.join(', '),

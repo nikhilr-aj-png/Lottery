@@ -468,7 +468,7 @@ export default function GamePage({
               winning_digits: selectedRoundForProof.multiplier ? `${selectedRoundForProof.multiplier}x` : (selectedRoundForProof.payout > 0 ? 'WIN' : '0.00x'),
               commit_hash: selectedRoundForProof.serverSeedHash || selectedRoundForProof.server_seed_hash,
               revealed_seed: selectedRoundForProof.serverSeed || selectedRoundForProof.server_seed || 'Revealed upon seed rotation',
-              client_seed: selectedRoundForProof.clientSeed || selectedRoundForProof.client_seed || 'client-seed-active',
+              client_seed: selectedRoundForProof.clientSeed || selectedRoundForProof.client_seed || '—',
               nonce: selectedRoundForProof.nonce || 1,
               payout: selectedRoundForProof.payout,
               status: selectedRoundForProof.status
@@ -1000,7 +1000,7 @@ export default function GamePage({
             winning_digits: selectedRoundForProof.multiplier ? `${selectedRoundForProof.multiplier}x` : (selectedRoundForProof.payout > 0 ? 'WIN' : '0.00x'),
             commit_hash: selectedRoundForProof.serverSeedHash || selectedRoundForProof.server_seed_hash,
             revealed_seed: selectedRoundForProof.serverSeed || selectedRoundForProof.server_seed || 'Revealed upon seed rotation',
-            client_seed: selectedRoundForProof.clientSeed || selectedRoundForProof.client_seed || 'client-seed-active',
+            client_seed: selectedRoundForProof.clientSeed || selectedRoundForProof.client_seed || '—',
             nonce: selectedRoundForProof.nonce || 1,
             payout: selectedRoundForProof.payout,
             status: selectedRoundForProof.status

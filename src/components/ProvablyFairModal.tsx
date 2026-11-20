@@ -46,9 +46,9 @@ export default function ProvablyFairModal({ isOpen, onClose, event, auditData = 
         verified: true,
         published_commit_hash: auditData.commit_hash,
         revealed_server_seed: auditData.revealed_seed,
-        client_seed: auditData.client_seed || 'client-seed-active',
+        client_seed: auditData.client_seed || null,
         computed_digits: auditData.winning_digits,
-        audit_id: auditData.event_id
+        audit_id: auditData.event_id || auditData.id || null
       });
       return;
     }
@@ -88,12 +88,12 @@ export default function ProvablyFairModal({ isOpen, onClose, event, auditData = 
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const commitHash = verification?.published_commit_hash || event?.sha256Seed || auditData?.commit_hash || '—';
-  const serverSeed = verification?.revealed_server_seed || event?.revealedSeed || auditData?.revealed_seed || 'Revealed upon draw completion';
-  const clientSeed = verification?.client_seed || event?.clientSeed || auditData?.client_seed || 'tickets_snapshot_active';
+  const commitHash = verification?.published_commit_hash || event?.sha256Seed || event?.sha256_seed || auditData?.commit_hash || '—';
+  const serverSeed = verification?.revealed_server_seed || event?.revealedSeed || event?.revealed_seed || auditData?.revealed_seed || 'Revealed upon draw completion';
+  const clientSeed = verification?.client_seed || event?.clientSeed || event?.client_seed || auditData?.client_seed || '—';
   const computedDigits = verification?.computed_digits || winningDigits;
-  const auditId = verification?.audit_id || event?.drawAuditId || auditData?.id || 'draw_audit_immutable';
-  const isVerified = verification?.verified ?? true;
+  const auditId = verification?.audit_id || event?.drawAuditId || auditData?.id || '—';
+  const isVerified = Boolean(verification?.verified);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
