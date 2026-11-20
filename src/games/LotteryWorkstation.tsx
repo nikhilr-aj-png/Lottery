@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import { 
-  Dices, 
   ShieldCheck, 
   Sparkles, 
   AlertCircle, 
@@ -21,7 +20,9 @@ import {
   Trophy,
   Zap,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Layers,
+  Info
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundFX } from '../engine/SoundFXService';
@@ -36,12 +37,16 @@ export interface LotteryWorkstationProps {
 
 /**
  * Four Digit Lottery Workstation
- * Redesigned exclusively in Google Stitch (Obsidian Sovereign Design System: #0B0F19, #111728, Violet-600, Gold #F59E0B)
- * Solves:
- * 1. Mobile Number Selection & Buy Section Co-visibility (Zero-Scroll primary cluster)
- * 2. Tablet & Laptop Room Activity internal scrolling & height synchronization
+ * Redesigned strictly in Google Stitch (Obsidian Sovereign Design System: #0B0F19, #111728, #7C3AED, #F59E0B, #10B981)
+ * 
+ * Strict Redesign Mandates Implemented:
+ * 1. Strict Two-Box Layout: Box 1 (Number Selection ~70%) + Box 2 (Direct Purchase ~30%) across all devices.
+ * 2. Complete Removal of Quick Pick (No 1/5/10 pick presets, No random generation, pure manual selection).
+ * 3. Integrated Room Activity: Embedded cleanly inside Box 1 beneath the keypad, never as a 3rd primary column.
+ * 4. Fixed Room Header Timer Overlap: Multi-row responsive architecture prevents countdown from ever overlapping titles or badges.
+ * 5. Unified Obsidian Sovereign color palette across all breakpoints.
  */
-export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorkstationProps) {
+export default function LotteryWorkstation({ room, onBackToLobby, activityBox }: LotteryWorkstationProps) {
   const { 
     user, 
     wallet, 
@@ -75,10 +80,10 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
 
   const isMobileLandscape = viewport.width > viewport.height && viewport.height < 540;
   const isMobilePortrait = viewport.width < 768 && !isMobileLandscape;
-  const isSmallMobile = viewport.width <= 375;
 
-  // Mobile activity accordion open state (default collapsed on mobile portrait/landscape)
+  // Mobile activity accordion state inside Box 1 (default collapsed on narrow mobile screens)
   const [isActivityExpanded, setIsActivityExpanded] = useState(false);
+  const [autoEnterNextDraw, setAutoEnterNextDraw] = useState(false);
 
   // ---------------------------------------------------------------------------
   // 2. Resolve matching or active lottery event for this room
@@ -119,23 +124,15 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   }, [room, events]);
 
   // ---------------------------------------------------------------------------
-  // 3. Active 4-digit input slots state
+  // 3. Active 4-digit input slots state (Pure manual selection flow)
   // ---------------------------------------------------------------------------
-  const [digits, setDigits] = useState<string[]>(() => {
-    const initial = getUnsoldRandomNumber ? getUnsoldRandomNumber(event?.id) : Math.floor(1000 + Math.random() * 9000).toString();
-    return String(initial).padStart(4, '0').slice(0, 4).split('');
-  });
+  const [digits, setDigits] = useState<string[]>(['7', '4', '2', '9']);
   const [activeSlot, setActiveSlot] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [copiedSeed, setCopiedSeed] = useState<boolean>(false);
 
   // ---------------------------------------------------------------------------
-  // 4. Ticket quantity pick state: 1, 5, or 10
-  // ---------------------------------------------------------------------------
-  const [selectedTicketCount, setSelectedTicketCount] = useState<number>(1);
-
-  // ---------------------------------------------------------------------------
-  // 5. Countdown timer & Status
+  // 4. Countdown timer & Status
   // ---------------------------------------------------------------------------
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const statusInfo = getEventStatusInfo(event);
@@ -159,7 +156,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   const currentNumberStr = digits.join('');
 
   // ---------------------------------------------------------------------------
-  // 6. Check if CURRENT USER already purchased this number in this event
+  // 5. Check if CURRENT USER already purchased this number in this event
   // ---------------------------------------------------------------------------
   const isAlreadyPurchasedByMe = useMemo(() => {
     if (isUserTicketNumberPurchased) {
@@ -177,7 +174,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   }, [isUserTicketNumberPurchased, event.id, currentNumberStr, tickets, user, wallet?.address]);
 
   // ---------------------------------------------------------------------------
-  // 7. Keypad Actions (1-9, Clear, 0, Random)
+  // 6. Manual Keypad Actions (1-9, Clear, 0) - NO RANDOM, NO ARROWS
   // ---------------------------------------------------------------------------
   const handleKeypadPress = useCallback((val: number) => {
     soundFX.playDialTick();
@@ -186,7 +183,8 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
       updated[activeSlot] = String(val);
       return updated;
     });
-    setActiveSlot(prev => (prev + 1) % 4);
+    // Advance to next slot automatically for smooth input
+    setActiveSlot(prev => (prev < 3 ? prev + 1 : 0));
   }, [activeSlot]);
 
   const handleClearSlot = useCallback(() => {
@@ -205,19 +203,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
     setActiveSlot(0);
   }, []);
 
-  // Random pick handler (generates unsold random number)
-  const handleRandomNumber = useCallback(() => {
-    soundFX.playDialTick();
-    if (getUnsoldRandomNumber) {
-      const unsold = getUnsoldRandomNumber(event.id);
-      setDigits(String(unsold).padStart(4, '0').slice(0, 4).split(''));
-    } else {
-      const rand = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-      setDigits(rand.split(''));
-    }
-  }, [getUnsoldRandomNumber, event.id]);
-
-  // Physical keyboard listener (0-9, Backspace, Arrow keys)
+  // Physical keyboard listener (0-9, Backspace, Arrow keys for accessibility)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
@@ -229,7 +215,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
       } else if (e.key === 'ArrowLeft') {
         setActiveSlot(prev => (prev === 0 ? 3 : prev - 1));
       } else if (e.key === 'ArrowRight') {
-        setActiveSlot(prev => (prev + 1) % 4);
+        setActiveSlot(prev => (prev === 3 ? 0 : prev + 1));
       }
     };
 
@@ -238,10 +224,10 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   }, [handleKeypadPress, handleClearSlot]);
 
   // ---------------------------------------------------------------------------
-  // 8. Main Ticket Purchase Action
+  // 7. Direct Ticket Purchase Action (Single Ticket Manual Purchase Only)
   // ---------------------------------------------------------------------------
   const ticketPrice = Number(event.ticketPrice || 10);
-  const totalPurchaseCost = ticketPrice * selectedTicketCount;
+  const totalPurchaseCost = ticketPrice; // Direct buy of 1 manually chosen combination
 
   const handlePurchaseAction = async () => {
     if (isSubmitting) return;
@@ -261,84 +247,26 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
       return;
     }
 
-    // 1 Pick: purchase dialed combination
-    if (selectedTicketCount === 1) {
-      if (isAlreadyPurchasedByMe) {
-        showToast(`You have already purchased ticket #${currentNumberStr} for this draw! Duplicate purchases by the same user are not permitted.`, 'error');
-        return;
-      }
-
-      setIsSubmitting(true);
-      try {
-        const success = await buyTickets(event.id, [currentNumberStr]);
-        if (success) {
-          soundFX.playWinFanfare('big');
-          confetti({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.65 },
-            colors: ['#7c3aed', '#f59e0b', '#10b981', '#ffffff']
-          });
-          showToast(`🎉 Purchased Ticket #${currentNumberStr} for ${ticketPrice} USDT!`, 'success');
-          
-          if (getUnsoldRandomNumber) {
-            const next = getUnsoldRandomNumber(event.id);
-            setDigits(String(next).padStart(4, '0').slice(0, 4).split(''));
-          }
-        }
-      } finally {
-        setIsSubmitting(false);
-      }
+    if (isAlreadyPurchasedByMe) {
+      showToast(`You have already purchased ticket #${currentNumberStr} for this draw! Duplicate purchases by the same user are not permitted.`, 'error');
       return;
-    }
-
-    // Multiple Picks: 5 or 10
-    const userOwnedSet = new Set(
-      (tickets || [])
-        .filter((t: any) => 
-          (t.eventId === event.id || t.event_id === event.id) &&
-          ((wallet?.address && t.userAddress === wallet.address) || (user?.id && (t.userId === user.id || t.user_id === user.id)))
-        )
-        .map((t: any) => String(t.ticketNumber).padStart(4, '0'))
-    );
-
-    const generatedTickets: string[] = [];
-    const usedInBatch = new Set<string>();
-
-    // Include current combination first if available
-    if (!userOwnedSet.has(currentNumberStr)) {
-      generatedTickets.push(currentNumberStr);
-      usedInBatch.add(currentNumberStr);
-    }
-
-    while (generatedTickets.length < selectedTicketCount) {
-      let candidate = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-      let attempts = 0;
-      while ((userOwnedSet.has(candidate) || usedInBatch.has(candidate)) && attempts < 100) {
-        candidate = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-        attempts++;
-      }
-      usedInBatch.add(candidate);
-      generatedTickets.push(candidate);
     }
 
     setIsSubmitting(true);
     try {
-      const success = await buyTickets(event.id, generatedTickets);
+      const success = await buyTickets(event.id, [currentNumberStr]);
       if (success) {
         soundFX.playWinFanfare('big');
-        confetti({
-          particleCount: 120,
-          spread: 80,
-          origin: { y: 0.65 },
-          colors: ['#7c3aed', '#f59e0b', '#10b981', '#ffffff']
-        });
-        showToast(`🎉 Successfully purchased ${generatedTickets.length} unique tickets for ${totalPurchaseCost} USDT!`, 'success');
+        try {
+          confetti({
+            particleCount: 110,
+            spread: 75,
+            origin: { y: 0.65 },
+            colors: ['#7C3AED', '#F59E0B', '#10B981', '#FFFFFF']
+          });
+        } catch (_) {}
 
-        if (getUnsoldRandomNumber) {
-          const next = getUnsoldRandomNumber(event.id);
-          setDigits(String(next).padStart(4, '0').slice(0, 4).split(''));
-        }
+        showToast(`🎉 Successfully purchased Ticket #${currentNumberStr} for ${ticketPrice} USDT!`, 'success');
       }
     } finally {
       setIsSubmitting(false);
@@ -346,19 +274,19 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   };
 
   // ---------------------------------------------------------------------------
-  // 9. Room Activity & User Tickets Data
+  // 8. Room Activity Data
   // ---------------------------------------------------------------------------
   const roomActivityTickets = useMemo(() => {
     if (!tickets) return [];
     return tickets
       .filter((t: any) => t.eventId === event.id || t.event_id === event.id)
-      .slice(0, 40);
+      .slice(0, 30);
   }, [tickets, event.id]);
 
   const myTicketsInThisRoom = useMemo(() => {
     if (!tickets || (!user && !wallet?.address)) return [];
     return tickets.filter((t: any) => 
-      (t.eventId === event.id || t.event_id === event.id) &&
+      (t.eventId === event.id || t.event_id === event.id) && 
       (
         (wallet?.address && t.userAddress === wallet.address) ||
         (user?.id && (t.userId === user.id || t.user_id === user.id))
@@ -385,7 +313,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   };
 
   // ---------------------------------------------------------------------------
-  // 10. Concluded / Expired State -> Show Result Screen
+  // 9. Concluded / Expired State -> Show Result Screen
   // ---------------------------------------------------------------------------
   if (isTimedOut) {
     return (
@@ -401,24 +329,97 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   }
 
   // ---------------------------------------------------------------------------
-  // 11. Render Helpers: Stitch Obsidian Sovereign UI Components
+  // 10. Render Sub-components
   // ---------------------------------------------------------------------------
 
-  // Tactile 3x4 Numeric Keypad
-  const renderNumericKeypad = (isCompact = false) => {
-    const btnHeight = isCompact ? 'h-9 xs:h-10 text-base' : 'h-10 xs:h-11 sm:h-13 text-lg sm:text-xl';
-    const actionBtnHeight = isCompact ? 'h-9 xs:h-10 text-xs' : 'h-10 xs:h-11 sm:h-13 text-xs sm:text-sm';
-
+  // Digit Slots: 1st, 2nd, 3rd, 4th
+  const renderDigitSlots = () => {
     return (
-      <div className="w-full space-y-1.5">
-        <div className="grid grid-cols-3 gap-1.5 xs:gap-2">
+      <div className="w-full space-y-2">
+        <div className="grid grid-cols-4 gap-2 xs:gap-2.5 sm:gap-3">
+          {digits.map((digit, idx) => {
+            const isSelected = activeSlot === idx;
+            const ordinals = ['1ST', '2ND', '3RD', '4TH'];
+
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setActiveSlot(idx)}
+                className={`h-16 xs:h-18 sm:h-20 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-150 select-none border-2 shadow-inner group relative ${
+                  isSelected
+                    ? 'border-[#7C3AED] bg-[#7C3AED]/20 shadow-[0_0_20px_rgba(124,58,237,0.4)] ring-2 ring-[#7C3AED]/50 scale-[1.02]'
+                    : isAlreadyPurchasedByMe
+                    ? 'border-rose-500/40 bg-rose-950/20 text-rose-200 hover:border-rose-400/60'
+                    : 'border-[#1B2238] bg-[#0A0E18] hover:border-[#7C3AED]/40 text-white hover:bg-[#111728]'
+                }`}
+                title={`Select Digit Slot ${idx + 1}`}
+                aria-label={`Digit slot ${idx + 1}, current value ${digit}`}
+              >
+                <span className={`text-[10px] font-mono-numbers font-extrabold uppercase tracking-widest block transition-colors ${
+                  isSelected ? 'text-[#D2BBFF]' : 'text-[#64748B] group-hover:text-[#94A3B8]'
+                }`}>
+                  {ordinals[idx]}
+                </span>
+
+                <span className={`font-mono-numbers font-black text-2xl xs:text-3xl sm:text-4xl my-0.5 transition-colors ${
+                  isSelected 
+                    ? 'text-[#F59E0B] drop-shadow-[0_0_10px_rgba(245,158,11,0.6)]' 
+                    : isAlreadyPurchasedByMe 
+                    ? 'text-rose-400' 
+                    : 'text-white'
+                }`}>
+                  {digit}
+                </span>
+
+                {/* Bottom Active Glow Accent Bar */}
+                <span className={`w-8 h-1 rounded-full transition-all ${
+                  isSelected ? 'bg-[#7C3AED] shadow-[0_0_10px_rgba(124,58,237,0.9)]' : 'bg-transparent'
+                }`} />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Combination Availability Status Banner */}
+        <div className="flex items-center justify-between text-xs px-1 pt-0.5">
+          <div className="flex items-center gap-1.5 font-mono-numbers">
+            <span className="text-[#94A3B8] text-[11px]">Selected:</span>
+            <span className="font-black text-[#F59E0B] text-sm sm:text-base">
+              #{currentNumberStr}
+            </span>
+          </div>
+
+          <div>
+            {isAlreadyPurchasedByMe ? (
+              <span className="px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/35 text-rose-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <span>Combination Already Owned</span>
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-full bg-[#10B981]/15 border border-[#10B981]/35 text-[#10B981] text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
+                <span>Combination Available · Ready to purchase</span>
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Pure Interactive 3x4 Numeric Keypad (Manual Selection Only)
+  const renderNumericKeypad = () => {
+    return (
+      <div className="w-full space-y-2">
+        <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
           {/* Row 1: 1, 2, 3 */}
           {[1, 2, 3].map((num) => (
             <button
               key={num}
               type="button"
               onClick={() => handleKeypadPress(num)}
-              className={`${btnHeight} rounded-xl bg-[#141b2a] hover:bg-[#1a2336] active:bg-[#7c3aed]/30 active:scale-95 border border-[#222b40] hover:border-[#7c3aed]/50 shadow-sm transition-all cursor-pointer font-mono-numbers font-bold text-white hover:text-[#d2bbff] flex items-center justify-center select-none`}
+              className="h-12 xs:h-13 sm:h-14 rounded-2xl bg-[#0B0F19] hover:bg-[#151C2B] active:bg-[#7C3AED]/30 active:scale-95 border border-[#1F2737] hover:border-[#7C3AED]/50 shadow-md transition-all cursor-pointer font-mono-numbers font-black text-xl sm:text-2xl text-white hover:text-[#D2BBFF] flex items-center justify-center select-none"
               aria-label={`Digit ${num}`}
             >
               {num}
@@ -431,7 +432,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
               key={num}
               type="button"
               onClick={() => handleKeypadPress(num)}
-              className={`${btnHeight} rounded-xl bg-[#141b2a] hover:bg-[#1a2336] active:bg-[#7c3aed]/30 active:scale-95 border border-[#222b40] hover:border-[#7c3aed]/50 shadow-sm transition-all cursor-pointer font-mono-numbers font-bold text-white hover:text-[#d2bbff] flex items-center justify-center select-none`}
+              className="h-12 xs:h-13 sm:h-14 rounded-2xl bg-[#0B0F19] hover:bg-[#151C2B] active:bg-[#7C3AED]/30 active:scale-95 border border-[#1F2737] hover:border-[#7C3AED]/50 shadow-md transition-all cursor-pointer font-mono-numbers font-black text-xl sm:text-2xl text-white hover:text-[#D2BBFF] flex items-center justify-center select-none"
               aria-label={`Digit ${num}`}
             >
               {num}
@@ -444,335 +445,93 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
               key={num}
               type="button"
               onClick={() => handleKeypadPress(num)}
-              className={`${btnHeight} rounded-xl bg-[#141b2a] hover:bg-[#1a2336] active:bg-[#7c3aed]/30 active:scale-95 border border-[#222b40] hover:border-[#7c3aed]/50 shadow-sm transition-all cursor-pointer font-mono-numbers font-bold text-white hover:text-[#d2bbff] flex items-center justify-center select-none`}
+              className="h-12 xs:h-13 sm:h-14 rounded-2xl bg-[#0B0F19] hover:bg-[#151C2B] active:bg-[#7C3AED]/30 active:scale-95 border border-[#1F2737] hover:border-[#7C3AED]/50 shadow-md transition-all cursor-pointer font-mono-numbers font-black text-xl sm:text-2xl text-white hover:text-[#D2BBFF] flex items-center justify-center select-none"
               aria-label={`Digit ${num}`}
             >
               {num}
             </button>
           ))}
 
-          {/* Row 4: Clear | 0 | Random */}
+          {/* Row 4: Clear | 0 | Balanced Manual Slot */}
           <button
             type="button"
             onClick={handleClearSlot}
-            className={`${actionBtnHeight} rounded-xl bg-rose-950/25 hover:bg-rose-900/40 text-rose-300 hover:text-rose-200 active:scale-95 border border-rose-500/35 transition-all cursor-pointer font-bold uppercase tracking-wider flex items-center justify-center gap-1 select-none`}
-            title="Clear current slot"
-            aria-label="Clear slot"
+            className="h-12 xs:h-13 sm:h-14 rounded-2xl bg-rose-950/30 hover:bg-rose-900/40 active:scale-95 border border-rose-500/40 text-rose-300 hover:text-rose-200 transition-all cursor-pointer font-bold uppercase tracking-wider text-xs sm:text-sm flex items-center justify-center gap-1 select-none shadow-md"
+            title="Clear active digit"
+            aria-label="Clear active digit"
           >
-            <span>Clear</span>
+            <span>⌫ Clear</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleKeypadPress(0)}
-            className={`${btnHeight} rounded-xl bg-[#141b2a] hover:bg-[#1a2336] active:bg-[#7c3aed]/30 active:scale-95 border border-[#222b40] hover:border-[#7c3aed]/50 shadow-sm transition-all cursor-pointer font-mono-numbers font-bold text-white hover:text-[#d2bbff] flex items-center justify-center select-none`}
+            className="h-12 xs:h-13 sm:h-14 rounded-2xl bg-[#0B0F19] hover:bg-[#151C2B] active:bg-[#7C3AED]/30 active:scale-95 border border-[#1F2737] hover:border-[#7C3AED]/50 shadow-md transition-all cursor-pointer font-mono-numbers font-black text-xl sm:text-2xl text-white hover:text-[#D2BBFF] flex items-center justify-center select-none"
             aria-label="Digit 0"
           >
             0
           </button>
 
-          <button
-            type="button"
-            onClick={handleRandomNumber}
-            className={`${actionBtnHeight} rounded-xl bg-[#f59e0b]/15 hover:bg-[#f59e0b]/25 text-[#f59e0b] hover:text-[#ffddb8] active:scale-95 border border-[#f59e0b]/35 transition-all cursor-pointer font-bold uppercase tracking-wider flex items-center justify-center gap-1 select-none`}
-            title="Generate random combination"
-            aria-label="Randomize combination"
+          {/* Balanced 12th Slot: Manual Mode Badge (Maintains strict 3x4 grid symmetry) */}
+          <div
+            className="h-12 xs:h-13 sm:h-14 rounded-2xl border border-dashed border-[#1F2737]/80 bg-[#0A0E18]/50 flex flex-col items-center justify-center text-[#64748B] select-none pointer-events-none"
+            aria-hidden="true"
           >
-            <Dices className="w-3.5 h-3.5 text-[#f59e0b] shrink-0" />
-            <span>Random</span>
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  // 4 Digit Input Slots
-  const renderDigitSlots = (isCompact = false) => {
-    const slotHeight = isCompact ? 'h-12 xs:h-13' : 'h-14 xs:h-15 sm:h-17';
-    const numSize = isCompact ? 'text-2xl' : 'text-2xl xs:text-3xl sm:text-4xl';
-
-    return (
-      <div className="w-full space-y-1.5">
-        <div className="grid grid-cols-4 gap-1.5 xs:gap-2">
-          {digits.map((digit, idx) => {
-            const isSelected = activeSlot === idx;
-            const ordinals = ['1ST', '2ND', '3RD', '4TH'];
-
-            return (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setActiveSlot(idx)}
-                className={`${slotHeight} rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-150 select-none border-2 shadow-inner group relative ${
-                  isSelected
-                    ? 'border-[#7c3aed] bg-[#7c3aed]/20 shadow-[0_0_16px_rgba(124,58,237,0.35)] ring-2 ring-[#7c3aed]/40 scale-[1.02]'
-                    : isAlreadyPurchasedByMe
-                    ? 'border-rose-500/40 bg-rose-950/15 text-rose-200 hover:border-rose-400/60'
-                    : 'border-[#222b40] bg-[#0a0e18] hover:border-[#7c3aed]/40 text-white hover:bg-[#111728]'
-                }`}
-                title={`Digit Slot ${idx + 1}`}
-                aria-label={`Digit slot ${idx + 1}, value ${digit}`}
-              >
-                <span className={`text-[9px] font-mono-numbers font-bold uppercase tracking-wider block transition-colors ${
-                  isSelected ? 'text-[#d2bbff]' : 'text-[#64748b] group-hover:text-[#94a3b8]'
-                }`}>
-                  {ordinals[idx]}
-                </span>
-
-                <span className={`font-mono-numbers font-black ${numSize} my-0.5 transition-colors ${
-                  isSelected 
-                    ? 'text-[#f59e0b] drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' 
-                    : isAlreadyPurchasedByMe 
-                    ? 'text-rose-300' 
-                    : 'text-white'
-                }`}>
-                  {digit}
-                </span>
-
-                {/* Active Indicator Bar */}
-                <span className={`w-6 h-0.5 rounded-full transition-all ${
-                  isSelected ? 'bg-[#7c3aed] shadow-[0_0_8px_rgba(124,58,237,0.8)]' : 'bg-transparent'
-                }`} />
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Combination Availability Status Bar */}
-        <div className="flex items-center justify-between text-xs px-0.5 pt-0.5">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[#94a3b8] text-[11px]">Combination:</span>
-            <span className="font-mono-numbers font-black text-[#f59e0b] text-xs xs:text-sm">
-              #{currentNumberStr}
+            <span className="text-[10px] font-mono-numbers font-extrabold uppercase tracking-widest text-[#475569]">
+              Manual
             </span>
-          </div>
-
-          <div>
-            {isAlreadyPurchasedByMe ? (
-              <span className="px-2 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[10px] font-bold flex items-center gap-1">
-                <AlertCircle className="w-3 h-3 text-rose-400 shrink-0" />
-                <span>Already Owned</span>
-              </span>
-            ) : (
-              <span className="px-2 py-0.5 rounded-full bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] text-[10px] font-bold flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 text-[#10b981] shrink-0" />
-                <span>Available to Claim</span>
-              </span>
-            )}
+            <span className="text-[9px] text-[#334155]">
+              Slot {activeSlot + 1}/4
+            </span>
           </div>
         </div>
       </div>
     );
   };
 
-  // Quick Pick & Purchase Controls
-  const renderQuickPickAndPurchase = (layoutMode: 'mobile' | 'desktop' | 'compact' = 'desktop') => {
-    const isMobileMode = layoutMode === 'mobile';
-
-    return (
-      <div className="w-full flex flex-col justify-between space-y-2.5 sm:space-y-4">
-        
-        {/* Quick Pick Quantity Selector */}
-        {isMobileMode ? (
-          /* Mobile Segmented Grouped Pills: compact, zero scroll */
-          <div className="grid grid-cols-3 gap-1.5">
-            {[
-              { count: 1, label: '1 Pick', cost: 1 * ticketPrice },
-              { count: 5, label: '5 Picks', cost: 5 * ticketPrice },
-              { count: 10, label: '10 Picks', cost: 10 * ticketPrice }
-            ].map((opt) => {
-              const isSelected = selectedTicketCount === opt.count;
-              return (
-                <button
-                  key={opt.count}
-                  type="button"
-                  onClick={() => setSelectedTicketCount(opt.count)}
-                  className={`py-1.5 px-1 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                    isSelected
-                      ? 'bg-[#7c3aed]/25 border-[#7c3aed] shadow-[0_0_12px_rgba(124,58,237,0.3)]'
-                      : 'bg-[#0a0e18] border-[#222b40] hover:border-[#7c3aed]/40 text-[#94a3b8]'
-                  }`}
-                >
-                  <span className={`text-xs font-bold block ${isSelected ? 'text-white' : 'text-[#cbd5e1]'}`}>
-                    {opt.label}
-                  </span>
-                  <span className={`text-[10px] font-mono-numbers font-extrabold ${isSelected ? 'text-[#f59e0b]' : 'text-[#64748b]'}`}>
-                    {opt.cost} USDT
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          /* Desktop & Tablet Detailed Selection Cards */
-          <div className="space-y-2">
-            {[
-              { count: 1, label: '1 Ticket', desc: 'Standard Single Entry', tag: null },
-              { count: 5, label: '5 Picks', desc: '5 Unique Combinations', tag: 'POPULAR' },
-              { count: 10, label: '10 Picks', desc: '10 Unique Combinations', tag: 'VIP 10X' }
-            ].map((opt) => {
-              const isSelected = selectedTicketCount === opt.count;
-              const cost = opt.count * ticketPrice;
-              return (
-                <button
-                  key={opt.count}
-                  type="button"
-                  onClick={() => setSelectedTicketCount(opt.count)}
-                  className={`w-full p-2.5 sm:p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between relative ${
-                    isSelected
-                      ? 'bg-gradient-to-r from-[#7c3aed]/25 via-[#7c3aed]/10 to-transparent border-[#7c3aed] shadow-[0_0_12px_rgba(124,58,237,0.25)]'
-                      : 'bg-[#0a0e18] border-[#222b40] hover:border-[#7c3aed]/40 text-[#94a3b8]'
-                  }`}
-                >
-                  {opt.tag && (
-                    <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded-full bg-[#f59e0b] text-[#0b0f19] font-mono-numbers text-[8px] font-extrabold uppercase">
-                      {opt.tag}
-                    </span>
-                  )}
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center border shrink-0 ${
-                      isSelected ? 'border-[#7c3aed] bg-[#7c3aed] text-white' : 'border-[#3b4354]'
-                    }`}>
-                      {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                    </div>
-                    <div>
-                      <span className={`text-xs sm:text-sm font-bold block ${
-                        isSelected ? 'text-white' : 'text-[#cbd5e1]'
-                      }`}>
-                        {opt.label}
-                      </span>
-                      <span className="text-[10px] text-[#64748b] block font-mono-numbers">
-                        {opt.desc}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="text-right shrink-0">
-                    <span className={`text-xs sm:text-sm font-mono-numbers font-black ${
-                      isSelected ? 'text-[#f59e0b]' : 'text-[#94a3b8]'
-                    }`}>
-                      {cost} USDT
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Pricing & Order Summary Box */}
-        <div className="p-2 xs:p-2.5 sm:p-3 rounded-xl bg-[#0a0e18] border border-[#1e2638] space-y-1 text-xs font-mono-numbers shadow-inner">
-          <div className="flex items-center justify-between text-[#8b92a2]">
-            <span>Ticket Quantity:</span>
-            <strong className="text-white">{selectedTicketCount} Ticket{selectedTicketCount > 1 ? 's' : ''}</strong>
-          </div>
-          <div className="flex items-center justify-between text-[#8b92a2]">
-            <span>Unit Price:</span>
-            <strong className="text-white">{ticketPrice} USDT</strong>
-          </div>
-          <div className="flex items-center justify-between pt-1 border-t border-[#1e2638]">
-            <span className="text-[#d2bbff] font-bold">Total Cost:</span>
-            <strong className="text-[#f59e0b] font-black text-sm sm:text-base">
-              {totalPurchaseCost} USDT
-            </strong>
-          </div>
-          <div className="flex items-center justify-between pt-0.5 text-[11px] text-[#64748b]">
-            <span>Wallet Balance:</span>
-            <span className={Number(wallet.balance || 0) < totalPurchaseCost ? 'text-rose-400 font-bold' : 'text-[#10b981] font-bold'}>
-              {Number(wallet.balance || 0).toFixed(2)} USDT
-            </span>
-          </div>
-        </div>
-
-        {/* Primary Action Button: Gold Buy CTA */}
-        <div className="pt-0.5">
-          <button
-            type="button"
-            onClick={handlePurchaseAction}
-            disabled={
-              isSubmitting || 
-              isTimedOut || 
-              (selectedTicketCount === 1 && isAlreadyPurchasedByMe)
-            }
-            className={`w-full py-2.5 xs:py-3 sm:py-3.5 rounded-xl font-display font-bold text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all ${
-              selectedTicketCount === 1 && isAlreadyPurchasedByMe
-                ? 'bg-[#181d29] text-[#8b92a2] border border-[#242d40] cursor-not-allowed opacity-75'
-                : 'btn-gold shadow-[#f59e0b]/25 active:scale-[0.98]'
-            }`}
-          >
-            <Coins className="w-4 h-4 shrink-0" />
-            <span className="truncate">
-              {isSubmitting
-                ? 'Processing...'
-                : selectedTicketCount === 1 && isAlreadyPurchasedByMe
-                ? 'Ticket Already Owned'
-                : `Buy ${selectedTicketCount} Ticket${selectedTicketCount > 1 ? 's' : ''} (${totalPurchaseCost} USDT)`}
-            </span>
-          </button>
-        </div>
-
-      </div>
-    );
-  };
-
-  // ---------------------------------------------------------------------------
-  // 12. Room Activity Feed (Tablet/Desktop Height Synchronization Fix)
-  // ---------------------------------------------------------------------------
-  const renderActivityList = (maxItems = 30) => {
-    const displayTickets = roomActivityTickets.slice(0, maxItems);
-
-    if (displayTickets.length === 0) {
+  // Integrated Room Activity List (Embedded inside Box 1)
+  const renderActivityFeed = () => {
+    if (roomActivityTickets.length === 0) {
       return (
-        <div className="h-full min-h-[140px] flex flex-col items-center justify-center text-center p-3 rounded-xl border border-dashed border-[#222b40] text-[#94a3b8] space-y-1.5">
-          <Ticket className="w-5 h-5 text-[#64748b]/50" />
-          <p className="text-xs font-bold text-white">No Tickets Purchased Yet</p>
-          <p className="text-[10px] text-[#64748b] max-w-[200px]">
-            Be the first to claim a 4-digit ticket in this room!
-          </p>
+        <div className="py-4 text-center text-[#94A3B8] text-xs space-y-1">
+          <Ticket className="w-5 h-5 text-[#64748B]/50 mx-auto" />
+          <p className="font-bold text-white">No Tickets Purchased Yet</p>
+          <p className="text-[11px] text-[#64748B]">Be the first to secure a 4-digit number in this draw!</p>
         </div>
       );
     }
 
     return (
-      <div className="space-y-1.5 pr-0.5">
-        {displayTickets.map((tkt: any, idx: number) => {
+      <div className="space-y-1.5 max-h-[160px] overflow-y-auto no-scrollbar pr-1">
+        {roomActivityTickets.slice(0, 15).map((tkt: any, idx: number) => {
           const isMine = (user && tkt.userId === user.id) || (wallet?.address && tkt.userAddress === wallet.address);
           const displayUsername = tkt.username || (isMine ? '@You' : `@p_${tkt.id ? tkt.id.slice(-4) : idx}`);
           const ticketNumberFormatted = `#${String(tkt.ticketNumber).padStart(4, '0')}`;
-          const initial = displayUsername.replace(/^[@★\s]/, '').charAt(0).toUpperCase() || 'P';
 
           return (
             <div
               key={tkt.id || idx}
               className={`p-2 rounded-xl border flex items-center justify-between text-xs font-mono-numbers transition-colors ${
                 isMine
-                  ? 'bg-[#7c3aed]/15 border-[#7c3aed]/40 text-[#d2bbff]'
-                  : 'bg-[#0a0e18] border-[#1e2638] hover:border-[#2a354d] text-white'
+                  ? 'bg-[#7C3AED]/15 border-[#7C3AED]/40 text-[#D2BBFF]'
+                  : 'bg-[#0B0F19] border-[#1F2737] hover:border-[#2A354D] text-white'
               }`}
             >
-              <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 ${
-                  isMine ? 'bg-[#7c3aed] text-white' : 'bg-[#1e2638] text-[#94a3b8]'
-                }`}>
-                  {initial}
-                </div>
-                <div className="min-w-0 truncate">
-                  <span className={`block font-bold truncate text-[11px] ${
-                    isMine ? 'text-[#f59e0b]' : 'text-[#cbd5e1]'
-                  }`}>
-                    {isMine ? '★ You' : displayUsername}
-                  </span>
-                  <span className="text-[9px] text-[#64748b] block truncate">
-                    {formatTimeAgo(Number(tkt.purchaseTime || Date.now()))}
-                  </span>
-                </div>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`w-2 h-2 rounded-full ${isMine ? 'bg-[#F59E0B]' : 'bg-[#10B981]'}`} />
+                <span className="font-bold truncate text-[11px] text-[#E2E8F0]">
+                  {isMine ? '★ You' : displayUsername}
+                </span>
+                <span className="text-[10px] text-[#64748B] hidden xs:inline">
+                  {formatTimeAgo(Number(tkt.purchaseTime || Date.now()))}
+                </span>
               </div>
 
-              <div className="text-right shrink-0 flex items-center gap-2">
-                <span className="font-display font-black text-xs text-[#10b981] bg-[#10b981]/10 px-1.5 py-0.5 rounded border border-[#10b981]/20">
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="font-black text-xs text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-md border border-[#10B981]/20">
                   {ticketNumberFormatted}
                 </span>
-                <span className="text-[10px] text-[#64748b] min-w-[45px] text-right">
+                <span className="text-[10px] text-[#94A3B8]">
                   {tkt.price || ticketPrice} USDT
                 </span>
               </div>
@@ -784,348 +543,345 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   };
 
   // ---------------------------------------------------------------------------
-  // 13. Main Layout Render
+  // 11. Main View Layout
   // ---------------------------------------------------------------------------
   return (
-    <div className="w-full h-full flex flex-col min-h-0 overflow-y-auto no-scrollbar text-left p-2 xs:p-2.5 sm:p-4 lg:p-5 space-y-2 xs:space-y-2.5 sm:space-y-4">
+    <div className="w-full h-full flex flex-col min-h-0 overflow-y-auto no-scrollbar text-left p-2.5 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 select-none">
       
       {/* ===================================================================== */}
-      {/* 1. ROOM HEADER: OBSIDIAN SOVEREIGN BAR                                */}
+      {/* 1. ROOM HEADER: FIXED MULTI-ROW ARCHITECTURE (ZERO OVERLAPPING)       */}
       {/* ===================================================================== */}
-      <header className="w-full max-w-7xl mx-auto rounded-2xl p-2.5 xs:p-3 sm:p-4 border border-[#7c3aed]/25 bg-gradient-to-r from-[#111728] via-[#0c101d] to-[#080b14] shadow-md flex flex-wrap items-center justify-between gap-2 xs:gap-3 shrink-0">
+      <header className="w-full max-w-7xl mx-auto rounded-2xl p-3 sm:p-4 border border-[#1B2238] bg-[#111728]/95 backdrop-blur-md shadow-xl shrink-0 space-y-2.5">
         
-        {/* Left: Back to Lobby + Room Title + Live Status */}
-        <div className="flex items-center gap-2 xs:gap-2.5 min-w-0">
-          {onBackToLobby && (
-            <button
-              onClick={onBackToLobby}
-              className="px-2 py-1 xs:px-2.5 xs:py-1.5 rounded-xl bg-[#141b2a] hover:bg-[#1a2336] text-[#94a3b8] hover:text-white border border-[#222b40] text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shrink-0 shadow-sm"
-              title="Return to Lottery Lobby"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 text-[#f59e0b]" />
-              <span className="hidden xs:inline">Lobby</span>
-            </button>
-          )}
+        {/* ROW 1: Section A - Room Information */}
+        <div className="flex items-center justify-between gap-3">
+          
+          {/* Back Button + Title + LIVE Beacon */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            {onBackToLobby && (
+              <button
+                type="button"
+                onClick={onBackToLobby}
+                className="px-2.5 py-1.5 rounded-xl bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shrink-0 shadow-sm active:scale-95"
+                title="Return to Lottery Lobby"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-[#F59E0B]" />
+                <span className="hidden xs:inline">Lobby</span>
+              </button>
+            )}
 
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="font-display font-black text-xs xs:text-sm sm:text-base text-white truncate">
-                {room?.name || event.title}
-              </h2>
-              <span className={`text-[10px] font-mono-numbers px-2 py-0.5 rounded-md font-bold uppercase flex items-center gap-1 shrink-0 ${statusInfo.badgeClass}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
-                <span>{statusInfo.label}</span>
-              </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="font-display font-black text-sm sm:text-lg text-white truncate">
+                  {room?.name || event.title}
+                </h2>
+                
+                {/* LIVE Emerald Status Beacon */}
+                <span className="px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 text-[10px] font-mono-numbers font-extrabold uppercase flex items-center gap-1 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping" />
+                  <span>LIVE</span>
+                </span>
+              </div>
+              <p className="text-[10px] sm:text-xs text-[#94A3B8] font-mono-numbers truncate hidden md:block">
+                On-Chain Cryptographic 4-Digit Lottery Draw · #DRAW-{event.id ? event.id.slice(-6).toUpperCase() : '884'}
+              </p>
             </div>
-            <p className="text-[10px] xs:text-[11px] text-[#94a3b8] truncate hidden sm:block">
-              Pick 4 lucky digits from 0000 to 9999 · Autonomous On-Chain Draw
-            </p>
           </div>
+
+          {/* Desktop/Tablet Inline Stats (When screen is wide enough) */}
+          <div className="hidden md:flex items-center gap-2.5 text-xs font-mono-numbers shrink-0">
+            <div className="bg-[#0B0F19] px-3 py-1.5 rounded-xl border border-[#1F2737] flex items-center gap-2">
+              <span className="text-[#94A3B8] text-[10px] uppercase font-bold">Ticket:</span>
+              <strong className="text-white font-black">{ticketPrice} USDT</strong>
+            </div>
+
+            <div className="bg-[#0B0F19] px-3 py-1.5 rounded-xl border border-[#1F2737] flex items-center gap-2">
+              <Trophy className="w-3.5 h-3.5 text-[#F59E0B]" />
+              <span className="text-[#94A3B8] text-[10px] uppercase font-bold">Jackpot:</span>
+              <strong className="text-[#F59E0B] font-black">{Number(event.poolPrize || 5000).toLocaleString()} USDT</strong>
+            </div>
+
+            <div className="bg-[#0B0F19] px-3 py-1.5 rounded-xl border border-[#7C3AED]/40 flex items-center gap-2 text-[#D2BBFF]">
+              <Clock className="w-3.5 h-3.5 text-[#7C3AED]" />
+              <span className="font-bold">{timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s</span>
+            </div>
+          </div>
+
         </div>
 
-        {/* Right: Metrics Strip (Ticket Price, Jackpot, Countdown) */}
-        <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 text-xs font-mono-numbers ml-auto shrink-0 flex-wrap justify-end">
-          <div className="bg-[#0a0e18] px-2 py-1 xs:px-2.5 xs:py-1.5 rounded-xl border border-[#222b40] flex items-center gap-1.5 shadow-inner">
-            <span className="text-[#8b92a2] text-[10px] uppercase">Entry:</span>
-            <strong className="text-white font-bold text-[11px] xs:text-xs">{ticketPrice} USDT</strong>
+        {/* ROW 2: Mobile Clean 3-Column Stats Bar (Zero Overlap with Title or LIVE Badge) */}
+        <div className="grid grid-cols-3 divide-x divide-[#1F2737] rounded-xl bg-[#0B0F19] border border-[#1F2737] p-2 text-center text-xs font-mono-numbers md:hidden shadow-inner">
+          <div className="px-1">
+            <span className="text-[9px] uppercase font-extrabold text-[#94A3B8] block">TICKET</span>
+            <span className="font-black text-white text-xs xs:text-sm">{ticketPrice} USDT</span>
           </div>
 
-          <div className="bg-[#0a0e18] px-2 py-1 xs:px-2.5 xs:py-1.5 rounded-xl border border-[#222b40] flex items-center gap-1.5 shadow-inner">
-            <Trophy className="w-3.5 h-3.5 text-[#f59e0b] shrink-0" />
-            <span className="text-[#8b92a2] text-[10px] uppercase hidden sm:inline">Grand Pot:</span>
-            <strong className="text-[#f59e0b] font-bold text-[11px] xs:text-xs">{Number(event.poolPrize || 5000).toLocaleString()} USDT</strong>
+          <div className="px-1">
+            <span className="text-[9px] uppercase font-extrabold text-[#F59E0B]/80 block">JACKPOT</span>
+            <span className="font-black text-[#F59E0B] text-xs xs:text-sm truncate block">
+              {Number(event.poolPrize || 5000).toLocaleString()} USDT
+            </span>
           </div>
 
-          <div className="bg-[#0a0e18] px-2 py-1 xs:px-2.5 xs:py-1.5 rounded-xl border border-[#7c3aed]/30 flex items-center gap-1.5 text-[#d2bbff] font-bold shadow-inner">
-            <Clock className="w-3.5 h-3.5 text-[#7c3aed] shrink-0" />
-            <span className="text-[11px] xs:text-xs">{isTimedOut ? 'Closed' : `${timeLeft.hours}h ${timeLeft.minutes}m ${timeLeft.seconds}s`}</span>
+          <div className="px-1">
+            <span className="text-[9px] uppercase font-extrabold text-[#10B981]/80 block">CLOSING IN</span>
+            <span className="font-black text-[#10B981] text-xs xs:text-sm truncate block">
+              {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
+            </span>
           </div>
         </div>
 
       </header>
 
       {/* ===================================================================== */}
-      {/* 2. RESPONSIVE LAYOUT SWITCH: MOBILE PORTRAIT VS LANDSCAPE VS DESKTOP  */}
+      {/* 2. STRICT TWO-BOX CONTENT LAYOUT (70% / 30% SPLIT ON TABLET/DESKTOP)   */}
       {/* ===================================================================== */}
-      {isMobileLandscape ? (
-        /* ------------------------------------------------------------------- */
-        /* MOBILE LANDSCAPE MODE: SIDE-BY-SIDE 2-COLUMN VIEW                   */
-        /* ------------------------------------------------------------------- */
-        <div className="w-full max-w-7xl mx-auto grid grid-cols-2 gap-2.5 min-h-0">
+      <main className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 lg:gap-5 items-start">
+        
+        {/* ------------------------------------------------------------------- */}
+        {/* BOX 1: NUMBER SELECTION & INTEGRATED ACTIVITY (~70% HORIZONTAL)     */}
+        {/* ------------------------------------------------------------------- */}
+        <section className="lg:col-span-8 bg-[#111728]/95 border border-[#1B2238] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-xl space-y-4 backdrop-blur-md">
           
-          {/* Left Column: Digits + Compact Keypad */}
-          <section className="bg-[#111728] border border-[#1e2638] rounded-2xl p-2.5 flex flex-col justify-between shadow-md space-y-1.5">
-            <div className="flex items-center justify-between pb-1 border-b border-[#1e2638]">
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-[#7c3aed]" />
-                <h3 className="font-display font-bold text-xs text-white">Pick 4 Digits</h3>
+          {/* Box 1 Header */}
+          <div className="flex items-center justify-between pb-2.5 border-b border-[#1F2737]">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-[#7C3AED]/15 border border-[#7C3AED]/30 flex items-center justify-center text-[#7C3AED]">
+                <Sparkles className="w-4 h-4" />
               </div>
-              <button
-                type="button"
-                onClick={handleResetAll}
-                className="px-2 py-0.5 rounded-lg bg-[#141b2a] text-[#94a3b8] hover:text-white border border-[#222b40] text-[10px] font-bold flex items-center gap-1 cursor-pointer"
-              >
-                <RotateCcw className="w-2.5 h-2.5 text-[#f59e0b]" />
-                <span>Reset</span>
-              </button>
+              <div>
+                <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
+                  Pick 4 Digits
+                </h3>
+                <p className="text-[11px] text-[#94A3B8]">
+                  Select slot and enter your chosen 4-digit sequence manually
+                </p>
+              </div>
             </div>
 
-            {renderDigitSlots(true)}
-            {renderNumericKeypad(true)}
-          </section>
+            <button
+              type="button"
+              onClick={handleResetAll}
+              className="px-2.5 py-1 rounded-xl bg-[#0B0F19] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737] text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm active:scale-95"
+              title="Reset combination to 0000"
+            >
+              <RotateCcw className="w-3 h-3 text-[#F59E0B]" />
+              <span>Reset</span>
+            </button>
+          </div>
 
-          {/* Right Column: Quick Pick + Purchase + Collapsible Activity */}
-          <section className="bg-[#111728] border border-[#1e2638] rounded-2xl p-2.5 flex flex-col justify-between shadow-md space-y-2 overflow-y-auto no-scrollbar">
-            {renderQuickPickAndPurchase('mobile')}
+          {/* 4 Digit Slots */}
+          {renderDigitSlots()}
 
-            {/* Collapsible Activity in Landscape */}
-            <div className="pt-1.5 border-t border-[#1e2638]">
+          {/* 3x4 Pure Manual Numeric Keypad */}
+          {renderNumericKeypad()}
+
+          {/* INTEGRATED SECONDARY ROOM ACTIVITY (Inside Box 1, Never a 3rd Column) */}
+          <div className="pt-3 border-t border-[#1F2737] space-y-2">
+            
+            {/* Activity Header with Toggle */}
+            <div className="flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setIsActivityExpanded(!isActivityExpanded)}
-                className="w-full flex items-center justify-between text-xs text-[#94a3b8] hover:text-white py-1 px-1 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
+                className="flex items-center gap-2 text-left cursor-pointer group select-none"
               >
-                <span className="flex items-center gap-1.5 font-bold">
-                  <Activity className="w-3.5 h-3.5 text-[#10b981]" />
-                  <span>Room Activity ({roomActivityTickets.length})</span>
-                </span>
-                {isActivityExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
-              {isActivityExpanded && (
-                <div className="mt-1 max-h-[140px] overflow-y-auto">
-                  {renderActivityList(10)}
-                </div>
-              )}
-            </div>
-          </section>
-
-        </div>
-      ) : isMobilePortrait ? (
-        /* ------------------------------------------------------------------- */
-        /* MOBILE PORTRAIT: UNIFIED ZERO-SCROLL CO-VISIBLE CORE CARD           */
-        /* (Selected number, keypad, quick pick, pricing, and BUY button all   */
-        /* fit conveniently together within one single viewport!)              */
-        /* ------------------------------------------------------------------- */
-        <div className="w-full max-w-7xl mx-auto space-y-2 xs:space-y-2.5">
-          
-          {/* PRIMARY UNIFIED SELECTION & PLAY CARD (Stitch Mobile Ergonomics) */}
-          <section className="bg-[#111728] border border-[#1e2638] rounded-2xl p-2.5 xs:p-3 sm:p-4 shadow-xl flex flex-col space-y-2.5">
-            
-            {/* Header: Title + Availability Pill + Reset */}
-            <div className="flex items-center justify-between pb-1.5 border-b border-[#1e2638]">
-              <div className="flex items-center gap-1.5">
-                <span className="font-display font-bold text-xs xs:text-sm text-white">
-                  Pick 4 Digits
-                </span>
-                <span className="text-[10px] text-[#64748b] font-mono-numbers">
-                  #{event.id ? event.id.slice(-6).toUpperCase() : 'DRAW'}
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleResetAll}
-                className="px-2 py-0.5 rounded-lg bg-[#141b2a] hover:bg-[#1a2336] text-[#94a3b8] hover:text-white border border-[#222b40] text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                title="Reset all digits to 0000"
-              >
-                <RotateCcw className="w-3 h-3 text-[#f59e0b]" />
-                <span>Reset</span>
-              </button>
-            </div>
-
-            {/* 4 Digit Slots */}
-            {renderDigitSlots(false)}
-
-            {/* Tactile Numeric Keypad */}
-            {renderNumericKeypad(false)}
-
-            {/* Quick Pick Quantity & Buy Controls Grouped Directly In Same Card */}
-            {renderQuickPickAndPurchase('mobile')}
-
-          </section>
-
-          {/* SECONDARY COLLAPSIBLE SECTION: Room Activity Drawer (Saves Height) */}
-          <section className="bg-[#111728] border border-[#1e2638] rounded-2xl p-2.5 xs:p-3 shadow-md space-y-2">
-            <button
-              type="button"
-              onClick={() => setIsActivityExpanded(!isActivityExpanded)}
-              className="w-full flex items-center justify-between cursor-pointer group select-none"
-              aria-expanded={isActivityExpanded}
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-[#10b981]/15 border border-[#10b981]/30 flex items-center justify-center text-[#10b981]">
+                <div className="w-6 h-6 rounded-lg bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981]">
                   <Activity className="w-3.5 h-3.5" />
                 </div>
-                <div className="text-left">
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="font-display font-bold text-xs text-white">
-                      Live Room Activity
-                    </h3>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse" />
-                  </div>
-                  <p className="text-[10px] text-[#94a3b8]">
-                    {roomActivityTickets.length} ticket{roomActivityTickets.length === 1 ? '' : 's'} purchased in this draw
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1 text-xs text-[#94a3b8] group-hover:text-white">
-                <span className="text-[10px] font-bold uppercase">{isActivityExpanded ? 'Hide' : 'View'}</span>
-                {isActivityExpanded ? <ChevronUp className="w-4 h-4 text-[#7c3aed]" /> : <ChevronDown className="w-4 h-4 text-[#7c3aed]" />}
-              </div>
-            </button>
-
-            {isActivityExpanded && (
-              <div className="pt-2 border-t border-[#1e2638] max-h-[220px] overflow-y-auto no-scrollbar animate-in fade-in duration-200">
-                {renderActivityList(20)}
-              </div>
-            )}
-          </section>
-
-        </div>
-      ) : (
-        /* ------------------------------------------------------------------- */
-        /* TABLET & DESKTOP 3-COLUMN ARENA (WITH HEIGHT & SCROLL FIX)          */
-        /* ------------------------------------------------------------------- */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-4 lg:gap-5 w-full max-w-7xl mx-auto items-stretch">
-          
-          {/* COLUMN 1: DIGIT SELECTION & NUMERIC KEYPAD (lg:col-span-5) */}
-          <section className="col-span-1 md:col-span-1 lg:col-span-5 bg-[#111728] border border-[#1e2638] rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xl space-y-4">
-            
-            {/* Header: Title + Reset Action */}
-            <div className="flex items-center justify-between pb-3 border-b border-[#1e2638]">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#7c3aed]/15 border border-[#7c3aed]/30 flex items-center justify-center text-[#7c3aed]">
-                  <Sparkles className="w-4 h-4" />
-                </div>
                 <div>
-                  <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
-                    Pick 4 Digits
-                  </h3>
-                  <p className="text-[11px] text-[#94a3b8]">
-                    Select any slot and tap numbers on keypad
-                  </p>
+                  <span className="font-display font-bold text-xs text-white group-hover:text-[#D2BBFF] transition-colors flex items-center gap-1.5">
+                    <span>Live Room Activity</span>
+                    <span className="text-[10px] font-mono-numbers px-2 py-0.2 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 font-bold">
+                      {roomActivityTickets.length} Tickets
+                    </span>
+                  </span>
                 </div>
-              </div>
+              </button>
 
               <button
                 type="button"
-                onClick={handleResetAll}
-                className="px-2.5 py-1 rounded-lg bg-[#141b2a] hover:bg-[#1a2336] text-[#94a3b8] hover:text-white border border-[#222b40] text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
-                title="Reset all 4 digits to 0000"
+                onClick={() => setIsActivityExpanded(!isActivityExpanded)}
+                className="text-xs text-[#94A3B8] hover:text-white flex items-center gap-1 cursor-pointer font-bold"
               >
-                <RotateCcw className="w-3 h-3 text-[#f59e0b]" />
-                <span>Reset</span>
+                <span className="text-[11px] uppercase font-mono-numbers">{isActivityExpanded ? 'Hide Feed' : 'View Feed'}</span>
+                {isActivityExpanded ? <ChevronUp className="w-3.5 h-3.5 text-[#7C3AED]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#7C3AED]" />}
               </button>
             </div>
 
-            {renderDigitSlots(false)}
-            {renderNumericKeypad(false)}
-
-            {/* Matrix Subtext */}
-            <div className="pt-2 border-t border-[#1e2638] flex items-center justify-between text-[11px] text-[#64748b]">
-              <span>Slot {activeSlot + 1} of 4 Active</span>
-              <span className="text-[#10b981] font-bold flex items-center gap-1">
-                <Check className="w-3 h-3" />
-                Cryptographically Validated
-              </span>
+            {/* Expandable Activity Content on Mobile / Visible on Desktop */}
+            <div className={`${isActivityExpanded ? 'block' : 'hidden md:block'} transition-all duration-200 pt-1`}>
+              {renderActivityFeed()}
             </div>
 
-          </section>
+          </div>
 
-          {/* COLUMN 2: QUICK PICK & PURCHASE BUNDLES (lg:col-span-3) */}
-          <section className="col-span-1 md:col-span-1 lg:col-span-3 bg-[#111728] border border-[#1e2638] rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#1e2638] shrink-0">
+        </section>
+
+        {/* ------------------------------------------------------------------- */}
+        {/* BOX 2: DIRECT PURCHASE PANEL (~30% HORIZONTAL / DIRECT BUY ONLY)    */}
+        {/* ------------------------------------------------------------------- */}
+        <section className="lg:col-span-4 bg-[#111728]/95 border border-[#1B2238] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-xl space-y-4 backdrop-blur-md">
+          
+          <div className="space-y-4">
+            
+            {/* Box 2 Header */}
+            <div className="flex items-center justify-between pb-2.5 border-b border-[#1F2737]">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#7c3aed]/15 border border-[#7c3aed]/30 flex items-center justify-center text-[#7c3aed]">
+                <div className="w-8 h-8 rounded-xl bg-[#7C3AED]/15 border border-[#7C3AED]/30 flex items-center justify-center text-[#7C3AED]">
                   <Ticket className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
-                    Quick Pick
+                    Direct Purchase
                   </h3>
-                  <p className="text-[11px] text-[#94a3b8]">
-                    Multiplier bundles
+                  <p className="text-[11px] text-[#94A3B8]">
+                    Manual ticket confirmation
                   </p>
                 </div>
               </div>
 
-              <span className="text-xs font-mono-numbers font-bold text-[#f59e0b] bg-[#f59e0b]/10 px-2 py-0.5 rounded-lg border border-[#f59e0b]/25">
-                {ticketPrice} USDT / ea
+              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold uppercase">
+                INSTANT
               </span>
             </div>
 
-            {renderQuickPickAndPurchase('desktop')}
-          </section>
-
-          {/* COLUMN 3: ROOM ACTIVITY FEED (lg:col-span-4) - TABLET/DESKTOP SCROLL FIX */}
-          {/* Container is flex-col h-full to match exactly neighbor column heights */}
-          <section className="col-span-1 md:col-span-2 lg:col-span-4 bg-[#111728] border border-[#1e2638] rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-xl space-y-3 overflow-hidden min-h-[480px]">
-            
-            {/* Activity Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-[#1e2638] shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#10b981]/15 border border-[#10b981]/30 flex items-center justify-center text-[#10b981]">
-                  <Activity className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
-                    Live Room Activity
-                  </h3>
-                  <p className="text-[11px] text-[#94a3b8]">
-                    Recent purchases in this room
-                  </p>
-                </div>
+            {/* Order Summary Card */}
+            <div className="p-3.5 rounded-2xl bg-[#0B0F19] border border-[#1F2737] space-y-2.5 shadow-inner font-mono-numbers text-xs">
+              
+              {/* Combination Row */}
+              <div className="flex items-center justify-between pb-2 border-b border-[#1F2737]">
+                <span className="text-[#94A3B8]">Chosen Number:</span>
+                <strong className="text-white font-black text-sm bg-[#161F30] px-2.5 py-0.5 rounded-lg border border-[#27354F]">
+                  #{currentNumberStr}
+                </strong>
               </div>
 
-              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-full bg-[#10b981]/15 text-[#10b981] border border-[#10b981]/30 font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse" />
-                <span>{roomActivityTickets.length} Tickets</span>
-              </span>
+              {/* Quantity Row */}
+              <div className="flex items-center justify-between text-[#94A3B8]">
+                <span>Ticket Quantity:</span>
+                <strong className="text-white">1 Ticket (Manual)</strong>
+              </div>
+
+              {/* Unit Price Row */}
+              <div className="flex items-center justify-between text-[#94A3B8]">
+                <span>Unit Price:</span>
+                <strong className="text-white">{ticketPrice.toFixed(2)} USDT</strong>
+              </div>
+
+              {/* Network Fee / Escrow */}
+              <div className="flex items-center justify-between text-[#94A3B8]">
+                <span>Gas / Escrow:</span>
+                <span className="text-emerald-400 font-bold">0.00 USDT (0%)</span>
+              </div>
+
+              {/* Total Cost Highlight */}
+              <div className="flex items-center justify-between pt-2 border-t border-[#1F2737]">
+                <span className="text-[#D2BBFF] font-bold text-xs">Total Purchase:</span>
+                <strong className="text-[#F59E0B] font-black text-base sm:text-lg">
+                  {totalPurchaseCost.toFixed(2)} USDT
+                </strong>
+              </div>
+
+              {/* Available Wallet Balance */}
+              <div className="flex items-center justify-between pt-1 text-[11px] text-[#64748B]">
+                <span className="flex items-center gap-1">
+                  <Wallet className="w-3 h-3 text-[#94A3B8]" />
+                  <span>Wallet Balance:</span>
+                </span>
+                <span className={Number(wallet.balance || 0) < totalPurchaseCost ? 'text-rose-400 font-bold' : 'text-[#10B981] font-bold'}>
+                  {Number(wallet.balance || 0).toFixed(2)} USDT
+                </span>
+              </div>
+
             </div>
 
-            {/* Activity Feed List: Height is flex-1 so it displays the full available visible entries */}
-            {/* Internal scroll begins ONLY after all visible capacity is utilized! */}
-            <div className="flex-1 overflow-y-auto no-scrollbar min-h-0">
-              {renderActivityList(35)}
+            {/* Auto-enter Next Draw Toggle */}
+            <div className="p-2.5 rounded-xl bg-[#0B0F19]/60 border border-[#1F2737] flex items-center justify-between text-xs">
+              <label className="flex items-center gap-2 cursor-pointer text-[#94A3B8] font-bold text-[11px]">
+                <input
+                  type="checkbox"
+                  checked={autoEnterNextDraw}
+                  onChange={(e) => setAutoEnterNextDraw(e.target.checked)}
+                  className="accent-[#7C3AED] rounded cursor-pointer w-4 h-4"
+                />
+                <span>Auto-enter next draw if unclaimed</span>
+              </label>
             </div>
 
-            {/* Fixed Footer Stats Strip */}
-            <div className="p-2.5 rounded-xl bg-[#0a0e18] border border-[#1e2638] flex items-center justify-between text-xs font-mono-numbers shrink-0 shadow-inner">
-              <span className="text-[#8b92a2]">Total In Draw:</span>
-              <strong className="text-[#10b981] font-bold">{roomActivityTickets.length} Tickets</strong>
-              <span className="text-[#64748b]">·</span>
-              <span className="text-[#8b92a2]">Pool:</span>
-              <strong className="text-[#f59e0b] font-bold">{(roomActivityTickets.length * ticketPrice).toLocaleString()} USDT</strong>
-            </div>
+          </div>
 
-          </section>
+          {/* Primary Action Button: Prominent Gold Direct Buy CTA */}
+          <div className="space-y-2 pt-1">
+            <button
+              type="button"
+              onClick={handlePurchaseAction}
+              disabled={
+                isSubmitting || 
+                isTimedOut || 
+                isAlreadyPurchasedByMe || 
+                Number(wallet.balance || 0) < totalPurchaseCost
+              }
+              className={`w-full py-3.5 rounded-xl font-display font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all ${
+                isAlreadyPurchasedByMe
+                  ? 'bg-[#181D29] text-rose-300 border border-rose-500/40 cursor-not-allowed opacity-80'
+                  : Number(wallet.balance || 0) < totalPurchaseCost
+                  ? 'bg-[#181D29] text-[#8B92A2] border border-[#242D40] cursor-not-allowed opacity-75'
+                  : 'btn-gold shadow-[#F59E0B]/25 active:scale-98'
+              }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  <span>Processing Transaction...</span>
+                </>
+              ) : isAlreadyPurchasedByMe ? (
+                <>
+                  <AlertCircle className="w-4 h-4 text-rose-400" />
+                  <span>Ticket Already Owned</span>
+                </>
+              ) : Number(wallet.balance || 0) < totalPurchaseCost ? (
+                <span>Insufficient USDT Balance</span>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 fill-current" />
+                  <span>Buy 1 Ticket ({totalPurchaseCost.toFixed(2)} USDT)</span>
+                </>
+              )}
+            </button>
 
-        </div>
-      )}
+            {/* Escrow Footnote */}
+            <p className="text-[10px] text-[#64748B] text-center font-mono-numbers">
+              Instant smart contract escrow · SHA-256 verifiable on Polygon POS
+            </p>
+          </div>
+
+        </section>
+
+      </main>
 
       {/* ===================================================================== */}
       {/* 3. PROVABLY FAIR PROTOCOL VERIFICATION STRIP                          */}
       {/* ===================================================================== */}
-      <footer className="px-3 sm:px-4 py-2.5 rounded-xl bg-[#0a0e18] border border-[#1e2638] flex flex-wrap items-center justify-between text-xs text-[#94a3b8] gap-2 max-w-7xl mx-auto w-full shrink-0 shadow-sm">
+      <footer className="px-3 sm:px-4 py-2.5 rounded-xl bg-[#0A0E18] border border-[#1F2737] flex flex-wrap items-center justify-between text-xs text-[#94A3B8] gap-2 max-w-7xl mx-auto w-full shrink-0 shadow-sm">
         <div className="flex items-center gap-2 min-w-0">
-          <ShieldCheck className="w-4 h-4 text-[#10b981] shrink-0" />
+          <ShieldCheck className="w-4 h-4 text-[#10B981] shrink-0" />
           <span className="text-white font-bold text-xs">Provably Fair Protocol (SHA-256):</span>
-          <span className="font-mono text-[11px] text-[#64748b] truncate max-w-[180px] xs:max-w-xs sm:max-w-md">
-            {event.sha256Seed || '0x4f88e14620...'}
+          <span className="font-mono text-[11px] text-[#64748B] truncate max-w-[180px] xs:max-w-xs sm:max-w-md">
+            {event.sha256Seed || '0x4f88e14620b784a899...'}
           </span>
           <button
             type="button"
             onClick={handleCopySeed}
-            className="text-[#94a3b8] hover:text-white p-1 rounded hover:bg-white/5 transition-colors cursor-pointer"
+            className="text-[#94A3B8] hover:text-white p-1 rounded hover:bg-white/5 transition-colors cursor-pointer"
             title="Copy Seed Hash"
           >
-            {copiedSeed ? <Check className="w-3.5 h-3.5 text-[#10b981]" /> : <Copy className="w-3.5 h-3.5" />}
+            {copiedSeed ? <Check className="w-3.5 h-3.5 text-[#10B981]" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
         </div>
 
-        <div className="font-mono-numbers text-[#f59e0b] text-xs font-bold flex items-center gap-1.5 ml-auto">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
+        <div className="font-mono-numbers text-[#F59E0B] text-xs font-bold flex items-center gap-1.5 ml-auto">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
           <span>Cryptographically Verified</span>
         </div>
       </footer>
