@@ -762,39 +762,57 @@ function LotteryAppContent() {
 
               {/* VIEW 12: TERMS & CONDITIONS PAGE */}
               {activeTab === 'terms' && (
-                <TermsPage onBackToHome={handleGoHome} />
+                <TermsPage 
+                  onBackToHome={handleGoHome} 
+                  onNavigateToTab={handleSelectTab}
+                />
               )}
 
               {/* VIEW 13: PRIVACY POLICY PAGE */}
               {activeTab === 'privacy' && (
-                <PrivacyPolicyPage onBackToHome={handleGoHome} />
+                <PrivacyPolicyPage 
+                  onBackToHome={handleGoHome} 
+                  onNavigateToTab={handleSelectTab}
+                />
               )}
 
               {/* VIEW 14: RESPONSIBLE GAMING PAGE */}
               {activeTab === 'responsible-gaming' && (
-                <ResponsibleGamingPage onBackToHome={handleGoHome} />
+                <ResponsibleGamingPage 
+                  onBackToHome={handleGoHome} 
+                  onNavigateToTab={handleSelectTab}
+                />
               )}
 
               {/* VIEW 15: REFUND & CANCELLATION POLICY PAGE */}
               {activeTab === 'refund-policy' && (
-                <RefundPolicyPage onBackToHome={() => setActiveTab('lotteries')} />
+                <RefundPolicyPage 
+                  onBackToHome={handleGoHome} 
+                  onNavigateToTab={handleSelectTab}
+                />
               )}
 
               {/* VIEW 16: PAYMENT POLICY PAGE */}
               {activeTab === 'payment-policy' && (
-                <PaymentPolicyPage onBackToHome={() => setActiveTab('lotteries')} />
+                <PaymentPolicyPage 
+                  onBackToHome={handleGoHome} 
+                  onNavigateToTab={handleSelectTab}
+                />
               )}
 
               {/* VIEW 17: DISCLAIMER PAGE */}
               {activeTab === 'disclaimer' && (
-                <DisclaimerPage onBackToHome={() => setActiveTab('lotteries')} />
+                <DisclaimerPage 
+                  onBackToHome={handleGoHome} 
+                  onNavigateToTab={handleSelectTab}
+                />
               )}
 
               {/* VIEW 18: FAQ PAGE */}
               {activeTab === 'faq' && (
                 <FaqPage 
                   onBackToHome={handleGoHome} 
-                  onNavigateToTab={(tab) => handleSelectTab(tab)}
+                  onNavigateToTab={handleSelectTab}
                 />
               )}
 
@@ -802,7 +820,7 @@ function LotteryAppContent() {
               {activeTab === 'how-it-works' && (
                 <HowItWorksPage 
                   onBackToHome={handleGoHome} 
-                  onNavigateToTab={(tab) => handleSelectTab(tab)}
+                  onNavigateToTab={handleSelectTab}
                 />
               )}
 
@@ -810,6 +828,7 @@ function LotteryAppContent() {
               {activeTab === 'rules' && (
                 <LotteryRulesPage 
                   onBackToHome={handleGoHome}
+                  onNavigateToTab={handleSelectTab}
                 />
               )}
             </>

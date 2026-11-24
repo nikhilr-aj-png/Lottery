@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, HelpCircle, ChevronDown, Ticket, Coins, ShieldCheck, Mail } from 'lucide-react';
+import { HelpCircle, ChevronDown, Mail } from 'lucide-react';
 import { useLottery } from '../context/LotteryContext';
 
 export interface FaqPageProps {
@@ -8,7 +8,7 @@ export interface FaqPageProps {
 }
 
 export default function FaqPage({ onBackToHome, onNavigateToTab }: FaqPageProps) {
-  const { platformSettings } = useLottery();
+  const { platformSettings, setActiveTab } = useLottery();
   const supportEmail = platformSettings?.supportEmail?.trim() || 'earnflow.user@gmail.com';
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
@@ -19,6 +19,14 @@ export default function FaqPage({ onBackToHome, onNavigateToTab }: FaqPageProps)
     }
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, []);
+
+  const handleContactSupport = () => {
+    if (onNavigateToTab) {
+      onNavigateToTab('contact');
+    } else {
+      setActiveTab('contact');
+    }
+  };
 
   const categories = [
     {
@@ -87,23 +95,14 @@ export default function FaqPage({ onBackToHome, onNavigateToTab }: FaqPageProps)
   ];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 text-left space-y-6">
-      {onBackToHome && (
-        <button
-          onClick={onBackToHome}
-          className="inline-flex items-center gap-1.5 text-xs text-[#94A3B8] hover:text-white transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Home</span>
-        </button>
-      )}
-
-      <div className="pb-4 border-b border-[#1F2737] space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono-numbers text-[11px] font-bold">
+    <div className="w-full max-w-4xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 text-left space-y-4 sm:space-y-6 animate-in fade-in duration-200">
+      {/* Top Header */}
+      <div className="pb-3 sm:pb-4 border-b border-[#1F2737] space-y-1.5 sm:space-y-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 font-mono-numbers text-[10px] sm:text-[11px] font-bold">
           <HelpCircle className="w-3.5 h-3.5 text-purple-400" />
           <span>Help Center</span>
         </div>
-        <h1 className="font-display font-black text-2xl sm:text-3xl text-white">
+        <h1 className="font-display font-black text-xl xs:text-2xl sm:text-3xl text-white tracking-tight leading-tight">
           Frequently Asked Questions
         </h1>
         <p className="text-xs sm:text-sm text-[#94A3B8]">
@@ -111,31 +110,32 @@ export default function FaqPage({ onBackToHome, onNavigateToTab }: FaqPageProps)
         </p>
       </div>
 
-      <div className="space-y-6">
+      {/* Accordion Categories */}
+      <div className="space-y-4 sm:space-y-6">
         {categories.map((cat, cIdx) => (
-          <div key={cIdx} className="space-y-3">
-            <h2 className="font-display font-bold text-sm text-amber-400 uppercase tracking-wider">
+          <div key={cIdx} className="space-y-2 sm:space-y-3">
+            <h2 className="font-display font-bold text-xs sm:text-sm text-amber-400 uppercase tracking-wider">
               {cat.category}
             </h2>
-            <div className="space-y-2.5">
+            <div className="space-y-2 sm:space-y-2.5">
               {cat.items.map((item, iIdx) => {
                 const uniqueId = cIdx * 100 + iIdx;
                 const isOpen = openIndex === uniqueId;
                 return (
                   <div
                     key={iIdx}
-                    className="bg-[#111827] border border-[#1F2737] rounded-xl overflow-hidden transition-all"
+                    className="bg-[#111827] border border-[#1F2737] rounded-xl sm:rounded-2xl overflow-hidden transition-all"
                   >
                     <button
                       type="button"
                       onClick={() => setOpenIndex(isOpen ? null : uniqueId)}
-                      className="w-full p-4 text-left flex items-center justify-between gap-3 text-xs sm:text-sm font-bold text-white hover:text-amber-400 transition-colors cursor-pointer"
+                      className="w-full p-3.5 sm:p-4 text-left flex items-center justify-between gap-3 text-xs sm:text-sm font-bold text-white hover:text-amber-400 transition-colors cursor-pointer"
                     >
-                      <span>{item.q}</span>
+                      <span className="leading-snug">{item.q}</span>
                       <ChevronDown className={`w-4 h-4 text-[#94A3B8] shrink-0 transition-transform ${isOpen ? 'rotate-180 text-amber-400' : ''}`} />
                     </button>
                     {isOpen && (
-                      <div className="px-4 pb-4 text-xs text-[#94A3B8] leading-relaxed border-t border-[#1F2737]/60 pt-3">
+                      <div className="px-3.5 sm:px-4 pb-3.5 sm:pb-4 text-xs text-[#94A3B8] leading-relaxed border-t border-[#1F2737]/60 pt-3">
                         {item.a}
                       </div>
                     )}
@@ -147,31 +147,22 @@ export default function FaqPage({ onBackToHome, onNavigateToTab }: FaqPageProps)
         ))}
       </div>
 
-      <div className="p-5 rounded-2xl bg-[#111827] border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h3 className="font-bold text-sm text-white">Still have questions?</h3>
-          <p className="text-xs text-[#94A3B8] mt-0.5">
+      {/* Still Have a Question Section - Compact & Fully Mobile-Responsive */}
+      <div className="p-3.5 xs:p-4 sm:p-5 rounded-2xl bg-[#111827] border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shadow-lg">
+        <div className="space-y-0.5">
+          <h3 className="font-bold text-xs sm:text-sm text-white">Still have questions?</h3>
+          <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-normal">
             Our support desk is available to assist you with tickets, payments, or rules.
           </p>
         </div>
-        {onNavigateToTab ? (
-          <button
-            type="button"
-            onClick={() => onNavigateToTab('contact')}
-            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer shadow-md shadow-amber-500/20"
-          >
-            <Mail className="w-3.5 h-3.5" />
-            <span>Contact Support</span>
-          </button>
-        ) : (
-          <a
-            href={`mailto:${supportEmail}`}
-            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs transition-colors shrink-0 flex items-center gap-1.5"
-          >
-            <Mail className="w-3.5 h-3.5" />
-            <span>Contact Support</span>
-          </a>
-        )}
+        <button
+          type="button"
+          onClick={handleContactSupport}
+          className="w-full sm:w-auto px-4 py-2 sm:py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs transition-colors shrink-0 flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-amber-500/20 active:scale-95"
+        >
+          <Mail className="w-3.5 h-3.5" />
+          <span>Contact Support</span>
+        </button>
       </div>
     </div>
   );

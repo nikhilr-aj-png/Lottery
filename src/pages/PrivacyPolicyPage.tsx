@@ -1,19 +1,17 @@
 import React from 'react';
 import { 
-  ArrowLeft, 
   ShieldCheck, 
-  Lock, 
-  Mail,
-  Printer
+  Mail 
 } from 'lucide-react';
 import { useLottery } from '../context/LotteryContext';
 
 export interface PrivacyPolicyPageProps {
   onBackToHome?: () => void;
+  onNavigateToTab?: (tabId: string) => void;
 }
 
-export default function PrivacyPolicyPage({ onBackToHome }: PrivacyPolicyPageProps) {
-  const { platformSettings } = useLottery();
+export default function PrivacyPolicyPage({ onBackToHome, onNavigateToTab }: PrivacyPolicyPageProps) {
+  const { platformSettings, setActiveTab } = useLottery();
   const supportEmail = platformSettings?.supportEmail?.trim() || 'earnflow.user@gmail.com';
 
   // Ensure Privacy Policy page opens from the very top on all devices
@@ -25,58 +23,38 @@ export default function PrivacyPolicyPage({ onBackToHome }: PrivacyPolicyPagePro
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, []);
 
-  const handlePrint = () => {
-    if (typeof window !== 'undefined') {
-      window.print();
+  const handleContactSupport = () => {
+    if (onNavigateToTab) {
+      onNavigateToTab('contact');
+    } else {
+      setActiveTab('contact');
     }
   };
 
   return (
-    <div className="max-w-4xl 2xl:max-w-5xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-in fade-in duration-200 text-left">
+    <div className="max-w-4xl 2xl:max-w-5xl mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 animate-in fade-in duration-200 text-left">
       
-      {/* Top Header & Navigation Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#1F2737]">
-        <div>
-          {onBackToHome && (
-            <button
-              onClick={onBackToHome}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#94A3B8] hover:text-emerald-400 transition-colors cursor-pointer mb-2.5"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Home</span>
-            </button>
-          )}
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono-numbers text-[10px] sm:text-xs font-bold inline-flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Official Privacy Governance</span>
-            </span>
-            <span className="text-[11px] font-mono-numbers text-[#94A3B8]">
-              Effective: November 2026
-            </span>
-          </div>
-          <h1 className="font-display font-black text-2xl sm:text-3xl text-white mt-1.5">
-            Privacy Policy
-          </h1>
-          <p className="text-xs sm:text-sm text-[#94A3B8] mt-1">
-            Data Governance, Protection Protocols, and Privacy Standards of EarnFlow.in
-          </p>
+      {/* Top Header */}
+      <div className="pb-4 sm:pb-6 border-b border-[#1F2737] space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono-numbers text-[10px] sm:text-xs font-bold inline-flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Official Privacy Governance</span>
+          </span>
+          <span className="text-[11px] font-mono-numbers text-[#94A3B8]">
+            Effective: November 2026
+          </span>
         </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#141924] hover:bg-[#1C2333] border border-[#273145] text-xs font-semibold text-[#CBD5E1] hover:text-white transition-colors cursor-pointer"
-            title="Print or Save PDF"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Print / PDF</span>
-          </button>
-        </div>
+        <h1 className="font-display font-black text-xl xs:text-2xl sm:text-3xl lg:text-4xl text-white tracking-tight leading-tight">
+          Privacy Policy
+        </h1>
+        <p className="text-xs sm:text-sm text-[#94A3B8]">
+          Data Governance, Protection Protocols, and Privacy Standards of EarnFlow.in
+        </p>
       </div>
 
       {/* Main Privacy Document Sheet */}
-      <article className="mt-8 bg-[#0D121D] border border-[#1F2737] rounded-2xl p-5 sm:p-8 lg:p-10 space-y-8 text-xs sm:text-sm text-[#CBD5E1] leading-relaxed shadow-xl">
+      <article className="mt-6 sm:mt-8 bg-[#0D121D] border border-[#1F2737] rounded-2xl p-4 xs:p-5 sm:p-8 lg:p-10 space-y-6 sm:space-y-8 text-xs sm:text-sm text-[#CBD5E1] leading-relaxed shadow-xl">
         
         {/* Document Preamble */}
         <section className="space-y-3 pb-6 border-b border-[#1F2737]/70">
@@ -265,20 +243,21 @@ export default function PrivacyPolicyPage({ onBackToHome }: PrivacyPolicyPagePro
       </article>
 
       {/* Footer Support Banner */}
-      <div className="mt-8 p-5 rounded-2xl bg-[#0D121D] border border-emerald-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h3 className="font-bold text-sm text-white">Have questions about your privacy or data?</h3>
-          <p className="text-xs text-[#94A3B8] mt-0.5">
+      <div className="mt-6 sm:mt-8 p-4 xs:p-5 rounded-2xl bg-[#0D121D] border border-emerald-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shadow-lg">
+        <div className="space-y-0.5">
+          <h3 className="font-bold text-xs sm:text-sm text-white">Have questions about your privacy or data?</h3>
+          <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-normal">
             Our data protection team is available to assist you with any questions or requests.
           </p>
         </div>
-        <a
-          href={`mailto:${supportEmail}`}
-          className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-colors shrink-0 flex items-center gap-1.5"
+        <button
+          type="button"
+          onClick={handleContactSupport}
+          className="w-full sm:w-auto px-4 py-2 sm:py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-colors shrink-0 flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-emerald-500/20 active:scale-95"
         >
           <Mail className="w-3.5 h-3.5" />
           <span>Contact Support</span>
-        </a>
+        </button>
       </div>
 
     </div>
