@@ -1977,12 +1977,22 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       return 'tickets';
     }
 
-    // 5. Account, Wallet & Hub
+    if (
+      effectivePath === '/daily-bonus' ||
+      effectivePath === '/rewards' ||
+      effectivePath === '/dailybonus' ||
+      effectivePath === '/bonus' ||
+      hash === 'daily-bonus' ||
+      hash === 'rewards' ||
+      tabParam === 'daily-bonus' ||
+      tabParam === 'rewards'
+    ) {
+      return 'rewards';
+    }
     if (effectivePath === '/wallet' || hash === 'wallet' || tabParam === 'wallet') return 'wallet';
     if (effectivePath === '/profile' || hash === 'profile' || tabParam === 'profile') return 'profile';
     if (effectivePath === '/promotion' || effectivePath === '/promotions' || effectivePath === '/referral' || hash === 'promotion' || tabParam === 'promotion') return 'promotion';
     if (effectivePath === '/transactions' || effectivePath === '/transaction-history' || hash === 'transactions' || hash === 'transaction-history' || tabParam === 'transactions' || tabParam === 'transaction-history') return 'transactions';
-    if (effectivePath === '/rewards' || hash === 'rewards' || tabParam === 'rewards') return 'rewards';
     if (effectivePath === '/leaderboard' || hash === 'leaderboard' || tabParam === 'leaderboard') return 'leaderboard';
 
     return 'lotteries';
@@ -2046,9 +2056,9 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     } else if (tabName === 'disclaimer') {
       targetPath = '/disclaimer';
       pageTitle = 'Disclaimer · EarnFlow.in';
-    } else if (tabName === 'rewards') {
-      targetPath = '/?tab=rewards';
-      pageTitle = 'Daily Rewards · EarnFlow.in';
+    } else if (tabName === 'rewards' || tabName === 'daily-bonus') {
+      targetPath = '/daily-bonus';
+      pageTitle = 'Daily Bonus & Rewards · EarnFlow.in';
     } else if (tabName === 'leaderboard') {
       targetPath = '/?tab=leaderboard';
       pageTitle = 'Leaderboard · EarnFlow.in';

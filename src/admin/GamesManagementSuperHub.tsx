@@ -91,8 +91,8 @@ export default function GamesManagementSuperHub({
   adminDeleteEvent,
   showToast
 }: any) {
-  // Selected Game for Dedicated Management (null = Main 4-column card view)
-  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  // Selected Game for Dedicated Management: Defaults to 'lottery' (exclusive platform game)
+  const [selectedGameId, setSelectedGameId] = useState<string | null>('lottery');
 
   // Search & Category Filters for Main Game Management View
   const [searchQuery, setSearchQuery] = useState('');
@@ -477,11 +477,8 @@ export default function GamesManagementSuperHub({
           {/* Category Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
             {[
-              { id: 'all', label: 'All Games' },
-              { id: 'lottery', label: 'Lottery' },
-              { id: 'instant', label: 'Instant' },
-              { id: 'arcade', label: 'Arcade' },
-              { id: 'table', label: 'Table' }
+              { id: 'all', label: 'All Live Pools' },
+              { id: 'lottery', label: 'Four-Digit Lottery' }
             ].map(cat => (
               <button
                 key={cat.id}
@@ -645,15 +642,10 @@ export default function GamesManagementSuperHub({
       {/* Top Header: Back button + Game Branding + Status */}
       <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#151C2B] via-[#0F1420] to-[#0B0F19] border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xl">
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setSelectedGameId(null)}
-            className="px-3 py-2 rounded-xl bg-[#141924] hover:bg-[#1f2737] text-xs font-bold text-[#94A3B8] hover:text-white border border-[#272a31] flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
-            title="Return to Centralized Game Cards"
-          >
-            <ArrowLeft className="w-4 h-4 text-amber-400" />
-            <span>All Games</span>
-          </button>
+          <div className="px-3 py-2 rounded-xl bg-[#141924] text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 shadow-xs">
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span>Platform Game Engine</span>
+          </div>
 
           <div className="w-12 h-12 rounded-xl bg-[#141924] border border-amber-500/40 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
             <img

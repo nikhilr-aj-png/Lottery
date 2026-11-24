@@ -6,6 +6,7 @@ import {
   LayoutGrid,
   History,
   Gift,
+  Share2,
   X
 } from 'lucide-react';
 import { useLottery } from '../context/LotteryContext';
@@ -82,8 +83,9 @@ export default function Sidebar({
     {
       title: 'Account & Hub',
       items: [
+        { id: 'rewards', label: 'Daily Bonus', icon: Gift, badge: 'FREE' },
         { id: 'wallet', label: 'USDT Wallet', icon: Wallet, requiresAuth: true },
-        { id: 'promotion', label: 'Promotions & Referral', icon: Gift, badge: 'HOT' },
+        { id: 'promotion', label: 'Promotions & Referral', icon: Share2, badge: 'HOT' },
         { id: 'transactions', label: 'Transaction History', icon: History, requiresAuth: true }
       ]
     }

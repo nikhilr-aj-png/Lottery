@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import { useSoundFX } from '../hooks/useSoundFX';
+import { usePwa } from '../context/PwaContext';
 import { 
   Wallet, 
   Menu, 
@@ -59,8 +60,24 @@ export default function Navbar({
     playClick
   } = useSoundFX();
 
+  const {
+    isInstallable,
+    isInstalled,
+    triggerInstall,
+    setShowInstallModal
+  } = usePwa();
+
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const volumeMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const handleInstallClick = () => {
+    playClick();
+    if (isInstallable) {
+      triggerInstall();
+    } else {
+      setShowInstallModal(true);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -176,19 +193,17 @@ export default function Navbar({
             {/* RIGHT: Desktop Controls (Wallet + Notifications + Profile) / Mobile Icons */}
             <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2.5 shrink-0">
               
-              {/* Optional Android APK direct download (hidden on small/medium displays) */}
-              {!isNativeApp && (
-                <a
-                  href={apkDirectDownloadUrl}
-                  download="earnflow.apk"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hidden 2xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-emerald-500/10 hover:from-amber-500/20 hover:to-emerald-500/20 border border-amber-500/30 text-[#ffd700] hover:text-white text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
-                  title="Download Official Android App"
+              {/* Compact Mobile & Desktop Install App / PWA Control */}
+              {!isNativeApp && !isInstalled && (
+                <button
+                  type="button"
+                  onClick={handleInstallClick}
+                  className="w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-10 sm:h-10 rounded-xl bg-[#10131A] hover:bg-[#151C2B] text-amber-400 hover:text-white border border-[#2D3545] hover:border-amber-400/50 hover:shadow-[0_0_12px_rgba(245,196,81,0.2)] flex items-center justify-center transition-all cursor-pointer relative shrink-0 shadow-sm"
+                  title="Install EarnFlow App (PWA & Android APK)"
+                  aria-label="Install App"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#ffd700]" />
-                  <span>APK</span>
-                </a>
+                  <Download className="w-4 h-4 text-amber-400" />
+                </button>
               )}
 
               {/* Master Audio FX Toggle & Volume Popover (Mobile & Desktop) */}

@@ -478,6 +478,9 @@ function LotteryAppContent() {
       } else if (cleanPath === '/tickets' || cleanPath === '/my-tickets' || search.get('tab') === 'tickets') {
         setActiveTab('tickets', false);
         document.title = 'My Tickets · EarnFlow.in';
+      } else if (cleanPath === '/daily-bonus' || cleanPath === '/rewards' || cleanPath === '/dailybonus' || cleanPath === '/bonus' || search.get('tab') === 'rewards' || search.get('tab') === 'daily-bonus') {
+        setActiveTab('rewards', false);
+        document.title = 'Daily Bonus & Rewards · EarnFlow.in';
       } else if (cleanPath === '/results' || cleanPath === '/lottery-results' || cleanPath === '/draw-results' || search.get('tab') === 'results') {
         setActiveTab('results', false);
         document.title = 'Results · EarnFlow.in';

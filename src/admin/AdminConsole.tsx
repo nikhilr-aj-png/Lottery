@@ -115,39 +115,15 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
     } catch (e) {}
   };
 
-  // Dynamic active games count from database-driven game configurations
+  // Dynamic active games count: Four-Digit Lottery is the exclusive platform game
   const activeGamesCount = useMemo(() => {
     if (Array.isArray(games) && games.length > 0) {
-      return games.filter(g => (g.isEnabled !== false && g.status !== 'deleted' && g.status !== 'disabled')).length;
+      return games.filter(g => (g.isEnabled !== false && g.status !== 'deleted' && g.status !== 'disabled')).length || 1;
     }
-    return 6;
+    return 1;
   }, [games]);
 
-  // Game Engine Administration state
-  const [adminGameRounds, setAdminGameRounds] = useState<any[]>([]);
-  const [loadingGameRounds, setLoadingGameRounds] = useState(false);
-  const [gameRoundsFilter, setGameRoundsFilter] = useState('all'); // 'all' | 'won' | 'lost'
-  const [gameRoundsSearch, setGameRoundsSearch] = useState('');
-  const [gameRoundsSelectedGame, setGameRoundsSelectedGame] = useState('all');
   const [auditVerifyModalData, setAuditVerifyModalData] = useState<any>(null);
-
-  const fetchAdminGameRounds = async () => {
-    setLoadingGameRounds(true);
-    try {
-      const { data, error } = await supabase
-        .from('game_rounds')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
-      if (!error && data) {
-        setAdminGameRounds(data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch admin game rounds:', err);
-    } finally {
-      setLoadingGameRounds(false);
-    }
-  };
 
   // Support Inquiries state
   const [supportFilter, setSupportFilter] = useState('all'); // 'all' | 'pending' | 'replied' | 'resolved'
@@ -582,15 +558,15 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
               setGamesManagementSubTab('all-games');
             }}
             className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'games-management' || activeAdminTab === 'pools' || activeAdminTab === 'games' || activeAdminTab === 'game-rounds'
+              activeAdminTab === 'games-management' || activeAdminTab === 'lottery-management' || activeAdminTab === 'pools' || activeAdminTab === 'games'
                 ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md font-black'
                 : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
             }`}
           >
-            <Gamepad2 className="w-4 h-4" />
-            <span>Game Management</span>
+            <Sparkles className="w-4 h-4" />
+            <span>Four-Digit Lottery</span>
             <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-black/40 font-mono-numbers text-amber-300 font-bold">
-              {loadingGames ? '...' : `${activeGamesCount} Active Games`}
+              {activeEvents.length > 0 ? `${activeEvents.length} Active Draws` : 'Live Room'}
             </span>
           </button>
 
