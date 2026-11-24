@@ -1,0 +1,32 @@
+# EarnFlow.in - Four Digit Lottery Platform
+
+> EarnFlow.in is an online, provably fair gaming platform dedicated exclusively to the Four Digit Lottery. Players choose a four-digit combination (0000–9999) or use Quick Pick to participate in scheduled transparent draws with real-time wallet settlement.
+
+## Platform Summary
+- **Official Domain**: https://earnflow.in
+- **Sole Active Game**: Four Digit Lottery
+- **Fairness Model**: Provably Fair cryptographic verification (SHA-256 & HMAC)
+- **Currency / Asset**: USDT (TRC-20) / FLO (1 FLO = 1 USDT) and INR gateways
+- **Minimum Age**: 18+ strictly enforced
+- **Support Contact**: earnflow.user@gmail.com
+
+## Four Digit Lottery Game Overview
+- **Objective**: Select a 4-digit number between 0000 and 9999.
+- **Ticket Rule**: Single ticket per purchase action (Total Cost = Unit Price).
+- **Selection Modes**: Interactive tactile numeric keypad or automated Quick Pick generator.
+- **Draw Frequency**: Scheduled live event rounds backed by Supabase backend and Provably Fair random generation.
+- **Instant Settlement**: Winnings are automatically credited to the verified player wallet upon draw completion.
+
+## Key Public URLs
+- [Home Page](https://earnflow.in/): Platform overview, live lottery countdowns, rules, and how it works.
+- [Live Lottery Workstation](https://earnflow.in/game/lottery): Real-time digit selection, live draw timer, active round ticket tracking, and draw history.
+- [Terms & Conditions](https://earnflow.in/terms-and-conditions): 32-section contractual terms governing accounts, participation, rules, and liability.
+- [Privacy Policy](https://earnflow.in/privacy-policy): 22-section data protection and privacy policy.
+- [Responsible Gaming](https://earnflow.in/responsible-gaming): Player protection guidelines, 18+ enforcement, self-exclusion tools, and helpline resources.
+- [Payment Policy](https://earnflow.in/payment-policy): Deposit methods, processing guidelines, withdrawal verification, and balance handling.
+- [Refund Policy](https://earnflow.in/refund-policy): Cancelled draw refunds, system error resolutions, and ticket purchase terms.
+- [Disclaimer](https://earnflow.in/disclaimer): Legal risk notices, jurisdictional restrictions, and gaming disclaimers.
+- [Frequently Asked Questions](https://earnflow.in/faq): Comprehensive answers to common user questions regarding draws, tickets, and accounts.
+
+## Legal and Compliance Notice
+EarnFlow.in operates strictly under transparent Provably Fair protocols. Participation is restricted to individuals 18 years of age or older in jurisdictions where skill-based and digital lottery participation is legally permitted.

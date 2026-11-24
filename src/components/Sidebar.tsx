@@ -1,30 +1,18 @@
 import React, { useEffect, useMemo } from 'react';
 import {
-  Flame,
-  Gamepad2,
   Ticket,
   Trophy,
   Wallet,
   ShieldCheck,
   Headphones,
-  Gift,
   FileText,
   X,
-  Sparkles,
-  Rocket,
-  Dices,
-  Bomb,
-  Target,
-  CircleDot,
-  Coins,
-  Layers,
-  Spade,
-  Zap,
   LayoutGrid,
-  History
+  History,
+  User,
+  Award
 } from 'lucide-react';
 import { useLottery } from '../context/LotteryContext';
-import { GAMES, getGameIconUrl } from '../engine';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -36,6 +24,22 @@ interface SidebarProps {
   onLaunchGame?: (gameId: string) => void;
 }
 
+interface NavItem {
+  id: string;
+  label: string;
+  icon: any;
+  badge?: string;
+  image?: string;
+  isLobby?: boolean;
+  isLottery?: boolean;
+  requiresAuth?: boolean;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
 export default function Sidebar({
   isOpen,
   onClose,
@@ -45,19 +49,7 @@ export default function Sidebar({
   onSelectTab,
   onLaunchGame
 }: SidebarProps) {
-  const { wallet, user, games: dynamicGames } = useLottery();
-
-  // Dynamic games from Supabase (Single Source of Truth) — strictly excludes deleted/disabled games
-  const activeGamesList = useMemo(() => {
-    if (Array.isArray(dynamicGames) && dynamicGames.length > 0) {
-      return dynamicGames.filter(g => g.isEnabled && g.status !== 'deleted');
-    }
-    return GAMES;
-  }, [dynamicGames]);
-
-  const isLotteryActive = useMemo(() => {
-    return activeGamesList.some(g => g.id === 'lottery');
-  }, [activeGamesList]);
+  const { wallet, user } = useLottery();
 
   // Prevent background scrolling when mobile drawer is open
   useEffect(() => {
@@ -82,63 +74,35 @@ export default function Sidebar({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  const getGameIcon = (id) => {
-    switch (id) {
-      case 'lottery': return Ticket;
-      case 'crash': return Rocket;
-      case 'dice': return Dices;
-      case 'coinflip': return Coins;
-      case 'bingo': return Sparkles;
-      case 'horse-racing': return Trophy;
-      default: return Gamepad2;
-    }
-  };
-
-  const navSections = [
+  const navSections: NavSection[] = [
     {
-      title: '', // Removed 'Casino Lobby' heading to eliminate expansion downward layout shift
+      title: 'Lottery',
       items: [
         { id: 'lotteries', label: 'Home', icon: LayoutGrid, isLobby: true },
-        ...(isLotteryActive ? [{ id: 'lottery-game', label: 'Four-Digit Lottery', icon: Ticket, image: getGameIconUrl('lottery'), isLottery: true }] : []),
+        { id: 'lottery-game', label: 'Four-Digit Lottery', icon: Ticket, image: '/items/Four Digit Lottery.jpg', isLottery: true },
+        { id: 'tickets', label: 'My Tickets', icon: Ticket, requiresAuth: true },
+        { id: 'results', label: 'Draw Results', icon: Trophy }
       ]
-    },
-    {
-      title: 'Originals & Instant',
-      items: activeGamesList.filter(g => g.id !== 'lottery').map(g => ({
-        id: `game-${g.id}`,
-        gameId: g.id,
-        label: g.name,
-        icon: getGameIcon(g.id),
-        image: getGameIconUrl(g.id),
-        badge: g.badge,
-        isModularGame: true
-      }))
     },
     {
       title: 'Player Hub',
       items: [
-        { id: 'rewards', label: 'Daily Bonus & Rewards', icon: Gift },
-        { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
-        { id: 'wallet', label: 'Wallet', icon: Wallet, requiresAuth: true },
-        { id: 'transactions', label: 'Transaction History', icon: History, requiresAuth: true },
+        { id: 'wallet', label: 'USDT Wallet', icon: Wallet, requiresAuth: true },
+        { id: 'profile', label: 'Player Profile', icon: User, requiresAuth: true },
+        { id: 'transactions', label: 'Transaction History', icon: History, requiresAuth: true }
       ]
     },
     {
-      title: 'Help & Compliance',
+      title: 'Support & Legal',
       items: [
         { id: 'support', label: 'Customer Support & FAQ', icon: Headphones },
-        { id: 'terms', label: 'Terms & Conditions', icon: FileText }
+        { id: 'terms', label: 'Terms & Conditions', icon: FileText },
+        { id: 'privacy', label: 'Privacy Policy', icon: ShieldCheck }
       ]
     }
   ];
 
-  const handleItemClick = (item) => {
-    if (item.isModularGame && onLaunchGame) {
-      onLaunchGame(item.gameId);
-      if (onClose) onClose();
-      return;
-    }
-
+  const handleItemClick = (item: any) => {
     if (item.isLottery) {
       if (onLaunchGame) {
         onLaunchGame('four-digit-lottery');

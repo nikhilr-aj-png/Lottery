@@ -40,8 +40,8 @@ const FAQS = [
     a: 'EarnFlow.in operates strictly on USDT (Tether TRC-20). All game stakes, lottery tickets, pool prizes, and account balances are denominated exclusively in USDT. Deposits are received via official TRON TRC-20 addresses, and withdrawals are disbursed directly to your external wallet.'
   },
   {
-    q: 'How does the game outcome fairness work?',
-    a: 'Every round across our 6 active games (Four-Digit Lottery, Crash, Dice, Coinflip, Bingo – Color Trading, and Horse Racing) is generated transparently using automated decentralized algorithms. Outcomes are predetermined before play begins, ensuring unbiased and tamper-proof results for all players.'
+    q: 'How does the Four-Digit Lottery outcome fairness work?',
+    a: 'Every draw in Four-Digit Lottery is generated transparently using automated decentralized algorithms based on pre-committed cryptographic seeds. Outcomes are predetermined before play begins, ensuring unbiased and tamper-proof results for all players.'
   },
   {
     q: 'How long do USDT withdrawals take to process?',
@@ -52,8 +52,8 @@ const FAQS = [
     a: 'Yes! The platform is a Progressive Web App (PWA) that installs on any Android or iOS device directly from your browser. We also provide an official native Flutter Android APK download in the navbar.'
   },
   {
-    q: 'What are the RTP (Return to Player) percentages for active games?',
-    a: 'Our games feature industry-leading fair math models: Crash (99.0% RTP / 1.0% house edge), Dice (99.0% RTP / 1.0% edge), Coinflip (99.0% RTP / 1.0% edge), Bingo – Color Trading (98.0% RTP / 2.0% edge), Horse Racing (97.5% RTP / 2.5% edge), and Four-Digit Lottery (95.0% RTP / 5.0% edge).'
+    q: 'What is the RTP (Return to Player) percentage for Four-Digit Lottery?',
+    a: 'Four-Digit Lottery features a 95.0% RTP with a transparent 5.0% house operating margin, ensuring high payout pool distributions back to lucky draw winners.'
   },
   {
     q: 'How do I participate in the Four-Digit Lottery?',

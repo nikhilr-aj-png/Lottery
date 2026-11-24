@@ -1,35 +1,28 @@
-# Robots.txt for EarnFlow.In
+# Robots.txt for EarnFlow.in (Four-Digit Lottery Platform)
 User-agent: *
 Allow: /
+
+# Disallow private user dashboards, admin portal, and authenticated routes
+Disallow: /admin/
 Disallow: /admin
 Disallow: /api/
-Disallow: /auth/v1/
+Disallow: /dashboard/
+Disallow: /profile/
+Disallow: /wallet/
+Disallow: /my-tickets/
+Disallow: /account/
+Disallow: /login/
+Disallow: /register/
 
-# Search Engine Crawlers
+# Allow legitimate search crawlers
 User-agent: Googlebot
-Allow: /
-
-User-agent: Googlebot-Image
 Allow: /
 
 User-agent: Bingbot
 Allow: /
 
-User-agent: Slurp
-Allow: /
-
-User-agent: DuckDuckBot
-Allow: /
-
-User-agent: Baiduspider
-Allow: /
-
-User-agent: YandexBot
-Allow: /
-
 User-agent: Applebot
 Allow: /
 
-Crawl-delay: 1
-Host: https://earnflow.in
+# Sitemap
 Sitemap: https://earnflow.in/sitemap.xml

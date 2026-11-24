@@ -4,66 +4,90 @@
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 
-  <!-- Homepage / Main Lobby -->
+  <!-- Homepage / Four Digit Lottery Platform -->
   <url>
     <loc>https://earnflow.in/</loc>
-    <lastmod>2026-10-21T17:15:00+05:30</lastmod>
+    <lastmod>2026-11-24T07:30:00+05:30</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.00</priority>
   </url>
 
-  <!-- Active Lottery Pools -->
+  <!-- Four Digit Lottery Draw Arena -->
   <url>
-    <loc>https://earnflow.in/?tab=lotteries</loc>
-    <lastmod>2026-10-21T17:15:00+05:30</lastmod>
+    <loc>https://earnflow.in/lottery</loc>
+    <lastmod>2026-11-24T07:30:00+05:30</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.95</priority>
   </url>
 
-  <!-- Past Concluded Draw Results & Ledger -->
+  <!-- Public Lottery Draw Results & Past Winners -->
   <url>
-    <loc>https://earnflow.in/?tab=results</loc>
-    <lastmod>2026-10-21T17:15:00+05:30</lastmod>
+    <loc>https://earnflow.in/results</loc>
+    <lastmod>2026-11-24T07:30:00+05:30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
 
-  <!-- USDT TRC-20 Wallet & Withdrawals -->
+  <!-- Frequently Asked Questions -->
   <url>
-    <loc>https://earnflow.in/?tab=wallet</loc>
-    <lastmod>2026-10-21T17:15:00+05:30</lastmod>
+    <loc>https://earnflow.in/faq</loc>
+    <lastmod>2026-11-24T07:30:00+05:30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
   </url>
 
-  <!-- Provably Fair Verification & SHA-256 Engine -->
+  <!-- Customer Support & Contact -->
   <url>
-    <loc>https://earnflow.in/?tab=provably-fair</loc>
-    <lastmod>2026-10-21T17:15:00+05:30</lastmod>
+    <loc>https://earnflow.in/contact</loc>
+    <lastmod>2026-11-24T07:30:00+05:30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
 
-  <!-- Dedicated Platform Terms of Service -->
+  <!-- Terms and Conditions -->
   <url>
     <loc>https://earnflow.in/terms-and-conditions</loc>
-    <lastmod>2026-10-21T17:15:00+05:30</lastmod>
+    <lastmod>2026-11-24T07:30:00+05:30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
 
-  <!-- Dedicated Privacy Policy -->
+  <!-- Privacy Policy -->
   <url>
     <loc>https://earnflow.in/privacy-policy</loc>
-    <lastmod>2026-10-21T17:15:00+05:30</lastmod>
+    <lastmod>2026-11-24T07:30:00+05:30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
 
-  <!-- Support & Helpdesk -->
+  <!-- Responsible Gaming Policy -->
   <url>
-    <loc>https://earnflow.in/contact</loc>
-    <lastmod>2026-10-21T17:15:00+05:30</lastmod>
+    <loc>https://earnflow.in/responsible-gaming</loc>
+    <lastmod>2026-11-24T07:30:00+05:30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+
+  <!-- Refund & Cancellation Policy -->
+  <url>
+    <loc>https://earnflow.in/refund-policy</loc>
+    <lastmod>2026-11-24T07:30:00+05:30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+
+  <!-- Payment Policy -->
+  <url>
+    <loc>https://earnflow.in/payment-policy</loc>
+    <lastmod>2026-11-24T07:30:00+05:30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+
+  <!-- Platform Disclaimer -->
+  <url>
+    <loc>https://earnflow.in/disclaimer</loc>
+    <lastmod>2026-11-24T07:30:00+05:30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.60</priority>
   </url>

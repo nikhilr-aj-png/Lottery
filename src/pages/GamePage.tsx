@@ -46,14 +46,7 @@ import {
 import { useSoundFX } from '../hooks/useSoundFX';
 import MyTicketsView from '../components/MyTicketsView';
 import ResultsView from '../components/ResultsView';
-import {
-  LotteryWorkstation,
-  CrashGame,
-  DiceGame,
-  CoinflipGame,
-  BingoGame,
-  HorseRacingGame
-} from '../games';
+import { LotteryWorkstation } from '../games';
 
 export interface GamePageProps {
   gameSlug: string;
@@ -398,18 +391,11 @@ export default function GamePage({
       <div className="w-full h-full flex flex-col min-h-0 overflow-hidden animate-in fade-in duration-200">
         {/* Dedicated Game Play Stage Area (Starts directly below main navigation) */}
         <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col">
-          {game.id === 'crash' && <CrashGame room={selectedRoom} activityBox={activityBox} />}
-          {game.id === 'dice' && <DiceGame room={selectedRoom} activityBox={activityBox} />}
-          {game.id === 'coinflip' && <CoinflipGame room={selectedRoom} activityBox={activityBox} />}
-          {game.id === 'bingo' && <BingoGame room={selectedRoom} activityBox={activityBox} />}
-          {game.id === 'horse-racing' && <HorseRacingGame room={selectedRoom} activityBox={activityBox} />}
-          {game.id === 'lottery' && (
-            <LotteryWorkstation
-              room={selectedRoom}
-              onBackToLobby={handleBackToLobby}
-              activityBox={activityBox}
-            />
-          )}
+          <LotteryWorkstation
+            room={selectedRoom}
+            onBackToLobby={handleBackToLobby}
+            activityBox={activityBox}
+          />
         </div>
       </div>
     );
@@ -592,182 +578,6 @@ export default function GamePage({
                       </div>
                     </div>
                   )}
-
-                  {/* Crash Specific Info (Recent Multipliers & Rules) */}
-                  {game.id === 'crash' && (
-                    <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-[11px] text-[#9b8f7c]">
-                        <span className="flex items-center gap-1">
-                          <Flame className="w-3 h-3 text-orange-400" />
-                          <span>Flight Engine:</span>
-                        </span>
-                        <strong className="text-orange-300 font-mono-numbers">
-                          Real-time Curve
-                        </strong>
-                      </div>
-
-                      {room.recentMultipliers && (
-                        <div className="flex items-center justify-between text-[11px] text-[#9b8f7c] pt-1 border-t border-[#1f2737]">
-                          <span>Recent Flights:</span>
-                          <div className="flex items-center gap-1">
-                            {room.recentMultipliers.map((m, i) => (
-                              <span key={i} className="font-mono-numbers text-emerald-400 font-bold bg-[#141924] px-1.5 py-0.2 rounded border border-[#272a31]">
-                                {m}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {room.rulesSummary && (
-                        <div className="text-[10px] text-[#8b92a2] text-left pt-0.5">
-                          ℹ️ {room.rulesSummary}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Dice Specific Info (Recent Rolls & Range) */}
-                  {game.id === 'dice' && (
-                    <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-[11px] text-[#9b8f7c]">
-                        <span className="flex items-center gap-1">
-                          <Percent className="w-3 h-3 text-blue-400" />
-                          <span>Roll Target:</span>
-                        </span>
-                        <strong className="text-blue-300 font-mono-numbers">
-                          1.00 – 98.00 (Over / Under)
-                        </strong>
-                      </div>
-
-                      {room.recentRolls && (
-                        <div className="flex items-center justify-between text-[11px] text-[#9b8f7c] pt-1 border-t border-[#1f2737]">
-                          <span>Recent Rolls:</span>
-                          <div className="flex items-center gap-1">
-                            {room.recentRolls.map((r, i) => (
-                              <span key={i} className="font-mono-numbers text-amber-300 font-bold bg-[#141924] px-1.5 py-0.2 rounded border border-[#272a31]">
-                                {r}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {room.rulesSummary && (
-                        <div className="text-[10px] text-[#8b92a2] text-left pt-0.5">
-                          ℹ️ {room.rulesSummary}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Bingo – Color Trading Specific Info (Recent Draws & Range) */}
-                  {game.id === 'bingo' && (
-                    <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-[11px] text-[#9b8f7c]">
-                        <span className="flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-purple-400" />
-                          <span>Prediction Types:</span>
-                        </span>
-                        <strong className="text-purple-300 font-mono-numbers">
-                          Colors, Numbers (0-9) &amp; Big/Small
-                        </strong>
-                      </div>
-
-                      {room.recentWinners && (
-                        <div className="flex items-center justify-between text-[11px] text-[#9b8f7c] pt-1 border-t border-[#1f2737]">
-                          <span>Recent Winners:</span>
-                          <div className="flex items-center gap-1">
-                            {room.recentWinners.map((w, i) => (
-                              <span key={i} className="font-mono-numbers text-amber-300 font-bold bg-[#141924] px-1.5 py-0.2 rounded border border-[#272a31]">
-                                {w}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {room.rulesSummary && (
-                        <div className="text-[10px] text-[#8b92a2] text-left pt-0.5">
-                          ℹ️ {room.rulesSummary}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Horse Racing Specific Info (Runners & Turf) */}
-                  {game.id === 'horse-racing' && (
-                    <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-[11px] text-[#9b8f7c]">
-                        <span className="flex items-center gap-1">
-                          <Flame className="w-3 h-3 text-emerald-400" />
-                          <span>Race Format:</span>
-                        </span>
-                        <strong className="text-emerald-300 font-mono-numbers">
-                          6 Thoroughbreds · Odds up to 35.0x
-                        </strong>
-                      </div>
-
-                      {room.recentWinners && (
-                        <div className="flex items-center justify-between text-[11px] text-[#9b8f7c] pt-1 border-t border-[#1f2737]">
-                          <span>Recent Champions:</span>
-                          <div className="flex items-center gap-1 flex-wrap">
-                            {room.recentWinners.slice(0, 2).map((w, i) => (
-                              <span key={i} className="font-mono-numbers text-emerald-400 font-bold bg-[#141924] px-1.5 py-0.2 rounded border border-[#272a31] text-[10px]">
-                                {w}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {room.rulesSummary && (
-                        <div className="text-[10px] text-[#8b92a2] text-left pt-0.5">
-                          ℹ️ {room.rulesSummary}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-
-                  {/* Coinflip Specific Info (Flip Config & Recent) */}
-                  {game.id === 'coinflip' && (
-                    <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-[11px] text-[#9b8f7c]">
-                        <span className="flex items-center gap-1">
-                          <Coins className="w-3 h-3 text-amber-400" />
-                          <span>Flip Mode:</span>
-                        </span>
-                        <strong className="text-amber-300 font-mono-numbers">
-                          {room.flipConfig || '50/50 Dual Face (1.98x Payout)'}
-                        </strong>
-                      </div>
-
-                      {room.recentFlips && (
-                        <div className="flex items-center justify-between text-[11px] text-[#9b8f7c] pt-1 border-t border-[#1f2737]">
-                          <span>Recent Flips:</span>
-                          <div className="flex items-center gap-1">
-                            {room.recentFlips.map((side, i) => (
-                              <span
-                                key={i}
-                                className="font-mono-numbers font-bold px-1.5 py-0.2 rounded border bg-[#141924] text-amber-300 border-[#272a31] capitalize"
-                              >
-                                {side === 'heads' ? '👑 H' : '🦅 T'}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {room.rulesSummary && (
-                        <div className="text-[10px] text-[#8b92a2] text-left pt-0.5">
-                          ℹ️ {room.rulesSummary}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-
 
                   {/* Room Stats */}
                   <div className="grid grid-cols-2 gap-2 text-xs font-mono-numbers pt-2 border-t border-[#1f2737]">

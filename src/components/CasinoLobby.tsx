@@ -1,233 +1,139 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { GAMES, GAME_CATEGORIES } from '../engine';
-import GameCard from './GameCard';
+import React, { useState, useMemo } from 'react';
 import { useLottery } from '../context/LotteryContext';
-import { supabase } from '../lib/supabase';
 import { 
-  Flame, 
-  Search, 
-  Filter, 
   Sparkles, 
   Trophy, 
   ShieldCheck, 
   Coins, 
   ArrowRight,
-  TrendingUp,
   Ticket,
-  Rocket,
-  Dices,
   Play,
   Lock,
   FileText,
-  Mail,
+  Clock,
+  CheckCircle2,
+  HelpCircle,
+  ChevronDown,
+  Layers,
+  Award,
+  Wallet,
   Zap,
-  CheckCircle2
+  Users
 } from 'lucide-react';
 
 interface CasinoLobbyProps {
-  onLaunchGame: (gameId: string) => void;
+  onLaunchGame?: (gameId: string) => void;
   onOpenLotteryRules?: () => void;
 }
 
 export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: CasinoLobbyProps) {
-  const { games: dynamicGames, events, setActiveTab } = useLottery();
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('popular'); // 'popular' | 'rtp' | 'multiplier'
+  const { events, setSelectedEventForModal, setActiveTab } = useLottery();
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
-  // Dynamic database-driven games list (strictly excludes deleted/disabled items)
-  const availableGames = useMemo(() => {
-    if (Array.isArray(dynamicGames) && dynamicGames.length > 0) {
-      return dynamicGames.filter(g => g.isEnabled && g.status !== 'deleted');
-    }
-    return GAMES;
-  }, [dynamicGames]);
+  // Active lottery events from Supabase
+  const activeEvents = useMemo(() => {
+    return (events || []).filter(e => e.status === 'active');
+  }, [events]);
 
-  // Real backend usage stats for dynamic popularity ranking
-  const [popularityScores, setPopularityScores] = useState<Record<string, number>>({});
+  const recentConcludedEvents = useMemo(() => {
+    return (events || []).filter(e => e.status === 'completed' || Boolean(e.winningDigits)).slice(0, 3);
+  }, [events]);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchPopularity = async () => {
-      try {
-        const scores: Record<string, number> = {};
-
-        // 1. Fetch round counts & unique players from game_rounds
-        const { data: roundData } = await supabase
-          .from('game_rounds')
-          .select('game_id, user_id');
-
-        if (Array.isArray(roundData)) {
-          const playersPerGame: Record<string, Set<string>> = {};
-          roundData.forEach(r => {
-            const gid = r.game_id;
-            scores[gid] = (scores[gid] || 0) + 1;
-            if (r.user_id) {
-              if (!playersPerGame[gid]) playersPerGame[gid] = new Set();
-              playersPerGame[gid].add(r.user_id);
-            }
-          });
-          Object.keys(playersPerGame).forEach(gid => {
-            scores[gid] = (scores[gid] || 0) + (playersPerGame[gid].size * 5);
-          });
-        }
-
-        // 2. Fetch lottery ticket counts & unique players
-        const { data: ticketData } = await supabase
-          .from('lottery_tickets')
-          .select('user_id');
-
-        if (Array.isArray(ticketData)) {
-          const uniquePlayers = new Set(ticketData.map(t => t.user_id).filter(Boolean));
-          scores['lottery'] = (scores['lottery'] || 0) + ticketData.length + (uniquePlayers.size * 5);
-        }
-
-        if (isMounted) {
-          setPopularityScores(scores);
-        }
-      } catch (err) {
-        console.warn('fetchPopularity error:', err);
-      }
-    };
-
-    fetchPopularity();
-    return () => { isMounted = false; };
-  }, []);
-
-  // Top popular active game derived dynamically from backend activity
-  const topPopularGame = useMemo(() => {
-    if (!availableGames || availableGames.length === 0) return null;
-    const sorted = [...availableGames].sort((a, b) => {
-      const scoreA = popularityScores[a.id] || 0;
-      const scoreB = popularityScores[b.id] || 0;
-      if (scoreB !== scoreA) return scoreB - scoreA;
-      return (b.rtp || 0) - (a.rtp || 0);
-    });
-    return sorted[0];
-  }, [availableGames, popularityScores]);
-
-  // Filter & Sort Games
-  const filteredGames = useMemo(() => {
-    let list = [...availableGames];
-
-    // Filter by Category
-    if (selectedCategory !== 'all') {
-      list = list.filter(g => {
-        if (selectedCategory === 'instant') return g.category === 'instant';
-        if (selectedCategory === 'arcade') return g.category === 'arcade';
-        if (selectedCategory === 'table') return g.category === 'table';
-        if (selectedCategory === 'lottery') return g.category === 'lottery' || g.id === 'lottery';
-        return true;
-      });
-    }
-
-    // Filter by Search Query
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(g => 
-        Boolean(
-          (g.name && g.name.toLowerCase().includes(q)) || 
-          (g.description && g.description.toLowerCase().includes(q)) || 
-          (g.category && g.category.toLowerCase().includes(q))
-        )
-      );
-    }
-
-    // Genuine popularity & metric sorting
-    if (sortBy === 'popular') {
-      list.sort((a, b) => {
-        const scoreA = popularityScores[a.id] || 0;
-        const scoreB = popularityScores[b.id] || 0;
-        if (scoreB !== scoreA) return scoreB - scoreA;
-        return (b.rtp || 0) - (a.rtp || 0);
-      });
-    } else if (sortBy === 'rtp') {
-      list.sort((a, b) => b.rtp - a.rtp);
-    } else if (sortBy === 'multiplier') {
-      list.sort((a, b) => (b.maxMultiplier || 0) - (a.maxMultiplier || 0));
-    }
-
-    return list;
-  }, [availableGames, selectedCategory, searchQuery, sortBy, popularityScores]);
-
-  const categories = useMemo(() => [
-    { id: 'all', label: 'All Games', count: availableGames.length },
-    { id: 'lottery', label: 'Four-Digit Lottery', count: availableGames.filter(g => g.category === 'lottery' || g.id === 'lottery').length },
-    { id: 'instant', label: 'Instant Originals', count: availableGames.filter(g => g.category === 'instant').length },
-    { id: 'arcade', label: 'Arcade & Color', count: availableGames.filter(g => g.category === 'arcade').length },
-    { id: 'table', label: 'Table & Derby', count: availableGames.filter(g => g.category === 'table').length }
-  ], [availableGames]);
-
-  const handleGameSelect = (game: { id: string; slug?: string }) => {
+  const handleEnterRoom = (eventId?: string) => {
     if (onLaunchGame) {
-      onLaunchGame(game.slug || game.id);
+      onLaunchGame('four-digit-lottery');
     }
   };
 
+  const handleBuyTicket = (evt: any) => {
+    setSelectedEventForModal(evt);
+  };
+
+  const faqs = [
+    {
+      q: 'What is EarnFlow Four-Digit Lottery?',
+      a: 'EarnFlow Four-Digit Lottery is an online lucky draw game where players select a four-digit number between 0000 and 9999. Every round features an automated, transparent draw with prize pools distributed in USDT.'
+    },
+    {
+      q: 'How does ticket pricing and single-ticket entry work?',
+      a: 'Each ticket has a fixed unit price in USDT (e.g., 10 USDT per entry). To ensure fair participation, each ticket is selected and entered individually with full transparency.'
+    },
+    {
+      q: 'How are winning numbers drawn?',
+      a: 'Winning four-digit sequences are determined at the scheduled draw time through automated cryptographic algorithms. Outcomes are finalized by the platform draw engine without human intervention.'
+    },
+    {
+      q: 'How and when are winnings paid out?',
+      a: 'When an event concludes, exact matching tickets automatically receive their share of the jackpot prize pool. Payouts are credited directly to your EarnFlow USDT wallet and can be withdrawn via TRC-20 within 24 hours.'
+    },
+    {
+      q: 'Which currency is used on EarnFlow.in?',
+      a: 'EarnFlow.in operates exclusively with USDT (Tether on TRC-20 network). All ticket entries, jackpots, wallet deposits, and withdrawals are conducted in USDT.'
+    },
+    {
+      q: 'What are the eligibility requirements to play?',
+      a: 'You must be at least 18 years of age and comply with the applicable online gaming laws and regulations of your local jurisdiction.'
+    }
+  ];
+
   return (
-    <div className="space-y-5 sm:space-y-7 pb-2 text-left">
+    <div className="space-y-6 sm:space-y-8 pb-4 text-left">
       
-      {/* 1. HERO BANNER — INTRODUCES EARNFLOW.IN PURPOSE & PLATFORM CAPABILITIES */}
-      <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#121624] via-[#0e121c] to-[#18112e] border border-amber-500/30 p-4 xs:p-5 sm:p-7 lg:p-9 shadow-2xl">
+      {/* 1. HERO SECTION: EXCLUSIVELY FOUR-DIGIT LOTTERY */}
+      <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#121624] via-[#0E131F] to-[#1C1335] border border-amber-500/30 p-4 xs:p-6 sm:p-8 lg:p-10 shadow-2xl">
         <div className="absolute top-0 right-0 w-80 sm:w-96 h-80 sm:h-96 bg-gradient-to-b from-amber-500/15 via-purple-600/10 to-transparent rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-60 sm:w-72 h-60 sm:h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 lg:gap-8">
           
-          {/* LEFT COLUMN: Hero Copy & Actions */}
-          <div className="flex-1 space-y-3.5 sm:space-y-4 max-w-2xl min-w-0">
+          {/* Left Column: Hero Copy & Actions */}
+          <div className="flex-1 space-y-4 max-w-2xl min-w-0">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono-numbers text-[11px] font-bold">
               <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>EarnFlow.in · Official Online Gaming Platform</span>
+              <span>EarnFlow.in · Official Online Four-Digit Lottery Platform</span>
             </div>
 
             <h1 
               className="font-display font-black text-white tracking-tight leading-[1.15]"
-              style={{ fontSize: 'clamp(1.4rem, 3.2vw + 0.5rem, 2.75rem)' }}
+              style={{ fontSize: 'clamp(1.5rem, 3.2vw + 0.5rem, 2.85rem)' }}
             >
-              Interactive Online Gaming &amp; <span className="text-[#F5C451]">USDT Platform</span>
+              Online Four-Digit Lucky Draw with <span className="text-amber-400">USDT Settlements</span>
             </h1>
 
-            {/* Clear, explicit positioning statement for Google verification and first-time visitors */}
-            <p className="text-xs sm:text-sm text-[#cbd5e1] leading-relaxed max-w-xl">
-              <strong>EarnFlow.in is an online gaming platform that provides users with access to interactive games, gaming events, account management, and USDT-based payment features.</strong>
+            <p className="text-xs sm:text-sm text-[#CBD5E1] leading-relaxed max-w-xl">
+              <strong>EarnFlow.in is a dedicated Four-Digit Lottery platform. Pick your lucky combination between 0000 and 9999 to enter live jackpot pools with automated transparent draws and direct 24-hour USDT payouts.</strong>
             </p>
 
             <p className="text-xs sm:text-[13px] text-[#94A3B8] leading-relaxed max-w-xl">
-              Play Four-Digit Lottery, Crash, Dice, Coinflip, Bingo – Color Trading, and Horse Racing with direct USDT (TRC-20) wallet settlements.
+              Enjoy fair play with a 95.0% RTP model, single-ticket entry rules, live countdown timers, and full cryptographic draw auditability.
             </p>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1.5 w-full sm:w-auto">
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
               <button
-                onClick={() => {
-                  const el = document.getElementById('casino-games-grid');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition-all cursor-pointer"
+                onClick={() => handleEnterRoom()}
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition-all cursor-pointer"
               >
-                <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current shrink-0" />
-                <span>Explore All {availableGames.length} Games</span>
+                <Play className="w-4 h-4 fill-current shrink-0" />
+                <span>Enter Live Draw Room</span>
               </button>
 
-              {topPopularGame && (
-                <button
-                  onClick={() => {
-                    handleGameSelect(topPopularGame);
-                  }}
-                  className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-white border border-[#272A31] hover:border-amber-500/40 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
-                >
-                  <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
-                  <span>Play {topPopularGame.name}</span>
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  const el = document.getElementById('how-it-works-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-5 py-3 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-white border border-[#272A31] hover:border-amber-500/40 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <span>How It Works</span>
+                <ArrowRight className="w-4 h-4 text-amber-400 shrink-0" />
+              </button>
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Clean Platform Highlights */}
-          <div className="hidden lg:flex flex-col gap-3 w-72 xl:w-80 shrink-0 bg-[#0B0F19]/80 border border-amber-500/20 rounded-2xl p-4 shadow-xl backdrop-blur-md">
+          {/* Right Column: Key Metrics Card */}
+          <div className="flex flex-col gap-3 w-full sm:w-80 shrink-0 bg-[#0B0F19]/90 border border-amber-500/20 rounded-2xl p-4 shadow-xl backdrop-blur-md">
             
-            {/* Platform Currency Card */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#111827] border border-[#1F2737]">
               <div>
                 <span className="text-[10px] font-mono-numbers uppercase text-[#94A3B8] font-bold block">
@@ -243,27 +149,31 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: Casino
               </div>
             </div>
 
-            {/* Payout SLA Banner */}
             <div className="p-3 rounded-xl bg-[#111827] border border-[#1F2737] space-y-1">
-              <div className="flex items-center gap-1.5 text-purple-400 text-xs font-bold">
-                <Coins className="w-4 h-4 shrink-0" />
-                <span>Automated Disbursals</span>
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className="text-[#94A3B8]">Game Math Model</span>
+                <span className="text-amber-400 font-mono-numbers">95.0% RTP</span>
               </div>
-              <p className="text-[10px] text-[#94A3B8] leading-tight">
-                All game winnings and lottery jackpot pools settle directly to your platform wallet in USDT.
-              </p>
+              <div className="flex items-center justify-between text-xs font-bold pt-1 border-t border-[#1F2737]">
+                <span className="text-[#94A3B8]">Drawn Sequence</span>
+                <span className="text-white font-mono-numbers">0000 – 9999</span>
+              </div>
+              <div className="flex items-center justify-between text-xs font-bold pt-1 border-t border-[#1F2737]">
+                <span className="text-[#94A3B8]">Payout Timeline</span>
+                <span className="text-emerald-400 font-mono-numbers">Within 24 Hours</span>
+              </div>
             </div>
 
-            {/* Player Safety */}
             <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-purple-500/10 border border-amber-500/30 flex items-center justify-between">
               <div>
                 <span className="text-[9px] font-mono-numbers text-amber-400 font-bold block uppercase">
-                  Age &amp; Compliance
+                  Player Compliance
                 </span>
                 <span className="font-mono-numbers text-xs font-extrabold text-white">
-                  18+ Only · Fair Play
+                  18+ Only · Responsible Gaming
                 </span>
               </div>
+              <ShieldCheck className="w-5 h-5 text-amber-400" />
             </div>
 
           </div>
@@ -271,78 +181,291 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules }: Casino
         </div>
       </section>
 
-      {/* 2. CATEGORY TABS & SEARCH CONTROLS */}
-      <section id="casino-games-grid" className="space-y-4 sm:space-y-5">
-        
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 sm:gap-4">
-          
-          {/* Category Pills */}
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1 -my-1">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`min-h-[40px] px-3 xs:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 shrink-0 select-none ${
-                  selectedCategory === cat.id
-                    ? 'bg-amber-500 text-black font-extrabold shadow-md shadow-amber-500/20'
-                    : 'bg-[#111827] hover:bg-[#151C2B] text-[#94A3B8] hover:text-white border border-[#1F2737]'
-                }`}
-              >
-                <span>{cat.label}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono-numbers ${
-                  selectedCategory === cat.id ? 'bg-black/40 text-amber-300' : 'bg-black/30 text-[#64748B]'
-                }`}>
-                  {cat.count}
-                </span>
-              </button>
-            ))}
+      {/* 2. LIVE FOUR-DIGIT LOTTERY EVENTS / POOLS */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-[#1F2737]">
+          <div>
+            <h2 className="font-display font-extrabold text-lg sm:text-xl text-white flex items-center gap-2">
+              <Ticket className="w-5 h-5 text-amber-400" />
+              <span>Live Lottery Pools &amp; Draw Rooms</span>
+            </h2>
+            <p className="text-xs text-[#94A3B8]">
+              Select an active room to pick your four digits and enter the lucky draw.
+            </p>
           </div>
 
-          {/* Search & Sort Controls */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 w-full md:w-auto">
-            <div className="relative flex-1 md:w-56 lg:w-64">
-              <Search className="w-4 h-4 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search games..."
-                className="w-full min-h-[40px] bg-[#111827] border border-[#1F2737] focus:border-amber-500/50 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-[#64748B] outline-none"
-              />
-            </div>
-
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="min-h-[40px] bg-[#111827] border border-[#1F2737] focus:border-amber-500/50 rounded-xl px-3 py-2 text-xs text-[#94A3B8] outline-none cursor-pointer shrink-0"
-            >
-              <option value="popular">Popular</option>
-              <option value="rtp">Highest RTP</option>
-              <option value="multiplier">Max Multiplier</option>
-            </select>
-          </div>
-
+          <button
+            onClick={() => handleEnterRoom()}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#111827] hover:bg-[#151C2B] text-amber-400 border border-amber-500/30 text-xs font-bold cursor-pointer transition-colors"
+          >
+            <span>Open Workstation</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
-        {/* 4. GAME CARDS GRID (6 ACTIVE GAMES) */}
-        {filteredGames.length === 0 ? (
-          <div className="bg-[#111827] rounded-3xl border border-[#1F2737] p-12 text-center space-y-3">
-            <Search className="w-10 h-10 text-[#64748B] mx-auto" />
-            <h3 className="font-display font-bold text-lg text-white">No games found</h3>
-            <p className="text-xs text-[#94A3B8]">Try adjusting your search query or selected category.</p>
+        {activeEvents.length === 0 ? (
+          <div className="bg-[#111827] rounded-2xl border border-[#1F2737] p-8 text-center space-y-3">
+            <Clock className="w-8 h-8 text-amber-400 mx-auto" />
+            <h3 className="font-display font-bold text-base text-white">Next Event Opening Soon</h3>
+            <p className="text-xs text-[#94A3B8] max-w-md mx-auto">
+              Our automated lottery draws run on regular schedules. Check back shortly or view past draw results below.
+            </p>
+            <button
+              onClick={() => setActiveTab('results')}
+              className="px-4 py-2 rounded-xl bg-amber-500 text-black font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 shadow-md"
+            >
+              <Trophy className="w-3.5 h-3.5" />
+              <span>View Past Results</span>
+            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 3xl:grid-cols-6 gap-3.5 xs:gap-4 sm:gap-5">
-            {filteredGames.map((game) => (
-              <GameCard
-                key={game.id}
-                game={game}
-                onPlay={() => handleGameSelect(game)}
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {activeEvents.map((evt, idx) => (
+              <div 
+                key={evt.id || idx}
+                className="bg-[#111827] border border-[#1F2737] hover:border-amber-500/40 rounded-2xl p-5 space-y-4 shadow-lg transition-all flex flex-col justify-between"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold font-mono-numbers">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>LIVE DRAW</span>
+                    </span>
+
+                    <span className="text-[11px] font-mono-numbers text-[#94A3B8]">
+                      #{evt.id.slice(-6)}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="font-display font-extrabold text-base text-white">
+                      {evt.roomName || evt.title || `Lottery Room ${idx + 1}`}
+                    </h3>
+                    <p className="text-xs text-[#94A3B8] line-clamp-2 mt-1">
+                      {evt.description || 'Pick your 4 digits (0000–9999). Exact match shares the USDT jackpot pool.'}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#1F2737] text-xs font-mono-numbers">
+                    <div className="p-2 rounded-lg bg-[#0B0F19]">
+                      <span className="text-[10px] text-[#94A3B8] block">Ticket Entry</span>
+                      <strong className="text-white text-sm">{evt.ticketPrice || 10} USDT</strong>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-[#0B0F19]">
+                      <span className="text-[10px] text-[#94A3B8] block">Prize Pool</span>
+                      <strong className="text-amber-400 text-sm">
+                        {evt.poolPrize ? `${evt.poolPrize} USDT` : 'Jackpot'}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex gap-2">
+                  <button
+                    onClick={() => handleEnterRoom(evt.id)}
+                    className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md shadow-amber-500/20"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>Enter Room</span>
+                  </button>
+                  <button
+                    onClick={() => handleBuyTicket(evt)}
+                    className="px-3.5 py-2.5 rounded-xl bg-[#1F2737] hover:bg-[#273248] text-white font-bold text-xs flex items-center justify-center transition-colors cursor-pointer"
+                    title="Quick Buy Ticket"
+                  >
+                    <Ticket className="w-4 h-4 text-amber-400" />
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}
+      </section>
 
+      {/* 3. HOW FOUR-DIGIT LOTTERY WORKS (4 STEPS) */}
+      <section id="how-it-works-section" className="space-y-4">
+        <div className="text-left pb-2 border-b border-[#1F2737]">
+          <h2 className="font-display font-extrabold text-lg sm:text-xl text-white flex items-center gap-2">
+            <Zap className="w-5 h-5 text-amber-400" />
+            <span>How Four-Digit Lottery Works</span>
+          </h2>
+          <p className="text-xs text-[#94A3B8]">
+            Four straightforward steps from number selection to automated USDT payouts.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          <div className="bg-[#111827] border border-[#1F2737] rounded-2xl p-5 space-y-3 relative overflow-hidden">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 font-display font-black text-base">
+              1
+            </div>
+            <h3 className="font-display font-bold text-sm text-white">Select 4 Digits</h3>
+            <p className="text-xs text-[#94A3B8] leading-relaxed">
+              Pick your lucky 4-digit number from 0000 to 9999 using interactive dial rollers or the quick-pick numeric keypad.
+            </p>
+          </div>
+
+          <div className="bg-[#111827] border border-[#1F2737] rounded-2xl p-5 space-y-3 relative overflow-hidden">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-display font-black text-base">
+              2
+            </div>
+            <h3 className="font-display font-bold text-sm text-white">Single-Ticket Entry</h3>
+            <p className="text-xs text-[#94A3B8] leading-relaxed">
+              Every entry is priced clearly in USDT. Single-ticket purchase ensures fair, equal opportunity across every player.
+            </p>
+          </div>
+
+          <div className="bg-[#111827] border border-[#1F2737] rounded-2xl p-5 space-y-3 relative overflow-hidden">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 font-display font-black text-base">
+              3
+            </div>
+            <h3 className="font-display font-bold text-sm text-white">Live Countdown</h3>
+            <p className="text-xs text-[#94A3B8] leading-relaxed">
+              Watch the live draw countdown timer. Ticket purchases close before the draw, locking the participant roster.
+            </p>
+          </div>
+
+          <div className="bg-[#111827] border border-[#1F2737] rounded-2xl p-5 space-y-3 relative overflow-hidden">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 font-display font-black text-base">
+              4
+            </div>
+            <h3 className="font-display font-bold text-sm text-white">Automated USDT Payout</h3>
+            <p className="text-xs text-[#94A3B8] leading-relaxed">
+              Winning numbers are drawn automatically. Winners receive their prize pool share directly to their wallet within 24 hours.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 4. RULES & TRANSPARENCY OVERVIEW */}
+      <section className="bg-[#111827] border border-[#1F2737] rounded-2xl p-6 sm:p-8 space-y-5">
+        <div className="flex items-center gap-2 pb-2 border-b border-[#1F2737]">
+          <Award className="w-5 h-5 text-amber-400" />
+          <h2 className="font-display font-extrabold text-base sm:text-lg text-white">
+            Lottery Rules &amp; Prize Distribution
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-[#94A3B8]">
+          <div className="space-y-3">
+            <h3 className="font-bold text-white uppercase text-[11px] tracking-wider flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Draw Mechanics &amp; Eligibility:</span>
+            </h3>
+            <ul className="space-y-2 list-none">
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400 font-bold">•</span>
+                <span><strong>4-Digit Exact Match:</strong> Winning combination consists of 4 numerical digits (0000 through 9999).</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400 font-bold">•</span>
+                <span><strong>Jackpot Allocation:</strong> 100% of the allocated prize pool is distributed among winning ticket holders.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400 font-bold">•</span>
+                <span><strong>Multiple Winners:</strong> If multiple tickets match the drawn numbers, the pool is split equally among winners.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400 font-bold">•</span>
+                <span><strong>Roll-over / Guaranteed Minimum:</strong> Unclaimed prize pools roll over or follow room jackpot rules.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="font-bold text-white uppercase text-[11px] tracking-wider flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+              <span>Platform Integrity &amp; Settlements:</span>
+            </h3>
+            <ul className="space-y-2 list-none">
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-400 font-bold">•</span>
+                <span><strong>No Bulk Scalping:</strong> Single-ticket action ensures every participant enjoys transparent access.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-400 font-bold">•</span>
+                <span><strong>Cryptographic Auditing:</strong> Every draw outcome can be verified against its pre-committed server seed.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-400 font-bold">•</span>
+                <span><strong>Direct TRC-20 Disbursal:</strong> Withdrawals are processed via standard USDT wallet transactions within 24 hours.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. FREQUENTLY ASKED QUESTIONS */}
+      <section className="space-y-4">
+        <div className="pb-2 border-b border-[#1F2737]">
+          <h2 className="font-display font-extrabold text-lg sm:text-xl text-white flex items-center gap-2">
+            <HelpCircle className="w-5 h-5 text-amber-400" />
+            <span>Frequently Asked Questions</span>
+          </h2>
+          <p className="text-xs text-[#94A3B8]">
+            Everything you need to know about participating in Four-Digit Lottery on EarnFlow.in.
+          </p>
+        </div>
+
+        <div className="space-y-2.5">
+          {faqs.map((faq, idx) => {
+            const isOpen = openFaqIndex === idx;
+            return (
+              <div
+                key={idx}
+                className="bg-[#111827] border border-[#1F2737] rounded-xl overflow-hidden transition-all"
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                  className="w-full p-4 text-left flex items-center justify-between gap-3 text-xs sm:text-sm font-bold text-white hover:text-amber-400 transition-colors cursor-pointer"
+                >
+                  <span>{faq.q}</span>
+                  <ChevronDown className={`w-4 h-4 text-[#94A3B8] shrink-0 transition-transform ${isOpen ? 'rotate-180 text-amber-400' : ''}`} />
+                </button>
+
+                {isOpen && (
+                  <div className="px-4 pb-4 text-xs text-[#94A3B8] leading-relaxed border-t border-[#1F2737]/60 pt-3">
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 6. RESPONSIBLE GAMING & CUSTOMER SUPPORT BANNER */}
+      <section className="rounded-2xl bg-gradient-to-r from-[#111827] via-[#151D2F] to-[#111827] border border-amber-500/20 p-5 sm:p-7 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <div className="space-y-1.5 max-w-xl">
+          <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold uppercase tracking-wider">
+            Responsible Gaming
+          </span>
+          <h3 className="font-display font-extrabold text-base text-white">
+            Play Responsibly &amp; Stay in Control
+          </h3>
+          <p className="text-xs text-[#94A3B8] leading-relaxed">
+            Lottery participation should always be for entertainment. Set personal limits, participate within your means, and seek support if needed. EarnFlow.in is strictly for adults aged 18 and older.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setActiveTab('support')}
+            className="px-4 py-2.5 rounded-xl bg-[#1F2737] hover:bg-[#273248] text-white font-bold text-xs transition-colors cursor-pointer"
+          >
+            Customer Support
+          </button>
+          <button
+            onClick={() => setActiveTab('terms')}
+            className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs transition-colors cursor-pointer shadow-md"
+          >
+            Terms &amp; Rules
+          </button>
+        </div>
       </section>
 
     </div>

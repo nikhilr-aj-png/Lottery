@@ -1,21 +1,19 @@
-/**
- * ============================================================================
- * TERMS & CONDITIONS — EARNFLOW.IN
- * ============================================================================
- * Comprehensive legal document covering 30 exhaustive sections.
- * Matches EarnFlow.in USDT-only currency architecture, 6 active games,
- * Provably Fair cryptographic proofs, 24-hour withdrawal SLA, and Google OAuth.
- * ============================================================================
- */
-
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   ArrowLeft, 
-  Scale, 
   ShieldCheck, 
+  Clock, 
+  HelpCircle, 
+  FileText, 
   CheckCircle2, 
-  Lock, 
-  FileText
+  AlertTriangle, 
+  Coins, 
+  Lock,
+  ChevronDown,
+  Search,
+  ExternalLink,
+  Mail,
+  Ticket
 } from 'lucide-react';
 import { useLottery } from '../context/LotteryContext';
 
@@ -25,548 +23,573 @@ export interface TermsPageProps {
 
 export default function TermsPage({ onBackToHome }: TermsPageProps) {
   const { platformSettings } = useLottery();
-  const supportEmail = platformSettings?.supportEmail ? platformSettings.supportEmail.trim() : '';
+  const supportEmail = platformSettings?.supportEmail?.trim() || 'earnflow.user@gmail.com';
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
   const sections = [
     {
       num: '01',
-      title: 'Acceptance of Terms & Legal Age (18+)',
+      title: 'Introduction & Agreement to Terms',
       content: (
         <div className="space-y-3">
           <p>
-            By accessing, browsing, registering an account on, or otherwise using <strong className="text-white">EarnFlow.in</strong> (the &quot;Platform&quot;, &quot;Service&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;), you acknowledge that you have read, understood, and agreed to be bound by these Terms and Conditions (&quot;Terms&quot;, &quot;Agreement&quot;) and our Privacy Policy.
+            Welcome to EarnFlow.in. These Terms and Conditions (&quot;Terms&quot;, &quot;Agreement&quot;) govern your access to and use of the EarnFlow website, applications, APIs, smart contract interfaces, and digital services (collectively, the &quot;Platform&quot; or &quot;Services&quot;).
           </p>
           <p>
-            You explicitly represent and warrant that you are at least eighteen (18) years of age or the legal age of majority in your jurisdiction, whichever is higher. Any access to or participation in our games by individuals under 18 is strictly prohibited and constitutes a material breach of this Agreement.
+            By accessing, creating an account, or participating in any Four-Digit Lottery draw on EarnFlow.in, you acknowledge that you have read, understood, and agreed to be legally bound by these Terms and our Privacy Policy. If you do not agree with any provision of these Terms, you must discontinue your use of the Platform immediately.
           </p>
         </div>
       )
     },
     {
       num: '02',
-      title: 'Definitions & Key Terminology',
+      title: 'Definitions & Interpretation',
       content: (
-        <div className="space-y-2">
-          <ul className="list-disc pl-5 space-y-1.5 text-[#94a3b8]">
-            <li><strong className="text-white">&quot;Platform&quot;</strong>: Refers to the EarnFlow.in web application, Progressive Web Application (PWA), smart contracts, and associated backend infrastructure.</li>
-            <li><strong className="text-white">&quot;User&quot; / &quot;Player&quot;</strong>: Any individual who accesses the Platform, creates an account, or participates in gaming rounds.</li>
-            <li><strong className="text-white">&quot;USDT&quot;</strong>: Tether USD, specifically deployed on the TRON blockchain network (TRC-20 protocol).</li>
-            <li><strong className="text-white">&quot;Provably Fair&quot;</strong>: A cryptographic protocol utilizing SHA-256 and HMAC algorithms enabling players to mathematically audit outcome fairness.</li>
-            <li><strong className="text-white">&quot;Wallet&quot;</strong>: A user-connected non-custodial or platform-assigned cryptocurrency ledger balance denominated in USDT.</li>
+        <div className="space-y-3">
+          <p>In these Terms, the following terms have specific meanings:</p>
+          <ul className="list-disc pl-5 space-y-1.5">
+            <li><strong className="text-white">&quot;Platform&quot;:</strong> EarnFlow.in and its web interfaces, client applications, and backend systems.</li>
+            <li><strong className="text-white">&quot;User&quot;, &quot;Player&quot;, &quot;You&quot;:</strong> Any individual who accesses or registers on the Platform.</li>
+            <li><strong className="text-white">&quot;Four-Digit Lottery&quot;:</strong> The online lucky draw game hosted on the Platform involving numbers 0000 through 9999.</li>
+            <li><strong className="text-white">&quot;Ticket&quot;:</strong> A validly recorded entry holding a 4-digit sequence purchased with USDT.</li>
+            <li><strong className="text-white">&quot;USDT&quot;:</strong> Tether USD tokens operating on the TRC-20 (Tron) blockchain network.</li>
+            <li><strong className="text-white">&quot;Jackpot Pool&quot;:</strong> The total or allocated USDT prize amount awarded to exact matching winning tickets.</li>
+            <li><strong className="text-white">&quot;Draw Oracle&quot;:</strong> The automated cryptographic random outcome generation system.</li>
           </ul>
         </div>
       )
     },
     {
       num: '03',
-      title: 'Platform Purpose & Scope of Services',
+      title: 'Platform Description & Single-Game Focus',
       content: (
         <div className="space-y-3">
           <p>
-            <strong className="text-white">EarnFlow.in is an online gaming platform that provides users with access to interactive games, gaming events, account management, and USDT-based payment features.</strong>
+            <strong className="text-white">EarnFlow.in operates exclusively as an online Four-Digit Lottery gaming platform.</strong>
           </p>
           <p>
-            The Platform hosts a dedicated suite of six (6) provably fair gaming modules: Four-Digit Lottery, Crash Multiplier, Provably Fair Dice, Coinflip Dual, Bingo – Color Trading, and Horse Racing Turf Derby. All operations are backed by cryptographic commitments and server-side verification.
+            The Platform provides users with access to live Four-Digit Lottery events, number selection workstations, countdown timers, automated draw results, balance management, and USDT (TRC-20) payment processing. No other casino games, arcade games, or slot machines operate on EarnFlow.in.
           </p>
         </div>
       )
     },
     {
       num: '04',
-      title: 'USDT-Only Currency Policy (TRC-20)',
+      title: 'Eligibility Requirements (18+ Only)',
       content: (
         <div className="space-y-3">
           <p>
-            <strong className="text-white">EarnFlow.in operates strictly and exclusively on USDT (Tether TRC-20).</strong>
+            Participation on EarnFlow.in is strictly limited to individuals who are at least eighteen (18) years of age, or the legal age of majority in their jurisdiction, whichever is higher.
           </p>
           <p>
-            All game stakes, lottery ticket buy-ins, pool prize determinations, bonus disbursements, and account ledger entries are denominated exclusively in USDT. We do not support fiat currency deposits, credit card charging, or proprietary in-game token speculation.
+            You are strictly responsible for verifying that your participation in online lucky draw games is lawful under the statutes, rules, and regulatory frameworks of your geographical location. The Platform reserves the right to request proof of age and identity at any time.
           </p>
         </div>
       )
     },
     {
       num: '05',
-      title: 'Account Registration & User Credentials',
+      title: 'Account Registration & Verification',
       content: (
         <div className="space-y-3">
           <p>
-            Users may register through email verification, Web3 wallet connection, or Google OAuth 2.0 authentication. You agree to provide true, accurate, current, and complete credentials during registration.
+            Users may register through email verification, Web3 wallet connection, or authorized OAuth identity providers (such as Google). You agree to provide true, accurate, current, and complete information during registration.
           </p>
           <p>
-            You are solely responsible for maintaining the confidentiality of your account credentials, login tokens, and passwords. You agree to immediately notify our Support Desk of any unauthorized access or security breach.
+            Each individual user is permitted to maintain only one (1) active account on EarnFlow.in. The creation of duplicate, automated, or puppet accounts to circumvent limits or manipulate draws is strictly prohibited and grounds for immediate termination.
           </p>
         </div>
       )
     },
     {
       num: '06',
-      title: 'Google OAuth & Third-Party Authentication',
+      title: 'Account Security & Credential Protection',
       content: (
         <div className="space-y-3">
           <p>
-            When utilizing Google Sign-In, the Platform requests only standard open identity scopes (<code className="text-amber-300">openid</code>, <code className="text-amber-300">email</code>, <code className="text-amber-300">profile</code>).
+            You are solely responsible for maintaining the confidentiality of your login credentials, passwords, recovery tokens, and linked private keys.
           </p>
           <p>
-            We do not request, access, or store passwords, Google Drive files, contacts, or calendar data. Data retrieved from Google OAuth is strictly utilized to authenticate your identity and populate your public username.
+            All actions conducted through your authenticated account are deemed authorized by you. You agree to notify our Customer Support desk immediately upon becoming aware of any unauthorized access or breach of security.
           </p>
         </div>
       )
     },
     {
       num: '07',
-      title: 'User Identity Verification (KYC/AML Compliance)',
+      title: 'Four-Digit Lottery Overview & Game Math',
       content: (
         <div className="space-y-3">
           <p>
-            EarnFlow.in maintains strict compliance with international Anti-Money Laundering (AML) and Counter-Terrorist Financing (CTF) regulations.
+            In Four-Digit Lottery events, players choose a 4-digit sequence between <strong className="text-amber-300 font-mono">0000 and 9999</strong> (10,000 possible distinct permutations).
           </p>
           <p>
-            We reserve the right to request Know-Your-Customer (KYC) documentation (government photo ID, proof of address) prior to processing high-value withdrawals or investigating suspicious transactional patterns.
+            The game operates with an industry-standard mathematical return-to-player (RTP) model of <strong className="text-white">95.0%</strong> with a transparent platform operating margin (house edge) of <strong className="text-white">5.0%</strong>. Every permutation has an equal, unbiased 1-in-10,000 probability of being selected.
           </p>
         </div>
       )
     },
     {
       num: '08',
-      title: 'Security of User Accounts & Wallet Keys',
+      title: 'Lottery Participation Rules & Integrity',
       content: (
         <div className="space-y-3">
           <p>
-            EarnFlow.in utilizes encrypted sessions, TLS 1.3 transport security, and database row-level security (RLS).
+            Players participate by selecting four digits and submitting their purchase before ticket sales close for that event.
           </p>
           <p>
-            Players connecting decentralized Web3 wallets maintain full custody of their private keys. The Platform will never request your seed phrase, private keys, or wallet backup credentials under any circumstances.
+            Tickets may be chosen manually via the four interactive numerical dial rollers or generated automatically through the randomized Quick Pick mechanism. Once submitted, ticket numbers are immutably tied to the event and cannot be swapped or transferred.
           </p>
         </div>
       )
     },
     {
       num: '09',
-      title: 'USDT Deposits & Confirmation Mechanics',
+      title: 'Ticket Purchase Conditions (Single-Ticket Rule)',
       content: (
         <div className="space-y-3">
           <p>
-            USDT deposits are generated via automated merchant gateway invoices or dedicated TRON network TRC-20 deposit addresses.
+            <strong className="text-white">Strict Single-Ticket Entry:</strong> Each ticket purchase action corresponds to exactly one (1) lottery ticket holding one 4-digit combination.
           </p>
           <p>
-            Deposits require confirmation on the TRON blockchain (typically within 1–3 network blocks). Funds are automatically credited to the player&apos;s available USDT balance immediately upon blockchain confirmation. Minimum deposit limits apply as indicated in the Wallet interface.
+            The total cost for each entry action equals the exact unit price of that room (Total Cost = Unit Price). Bulk automated entry scripts, automated batch scalping, and multi-quantity multipliers are strictly disallowed to maintain a balanced, fair community playing field.
           </p>
         </div>
       )
     },
     {
       num: '10',
-      title: 'USDT Withdrawals & Processing Timelines (24h SLA)',
+      title: 'Ticket Price & Currency (USDT TRC-20)',
       content: (
         <div className="space-y-3">
           <p>
-            All legitimate prize winnings and available account balances may be withdrawn to any valid TRC-20 compatible external wallet address.
+            Ticket prices are denominated in USDT and clearly displayed on each live room card (e.g., 10 USDT per ticket).
           </p>
           <p>
-            <strong className="text-white">24-Hour Withdrawal SLA:</strong> All withdrawal requests undergo cryptographic verification and risk checks, and are audited, approved, and disbursed within a guaranteed maximum timeframe of twenty-four (24) hours.
+            The ticket fee is debited immediately from the player&apos;s available USDT balance upon purchase confirmation. Entries cannot be placed on credit, deferred payment, or negative balance.
           </p>
         </div>
       )
     },
     {
       num: '11',
-      title: 'Four-Digit Lottery Rules & Mechanics',
+      title: 'Wallet Terms & Balance Validation',
       content: (
         <div className="space-y-3">
           <p>
-            In Four-Digit Lottery events, players purchase tickets selecting any 4-digit numeric sequence from <strong className="text-amber-300">0000 through 9999</strong>.
+            Your EarnFlow wallet balance reflects your confirmed USDT holdings on the Platform. Before any ticket is issued, our backend ledger validates that your balance equals or exceeds the ticket price.
           </p>
           <p>
-            Ticket pricing and jackpot pools are denominated in USDT. Upon countdown conclusion, the Provably Fair Oracle determines winning sequence(s). Jackpots are distributed according to event rules (Single Winner 100% or Multiple Winners tier distributions). When multiple tickets hold identical winning numbers, prizes are shared equitably.
+            Wallet balances can be topped up via TRC-20 deposits. Withdrawals are processed back to your specified TRC-20 address within our standard 24-hour verification window.
           </p>
         </div>
       )
     },
     {
       num: '12',
-      title: 'Crash Game Rules & Auto-Cashout Multipliers',
+      title: 'Ticket Confirmation & Ownership Records',
       content: (
         <div className="space-y-3">
           <p>
-            In Crash, players stake USDT before launch as the multiplier curve ascends from 1.00x upward.
+            A ticket is officially issued and valid only after our database records the transaction with a unique Ticket ID, timestamps, user ID, event ID, and the selected four digits.
           </p>
           <p>
-            Players must press &quot;Cashout&quot; or configure an automatic cashout multiplier before the unpredictable crash point occurs. If cashout occurs before the crash, the player receives their stake multiplied by the cashout value. If crash occurs first, the round is lost.
+            Players can verify all active and past ticket records at any time under the &quot;My Tickets&quot; section of the Platform.
           </p>
         </div>
       )
     },
     {
       num: '13',
-      title: 'Dice Game Rules & Over/Under Multipliers',
+      title: 'Event Duration & Countdown Timers',
       content: (
         <div className="space-y-3">
           <p>
-            Provably Fair Dice allows players to predict whether a random roll outcome (0.00 to 99.99) will settle OVER or UNDER a chosen target.
+            Each Four-Digit Lottery event has a pre-determined duration (e.g., 1 hour, 6 hours, 24 hours, or special event schedules).
           </p>
           <p>
-            Multiplier odds adjust dynamically based on mathematical win probability, operating with a transparent 1.0% house edge (99.0% RTP). Correct predictions are credited instantly in USDT.
+            A live ticking countdown is displayed prominently across the workstation and room cards. When the countdown reaches zero, the event transitions from open sales to result determination.
           </p>
         </div>
       )
     },
     {
       num: '14',
-      title: 'Coinflip Dual Game Rules & Streak Tracking',
+      title: 'Ticket Sales Closing & Freeze Period',
       content: (
         <div className="space-y-3">
           <p>
-            Coinflip Dual features a two-sided coin toss (Heads or Tails) with a 50/50 probability model and a fixed 1.98x payout in USDT (1.0% house edge).
+            To prevent front-running, latency manipulation, or timing exploits, ticket sales close prior to draw execution.
           </p>
           <p>
-            Results are determined by cryptographic commit-reveal hashing before each flip animation begins. Consecutive winning streaks are recorded for player statistics.
+            During this freeze window, no new tickets can be purchased or registered for that draw. Any purchase attempt received after sales close is automatically rejected and not debited.
           </p>
         </div>
       )
     },
     {
       num: '15',
-      title: 'Bingo – Color Trading Rules & 60-Second Cycles',
+      title: 'Result Publication & Winning Number Announcement',
       content: (
         <div className="space-y-3">
           <p>
-            Bingo – Color Trading operates on rapid 60-second draw rounds where players trade on Color outcomes (Red, Green, Violet), Numbers (0–9), or Size (Big/Small).
+            Following the sales freeze, the draw is executed using our automated cryptographic Oracle. The official winning four-digit sequence is published publicly to the Result Screen and Results History view.
           </p>
           <p>
-            Payouts: Green (1, 3, 7, 9) pays 2x; Red (2, 4, 6, 8) pays 2x; Violet (0, 5) pays 4.5x; exact Numbers (0–9) pay 9x; Big (5–9) and Small (0–4) pay 1.98x.
+            Published winning combinations are final, immutable, and permanently archived in public draw audit logs.
           </p>
         </div>
       )
     },
     {
       num: '16',
-      title: 'Horse Racing Derby Rules & Fixed Odds',
+      title: 'Winning Conditions (Exact 4-Digit Match)',
       content: (
         <div className="space-y-3">
           <p>
-            Horse Racing features a 6-runner virtual turf sprint with fixed odds ranging from 2.4x to 35.0x in USDT.
+            A ticket is classified as a winning ticket if and only if its 4-digit sequence matches the published winning 4-digit sequence in exact order (position 1, position 2, position 3, position 4).
           </p>
           <p>
-            Players select their chosen runner to Win. The winning horse is determined by verifiable cryptographic random number generation (RNG) and reflected in real-time visual canvas animations.
+            Partial matches, reverse permutations, or transposition of digits do not qualify for jackpot share unless explicitly defined under a secondary prize room rule.
           </p>
         </div>
       )
     },
     {
       num: '17',
-      title: 'Cryptographic Provably Fair Verification (SHA-256 / HMAC)',
+      title: 'Prize Allocation & Idempotent Payouts',
       content: (
         <div className="space-y-3">
           <p>
-            Every round across all six active games operates on a cryptographic Commit-Reveal system:
+            Jackpot prizes are allocated in USDT and calculated according to room configuration (fixed pool, progressive pool, or guaranteed minimum).
           </p>
-          <ol className="list-decimal pl-5 space-y-1.5 text-[#94a3b8]">
-            <li><strong className="text-white">Pre-Commitment:</strong> The server generates a random server seed and publishes its SHA-256 hash before bets are accepted.</li>
-            <li><strong className="text-white">Client Seed:</strong> A client seed provided by the player or derived from ticket transaction hashes is incorporated.</li>
-            <li><strong className="text-white">Nonce:</strong> An incrementing integer counter prevents replay attacks.</li>
-            <li><strong className="text-white">Outcome Calculation:</strong> The outcome is computed deterministically via <code className="text-amber-300">HMAC-SHA256(server_seed, client_seed:nonce)</code>.</li>
-            <li><strong className="text-white">Seed Reveal:</strong> Following round conclusion, the unhashed server seed is revealed, allowing independent verification.</li>
-          </ol>
+          <p>
+            Payout processing is atomic and idempotent: winning user wallets are credited automatically upon draw resolution. Payout records are permanently logged in the financial ledger and winner payouts table.
+          </p>
         </div>
       )
     },
     {
       num: '18',
-      title: 'Jackpots, Winner Calculation & Payout Rules',
+      title: 'Multiple Winners & Equal Sharing Rule',
       content: (
         <div className="space-y-3">
           <p>
-            Lottery jackpot amounts are determined either through Manual administrative lock or deterministic Random range generation within configured minimum and maximum limits.
+            If two or more tickets hold the exact matching winning four-digit sequence in the same event, the total winning prize pool is divided equally among all eligible winning tickets.
           </p>
           <p>
-            Once published and ticket sales begin, jackpot modes, prize tiers, and winning codes are cryptographically locked. Payouts are credited directly to winners&apos; verified balances.
+            Each winning ticket receives an equal fractional share of the jackpot prize pool, credited directly to its owner&apos;s wallet.
           </p>
         </div>
       )
     },
     {
       num: '19',
-      title: 'Anti-Fraud, Multi-Accounting & Bot Restrictions',
+      title: 'Refund & Cancellation Policy',
       content: (
         <div className="space-y-3">
           <p>
-            Players are permitted one (1) account per individual, household, and IP address.
+            Once purchased and confirmed in the database, lottery tickets are non-cancellable and non-refundable by the player.
           </p>
           <p>
-            The use of automated scripts, scraping bots, network interception, exploiting software glitches, collusion, or creating syndicates to manipulate jackpots is strictly prohibited. Violations will result in immediate account termination and forfeiture of ill-gotten funds.
+            In the event that a scheduled draw is permanently canceled due to unforeseen technical disruption or administrative cancellation, 100% of the ticket purchase amount is refunded automatically to the originating user&apos;s wallet.
           </p>
         </div>
       )
     },
     {
       num: '20',
-      title: 'Responsible Social Gaming, Limits & Self-Exclusion',
+      title: 'Failed or Pending Transactions',
       content: (
         <div className="space-y-3">
           <p>
-            EarnFlow.in is committed to promoting responsible entertainment. We provide automated user controls inside the Support &amp; FAQ portal:
+            If a wallet deduction occurs but network connectivity fails before ticket generation is acknowledged by the client, our backend transactional engine will reconcile the ledger: either issuing the confirmed ticket or restoring the deducted USDT balance.
           </p>
-          <ul className="list-disc pl-5 space-y-1 text-[#94a3b8]">
-            <li><strong className="text-white">Daily Wagering Limits:</strong> Cap the total USDT you may stake within 24 hours.</li>
-            <li><strong className="text-white">Session Reminders:</strong> Automated pop-up reality checks every 30, 60, or 120 minutes.</li>
-            <li><strong className="text-white">Self-Exclusion:</strong> Voluntary account lockouts for 24 hours, 7 days, 30 days, or permanent exclusion.</li>
-          </ul>
+          <p>
+            Users can contact Customer Support with their transaction timestamp and wallet address for immediate manual reconciliation if needed.
+          </p>
         </div>
       )
     },
     {
       num: '21',
-      title: 'Discontinuation of Legacy Tokens (FLO Coins / Points)',
+      title: 'Technical Issues & Service Interruptions',
       content: (
         <div className="space-y-3">
           <p>
-            All legacy virtual test tokens, including Flow Coins (FC) and Flow Points, have been permanently retired from active gameplay and platform accounting.
+            While EarnFlow strives for continuous 99.9% availability, the Platform is provided on an &quot;as is&quot; and &quot;as available&quot; basis.
           </p>
           <p>
-            The Platform exclusively supports USDT (TRC-20). Any references in legacy third-party documentation to virtual non-redeemable coins are superseded by these Terms.
+            We are not liable for losses resulting from user-side internet connectivity disruptions, browser crashes, hardware failures, or blockchain network congestion. If an active draw countdown is interrupted server-side, the draw is safely held or rescheduled with full participant data preserved.
           </p>
         </div>
       )
     },
     {
       num: '22',
-      title: 'Platform Fees, House Edge & RTP Guarantees',
+      title: 'Prohibited Activities & System Integrity',
       content: (
         <div className="space-y-3">
-          <p>
-            Each game features a transparent, audited Return-to-Player (RTP) percentage:
-          </p>
-          <ul className="list-disc pl-5 space-y-1 text-[#94a3b8]">
-            <li>Crash: 99.0% RTP (1.0% House Edge)</li>
-            <li>Dice: 99.0% RTP (1.0% House Edge)</li>
-            <li>Coinflip: 99.0% RTP (1.0% House Edge)</li>
-            <li>Bingo – Color Trading: 98.0% RTP (2.0% House Edge)</li>
-            <li>Horse Racing: 97.5% RTP (2.5% House Edge)</li>
-            <li>Four-Digit Lottery: 95.0% RTP (5.0% House Edge)</li>
+          <p>You agree not to engage in any of the following prohibited behaviors:</p>
+          <ul className="list-disc pl-5 space-y-1.5">
+            <li>Using automated bots, scraping tools, or unauthorized APIs to purchase tickets.</li>
+            <li>Exploiting software vulnerabilities, race conditions, or timing delays.</li>
+            <li>Colluding or attempting to reverse-engineer server-side random seeds.</li>
+            <li>Attempting denial-of-service (DoS) attacks or interfering with system infrastructure.</li>
+            <li>Using proceeds of unlawful activity or unauthorized payment accounts.</li>
           </ul>
         </div>
       )
     },
     {
       num: '23',
-      title: 'Intellectual Property & Brand Assets',
+      title: 'Fraud Prevention & Anti-Money Laundering (AML)',
       content: (
         <div className="space-y-3">
           <p>
-            All trademarks, logos, graphical interfaces, sound effects, game math models, software code, and documentation displayed on EarnFlow.in are the exclusive intellectual property of EarnFlow.in.
+            EarnFlow maintains proactive fraud detection and anti-money laundering controls. We monitor transaction velocity, withdrawal destinations, and account clustering.
           </p>
           <p>
-            Unauthorized reproduction, reverse-engineering, decompilation, framing, or distribution of Platform assets without explicit written consent is strictly prohibited.
+            Accounts flagged for suspicious patterns, tumbling, or fraudulent transactions may be subjected to compliance review and temporary withdrawal holds pending investigation.
           </p>
         </div>
       )
     },
     {
       num: '24',
-      title: 'Prohibited Jurisdictions & Regulatory Compliance',
+      title: 'Account Suspension & Termination',
       content: (
         <div className="space-y-3">
           <p>
-            It is the sole responsibility of the User to ensure compliance with the laws of their local jurisdiction regarding online entertainment, lottery participation, and cryptocurrency transactions.
+            We reserve the right to suspend, restrict, or terminate any account that violates these Terms, engages in fraudulent conduct, or poses a threat to Platform security.
           </p>
           <p>
-            Users from jurisdictions where online gaming is prohibited by law are not permitted to access or register on the Platform.
+            Upon legitimate termination for material breach, unearned bonus rewards are forfeited. Legitimate, verified user balances will be returned subject to compliance clearance.
           </p>
         </div>
       )
     },
     {
       num: '25',
-      title: 'Service Modifications, Downtime & Maintenance',
+      title: 'Responsible Gaming & Self-Exclusion',
       content: (
         <div className="space-y-3">
           <p>
-            We reserve the right to modify, suspend, update, or discontinue any feature, game module, or event at any time without prior notice.
+            EarnFlow is committed to responsible gaming practices. Lottery participation must be viewed strictly as a form of entertainment and not as a method of generating income or financial return.
           </p>
           <p>
-            In the event of scheduled maintenance or unexpected technical interruptions, any active round with confirmed seed commitments will settle deterministically once services resume.
+            Players who wish to set deposit limits, take a cooling-off break, or request permanent self-exclusion can do so via Profile settings or by contacting Customer Support.
           </p>
         </div>
       )
     },
     {
       num: '26',
-      title: 'Limitation of Liability & Disclaimers',
+      title: 'Third-Party Blockchain Networks & Providers',
       content: (
         <div className="space-y-3">
           <p>
-            THE PLATFORM IS PROVIDED ON AN &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; BASIS WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR IMPLIED.
+            USDT transfers operate on decentralized blockchain infrastructure (TRC-20). We do not control blockchain network fees, block confirmation times, or node propagation delays.
           </p>
           <p>
-            IN NO EVENT SHALL EARNFLOW.IN, ITS OPERATORS, DIRECTORS, OR AFFILIATES BE LIABLE FOR INDIRECT, INCIDENTAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING LOSS OF PROFITS, DATA, OR CRYPTOCURRENCY ARISING FROM BLOCKCHAIN CONGESTION OR NETWORK DELAYS.
+            You are responsible for ensuring that withdrawal recipient addresses support TRC-20 USDT tokens. Transfers sent to incompatible networks or incorrect addresses cannot be recovered.
           </p>
         </div>
       )
     },
     {
       num: '27',
-      title: 'Indemnification',
+      title: 'Intellectual Property Rights',
       content: (
         <div className="space-y-3">
           <p>
-            You agree to defend, indemnify, and hold harmless EarnFlow.in, its licensors, service providers, and contractors from and against any claims, liabilities, damages, judgments, awards, losses, costs, expenses, or fees arising out of your violation of these Terms or your use of the Platform.
+            All copyrights, trademarks, brand names, visual interfaces, UI components, code, graphics, and documentation on EarnFlow.in are the exclusive property of EarnFlow or its licensors.
+          </p>
+          <p>
+            Users are granted a limited, personal, non-exclusive, non-transferable license to access the Platform solely for lawful personal gaming entertainment.
           </p>
         </div>
       )
     },
     {
       num: '28',
-      title: 'Dispute Resolution, Governing Law & Jurisdiction',
+      title: 'Limitation of Liability',
       content: (
         <div className="space-y-3">
           <p>
-            These Terms shall be governed by and construed in accordance with generally accepted principles of international commercial law.
+            To the maximum extent permitted by applicable law, EarnFlow and its operators, affiliates, agents, and licensors shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of or inability to use the Platform.
           </p>
           <p>
-            In the event of any dispute, the parties agree to first engage in good-faith informal negotiations via our dedicated Support Desk for a minimum period of thirty (30) days prior to initiating formal arbitration.
+            In no event shall our total aggregate liability for all claims related to the Services exceed the total amount paid by you in ticket entries during the thirty (30) days preceding the claim.
           </p>
         </div>
       )
     },
     {
       num: '29',
-      title: 'Severability & Entire Agreement',
+      title: 'Dispute Resolution & Binding Arbitration',
       content: (
         <div className="space-y-3">
           <p>
-            If any provision of these Terms is deemed unlawful, void, or unenforceable by an arbitrator or court of competent jurisdiction, that provision shall be severed and shall not affect the validity and enforceability of any remaining provisions.
+            In the event of any controversy, claim, or dispute arising out of or relating to these Terms or your use of the Platform, the parties agree to first attempt informal resolution by submitting a detailed complaint to our Customer Support desk.
           </p>
           <p>
-            These Terms, along with our Privacy Policy, constitute the sole and entire agreement between you and EarnFlow.in with respect to the Platform.
+            If the dispute cannot be resolved informally within thirty (30) days, it shall be resolved by binding arbitration in accordance with standard international commercial arbitration rules.
           </p>
         </div>
       )
     },
     {
       num: '30',
-      title: 'Contact Information, Official Desk & Support SLA',
+      title: 'Governing Law & Legal Jurisdiction',
       content: (
         <div className="space-y-3">
           <p>
-            For questions, legal inquiries, technical support, or Provably Fair audit assistance, our team is available 24/7 through our official communication channels:
+            These Terms and any non-contractual obligations arising out of or in connection with them shall be governed by and construed in accordance with generally recognized commercial principles of private international law.
           </p>
-          <div className="p-4 rounded-xl bg-[#0B0F19] border border-[#1F2737] space-y-2 text-xs">
-            {supportEmail ? (
-              <p><strong className="text-white">Official Support Email:</strong> <a href={`mailto:${supportEmail}`} className="text-amber-400 hover:underline">{supportEmail}</a></p>
-            ) : (
-              <p><strong className="text-white">Official Support:</strong> <span className="text-[#94a3b8] italic">Support tickets available 24/7 via the Support Desk.</span></p>
-            )}
-            <p><strong className="text-white">Support Desk Portal:</strong> Available directly via <strong className="text-white">/support</strong></p>
-            <p><strong className="text-white">Platform Domain:</strong> <a href="https://earnflow.in" className="text-amber-400 hover:underline">https://earnflow.in</a></p>
-            <p><strong className="text-white">Support Response SLA:</strong> Initial response within 6 hours; withdrawal disbursements within 24 hours.</p>
+          <p>
+            Users access the Platform on their own initiative and are solely responsible for compliance with local legal requirements where applicable.
+          </p>
+        </div>
+      )
+    },
+    {
+      num: '31',
+      title: 'Policy Updates & Amendments',
+      content: (
+        <div className="space-y-3">
+          <p>
+            We may update these Terms periodically to reflect changes in Platform features, security enhancements, regulatory guidelines, or operational requirements.
+          </p>
+          <p>
+            When changes are made, the &quot;Last Updated&quot; date at the top of this document will be revised. Continued participation on the Platform after changes are posted constitutes acceptance of the amended Terms.
+          </p>
+        </div>
+      )
+    },
+    {
+      num: '32',
+      title: 'Contact Information & Customer Support',
+      content: (
+        <div className="space-y-3">
+          <p>
+            For questions, legal notices, dispute inquiries, or assistance regarding these Terms and Conditions, please contact our Customer Support desk:
+          </p>
+          <div className="p-3.5 rounded-xl bg-[#0B0F19] border border-[#1F2737] flex items-center gap-3">
+            <Mail className="w-5 h-5 text-amber-400 shrink-0" />
+            <div>
+              <span className="text-[10px] text-[#94A3B8] uppercase font-bold block">Support Desk</span>
+              <a href={`mailto:${supportEmail}`} className="text-sm font-bold text-amber-400 hover:underline">
+                {supportEmail}
+              </a>
+            </div>
           </div>
         </div>
       )
     }
   ];
 
-  return (
-    <div className="max-w-4xl 2xl:max-w-5xl mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-in fade-in duration-200 text-left">
-      {/* Top Breadcrumb / Back button */}
-      <button
-        onClick={onBackToHome}
-        className="mb-6 sm:mb-8 px-4 py-2.5 rounded-xl bg-[#10131a] hover:bg-[#151c2b] text-xs font-bold text-amber-400 border border-amber-500/30 flex items-center gap-2 transition-all cursor-pointer shadow-sm"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Return to EarnFlow.in Lobby</span>
-      </button>
+  const filteredSections = sections.filter(sec => 
+    sec.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sec.num.includes(searchTerm)
+  );
 
-      {/* Header Banner */}
-      <div className="glass-panel rounded-2xl p-5 xs:p-7 sm:p-9 mb-8 border border-amber-500/30 bg-gradient-to-br from-[#121624] via-[#0e121c] to-[#18112e] shadow-2xl">
-        <div className="flex items-center gap-3.5 mb-3.5">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-400 border border-amber-500/30 shadow-[0_0_20px_rgba(245,196,81,0.2)] shrink-0">
-            <Scale className="w-6 h-6" />
-          </div>
+  return (
+    <div className="max-w-5xl 2xl:max-w-6xl mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-in fade-in duration-200 text-left">
+      
+      {/* Top Header */}
+      <div className="space-y-3 pb-6 border-b border-[#1F2737]">
+        {onBackToHome && (
+          <button
+            onClick={onBackToHome}
+            className="inline-flex items-center gap-1.5 text-xs text-[#94A3B8] hover:text-white transition-colors cursor-pointer mb-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Home</span>
+          </button>
+        )}
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <span className="text-[11px] font-mono-numbers text-amber-400 uppercase font-bold tracking-wider block">
-              Legal Governance &amp; Platform Rules
-            </span>
-            <h1 className="font-display font-black text-2xl sm:text-3xl lg:text-4xl text-white">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono-numbers text-[11px] font-bold mb-2">
+              <FileText className="w-3.5 h-3.5 text-amber-400" />
+              <span>Official Platform Documentation</span>
+            </div>
+            <h1 className="font-display font-black text-2xl sm:text-3xl text-white">
               Terms &amp; Conditions
             </h1>
+            <p className="text-xs sm:text-sm text-[#94A3B8] mt-1">
+              Official operating terms, rules, and conditions for the EarnFlow Four-Digit Lottery platform.
+            </p>
+          </div>
+
+          <div className="text-xs font-mono-numbers text-[#94A3B8] self-start sm:self-auto bg-[#111827] px-3 py-1.5 rounded-lg border border-[#1F2737]">
+            Last Updated: November 2026
           </div>
         </div>
-        <p className="text-xs sm:text-sm text-[#94a3b8] leading-relaxed max-w-3xl">
-          Effective Date: November 19, 2026 · Comprehensive 30-Section Operating Agreement for <strong className="text-white">EarnFlow.in</strong>
-        </p>
 
-        <div className="mt-4 pt-3 border-t border-[#1f2737] flex flex-wrap items-center gap-3 text-xs text-[#94a3b8]">
-          <span className="inline-flex items-center gap-1 text-emerald-400 font-mono-numbers font-semibold">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            USDT (TRC-20) Architecture
-          </span>
-          <span>•</span>
-          <span className="inline-flex items-center gap-1 text-amber-400 font-mono-numbers font-semibold">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Transparent Non-Custodial Gaming
-          </span>
-          <span>•</span>
-          <span className="inline-flex items-center gap-1 text-purple-400 font-mono-numbers font-semibold">
-            <Lock className="w-3.5 h-3.5" />
-            24-Hour Withdrawal SLA
-          </span>
+        {/* Search Filter */}
+        <div className="relative pt-2 max-w-md">
+          <Search className="w-4 h-4 text-[#94A3B8] absolute left-3 top-5 pointer-events-none" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search within Terms (e.g., ticket, refund, payout, rules)..."
+            className="w-full bg-[#111827] border border-[#1F2737] focus:border-amber-500/50 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-[#64748B] outline-none"
+          />
         </div>
       </div>
 
-      {/* Table of Contents Quick Jump Grid */}
-      <div className="mb-8 p-4 sm:p-5 rounded-2xl bg-[#0B0F19] border border-[#1F2737]">
-        <h3 className="font-display font-bold text-xs sm:text-sm text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-          <FileText className="w-4 h-4 text-amber-400" />
-          <span>Quick Directory (30 Governance Sections)</span>
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5 text-[11px]">
-          {sections.map((sec, idx) => (
-            <a
+      {/* Sections Accordion List */}
+      <div className="space-y-3 pt-6">
+        {filteredSections.map((sec) => {
+          const isOpen = activeSection === sec.num || searchTerm.length > 0;
+          return (
+            <div
               key={sec.num}
-              href={`#section-${sec.num}`}
-              className="text-[#94a3b8] hover:text-amber-300 transition-colors truncate block py-0.5"
+              className="bg-[#111827] border border-[#1F2737] rounded-xl overflow-hidden transition-all"
             >
-              <strong className="text-amber-400 font-mono-numbers mr-1">{sec.num}.</strong>
-              {sec.title}
-            </a>
-          ))}
-        </div>
-      </div>
+              <button
+                type="button"
+                onClick={() => setActiveSection(activeSection === sec.num ? null : sec.num)}
+                className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-3 text-xs sm:text-sm font-bold text-white hover:text-amber-400 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="font-mono-numbers text-xs text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 shrink-0">
+                    {sec.num}
+                  </span>
+                  <span className="truncate">{sec.title}</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-[#94A3B8] shrink-0 transition-transform ${isOpen ? 'rotate-180 text-amber-400' : ''}`} />
+              </button>
 
-      {/* 30 Terms Sections */}
-      <div className="space-y-4 text-xs sm:text-sm text-[#cbd5e1] leading-relaxed">
-        {sections.map((sec, idx) => (
-          <div 
-            key={sec.num}
-            id={`section-${sec.num}`}
-            className="glass-panel p-5 sm:p-6 rounded-2xl border border-[#1f2737] hover:border-amber-500/30 transition-all scroll-mt-20"
-          >
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <div className="flex items-center gap-2.5 text-white font-bold font-display text-sm sm:text-base">
-                <span className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center text-xs font-mono-numbers font-black shrink-0">
-                  {sec.num}
-                </span>
-                <span>{sec.title}</span>
-              </div>
+              {isOpen && (
+                <div className="px-4 sm:px-6 pb-5 text-xs text-[#94A3B8] leading-relaxed border-t border-[#1F2737]/60 pt-4">
+                  {sec.content}
+                </div>
+              )}
             </div>
-            {sec.content}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Footer Support Signoff */}
-      <div className="mt-8 p-5 sm:p-6 rounded-2xl bg-[#0B0F19] border border-amber-500/30 text-center space-y-2">
-        <p className="text-xs text-[#94a3b8]">
-          Have questions regarding our Terms &amp; Conditions or cryptographic verification?
-        </p>
-        <p className="text-xs">
-          {supportEmail ? (
-            <>Contact our compliance team anytime at <a href={`mailto:${supportEmail}`} className="text-amber-400 font-bold hover:underline">{supportEmail}</a> or open a ticket in <a href="/support" className="text-purple-400 font-bold hover:underline">Customer Support Desk</a>.</>
-          ) : (
-            <>Contact our compliance team anytime by opening a ticket in the <a href="/support" className="text-purple-400 font-bold hover:underline">Customer Support Desk</a>.</>
-          )}
-        </p>
+      {/* Footer Support Banner */}
+      <div className="mt-8 p-5 rounded-2xl bg-[#111827] border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h3 className="font-bold text-sm text-white">Have questions about these terms?</h3>
+          <p className="text-xs text-[#94A3B8] mt-0.5">
+            Our support team is available to help clarify any aspect of our lottery rules or policies.
+          </p>
+        </div>
+        <a
+          href={`mailto:${supportEmail}`}
+          className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs transition-colors shrink-0 flex items-center gap-1.5"
+        >
+          <Mail className="w-3.5 h-3.5" />
+          <span>Contact Support</span>
+        </a>
       </div>
 
     </div>

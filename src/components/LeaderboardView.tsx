@@ -43,13 +43,7 @@ const TIME_FILTERS = [
 ];
 
 const GAME_OPTIONS = [
-  { id: 'all', label: 'All Games' },
-  { id: 'lottery', label: 'Four-Digit Lottery' },
-  { id: 'crash', label: 'Crash' },
-  { id: 'dice', label: 'Dice' },
-  { id: 'coinflip', label: 'Coinflip' },
-  { id: 'bingo', label: 'Bingo – Color Trading' },
-  { id: 'horse-racing', label: 'Horse Racing' }
+  { id: 'lottery', label: 'Four-Digit Lottery' }
 ];
 
 export default function LeaderboardView() {
@@ -58,7 +52,7 @@ export default function LeaderboardView() {
 
   // Exactly 5 Time Filters (Default: Last 4 Weeks)
   const [timeFilter, setTimeFilter] = useState('28d');
-  const [gameFilter, setGameFilter] = useState('all');
+  const [gameFilter, setGameFilter] = useState('lottery');
 
   // Data State
   const [winnersList, setWinnersList] = useState<any[]>([]);
@@ -98,13 +92,7 @@ export default function LeaderboardView() {
 
       // Map game IDs to canonical display titles
       const gameNameMap: Record<string, string> = {
-        'lottery': 'Four-Digit Lottery',
-        'crash': 'Crash',
-        'dice': 'Dice',
-        'coinflip': 'Coinflip',
-        'bingo': 'Bingo – Color Trading',
-        'color-trading': 'Bingo – Color Trading',
-        'horse-racing': 'Horse Racing'
+        'lottery': 'Four-Digit Lottery'
       };
 
       // Aggregate by user

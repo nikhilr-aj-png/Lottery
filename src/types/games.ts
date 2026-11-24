@@ -1,12 +1,6 @@
-export type GameId = 
-  | 'lottery' 
-  | 'crash' 
-  | 'dice' 
-  | 'coinflip' 
-  | 'bingo' 
-  | 'horse-racing';
+export type GameId = 'lottery';
 
-export type GameCategory = 'all' | 'lottery' | 'instant' | 'table' | 'arcade';
+export type GameCategory = 'all' | 'lottery';
 
 export type GameBadge = 
   | 'HOT' 
@@ -15,16 +9,8 @@ export type GameBadge =
   | 'CLASSIC' 
   | 'NEW' 
   | 'PROVABLY FAIR' 
-  | 'VIRAL' 
-  | 'CASINO VIP' 
-  | 'FAST' 
-  | 'STRATEGY' 
-  | 'VEGAS' 
-  | 'SKILL' 
-  | 'LOTTO' 
-  | '10,000X'
-  | 'TRADING'
-  | 'DERBY';
+  | 'VIP'
+  | 'LOTTO';
 
 export interface GameDefinition {
   id: GameId;
@@ -43,12 +29,12 @@ export interface GameDefinition {
   minStakeUSDT: number;
   maxStakeUSDT: number;
   defaultStakeUSDT: number;
-  minStakeFC?: number; // legacy alias
+  minStakeFC?: number;
   maxStakeFC?: number;
   defaultStakeFC?: number;
   maxMultiplier: number;
   isProvablyFair: boolean;
-  status: 'active' | 'maintenance' | 'beta';
+  status: 'active' | 'maintenance';
   releaseDate?: string;
   features: string[];
   rules: string[];

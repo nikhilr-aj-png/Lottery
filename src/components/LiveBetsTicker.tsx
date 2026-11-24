@@ -50,22 +50,8 @@ export default function LiveBetsTicker({ onSelectGame }: LiveBetsTickerProps) {
     ? highRollers 
     : (activeFeedTab === 'my' ? myBets : allBets);
 
-  const getGameEmoji = (gameId) => {
-    switch (gameId?.toLowerCase()) {
-      case 'crash': return '🚀';
-      case 'dice': return '🎲';
-      case 'bingo': return '🎨';
-      case 'horse-racing': return '🏇';
-      case 'roulette': return '🎡';
-      case 'coinflip': return '🪙';
-      case 'blackjack': return '🃏';
-      case 'slots': return '🎰';
-      case 'poker': return '♠️';
-      case 'keno': return '🎱';
-      case 'limbo': return '⚡';
-      case 'lottery': return '🎟️';
-      default: return '🎮';
-    }
+  const getGameEmoji = (_gameId?: string) => {
+    return '🎟️';
   };
 
   return (
