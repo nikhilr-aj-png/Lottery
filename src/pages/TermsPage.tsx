@@ -27,6 +27,15 @@ export default function TermsPage({ onBackToHome }: TermsPageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
+  // Unconditionally ensure Terms & Rules opens from the very top on all devices
+  React.useEffect(() => {
+    const mainEl = document.getElementById('main-content');
+    if (mainEl) {
+      mainEl.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, []);
+
   const sections = [
     {
       num: '01',

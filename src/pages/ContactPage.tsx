@@ -23,7 +23,15 @@ export interface ContactPageProps {
 
 export default function ContactPage({ onBackToHome }: ContactPageProps) {
   const { user, profile, submitSupportTicket, showToast, platformSettings } = useLottery();
-  const supportEmail = platformSettings?.supportEmail ? platformSettings.supportEmail.trim() : '';
+  const supportEmail = platformSettings?.supportEmail?.trim() || 'earnflow.user@gmail.com';
+
+  useEffect(() => {
+    const mainEl = document.getElementById('main-content');
+    if (mainEl) {
+      mainEl.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, []);
 
   // Form states
   const [name, setName] = useState('');

@@ -11,25 +11,41 @@ export default function FaqPage({ onBackToHome }: FaqPageProps) {
   const supportEmail = platformSettings?.supportEmail?.trim() || 'earnflow.user@gmail.com';
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
+  React.useEffect(() => {
+    const mainEl = document.getElementById('main-content');
+    if (mainEl) {
+      mainEl.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, []);
+
   const categories = [
     {
-      category: 'Four-Digit Lottery Gameplay',
+      category: 'Four-Digit Lottery Gameplay & Rules',
       items: [
         {
           q: 'How do I participate in a Four-Digit Lottery draw?',
           a: 'Select any active draw room from the home page or lottery workstation. Choose your lucky four digits (from 0000 to 9999) using the interactive dial rollers or Quick Pick keypad, then confirm your purchase in USDT.'
         },
         {
+          q: 'Can two players purchase the exact same 4-digit number in the same draw?',
+          a: 'No. On EarnFlow.in, each four-digit combination can only be purchased once per lottery event. Once a combination is purchased by any player, it immediately becomes unavailable for anyone else in that draw. This exclusivity is strictly enforced at the database level with atomic constraints.'
+        },
+        {
           q: 'What is the single-ticket purchase rule?',
-          a: 'Every ticket is entered individually for a fixed room price (Total Cost = Unit Price). This prevents automated scalping and ensures fair, transparent entry for all participants.'
+          a: 'Every ticket entry is purchased individually for a fixed room price (Total Cost = Unit Price). This prevents automated bots from bulk-buying number blocks and guarantees equal opportunity for every participant.'
+        },
+        {
+          q: 'What is the difference between a Single Winner and Multiple Winner event?',
+          a: 'In a Single Winner event, only one winning combination is selected and that player receives 100% of the winner prize share. In a Multiple Winner event, prizes are split across the configured winner count according to preset tier percentages (e.g., 1st: 60%, 2nd: 25%, 3rd: 15%).'
         },
         {
           q: 'How are the winning four digits determined?',
-          a: 'Winning numbers are generated automatically at the scheduled draw time through cryptographic algorithms based on pre-committed random seeds. The process is fully automated with zero human intervention.'
+          a: 'Winning numbers are generated automatically at the scheduled draw cutoff time through cryptographic algorithms based on pre-committed random seeds and SHA-256 hashes. The process is fully autonomous with zero human intervention.'
         },
         {
-          q: 'What happens if multiple tickets have the winning combination?',
-          a: 'If multiple tickets hold the exact matching four digits, the jackpot prize pool is divided equally among all eligible winning tickets.'
+          q: 'What are Fixed vs Range jackpot pools?',
+          a: 'Fixed pools offer a guaranteed set jackpot (e.g., 10,000 USDT). Range pools start at a guaranteed minimum baseline and scale dynamically as participants purchase tickets (95% of ticket sales are added directly to the pool).'
         }
       ]
     },

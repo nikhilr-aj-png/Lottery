@@ -10,6 +10,14 @@ export default function ResponsibleGamingPage({ onBackToHome }: ResponsibleGamin
   const { platformSettings } = useLottery();
   const supportEmail = platformSettings?.supportEmail?.trim() || 'earnflow.user@gmail.com';
 
+  React.useEffect(() => {
+    const mainEl = document.getElementById('main-content');
+    if (mainEl) {
+      mainEl.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, []);
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 text-left space-y-6">
       {onBackToHome && (

@@ -29,6 +29,8 @@ import RefundPolicyPage from './pages/RefundPolicyPage';
 import PaymentPolicyPage from './pages/PaymentPolicyPage';
 import DisclaimerPage from './pages/DisclaimerPage';
 import FaqPage from './pages/FaqPage';
+import HowItWorksPage from './pages/HowItWorksPage';
+import LotteryRulesPage from './pages/LotteryRulesPage';
 import PromotionPage from './pages/PromotionPage';
 import AdminPortal from './admin/AdminPortal';
 import GamePage from './pages/GamePage';
@@ -314,11 +316,17 @@ function LotteryAppContent() {
     } else if (clean === '/support' || clean === '/help') {
       setActiveTab('support', false);
       document.title = 'Customer Support · EarnFlow.in';
+    } else if (clean === '/how-it-works' || clean === '/howitworks') {
+      setActiveTab('how-it-works', false);
+      document.title = 'How It Works · EarnFlow.in';
+    } else if (clean === '/rules' || clean === '/lottery-rules') {
+      setActiveTab('rules', false);
+      document.title = 'Lottery Rules & Prize Distribution · EarnFlow.in';
     }
 
     const mainEl = document.getElementById('main-content');
-    if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (mainEl) mainEl.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
 
   const handleGoHome = () => {
@@ -340,6 +348,14 @@ function LotteryAppContent() {
 
     if (tab === 'transactions') {
       navigate('/transaction-history');
+    } else if (tab === 'how-it-works') {
+      setIsTransactionRoute(false);
+      navigate('/how-it-works');
+      setActiveTab('how-it-works');
+    } else if (tab === 'rules') {
+      setIsTransactionRoute(false);
+      navigate('/rules');
+      setActiveTab('rules');
     } else if (tab === 'contact') {
       setIsTransactionRoute(false);
       navigate('/contact');
@@ -478,6 +494,12 @@ function LotteryAppContent() {
       } else if (cleanPath === '/disclaimer' || search.get('tab') === 'disclaimer') {
         setActiveTab('disclaimer', false);
         document.title = 'Disclaimer · EarnFlow.in';
+      } else if (cleanPath === '/how-it-works' || cleanPath === '/howitworks' || search.get('tab') === 'how-it-works') {
+        setActiveTab('how-it-works', false);
+        document.title = 'How It Works · EarnFlow.in';
+      } else if (cleanPath === '/rules' || cleanPath === '/lottery-rules' || search.get('tab') === 'rules') {
+        setActiveTab('rules', false);
+        document.title = 'Lottery Rules & Prize Distribution · EarnFlow.in';
       } else if (cleanPath === '/faq' || search.get('tab') === 'faq') {
         setActiveTab('faq', false);
         document.title = 'Frequently Asked Questions · EarnFlow.in';
@@ -528,6 +550,15 @@ function LotteryAppContent() {
       window.removeEventListener('popstate', handleLocationChange);
     };
   }, []);
+
+  // Comprehensive Layout-Level Scroll Reset: Ensure any route/tab switch unconditionally resets scroll to top (0,0)
+  useEffect(() => {
+    const mainEl = document.getElementById('main-content');
+    if (mainEl) {
+      mainEl.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [activeTab, currentGameRoute, isTransactionRoute]);
 
   // Strict Login Gating for sensitive direct modals/actions
   useEffect(() => {
@@ -649,7 +680,7 @@ function LotteryAppContent() {
         {/* Main Content Pane */}
         <main 
           id="main-content" 
-          className={`flex-1 min-w-0 h-full text-left flex flex-col ${
+          className={`flex-1 min-w-0 h-full text-left flex flex-col overscroll-contain ${
             currentGameRoute?.roomId 
               ? 'overflow-hidden p-1 xs:p-1.5 sm:p-2' 
               : 'overflow-y-auto pt-2.5 sm:pt-3.5 pb-0'
@@ -804,6 +835,21 @@ function LotteryAppContent() {
               {/* VIEW 18: FAQ PAGE */}
               {activeTab === 'faq' && (
                 <FaqPage onBackToHome={() => setActiveTab('lotteries')} />
+              )}
+
+              {/* VIEW 19: HOW IT WORKS PAGE */}
+              {activeTab === 'how-it-works' && (
+                <HowItWorksPage 
+                  onBackToHome={handleGoHome} 
+                  onNavigateToTab={(tab) => handleSelectTab(tab)}
+                />
+              )}
+
+              {/* VIEW 20: LOTTERY RULES & PRIZE DISTRIBUTION */}
+              {activeTab === 'rules' && (
+                <LotteryRulesPage 
+                  onBackToHome={handleGoHome}
+                />
               )}
             </>
           )}

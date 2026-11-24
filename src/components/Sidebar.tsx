@@ -11,7 +11,11 @@ import {
   History,
   User,
   Award,
-  Gift
+  Gift,
+  BookOpen,
+  HelpCircle,
+  Scale,
+  HeartHandshake
 } from 'lucide-react';
 import { useLottery } from '../context/LotteryContext';
 
@@ -86,6 +90,14 @@ export default function Sidebar({
       ]
     },
     {
+      title: 'Information',
+      items: [
+        { id: 'how-it-works', label: 'How It Works', icon: BookOpen },
+        { id: 'rules', label: 'Lottery Rules & Prizes', icon: Scale },
+        { id: 'faq', label: 'Frequently Asked Questions', icon: HelpCircle }
+      ]
+    },
+    {
       title: 'Player Hub',
       items: [
         { id: 'wallet', label: 'USDT Wallet', icon: Wallet, requiresAuth: true },
@@ -97,7 +109,8 @@ export default function Sidebar({
     {
       title: 'Support & Legal',
       items: [
-        { id: 'support', label: 'Customer Support & FAQ', icon: Headphones },
+        { id: 'contact', label: 'Customer Support', icon: Headphones },
+        { id: 'responsible-gaming', label: 'Responsible Gaming', icon: HeartHandshake },
         { id: 'terms', label: 'Terms & Conditions', icon: FileText },
         { id: 'privacy', label: 'Privacy Policy', icon: ShieldCheck }
       ]
@@ -123,7 +136,7 @@ export default function Sidebar({
     <div className="h-full flex flex-col overflow-hidden pt-3 pb-3 px-2 sm:px-2.5 text-left relative">
 
       {/* Navigation Sections — Scrollable Menu Items Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar space-y-2 pr-0.5">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar space-y-2 pr-0.5 overscroll-contain">
         {navSections.map((sec, secIdx) => (
           <div key={secIdx} className="space-y-0.5">
             {sec.title ? (

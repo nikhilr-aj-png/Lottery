@@ -2257,11 +2257,14 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
-  // Helper: Check if a 4-digit number is already sold in an event (general check)
+  // Helper: Check if a 4-digit number is already sold in an event (general check across ALL players)
   const isTicketNumberSold = (eventId, number) => {
     if (!eventId || number === undefined || number === null) return false;
     const formatted = String(number).padStart(4, '0');
-    return tickets.some(t => t.eventId === eventId && String(t.ticketNumber).padStart(4, '0') === formatted);
+    return tickets.some(t => 
+      (t.eventId === eventId || t.event_id === eventId) && 
+      String(t.ticketNumber ?? t.ticket_number ?? '').padStart(4, '0') === formatted
+    );
   };
 
   // Helper: Check if the CURRENT user has already purchased a specific ticket number in this event
@@ -2270,7 +2273,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     const formatted = String(number).padStart(4, '0');
     return tickets.some(t => 
       (t.eventId === eventId || t.event_id === eventId) && 
-      String(t.ticketNumber).padStart(4, '0') === formatted &&
+      String(t.ticketNumber ?? t.ticket_number ?? '').padStart(4, '0') === formatted &&
       (
         (wallet?.address && t.userAddress === wallet.address) ||
         (user?.id && (t.userId === user.id || t.user_id === user.id))
@@ -2284,21 +2287,18 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     return tickets.filter(t => t.eventId === eventId || t.event_id === eventId);
   };
 
-  // Helper: Generate an unsold random 4-digit number for an event (prioritizing numbers not yet owned by user)
+  // Helper: Generate an unsold random 4-digit number for an event (across ALL players in the draw)
   const getUnsoldRandomNumber = (eventId) => {
-    const userOwnedSet = new Set(
+    const soldSet = new Set(
       tickets
-        .filter(t => 
-          (t.eventId === eventId || t.event_id === eventId) && 
-          ((wallet?.address && t.userAddress === wallet.address) || (user?.id && (t.userId === user.id || t.user_id === user.id)))
-        )
-        .map(t => String(t.ticketNumber).padStart(4, '0'))
+        .filter(t => (t.eventId === eventId || t.event_id === eventId))
+        .map(t => String(t.ticketNumber ?? t.ticket_number ?? '').padStart(4, '0'))
     );
     for (let i = 0; i < 10000; i++) {
       const candidate = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-      if (!userOwnedSet.has(candidate)) return candidate;
+      if (!soldSet.has(candidate)) return candidate;
     }
-    return String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    return '0000';
   };
 
   // Helper: Suggest next available alternative
@@ -2342,21 +2342,18 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    // Check if any requested ticket number is already purchased by THIS user in this event!
-    const userOwnedTicketsForEvent = tickets.filter(t => 
-      (t.eventId === eventId || t.event_id === eventId) && 
-      (
-        (wallet?.address && t.userAddress === wallet.address) ||
-        (user?.id && (t.userId === user.id || t.user_id === user.id))
-      )
+    // Check if any requested ticket number is already purchased in this event!
+    // Each 4-digit number (0000-9999) can only be purchased ONCE across all players.
+    const takenTicketsForEvent = tickets.filter(t => 
+      (t.eventId === eventId || t.event_id === eventId)
     );
-    const userOwnedSet = new Set(userOwnedTicketsForEvent.map(t => String(t.ticketNumber).padStart(4, '0')));
+    const takenSet = new Set(takenTicketsForEvent.map(t => String(t.ticketNumber).padStart(4, '0')));
     
     const seenInOrder = new Set();
     for (const num of ticketNumbers) {
       const formatted = String(num).padStart(4, '0');
-      if (userOwnedSet.has(formatted)) {
-        showToast(`You have already purchased ticket #${formatted} for this draw! Duplicate purchases by the same user are not permitted.`, 'error');
+      if (takenSet.has(formatted)) {
+        showToast(`Ticket #${formatted} is already taken in this draw! Please choose another 4-digit number.`, 'error');
         return false;
       }
       if (seenInOrder.has(formatted)) {
