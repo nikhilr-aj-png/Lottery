@@ -66,7 +66,7 @@ class GlobalErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBound
   handleReload = () => {
     try {
       sessionStorage.clear();
-    } catch (e) {}
+    } catch (e) { }
     window.location.href = '/';
   };
 
@@ -145,18 +145,24 @@ function AuthRequiredPrompt({ title, onLogin, onHome }) {
           <LogIn className="w-4 h-4" />
           <span>Login / Sign Up</span>
         </button>
+        <button
+          onClick={onHome}
+          className="px-4 py-3 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs text-[#9b8f7c] hover:text-white border border-[#272a31] transition-colors cursor-pointer"
+        >
+          Back to Lobby
+        </button>
       </div>
     </div>
   );
 }
 
 function LotteryAppContent() {
-  const { 
-    events, 
+  const {
+    events,
     loadingEvents,
-    activeTab, 
-    setActiveTab, 
-    selectedEventForModal, 
+    activeTab,
+    setActiveTab,
+    selectedEventForModal,
     setSelectedEventForModal,
     user,
     profile,
@@ -206,7 +212,7 @@ function LotteryAppContent() {
       if (typeof window !== 'undefined') {
         try {
           window.history.replaceState(null, '', '/');
-        } catch (e) {}
+        } catch (e) { }
       }
       return null;
     }
@@ -234,12 +240,12 @@ function LotteryAppContent() {
       const search = new URLSearchParams(window.location.search || '');
       const pParam = search.get('p')?.toLowerCase().replace(/\/+$/, '');
       const path = window.location.pathname;
-      return isTransactionHistoryRoute(path) || 
-             (pParam && isTransactionHistoryRoute('/' + pParam)) ||
-             window.location.hash === '#transaction-history' || 
-             window.location.hash === '#transactions' ||
-             search.get('tab') === 'transactions' ||
-             search.get('tab') === 'transaction-history';
+      return isTransactionHistoryRoute(path) ||
+        (pParam && isTransactionHistoryRoute('/' + pParam)) ||
+        window.location.hash === '#transaction-history' ||
+        window.location.hash === '#transactions' ||
+        search.get('tab') === 'transactions' ||
+        search.get('tab') === 'transaction-history';
     }
     return false;
   });
@@ -248,7 +254,7 @@ function LotteryAppContent() {
   const navigate = (path: string) => {
     try {
       window.history.pushState(null, '', path);
-    } catch (e) {}
+    } catch (e) { }
     const gr = parseGameRoute(path);
     setCurrentGameRoute(gr);
     if (gr) {
@@ -370,12 +376,12 @@ function LotteryAppContent() {
     const targetUrl = tabRouteMap[tab] || `/?tab=${tab}`;
     navigate(targetUrl);
   };
-  
+
   // Dedicated check for isolated Admin Route
   const [isAdminRoute, setIsAdminRoute] = useState(() => {
-    return window.location.pathname.startsWith('/admin') || 
-           window.location.hash === '#admin' || 
-           window.location.search.includes('admin=true');
+    return window.location.pathname.startsWith('/admin') ||
+      window.location.hash === '#admin' ||
+      window.location.search.includes('admin=true');
   });
 
   const [isViewingUserLobby, setIsViewingUserLobby] = useState(() => {
@@ -401,9 +407,9 @@ function LotteryAppContent() {
 
   useEffect(() => {
     const handleLocationChange = () => {
-      const onAdmin = window.location.pathname.startsWith('/admin') || 
-                      window.location.hash === '#admin' || 
-                      window.location.search.includes('admin=true');
+      const onAdmin = window.location.pathname.startsWith('/admin') ||
+        window.location.hash === '#admin' ||
+        window.location.search.includes('admin=true');
       setIsAdminRoute(onAdmin);
       if (onAdmin) {
         setIsViewingUserLobby(false);
@@ -418,19 +424,19 @@ function LotteryAppContent() {
       if (refCode) {
         try {
           localStorage.setItem('earnflow_referrer_code', refCode.trim());
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const gr = parseGameRoute(window.location.pathname);
       setCurrentGameRoute(gr);
 
       const pParam = search.get('p')?.toLowerCase().replace(/\/+$/, '');
-      const onTx = isTransactionHistoryRoute(window.location.pathname) || 
-                   (pParam && isTransactionHistoryRoute('/' + pParam)) ||
-                   window.location.hash === '#transaction-history' || 
-                   window.location.hash === '#transactions' ||
-                   search.get('tab') === 'transactions' ||
-                   search.get('tab') === 'transaction-history';
+      const onTx = isTransactionHistoryRoute(window.location.pathname) ||
+        (pParam && isTransactionHistoryRoute('/' + pParam)) ||
+        window.location.hash === '#transaction-history' ||
+        window.location.hash === '#transactions' ||
+        search.get('tab') === 'transactions' ||
+        search.get('tab') === 'transaction-history';
       setIsTransactionRoute(onTx);
       const cleanPath = window.location.pathname.toLowerCase().replace(/\/+$/, '');
       if (onTx) {
@@ -548,7 +554,7 @@ function LotteryAppContent() {
   // If currently selected modal event expires or concluded, auto-close and switch to results
   useEffect(() => {
     if (selectedEventForModal) {
-      const isConcluded = selectedEventForModal.status === 'completed' || 
+      const isConcluded = selectedEventForModal.status === 'completed' ||
         (selectedEventForModal.drawTime && selectedEventForModal.drawTime <= Date.now());
       if (isConcluded) {
         setSelectedEventForModal(null);
@@ -607,13 +613,13 @@ function LotteryAppContent() {
   return (
     <div className="h-screen h-[100dvh] bg-[#0B0F19] text-[#F8FAFC] flex flex-col font-sans overflow-hidden">
       {/* Top Navbar */}
-      <Navbar 
+      <Navbar
         onGoHome={handleGoHome}
         onSelectTab={handleSelectTab}
         isInGameRoom={Boolean(currentGameRoute?.roomId)}
         onOpenProfile={() => {
           handleSelectTab('profile');
-        }} 
+        }}
         onToggleSidebar={() => {
           if (typeof window !== 'undefined' && window.innerWidth < 1024) {
             setIsMobileSidebarOpen(prev => !prev);
@@ -626,7 +632,7 @@ function LotteryAppContent() {
 
       {/* Main Layout: Left Navigation Sidebar + Content Area */}
       <div className="flex-1 min-h-0 flex overflow-hidden w-full max-w-[2000px] mx-auto min-w-0">
-        
+
         {/* Left Navigation Sidebar */}
         <Sidebar
           isOpen={isMobileSidebarOpen}
@@ -643,19 +649,18 @@ function LotteryAppContent() {
         />
 
         {/* Main Content Pane */}
-        <main 
-          id="main-content" 
-          className={`flex-1 min-w-0 h-full text-left flex flex-col overscroll-contain ${
-            currentGameRoute 
-              ? 'overflow-hidden p-1 xs:p-1.5 sm:p-2' 
-              : 'overflow-y-auto pt-2.5 sm:pt-3.5 pb-0'
-          }`}
+        <main
+          id="main-content"
+          className={`flex-1 min-w-0 h-full text-left flex flex-col overscroll-contain ${currentGameRoute
+            ? 'overflow-hidden p-1 xs:p-1.5 sm:p-2'
+            : 'overflow-y-auto pt-2.5 sm:pt-3.5 pb-0'
+            }`}
         >
-          
+
           <div className={currentGameRoute ? 'flex-1 min-h-0 flex flex-col overflow-hidden h-full' : 'w-full flex-grow shrink-0 px-2.5 xs:px-4 sm:px-6 lg:px-8'}>
             {/* DEDICATED SEPARATE PAGE: TRANSACTION HISTORY */}
             {(isTransactionRoute || activeTab === 'transactions') ? (
-              <TransactionHistoryPage 
+              <TransactionHistoryPage
                 onBackToWallet={() => {
                   handleSelectTab('wallet');
                 }}
@@ -674,7 +679,7 @@ function LotteryAppContent() {
               <>
                 {/* VIEW 1: DEDICATED FOUR-DIGIT LOTTERY HOMEPAGE */}
                 {activeTab === 'lotteries' && (
-                  <CasinoLobby 
+                  <CasinoLobby
                     onLaunchGame={(gidOrEventId) => {
                       if (gidOrEventId && gidOrEventId.startsWith('evt-')) {
                         navigate('/games/lottery/' + gidOrEventId);
@@ -691,146 +696,146 @@ function LotteryAppContent() {
                 {activeTab === 'wallet' && (user ? (
                   <WalletView onOpenTransactionHistory={() => navigate('/transaction-history')} />
                 ) : (
-                  <AuthRequiredPrompt 
-                    title="USDT Wallet & 24h Payouts" 
-                    onLogin={() => setIsAuthModalOpen(true)} 
-                    onHome={() => setActiveTab('lotteries')} 
+                  <AuthRequiredPrompt
+                    title="USDT Wallet & 24h Payouts"
+                    onLogin={() => setIsAuthModalOpen(true)}
+                    onHome={() => setActiveTab('lotteries')}
                   />
                 ))}
 
-              {/* VIEW 3: MY TICKETS */}
-              {activeTab === 'tickets' && (user ? (
-                <MyTicketsView 
-                  onOpenPicker={() => {
-                    const liveEvent = activeEvents[0];
-                    if (liveEvent) {
-                      setSelectedEventForModal(liveEvent);
-                    } else {
-                      setActiveTab('lotteries');
-                      showToast('All previous rounds have ended! Check Results tab.', 'info');
-                    }
-                  }} 
-                />
-              ) : (
-                <AuthRequiredPrompt 
-                  title="My Lottery Tickets" 
-                  onLogin={() => setIsAuthModalOpen(true)} 
-                  onHome={() => setActiveTab('lotteries')} 
-                />
-              ))}
+                {/* VIEW 3: MY TICKETS */}
+                {activeTab === 'tickets' && (user ? (
+                  <MyTicketsView
+                    onOpenPicker={() => {
+                      const liveEvent = activeEvents[0];
+                      if (liveEvent) {
+                        setSelectedEventForModal(liveEvent);
+                      } else {
+                        setActiveTab('lotteries');
+                        showToast('All previous rounds have ended! Check Results tab.', 'info');
+                      }
+                    }}
+                  />
+                ) : (
+                  <AuthRequiredPrompt
+                    title="My Lottery Tickets"
+                    onLogin={() => setIsAuthModalOpen(true)}
+                    onHome={() => setActiveTab('lotteries')}
+                  />
+                ))}
 
-              {/* VIEW 4: RESULTS */}
-              {activeTab === 'results' && (
-                <ResultsView />
-              )}
+                {/* VIEW 4: RESULTS */}
+                {activeTab === 'results' && (
+                  <ResultsView />
+                )}
 
-              {/* VIEW 5: PLAYER PROFILE FULL SCREEN PAGE */}
-              {activeTab === 'profile' && (user ? (
-                <ProfileView 
-                  onSwitchToAdmin={switchToAdminConsole}
-                  onBackToHome={() => setActiveTab('lotteries')}
-                />
-              ) : (
-                <AuthRequiredPrompt 
-                  title="Player Profile & Account Settings" 
-                  onLogin={() => setIsAuthModalOpen(true)} 
-                  onHome={() => setActiveTab('lotteries')} 
-                />
-              ))}
+                {/* VIEW 5: PLAYER PROFILE FULL SCREEN PAGE */}
+                {activeTab === 'profile' && (user ? (
+                  <ProfileView
+                    onSwitchToAdmin={switchToAdminConsole}
+                    onBackToHome={() => setActiveTab('lotteries')}
+                  />
+                ) : (
+                  <AuthRequiredPrompt
+                    title="Player Profile & Account Settings"
+                    onLogin={() => setIsAuthModalOpen(true)}
+                    onHome={() => setActiveTab('lotteries')}
+                  />
+                ))}
 
-              {/* VIEW 8: REWARDS & DAILY BONUS FAUCET */}
-              {(activeTab === 'rewards' || activeTab === 'daily-bonus') && (
-                <RewardsView />
-              )}
+                {/* VIEW 8: REWARDS & DAILY BONUS FAUCET */}
+                {(activeTab === 'rewards' || activeTab === 'daily-bonus') && (
+                  <RewardsView />
+                )}
 
-              {/* VIEW 9: SOCIAL LEADERBOARD & HIGH ROLLERS */}
-              {activeTab === 'leaderboard' && (
-                <LeaderboardView />
-              )}
+                {/* VIEW 9: SOCIAL LEADERBOARD & HIGH ROLLERS */}
+                {activeTab === 'leaderboard' && (
+                  <LeaderboardView />
+                )}
 
-              {/* VIEW 10: CUSTOMER SUPPORT & CONTACT */}
-              {(activeTab === 'contact' || activeTab === 'support') && (
-                <ContactPage onBackToHome={handleGoHome} />
-              )}
+                {/* VIEW 10: CUSTOMER SUPPORT & CONTACT */}
+                {(activeTab === 'contact' || activeTab === 'support') && (
+                  <ContactPage onBackToHome={handleGoHome} />
+                )}
 
-              {/* VIEW 18: PROMOTIONS & REFERRAL HUB */}
-              {activeTab === 'promotion' && (
-                <PromotionPage onBackToHome={handleGoHome} />
-              )}
+                {/* VIEW 11: PROMOTIONS & REFERRAL HUB */}
+                {activeTab === 'promotion' && (
+                  <PromotionPage onBackToHome={handleGoHome} />
+                )}
 
-              {/* VIEW 12: TERMS & CONDITIONS PAGE */}
-              {activeTab === 'terms' && (
-                <TermsPage 
-                  onBackToHome={handleGoHome} 
-                  onNavigateToTab={handleSelectTab}
-                />
-              )}
+                {/* VIEW 12: TERMS & CONDITIONS PAGE */}
+                {activeTab === 'terms' && (
+                  <TermsPage 
+                    onBackToHome={handleGoHome} 
+                    onNavigateToTab={handleSelectTab}
+                  />
+                )}
 
-              {/* VIEW 13: PRIVACY POLICY PAGE */}
-              {activeTab === 'privacy' && (
-                <PrivacyPolicyPage 
-                  onBackToHome={handleGoHome} 
-                  onNavigateToTab={handleSelectTab}
-                />
-              )}
+                {/* VIEW 13: PRIVACY POLICY PAGE */}
+                {activeTab === 'privacy' && (
+                  <PrivacyPolicyPage 
+                    onBackToHome={handleGoHome} 
+                    onNavigateToTab={handleSelectTab}
+                  />
+                )}
 
-              {/* VIEW 14: RESPONSIBLE GAMING PAGE */}
-              {activeTab === 'responsible-gaming' && (
-                <ResponsibleGamingPage 
-                  onBackToHome={handleGoHome} 
-                  onNavigateToTab={handleSelectTab}
-                />
-              )}
+                {/* VIEW 14: RESPONSIBLE GAMING PAGE */}
+                {activeTab === 'responsible-gaming' && (
+                  <ResponsibleGamingPage 
+                    onBackToHome={handleGoHome} 
+                    onNavigateToTab={handleSelectTab}
+                  />
+                )}
 
-              {/* VIEW 15: REFUND & CANCELLATION POLICY PAGE */}
-              {activeTab === 'refund-policy' && (
-                <RefundPolicyPage 
-                  onBackToHome={handleGoHome} 
-                  onNavigateToTab={handleSelectTab}
-                />
-              )}
+                {/* VIEW 15: REFUND & CANCELLATION POLICY PAGE */}
+                {activeTab === 'refund-policy' && (
+                  <RefundPolicyPage 
+                    onBackToHome={handleGoHome} 
+                    onNavigateToTab={handleSelectTab}
+                  />
+                )}
 
-              {/* VIEW 16: PAYMENT POLICY PAGE */}
-              {activeTab === 'payment-policy' && (
-                <PaymentPolicyPage 
-                  onBackToHome={handleGoHome} 
-                  onNavigateToTab={handleSelectTab}
-                />
-              )}
+                {/* VIEW 16: PAYMENT POLICY PAGE */}
+                {activeTab === 'payment-policy' && (
+                  <PaymentPolicyPage 
+                    onBackToHome={handleGoHome} 
+                    onNavigateToTab={handleSelectTab}
+                  />
+                )}
 
-              {/* VIEW 17: DISCLAIMER PAGE */}
-              {activeTab === 'disclaimer' && (
-                <DisclaimerPage 
-                  onBackToHome={handleGoHome} 
-                  onNavigateToTab={handleSelectTab}
-                />
-              )}
+                {/* VIEW 17: DISCLAIMER PAGE */}
+                {activeTab === 'disclaimer' && (
+                  <DisclaimerPage 
+                    onBackToHome={handleGoHome} 
+                    onNavigateToTab={handleSelectTab}
+                  />
+                )}
 
-              {/* VIEW 18: FAQ PAGE */}
-              {activeTab === 'faq' && (
-                <FaqPage 
-                  onBackToHome={handleGoHome} 
-                  onNavigateToTab={handleSelectTab}
-                />
-              )}
+                {/* VIEW 18: FAQ PAGE */}
+                {activeTab === 'faq' && (
+                  <FaqPage
+                    onBackToHome={handleGoHome}
+                    onNavigateToTab={handleSelectTab}
+                  />
+                )}
 
-              {/* VIEW 19: HOW IT WORKS PAGE */}
-              {activeTab === 'how-it-works' && (
-                <HowItWorksPage 
-                  onBackToHome={handleGoHome} 
-                  onNavigateToTab={handleSelectTab}
-                />
-              )}
+                {/* VIEW 19: HOW IT WORKS PAGE */}
+                {activeTab === 'how-it-works' && (
+                  <HowItWorksPage
+                    onBackToHome={handleGoHome}
+                    onNavigateToTab={handleSelectTab}
+                  />
+                )}
 
-              {/* VIEW 20: LOTTERY RULES & PRIZE DISTRIBUTION */}
-              {activeTab === 'rules' && (
-                <LotteryRulesPage 
-                  onBackToHome={handleGoHome}
-                  onNavigateToTab={handleSelectTab}
-                />
-              )}
-            </>
-          )}
+                {/* VIEW 20: LOTTERY RULES & PRIZE DISTRIBUTION */}
+                {activeTab === 'rules' && (
+                  <LotteryRulesPage
+                    onBackToHome={handleGoHome}
+                    onNavigateToTab={handleSelectTab}
+                  />
+                )}
+              </>
+            )}
           </div>
 
           {/* Platform Public Footer — Hidden in Active Dedicated Game Rooms */}
@@ -861,9 +866,9 @@ function LotteryAppContent() {
 
       <WalletModal />
       <WinnerCelebrationModal />
-      <RulesModal 
-        isOpen={isRulesModalOpen} 
-        onClose={() => setIsRulesModalOpen(false)} 
+      <RulesModal
+        isOpen={isRulesModalOpen}
+        onClose={() => setIsRulesModalOpen(false)}
       />
       <NotificationsModal
         isOpen={isNotificationsOpen}
@@ -874,7 +879,7 @@ function LotteryAppContent() {
         }}
       />
       <Toast />
-      
+
       {/* PWA Add to Screen Prompt & Modal (Hidden in dedicated active game rooms) */}
       {!currentGameRoute?.roomId && <PwaInstallBanner />}
       <PwaInstallModal />
