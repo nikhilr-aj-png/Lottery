@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import { 
-  ArrowLeft, 
   Mail, 
   MessageSquare, 
   ShieldCheck, 
@@ -188,16 +187,9 @@ export default function ContactPage({ onBackToHome }: ContactPageProps) {
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="px-5 py-2.5 rounded-xl bg-[#141924] hover:bg-[#1e2638] text-xs font-bold text-white border border-[#272a31] transition-all cursor-pointer"
-                >
-                  Submit Another Inquiry
-                </button>
-                <button
-                  type="button"
-                  onClick={onBackToHome}
                   className="btn-gold px-6 py-2.5 rounded-xl text-xs font-bold cursor-pointer shadow-lg shadow-[#f5c451]/20"
                 >
-                  Back to Lottery Lobby
+                  Submit Another Inquiry
                 </button>
               </div>
             </div>

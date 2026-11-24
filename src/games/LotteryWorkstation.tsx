@@ -6,7 +6,6 @@ import {
   AlertCircle, 
   Clock, 
   Ticket, 
-  ArrowLeft, 
   RotateCcw, 
   Activity, 
   CheckCircle2, 

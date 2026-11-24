@@ -8,7 +8,6 @@ import {
   Sparkles, 
   Lock, 
   LogIn, 
-  ArrowLeft,
   ArrowRight,
   Plus
 } from 'lucide-react';
@@ -186,16 +185,6 @@ export default function MyTicketsView({ onOpenPicker, onNavigateToRoom }: MyTick
       {/* 1. TOP HEADER & SUMMARY BAR */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5 bg-[#111728]/95 backdrop-blur-xl p-4 sm:p-5 rounded-2xl border border-[#1F2737] shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          {onOpenPicker && (
-            <button
-              onClick={onOpenPicker}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#141A28] hover:bg-[#1A2234] border border-[#273145] text-xs font-semibold text-[#CBD5E1] hover:text-white transition-colors cursor-pointer w-fit"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Lottery</span>
-            </button>
-          )}
-
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-display font-black text-xl sm:text-2xl text-white">

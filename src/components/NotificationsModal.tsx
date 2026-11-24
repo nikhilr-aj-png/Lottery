@@ -10,7 +10,6 @@ import {
   ShieldCheck, 
   Clock, 
   Trash2,
-  ArrowLeft,
   CheckCircle2,
   AlertTriangle,
   RefreshCw,
@@ -129,22 +128,12 @@ export default function NotificationsModal({ isOpen, onClose, onNavigate }) {
       <header className="border-b border-[#1F2737] bg-[#0B0F19]/90 backdrop-blur-xl px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 shrink-0">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
           
-          {/* Back Button & Title */}
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-            <button
-              onClick={onClose}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#151C2B] hover:bg-[#1E2638] text-amber-400 hover:text-amber-300 border border-[#272A31] transition-all cursor-pointer text-xs font-bold shrink-0 shadow-sm"
-              title="Return to lobby"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Back to Platform</span>
-            </button>
-
-            <div className="min-w-0 flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-                <Bell className="w-5 h-5" />
-              </div>
-              <div className="truncate">
+          {/* Title & Bell Badge */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <Bell className="w-5 h-5" />
+            </div>
+            <div className="truncate">
                 <div className="flex items-center gap-2">
                   <h1 className="font-display font-black text-base sm:text-xl text-white truncate">
                     Notifications & Alerts
@@ -160,7 +149,6 @@ export default function NotificationsModal({ isOpen, onClose, onNavigate }) {
                 </p>
               </div>
             </div>
-          </div>
 
           {/* Header Action Buttons */}
           <div className="flex items-center gap-2 shrink-0">

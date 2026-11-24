@@ -16,7 +16,6 @@ import {
   ArrowDownLeft, 
   ArrowUpRight, 
   LogOut, 
-  ArrowLeft,
   DollarSign,
   Ticket,
   Trophy,

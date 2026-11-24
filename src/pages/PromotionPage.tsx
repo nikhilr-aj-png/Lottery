@@ -8,7 +8,6 @@ import {
   Check, 
   Trophy, 
   Coins, 
-  ArrowLeft,
   Flame, 
   CheckCircle2,
   TrendingUp,
@@ -148,18 +147,9 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
   return (
     <div className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 text-left select-none animate-in fade-in duration-200">
       
-      {/* Header & Back Navigation */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#1F2737]">
         <div className="flex items-center gap-3">
-          {onBackToHome && (
-            <button
-              onClick={onBackToHome}
-              className="p-2 rounded-xl bg-[#141924] hover:bg-[#1f2738] text-[#f5c451] border border-amber-500/25 transition-all cursor-pointer shrink-0"
-              title="Return to Home"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-          )}
           <div>
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30">

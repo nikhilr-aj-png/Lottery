@@ -12,7 +12,6 @@ import { supabase } from '../lib/supabase';
 import { useLottery } from '../context/LotteryContext';
 import { getEventStatusInfo } from '../utils/eventStatus';
 import {
-  ArrowLeft,
   ShieldCheck,
   Sparkles,
   Users,
@@ -278,13 +277,6 @@ export default function GamePage({
         <p className="text-xs text-[#9b8f7c]">
           The game route <span className="font-mono text-amber-300">"{gameSlug}"</span> does not exist or has been relocated.
         </p>
-        <button
-          onClick={onBackToHome}
-          className="btn-gold px-6 py-2.5 rounded-xl text-xs font-bold inline-flex items-center gap-2 cursor-pointer shadow-md"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to All Games</span>
-        </button>
       </div>
     );
   }

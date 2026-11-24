@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
 import {
-  Ticket,
   Trophy,
   Wallet,
   LayoutGrid,
@@ -76,7 +75,6 @@ export default function Sidebar({
       title: 'Lottery',
       items: [
         { id: 'lotteries', label: 'Home', icon: LayoutGrid, isLobby: true },
-        { id: 'lottery-game', label: 'Four-Digit Lottery', icon: Ticket, image: '/items/Four Digit Lottery.jpg', isLottery: true },
         { id: 'results', label: 'Results', icon: Trophy }
       ]
     },

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   History, 
-  ArrowLeft, 
   ArrowDownLeft, 
   ArrowUpRight, 
   Coins, 
@@ -163,16 +162,6 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
               <LogIn className="w-4 h-4 text-black" />
               <span>Sign In to Your Account</span>
             </button>
-
-            <button
-              onClick={() => {
-                if (onBackToHome) onBackToHome();
-                else if (setActiveTab) setActiveTab('lotteries');
-              }}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#9b8f7c] hover:text-white border border-[#1F2737] font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
-            >
-              Return to Casino Lobby
-            </button>
           </div>
         </div>
       </div>
@@ -182,28 +171,9 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
   return (
     <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-6 text-left animate-in fade-in duration-200">
       
-      {/* 1. TOP HEADER & BREADCRUMB / BACK NAVIGATION */}
+      {/* 1. TOP HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1F2737]">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => {
-              if (onBackToWallet) {
-                onBackToWallet();
-              } else if (onBackToHome) {
-                onBackToHome();
-              } else if (setActiveTab) {
-                setActiveTab('wallet');
-              }
-              const mainEl = document.getElementById('main-content');
-              if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-white border border-[#1F2737] hover:border-amber-400/40 flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-sm"
-            title="Back to Wallet"
-            aria-label="Back to Wallet"
-          >
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
           <div>
             <div className="flex items-center gap-2">
               <History className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />

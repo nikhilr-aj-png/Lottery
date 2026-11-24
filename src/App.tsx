@@ -145,12 +145,6 @@ function AuthRequiredPrompt({ title, onLogin, onHome }) {
           <LogIn className="w-4 h-4" />
           <span>Login / Sign Up</span>
         </button>
-        <button
-          onClick={onHome}
-          className="px-4 py-3 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs text-[#9b8f7c] hover:text-white border border-[#272a31] transition-colors cursor-pointer"
-        >
-          Back to Lobby
-        </button>
       </div>
     </div>
   );
@@ -313,6 +307,9 @@ function LotteryAppContent() {
     } else if (clean === '/promotion' || clean === '/promotions' || clean === '/referral') {
       setActiveTab('promotion', false);
       document.title = 'Promotions & Referral Hub · EarnFlow.in';
+    } else if (clean === '/daily-bonus' || clean === '/rewards' || clean === '/dailybonus' || clean === '/bonus') {
+      setActiveTab('rewards', false);
+      document.title = 'Daily Bonus & Rewards · EarnFlow.in';
     } else if (clean === '/refund-policy') {
       setActiveTab('refund-policy', false);
       document.title = 'Refund and Cancellation Policy · EarnFlow.in';
@@ -365,7 +362,8 @@ function LotteryAppContent() {
       'refund-policy': '/refund-policy',
       'payment-policy': '/payment-policy',
       'disclaimer': '/disclaimer',
-      'rewards': '/?tab=rewards',
+      'rewards': '/daily-bonus',
+      'daily-bonus': '/daily-bonus',
       'leaderboard': '/?tab=leaderboard'
     };
 
@@ -741,7 +739,7 @@ function LotteryAppContent() {
               ))}
 
               {/* VIEW 8: REWARDS & DAILY BONUS FAUCET */}
-              {activeTab === 'rewards' && (
+              {(activeTab === 'rewards' || activeTab === 'daily-bonus') && (
                 <RewardsView />
               )}
 

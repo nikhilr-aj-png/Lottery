@@ -1,14 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import { useSoundFX } from '../hooks/useSoundFX';
-import { usePwa } from '../context/PwaContext';
 import { 
   Wallet, 
   Menu, 
   ChevronDown,
   User,
   LogIn,
-  Download,
   Coins,
   Bell,
   Sparkles,
@@ -60,24 +58,8 @@ export default function Navbar({
     playClick
   } = useSoundFX();
 
-  const {
-    isInstallable,
-    isInstalled,
-    triggerInstall,
-    setShowInstallModal
-  } = usePwa();
-
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const volumeMenuRef = useRef<HTMLDivElement | null>(null);
-
-  const handleInstallClick = () => {
-    playClick();
-    if (isInstallable) {
-      triggerInstall();
-    } else {
-      setShowInstallModal(true);
-    }
-  };
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -193,19 +175,6 @@ export default function Navbar({
             {/* RIGHT: Desktop Controls (Wallet + Notifications + Profile) / Mobile Icons */}
             <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2.5 shrink-0">
               
-              {/* Compact Mobile & Desktop Install App / PWA Control */}
-              {!isNativeApp && !isInstalled && (
-                <button
-                  type="button"
-                  onClick={handleInstallClick}
-                  className="w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-10 sm:h-10 rounded-xl bg-[#10131A] hover:bg-[#151C2B] text-amber-400 hover:text-white border border-[#2D3545] hover:border-amber-400/50 hover:shadow-[0_0_12px_rgba(245,196,81,0.2)] flex items-center justify-center transition-all cursor-pointer relative shrink-0 shadow-sm"
-                  title="Install EarnFlow App (PWA & Android APK)"
-                  aria-label="Install App"
-                >
-                  <Download className="w-4 h-4 text-amber-400" />
-                </button>
-              )}
-
               {/* Master Audio FX Toggle & Volume Popover (Mobile & Desktop) */}
               <div className="relative flex items-center" ref={volumeMenuRef}>
                 <button

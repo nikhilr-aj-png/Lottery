@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLottery } from '../context/LotteryContext';
-import { X, ArrowLeft, Dices, RotateCcw, Plus, Trash2, ShieldCheck, Check, Sparkles, AlertCircle, LogIn, Lock, Wallet, Clock, Trophy } from 'lucide-react';
+import { X, Dices, RotateCcw, Plus, Trash2, ShieldCheck, Check, Sparkles, AlertCircle, LogIn, Lock, Wallet, Clock, Trophy } from 'lucide-react';
 import { getEventStatusInfo } from '../utils/eventStatus';
 
 export default function TicketModal({ event, onClose }) {
@@ -122,14 +122,6 @@ export default function TicketModal({ event, onClose }) {
       <div className="sticky top-0 z-30 bg-[#0b0e14]/95 backdrop-blur-xl border-b border-[rgba(245,196,81,0.25)] px-3 xs:px-4 sm:px-8 py-2.5 xs:py-3.5 shadow-lg">
         <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto flex items-center justify-between w-full">
           <div className="flex items-center gap-2 xs:gap-3 sm:gap-4 min-w-0">
-            <button
-              onClick={onClose}
-              className="px-2.5 xs:px-3.5 py-1.5 xs:py-2 rounded-xl bg-[#141924] hover:bg-[#1f2738] text-xs font-bold text-[#f5c451] border border-[rgba(245,196,81,0.25)] flex items-center gap-1.5 xs:gap-2 transition-all cursor-pointer shadow-sm shrink-0"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="hidden sm:inline">Return to Lobby</span>
-            </button>
-            
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 xs:gap-2 mb-0.5">
                 <span className={`px-1.5 xs:px-2 py-0.5 rounded text-[9px] xs:text-[10px] font-bold flex items-center gap-1 shrink-0 ${statusInfo.badgeClass}`}>
