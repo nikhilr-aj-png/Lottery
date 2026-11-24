@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import { useSoundFX } from '../hooks/useSoundFX';
-import { 
-  Wallet, 
-  Menu, 
+import {
+  Wallet,
+  Menu,
   ChevronDown,
   User,
   LogIn,
@@ -29,9 +29,9 @@ interface NavbarProps {
   isInGameRoom?: boolean;
 }
 
-export default function Navbar({ 
-  onOpenProfile, 
-  onToggleSidebar, 
+export default function Navbar({
+  onOpenProfile,
+  onToggleSidebar,
   onOpenNotifications,
   onGoHome,
   onSelectTab,
@@ -110,10 +110,10 @@ export default function Navbar({
     }
   };
 
-  const usernameDisplay = profile?.username 
-    ? `@${profile.username}` 
-    : (user?.user_metadata?.username 
-      ? `@${user.user_metadata.username}` 
+  const usernameDisplay = profile?.username
+    ? `@${profile.username}`
+    : (user?.user_metadata?.username
+      ? `@${user.user_metadata.username}`
       : (user?.email ? user.email.split('@')[0] : 'Profile'));
 
   return (
@@ -124,10 +124,10 @@ export default function Navbar({
       <header className="sticky top-0 z-40 bg-[#0B0F19]/95 backdrop-blur-xl border-b border-[rgba(245,196,81,0.18)]">
         <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2 xs:px-3 sm:px-4 lg:px-6 xl:px-8">
           <div className="flex items-center justify-between h-13 xs:h-14 sm:h-16">
-            
+
             {/* LEFT: Sidebar Toggle & EarnFlow.in Branding */}
             <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 shrink-0">
-              
+
               {/* Sidebar Drawer Toggle (Mobile / Tablet / Desktop) */}
               <button
                 onClick={onToggleSidebar}
@@ -139,7 +139,7 @@ export default function Navbar({
               </button>
 
               {/* Brand Logo & Clean Name (Always visible together across all viewports) */}
-              <div 
+              <div
                 onClick={() => {
                   if (onGoHome) {
                     onGoHome();
@@ -153,13 +153,13 @@ export default function Navbar({
                 title="Return to EarnFlow.in Home Page"
               >
                 <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-9.5 sm:h-9.5 rounded-full p-0.5 shadow-[0_0_12px_rgba(245,196,81,0.3)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
-                  <img 
-                    src="/logo.png" 
-                    alt="EarnFlow.in" 
-                    className="w-full h-full rounded-full object-cover border border-[#ffd700]/40" 
+                  <img
+                    src="/logo.png"
+                    alt="EarnFlow.in"
+                    className="w-full h-full rounded-full object-cover border border-[#ffd700]/40"
                   />
                 </div>
-                
+
                 <div className="flex flex-col justify-center shrink-0">
                   <span className="font-display font-extrabold text-[13px] xs:text-base sm:text-lg lg:text-xl tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-tight whitespace-nowrap shrink-0">
                     EarnFlow<span className="text-[#F5C451]">.in</span>
@@ -174,7 +174,7 @@ export default function Navbar({
 
             {/* RIGHT: Desktop Controls (Wallet + Notifications + Profile) / Mobile Icons */}
             <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2.5 shrink-0">
-              
+
               {/* Master Audio FX Toggle & Volume Popover (Mobile & Desktop) */}
               <div className="relative flex items-center" ref={volumeMenuRef}>
                 <button
@@ -186,11 +186,10 @@ export default function Navbar({
                     e.preventDefault();
                     setShowVolumeSlider(prev => !prev);
                   }}
-                  className={`w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center transition-all cursor-pointer relative shrink-0 shadow-sm ${
-                    soundEnabled 
-                      ? 'bg-[#10131A] hover:bg-[#151C2B] text-amber-400 border-[#2D3545] hover:border-amber-400/50 hover:shadow-[0_0_12px_rgba(245,196,81,0.2)]' 
+                  className={`w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center transition-all cursor-pointer relative shrink-0 shadow-sm ${soundEnabled
+                      ? 'bg-[#10131A] hover:bg-[#151C2B] text-amber-400 border-[#2D3545] hover:border-amber-400/50 hover:shadow-[0_0_12px_rgba(245,196,81,0.2)]'
                       : 'bg-[#10131A] text-[#64748B] border-[#2D3545] hover:text-[#94A3B8] hover:border-slate-600'
-                  }`}
+                    }`}
                   title={soundEnabled ? `Sound FX On (${Math.round(soundVolume * 100)}%) — Tap to mute, right-click for volume` : 'Sound FX Muted — Tap to unmute'}
                   aria-label="Toggle Sound FX"
                 >
@@ -246,7 +245,7 @@ export default function Navbar({
               {isLoggedIn ? (
                 <>
                   {/* USDT Balance Pill: Desktop/Tablet view ONLY (>= 640px) */}
-                  <div 
+                  <div
                     onClick={() => handleNavClick('wallet')}
                     title="Click to view USDT Wallet & 24h Payouts"
                     className="hidden sm:flex cursor-pointer bg-[#10131A] hover:bg-[#151C2B] border border-emerald-500/30 hover:border-emerald-400 rounded-xl px-2.5 sm:px-3 py-1 sm:py-1.5 items-center gap-1.5 transition-all shadow-inner"
@@ -281,27 +280,23 @@ export default function Navbar({
                       if (onOpenProfile) onOpenProfile();
                       else handleNavClick('profile');
                     }}
-                    className={`hidden sm:flex items-center gap-1.5 text-xs font-mono-numbers px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer shrink-0 shadow-sm ${
-                      activeTab === 'profile'
+                    className={`hidden sm:flex items-center gap-1.5 text-xs font-mono-numbers px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer shrink-0 shadow-sm ${activeTab === 'profile'
                         ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] border-[#fff2a3] font-bold'
                         : 'bg-[#151C2B] text-[#E1E2EB] border-[#2D3545] hover:border-[#F5C451]/50'
-                    }`}
+                      }`}
                     title="Open Player Profile"
                     aria-label="Open Player Profile"
                   >
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                      activeTab === 'profile' ? 'bg-[#0b0e14]/20 text-[#0b0e14]' : 'bg-[#05d5aa]/20 text-[#05d5aa]'
-                    }`}>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${activeTab === 'profile' ? 'bg-[#0b0e14]/20 text-[#0b0e14]' : 'bg-[#05d5aa]/20 text-[#05d5aa]'
+                      }`}>
                       <User className="w-3 h-3" />
                     </div>
-                    <span className={`truncate max-w-[95px] lg:max-w-[120px] font-bold text-xs ${
-                      activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-white'
-                    }`}>
+                    <span className={`truncate max-w-[95px] lg:max-w-[120px] font-bold text-xs ${activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-white'
+                      }`}>
                       {usernameDisplay}
                     </span>
-                    <ChevronDown className={`w-3 h-3 shrink-0 ${
-                      activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-[#94A3B8]'
-                    }`} />
+                    <ChevronDown className={`w-3 h-3 shrink-0 ${activeTab === 'profile' ? 'text-[#0b0e14]' : 'text-[#94A3B8]'
+                      }`} />
                   </button>
                 </>
               ) : (
@@ -326,21 +321,20 @@ export default function Navbar({
       {/* Four items: 1. Home, 2. Wallet, 3. Promotion, 4. Profile */}
       {/* ======================================================== */}
       {!isInGameRoom && (
-        <nav 
+        <nav
           className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B0F19]/95 backdrop-blur-xl border-t border-[rgba(245,196,81,0.18)] px-1 xs:px-2 py-1 safe-area-pb shadow-[0_-5px_25px_rgba(0,0,0,0.85)]"
           aria-label="Mobile Bottom Navigation"
         >
           <div className="grid grid-cols-4 max-w-md mx-auto items-center">
-            
+
             {/* 1. Home */}
             <button
               onClick={() => {
                 if (onGoHome) onGoHome();
                 else handleNavClick('lotteries');
               }}
-              className={`min-h-[46px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${
-                activeTab === 'lotteries' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
-              }`}
+              className={`min-h-[46px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${activeTab === 'lotteries' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
+                }`}
             >
               <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'lotteries' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
                 <Flame className="w-4.5 h-4.5 xs:w-5 xs:h-5" />
@@ -353,9 +347,8 @@ export default function Navbar({
             {/* 2. Virtual Wallet */}
             <button
               onClick={() => handleNavClick('wallet')}
-              className={`min-h-[46px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${
-                activeTab === 'wallet' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
-              }`}
+              className={`min-h-[46px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${activeTab === 'wallet' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
+                }`}
             >
               <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'wallet' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
                 <Wallet className="w-4.5 h-4.5 xs:w-5 xs:h-5" />
@@ -368,9 +361,8 @@ export default function Navbar({
             {/* 3. Promotion */}
             <button
               onClick={() => handleNavClick('promotion')}
-              className={`min-h-[46px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${
-                activeTab === 'promotion' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
-              }`}
+              className={`min-h-[46px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${activeTab === 'promotion' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
+                }`}
             >
               <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'promotion' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
                 <Gift className="w-4.5 h-4.5 xs:w-5 xs:h-5" />
@@ -386,9 +378,8 @@ export default function Navbar({
                 if (onOpenProfile) onOpenProfile();
                 else handleNavClick('profile');
               }}
-              className={`min-h-[46px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${
-                activeTab === 'profile' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
-              }`}
+              className={`min-h-[46px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${activeTab === 'profile' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
+                }`}
             >
               <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'profile' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
                 <User className="w-4.5 h-4.5 xs:w-5 xs:h-5" />

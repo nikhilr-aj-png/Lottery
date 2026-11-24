@@ -1,13 +1,13 @@
 import React from 'react';
-import { 
-  Ticket, 
-  Dices, 
-  DollarSign, 
-  Trophy, 
-  ShieldCheck, 
-  Clock, 
-  CheckCircle2, 
-  Zap, 
+import {
+  Ticket,
+  Dices,
+  DollarSign,
+  Trophy,
+  ShieldCheck,
+  Clock,
+  CheckCircle2,
+  Zap,
   Sparkles,
   Award,
   Wallet,
