@@ -17,7 +17,8 @@ import {
   Plus, 
   Minus,
   Dices,
-  Radio
+  Radio,
+  ChevronLeft
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundFX } from '../engine/SoundFXService';
@@ -346,8 +347,8 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
     const ordinals = ['1ST', '2ND', '3RD', '4TH'];
 
     return (
-      <div className="w-full space-y-2">
-        <div className="grid grid-cols-4 gap-2 xs:gap-2.5 sm:gap-3">
+      <div className="w-full space-y-1">
+        <div className="grid grid-cols-4 gap-1.5 xs:gap-2 sm:gap-2.5">
           {digits.map((digit, idx) => {
             const isSelected = activeSlot === idx;
 
@@ -356,22 +357,22 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                 key={idx}
                 type="button"
                 onClick={() => setActiveSlot(idx)}
-                className={`h-14 xs:h-16 sm:h-20 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-150 select-none border-2 shadow-inner group relative ${
+                className={`h-11 xs:h-12 sm:h-13 lg:h-14 xl:h-15 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-150 select-none border-2 shadow-inner group relative ${
                   isSelected
-                    ? 'bg-gradient-to-b from-[#1C1836] to-[#120F24] border-[#7C3AED] shadow-[0_0_20px_rgba(124,58,237,0.4)] scale-[1.02]'
+                    ? 'bg-gradient-to-b from-[#1C1836] to-[#120F24] border-[#7C3AED] shadow-[0_0_16px_rgba(124,58,237,0.4)] scale-[1.01]'
                     : 'bg-[#0B0F19] border-[#1F2737] hover:border-[#2D374D] hover:bg-[#101522]'
                 }`}
                 title={`Edit ${ordinals[idx]} digit`}
               >
                 {/* Ordinal Pill Tag */}
-                <span className={`text-[9px] xs:text-[10px] font-mono-numbers font-black tracking-wider uppercase mb-0.5 transition-colors ${
+                <span className={`text-[8px] xs:text-[9px] font-mono-numbers font-black tracking-wider uppercase mb-0.5 transition-colors ${
                   isSelected ? 'text-[#D2BBFF]' : 'text-[#64748B] group-hover:text-[#94A3B8]'
                 }`}>
                   {ordinals[idx]}{isSelected ? ' ACTIVE' : ''}
                 </span>
 
                 {/* Dialed Digit */}
-                <span className={`font-mono-numbers font-black text-2xl xs:text-3xl sm:text-4xl transition-colors ${
+                <span className={`font-mono-numbers font-black text-xl xs:text-2xl sm:text-3xl transition-colors ${
                   isSelected ? 'text-[#F59E0B]' : 'text-white'
                 }`}>
                   {digit}
@@ -379,7 +380,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
 
                 {/* Active Indicator Bar */}
                 {isSelected && (
-                  <div className="absolute -bottom-1 w-6 h-1 rounded-full bg-[#7C3AED] shadow-[0_0_8px_#7C3AED]" />
+                  <div className="absolute -bottom-1 w-5 h-0.5 rounded-full bg-[#7C3AED] shadow-[0_0_8px_#7C3AED]" />
                 )}
               </button>
             );
@@ -394,14 +395,14 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
     const keypadKeys = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
     return (
-      <div className="w-full space-y-2 pt-1">
-        <div className="grid grid-cols-3 gap-1.5 xs:gap-2 sm:gap-2.5">
+      <div className="w-full space-y-1.5 pt-0.5">
+        <div className="grid grid-cols-3 gap-1 xs:gap-1.5 sm:gap-2">
           {keypadKeys.map((num) => (
             <button
               key={num}
               type="button"
               onClick={() => handleKeypadPress(num)}
-              className="h-11 xs:h-12 sm:h-14 rounded-xl bg-[#0B0F19] hover:bg-[#141A29] active:bg-[#1D253A] border border-[#1F2737] hover:border-[#7C3AED]/40 text-white font-mono-numbers font-extrabold text-base xs:text-lg sm:text-xl flex items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm"
+              className="h-8 xs:h-8.5 sm:h-9.5 lg:h-10 rounded-xl bg-[#0B0F19] hover:bg-[#141A29] active:bg-[#1D253A] border border-[#1F2737] hover:border-[#7C3AED]/40 text-white font-mono-numbers font-extrabold text-sm xs:text-base sm:text-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm"
             >
               {num}
             </button>
@@ -411,7 +412,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           <button
             type="button"
             onClick={handleClearSlot}
-            className="h-11 xs:h-12 sm:h-14 rounded-xl bg-[#181119] hover:bg-[#251525] active:bg-[#301A30] border border-rose-900/30 text-rose-400 font-mono-numbers text-xs xs:text-sm font-bold flex items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm"
+            className="h-8 xs:h-8.5 sm:h-9.5 lg:h-10 rounded-xl bg-[#181119] hover:bg-[#251525] active:bg-[#301A30] border border-rose-900/30 text-rose-400 font-mono-numbers text-xs xs:text-sm font-bold flex items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm"
             title="Clear current slot"
           >
             Clear
@@ -420,7 +421,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           <button
             type="button"
             onClick={() => handleKeypadPress(0)}
-            className="h-11 xs:h-12 sm:h-14 rounded-xl bg-[#0B0F19] hover:bg-[#141A29] active:bg-[#1D253A] border border-[#1F2737] hover:border-[#7C3AED]/40 text-white font-mono-numbers font-extrabold text-base xs:text-lg sm:text-xl flex items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm"
+            className="h-8 xs:h-8.5 sm:h-9.5 lg:h-10 rounded-xl bg-[#0B0F19] hover:bg-[#141A29] active:bg-[#1D253A] border border-[#1F2737] hover:border-[#7C3AED]/40 text-white font-mono-numbers font-extrabold text-sm xs:text-base sm:text-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm"
           >
             0
           </button>
@@ -428,7 +429,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           <button
             type="button"
             onClick={handleResetAll}
-            className="h-11 xs:h-12 sm:h-14 rounded-xl bg-[#141924] hover:bg-[#1C2333] active:bg-[#242D40] border border-[#222B40] text-[#94A3B8] hover:text-white font-mono-numbers text-xs xs:text-sm font-bold flex items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm"
+            className="h-8 xs:h-8.5 sm:h-9.5 lg:h-10 rounded-xl bg-[#141924] hover:bg-[#1C2333] active:bg-[#242D40] border border-[#222B40] text-[#94A3B8] hover:text-white font-mono-numbers text-xs xs:text-sm font-bold flex items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm"
             title="Reset all slots to 0000"
           >
             Reset
@@ -436,17 +437,17 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
         </div>
 
         {/* Quick Helper Sub-row */}
-        <div className="flex items-center justify-between text-[11px] text-[#64748B] pt-1 px-1">
+        <div className="flex items-center justify-between text-[10px] text-[#64748B] pt-0.5 px-1">
           <button
             type="button"
             onClick={handleRandomize}
             className="text-[#94A3B8] hover:text-amber-400 transition-colors flex items-center gap-1 cursor-pointer font-bold"
           >
-            <Dices className="w-3.5 h-3.5 text-amber-400" />
+            <Dices className="w-3 h-3 text-amber-400" />
             <span>Lucky Pick</span>
           </button>
 
-          <span className="font-mono-numbers text-[10px] hidden xs:inline">
+          <span className="font-mono-numbers text-[9px] hidden xs:inline text-slate-500">
             Manual 4-Digit Entry
           </span>
 
@@ -467,16 +468,16 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   const renderActivityFeed = () => {
     if (roomActivityTickets.length === 0) {
       return (
-        <div className="py-6 text-center text-xs text-[#94A3B8] space-y-1">
-          <Activity className="w-5 h-5 mx-auto text-[#64748B] opacity-50" />
-          <p className="font-bold text-white">No tickets minted yet</p>
-          <p className="text-[11px] text-[#64748B]">Be the first to secure a 4-digit number in this draw!</p>
+        <div className="flex-1 flex flex-col items-center justify-center py-4 text-center text-xs text-[#94A3B8] space-y-1">
+          <Activity className="w-4 h-4 mx-auto text-[#64748B] opacity-50" />
+          <p className="font-bold text-white text-xs">No tickets minted yet</p>
+          <p className="text-[10px] text-[#64748B]">Be the first to secure a 4-digit number in this draw!</p>
         </div>
       );
     }
 
     return (
-      <div className="space-y-1.5 max-h-56 overflow-y-auto no-scrollbar pr-1">
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar pr-1 divide-y divide-[#1F2737]/40 space-y-1">
         {roomActivityTickets.map((tkt: any, idx: number) => {
           const isMine = (user && tkt.userId === user.id) || (wallet?.address && tkt.userAddress === wallet.address);
           const rawName = tkt.username || (tkt.userAddress ? `${tkt.userAddress.slice(0, 6)}...${tkt.userAddress.slice(-4)}` : `@p_${tkt.id ? String(tkt.id).slice(-4) : idx}`);
@@ -486,15 +487,15 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           return (
             <div
               key={tkt.id || idx}
-              className={`p-2.5 rounded-xl border flex items-center justify-between text-xs font-mono-numbers transition-colors ${
+              className={`p-1.5 sm:p-2 rounded-lg border flex items-center justify-between text-xs font-mono-numbers transition-colors ${
                 isMine
                   ? 'bg-[#7C3AED]/15 border-[#7C3AED]/40 text-[#D2BBFF]'
                   : 'bg-[#0B0F19] border-[#1F2737] hover:border-[#2A354D] text-white'
               }`}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span className={`w-2 h-2 rounded-full shrink-0 ${isMine ? 'bg-[#F59E0B]' : 'bg-[#10B981]'}`} />
-                <span className="font-bold truncate text-xs text-[#E2E8F0] max-w-[110px] xs:max-w-[150px] sm:max-w-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isMine ? 'bg-[#F59E0B]' : 'bg-[#10B981]'}`} />
+                <span className="font-bold truncate text-xs text-[#E2E8F0] max-w-[100px] xs:max-w-[140px] sm:max-w-xs">
                   {displayUsername}
                 </span>
                 <span className="text-[10px] text-[#64748B] hidden xs:inline">
@@ -502,7 +503,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                 </span>
               </div>
 
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                 <span className="font-black text-xs text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-md border border-[#10B981]/20">
                   {ticketNumberFormatted}
                 </span>
@@ -523,24 +524,47 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   // ---------------------------------------------------------------------------
   // 11. Main View Layout
   // ---------------------------------------------------------------------------
+  const eventTitle = event?.title || room?.name || 'Four Digit Lottery';
+  const drawIdFormatted = event?.id 
+    ? `#DRAW-${String(event.id).replace(/^evt-/, '').slice(-6).toUpperCase()}` 
+    : '#DRAW-884';
+
   return (
-    <div className="w-full h-full flex flex-col min-h-0 overflow-y-auto no-scrollbar text-left p-2.5 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 select-none">
+    <div className="w-full h-full max-h-full flex flex-col justify-between overflow-y-auto lg:overflow-hidden text-left p-2 sm:p-2.5 lg:p-3.5 gap-2 sm:gap-2.5 lg:gap-3 select-none no-scrollbar">
       
       {/* ===================================================================== */}
       {/* 1. COMPACT IN-GAME TELEMETRY STRIP (NO EXTRA NAVIGATION STRIP)        */}
       {/* ===================================================================== */}
-      <div className="w-full max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#111728]/95 border border-[#1B2238] shadow-md shrink-0 text-xs">
+      <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-[#111728]/95 border border-[#1B2238] shadow-md shrink-0 text-xs">
         {/* Game Title, Status & Draw ID */}
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="font-display font-black text-white text-xs sm:text-sm truncate">
-            {room?.name || event.title}
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          {onBackToLobby && (
+            <button
+              type="button"
+              onClick={onBackToLobby}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#0B0F19] hover:bg-[#1A2234] border border-[#1F2737] text-slate-300 text-[11px] font-bold cursor-pointer transition-colors"
+              title="Return to lobby"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span className="hidden xs:inline">Lobby</span>
+            </button>
+          )}
+
+          <span className="font-display font-black text-white text-xs sm:text-sm truncate max-w-[150px] xs:max-w-[200px] sm:max-w-xs">
+            {eventTitle}
           </span>
+
           <span className="px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 text-[10px] font-mono-numbers font-extrabold uppercase flex items-center gap-1 shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping" />
             <span>LIVE</span>
           </span>
+
           <span className="text-[10px] font-mono-numbers text-slate-400 hidden sm:inline">
-            #DRAW-{event.id ? String(event.id).slice(-6).toUpperCase() : '884'}
+            {drawIdFormatted}
+          </span>
+
+          <span className="hidden md:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono-numbers font-bold">
+            ✓ VRF
           </span>
         </div>
 
@@ -553,7 +577,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
 
           <div className="flex items-center gap-1 text-[11px]">
             <Trophy className="w-3 h-3 text-[#F59E0B]" />
-            <span className="text-[#94A3B8]">Jackpot:</span>
+            <span className="text-[#94A3B8] hidden xs:inline">Jackpot:</span>
             <strong className="text-[#F59E0B] font-bold">{Number(event.poolPrize || 5000).toLocaleString()} USDT</strong>
           </div>
 
@@ -569,31 +593,31 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
       {/* ===================================================================== */}
       {/* 2. TOP SECTION: TWO BALANCED COLUMNS (PICK 4 DIGITS + PURCHASE PANEL) */}
       {/* ===================================================================== */}
-      <main className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 lg:gap-5 items-stretch">
+      <main className="w-full max-w-7xl mx-auto flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 lg:gap-3.5 items-stretch">
         
         {/* ------------------------------------------------------------------- */}
-        {/* LEFT COLUMN: PICK 4 DIGITS & NUMERIC KEYPAD (~60% ON DESKTOP)       */}
+        {/* LEFT COLUMN: PICK 4 DIGITS & NUMERIC KEYPAD (~58% ON DESKTOP)       */}
         {/* ------------------------------------------------------------------- */}
-        <section className="lg:col-span-7 bg-[#111728]/95 border border-[#1B2238] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-xl space-y-3.5 backdrop-blur-md">
+        <section className="lg:col-span-7 bg-[#111728]/95 border border-[#1B2238] rounded-xl p-2.5 sm:p-3.5 flex flex-col justify-between shadow-xl space-y-2 sm:space-y-2.5 backdrop-blur-md">
           
           {/* Header & Availability */}
-          <div className="flex items-center justify-between pb-2.5 border-b border-[#1F2737]">
+          <div className="flex items-center justify-between pb-1.5 border-b border-[#1F2737]">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#7C3AED]/15 border border-[#7C3AED]/30 flex items-center justify-center text-[#7C3AED]">
-                <Sparkles className="w-4 h-4" />
+              <div className="w-7 h-7 rounded-lg bg-[#7C3AED]/15 border border-[#7C3AED]/30 flex items-center justify-center text-[#7C3AED]">
+                <Sparkles className="w-3.5 h-3.5" />
               </div>
               <div>
-                <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
+                <h3 className="font-display font-extrabold text-xs sm:text-sm text-white leading-tight">
                   Pick 4 Digits
                 </h3>
-                <p className="text-[11px] text-[#94A3B8]">
+                <p className="text-[10px] text-[#94A3B8]">
                   Select slot and enter chosen digits
                 </p>
               </div>
             </div>
 
             {/* Combination Availability Pill */}
-            <span className={`text-[10px] font-mono-numbers px-2.5 py-0.5 rounded-full font-bold uppercase flex items-center gap-1.5 border ${
+            <span className={`text-[9px] font-mono-numbers px-2 py-0.5 rounded-full font-bold uppercase flex items-center gap-1.5 border ${
               isAlreadyPurchasedByMe
                 ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
                 : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
@@ -610,18 +634,18 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           {renderNumericKeypad()}
 
           {/* Mobile-Only Integrated Quick Buy Strip (Zero Scroll to Purchase) */}
-          <div className="block lg:hidden pt-2 border-t border-[#1F2737] space-y-2.5">
-            <div className="flex items-center justify-between text-xs font-mono-numbers bg-[#0B0F19] p-2.5 rounded-xl border border-[#1F2737]">
+          <div className="block lg:hidden pt-2 border-t border-[#1F2737] space-y-2">
+            <div className="flex items-center justify-between text-xs font-mono-numbers bg-[#0B0F19] p-2 rounded-lg border border-[#1F2737]">
               <div>
-                <span className="text-[#94A3B8] text-[10px] uppercase block">Selected:</span>
-                <span className="font-black text-[#F59E0B] text-sm">#{currentNumberStr}</span>
+                <span className="text-[#94A3B8] text-[9px] uppercase block">Selected:</span>
+                <span className="font-black text-[#F59E0B] text-xs sm:text-sm">#{currentNumberStr}</span>
               </div>
               <div>
-                <span className="text-[#94A3B8] text-[10px] uppercase block">Total Cost:</span>
-                <span className="font-black text-white text-sm">{totalPurchaseCost.toFixed(2)} USDT</span>
+                <span className="text-[#94A3B8] text-[9px] uppercase block">Total Cost:</span>
+                <span className="font-black text-white text-xs sm:text-sm">{totalPurchaseCost.toFixed(2)} USDT</span>
               </div>
               <div>
-                <span className="text-[#94A3B8] text-[10px] uppercase block">Balance:</span>
+                <span className="text-[#94A3B8] text-[9px] uppercase block">Balance:</span>
                 <span className="font-bold text-[#10B981] text-xs">{Number(wallet.balance || 0).toFixed(2)} USDT</span>
               </div>
             </div>
@@ -635,7 +659,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                 isAlreadyPurchasedByMe || 
                 Number(wallet.balance || 0) < totalPurchaseCost
               }
-              className={`w-full py-3 rounded-xl font-display font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all ${
+              className={`w-full py-2.5 rounded-xl font-display font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all ${
                 isAlreadyPurchasedByMe
                   ? 'bg-[#181D29] text-rose-300 border border-rose-500/40 cursor-not-allowed opacity-80'
                   : Number(wallet.balance || 0) < totalPurchaseCost
@@ -651,7 +675,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                 <span>Insufficient USDT Balance</span>
               ) : (
                 <>
-                  <Zap className="w-4 h-4 fill-current" />
+                  <Zap className="w-3.5 h-3.5 fill-current" />
                   <span>Buy Ticket ({totalPurchaseCost.toFixed(2)} USDT)</span>
                 </>
               )}
@@ -661,66 +685,66 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
         </section>
 
         {/* ------------------------------------------------------------------- */}
-        {/* RIGHT COLUMN: PURCHASE PANEL (~40% ON DESKTOP)                      */}
+        {/* RIGHT COLUMN: PURCHASE PANEL (~42% ON DESKTOP)                      */}
         {/* ------------------------------------------------------------------- */}
-        <section className="lg:col-span-5 bg-[#111728]/95 border border-[#1B2238] rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between shadow-xl space-y-4 backdrop-blur-md">
+        <section className="hidden lg:flex lg:col-span-5 bg-[#111728]/95 border border-[#1B2238] rounded-xl p-2.5 sm:p-3.5 flex-col justify-between shadow-xl space-y-2.5 backdrop-blur-md">
           
-          <div className="space-y-3.5">
+          <div className="space-y-2.5">
             
             {/* Box Header */}
-            <div className="flex items-center justify-between pb-2.5 border-b border-[#1F2737]">
+            <div className="flex items-center justify-between pb-1.5 border-b border-[#1F2737]">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#7C3AED]/15 border border-[#7C3AED]/30 flex items-center justify-center text-[#7C3AED]">
-                  <Ticket className="w-4 h-4" />
+                <div className="w-7 h-7 rounded-lg bg-[#7C3AED]/15 border border-[#7C3AED]/30 flex items-center justify-center text-[#7C3AED]">
+                  <Ticket className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
+                  <h3 className="font-display font-extrabold text-xs sm:text-sm text-white leading-tight">
                     Direct Purchase
                   </h3>
-                  <p className="text-[11px] text-[#94A3B8]">
+                  <p className="text-[10px] text-[#94A3B8]">
                     Instant settlement order summary
                   </p>
                 </div>
               </div>
 
-              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold uppercase">
+              <span className="text-[9px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold uppercase">
                 INSTANT
               </span>
             </div>
 
             {/* Order Summary Card */}
-            <div className="p-3.5 rounded-2xl bg-[#0B0F19] border border-[#1F2737] space-y-2.5 shadow-inner font-mono-numbers text-xs">
+            <div className="p-2.5 rounded-xl bg-[#0B0F19] border border-[#1F2737] space-y-2 shadow-inner font-mono-numbers text-xs">
               
               {/* Combination Row */}
-              <div className="flex items-center justify-between pb-2 border-b border-[#1F2737]">
-                <span className="text-[#94A3B8]">Chosen Combination:</span>
-                <strong className="text-white font-black text-sm bg-[#161F30] px-2.5 py-0.5 rounded-lg border border-[#27354F]">
+              <div className="flex items-center justify-between pb-1.5 border-b border-[#1F2737]">
+                <span className="text-[#94A3B8] text-[11px]">Chosen Combination:</span>
+                <strong className="text-white font-black text-xs sm:text-sm bg-[#161F30] px-2 py-0.5 rounded-lg border border-[#27354F]">
                   #{currentNumberStr}
                 </strong>
               </div>
 
               {/* Unit Price Row */}
-              <div className="flex items-center justify-between text-[#94A3B8]">
+              <div className="flex items-center justify-between text-[#94A3B8] text-[11px]">
                 <span>Unit Ticket Price:</span>
                 <strong className="text-white">{ticketPrice.toFixed(2)} USDT</strong>
               </div>
 
               {/* Platform Fee / Escrow */}
-              <div className="flex items-center justify-between text-[#94A3B8]">
+              <div className="flex items-center justify-between text-[#94A3B8] text-[11px]">
                 <span>Gas / Escrow:</span>
                 <span className="text-emerald-400 font-bold">0.00 USDT (0% subsidised)</span>
               </div>
 
               {/* Total Cost Highlight */}
-              <div className="flex items-center justify-between pt-2 border-t border-[#1F2737]">
+              <div className="flex items-center justify-between pt-1.5 border-t border-[#1F2737]">
                 <span className="text-[#D2BBFF] font-bold text-xs">Total Purchase:</span>
-                <strong className="text-[#F59E0B] font-black text-base sm:text-lg">
+                <strong className="text-[#F59E0B] font-black text-sm sm:text-base">
                   {totalPurchaseCost.toFixed(2)} USDT
                 </strong>
               </div>
 
               {/* Available Wallet Balance */}
-              <div className="flex items-center justify-between pt-1 text-[11px] text-[#64748B]">
+              <div className="flex items-center justify-between pt-0.5 text-[10px] text-[#64748B]">
                 <span className="flex items-center gap-1">
                   <Wallet className="w-3 h-3 text-[#94A3B8]" />
                   <span>Wallet Balance:</span>
@@ -735,7 +759,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
           </div>
 
           {/* Desktop Buy Button */}
-          <div className="space-y-2 pt-1 hidden lg:block">
+          <div className="space-y-1.5 pt-1">
             <button
               type="button"
               onClick={handlePurchaseAction}
@@ -745,7 +769,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
                 isAlreadyPurchasedByMe || 
                 Number(wallet.balance || 0) < totalPurchaseCost
               }
-              className={`w-full py-3.5 rounded-xl font-display font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all ${
+              className={`w-full py-2.5 sm:py-3 rounded-xl font-display font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all ${
                 isAlreadyPurchasedByMe
                   ? 'bg-[#181D29] text-rose-300 border border-rose-500/40 cursor-not-allowed opacity-80'
                   : Number(wallet.balance || 0) < totalPurchaseCost
@@ -755,25 +779,25 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
             >
               {isSubmitting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                   <span>Processing Transaction...</span>
                 </>
               ) : isAlreadyPurchasedByMe ? (
                 <>
-                  <AlertCircle className="w-4 h-4 text-rose-400" />
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
                   <span>Ticket Already Owned</span>
                 </>
               ) : Number(wallet.balance || 0) < totalPurchaseCost ? (
                 <span>Insufficient USDT Balance</span>
               ) : (
                 <>
-                  <Zap className="w-4 h-4 fill-current" />
+                  <Zap className="w-3.5 h-3.5 fill-current" />
                   <span>Buy Ticket ({totalPurchaseCost.toFixed(2)} USDT)</span>
                 </>
               )}
             </button>
 
-            <p className="text-[10px] text-[#64748B] text-center font-mono-numbers">
+            <p className="text-[9px] text-[#64748B] text-center font-mono-numbers">
               Instant smart contract escrow • Non-custodial settlement
             </p>
           </div>
@@ -785,32 +809,29 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
       {/* ===================================================================== */}
       {/* 3. BOTTOM SECTION: FULL-WIDTH LIVE ROOM ACTIVITY (SPANS BOTH COLUMNS) */}
       {/* ===================================================================== */}
-      <section className="w-full max-w-7xl mx-auto bg-[#111728]/95 border border-[#1B2238] rounded-2xl p-3.5 sm:p-5 shadow-xl space-y-3 backdrop-blur-md">
+      <section className="w-full max-w-7xl mx-auto h-32 xs:h-36 sm:h-40 lg:h-44 xl:h-48 shrink-0 bg-[#0E1422]/95 border border-[#1B2238] rounded-xl p-2 sm:p-2.5 flex flex-col justify-between shadow-xl backdrop-blur-md">
         
         {/* Full-Width Section Header */}
-        <div className="flex items-center justify-between pb-2.5 border-b border-[#1F2737]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981]">
-              <Activity className="w-4 h-4" />
+        <div className="flex items-center justify-between pb-1.5 border-b border-[#1F2737] shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981]">
+              <Activity className="w-3.5 h-3.5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-display font-extrabold text-sm sm:text-base text-white">
+                <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
                   Live Room Activity
                 </h3>
-                <span className="text-[9px] uppercase font-mono-numbers font-black px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30">
+                <span className="text-[8px] sm:text-[9px] uppercase font-mono-numbers font-black px-1.5 py-0.2 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30">
                   {roomActivityTickets.length} TICKETS MINTED
                 </span>
               </div>
-              <p className="text-[11px] text-[#94A3B8]">
-                Real-time on-chain ticket purchases in this active draw pool
-              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 text-xs font-mono-numbers">
-            <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 text-[11px] font-bold">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 text-[10px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span>Live Sync</span>
             </span>
           </div>

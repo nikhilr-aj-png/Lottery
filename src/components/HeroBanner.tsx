@@ -234,30 +234,30 @@ export default function HeroBanner({ onPlayNowClick, onRulesClick, onShowResultC
                   </span>
                 </div>
 
-                <div className="grid grid-cols-4 gap-1 xs:gap-2 text-center">
-                  <div className="bg-[#07090e] border border-[#272a31] rounded-lg p-1.5 xs:p-2">
-                    <div className="font-mono-numbers font-black text-base xs:text-lg sm:text-xl text-white">
+                <div className="grid grid-cols-4 gap-1 xs:gap-1.5 sm:gap-2 text-center min-w-0 overflow-hidden">
+                  <div className="bg-[#07090e] border border-[#272a31] rounded-lg p-1 xs:p-1.5 sm:p-2 min-w-0">
+                    <div className="font-mono-numbers font-black text-xs xs:text-sm sm:text-lg lg:text-xl text-white truncate">
                       {String(timeLeft.days).padStart(2, '0')}
                     </div>
-                    <div className="text-[8px] xs:text-[9px] text-[#9b8f7c] uppercase font-bold">Days</div>
+                    <div className="text-[7.5px] xs:text-[8.5px] sm:text-[9px] text-[#9b8f7c] uppercase font-bold truncate">Days</div>
                   </div>
-                  <div className="bg-[#07090e] border border-[#272a31] rounded-lg p-1.5 xs:p-2">
-                    <div className="font-mono-numbers font-black text-base xs:text-lg sm:text-xl text-white">
+                  <div className="bg-[#07090e] border border-[#272a31] rounded-lg p-1 xs:p-1.5 sm:p-2 min-w-0">
+                    <div className="font-mono-numbers font-black text-xs xs:text-sm sm:text-lg lg:text-xl text-white truncate">
                       {String(timeLeft.hours).padStart(2, '0')}
                     </div>
-                    <div className="text-[8px] xs:text-[9px] text-[#9b8f7c] uppercase font-bold">Hours</div>
+                    <div className="text-[7.5px] xs:text-[8.5px] sm:text-[9px] text-[#9b8f7c] uppercase font-bold truncate">Hours</div>
                   </div>
-                  <div className="bg-[#07090e] border border-[#272a31] rounded-lg p-1.5 xs:p-2">
-                    <div className="font-mono-numbers font-black text-base xs:text-lg sm:text-xl text-white">
+                  <div className="bg-[#07090e] border border-[#272a31] rounded-lg p-1 xs:p-1.5 sm:p-2 min-w-0">
+                    <div className="font-mono-numbers font-black text-xs xs:text-sm sm:text-lg lg:text-xl text-white truncate">
                       {String(timeLeft.minutes).padStart(2, '0')}
                     </div>
-                    <div className="text-[8px] xs:text-[9px] text-[#9b8f7c] uppercase font-bold">Mins</div>
+                    <div className="text-[7.5px] xs:text-[8.5px] sm:text-[9px] text-[#9b8f7c] uppercase font-bold truncate">Mins</div>
                   </div>
-                  <div className="bg-[#07090e] border border-[#272a31] rounded-lg p-1.5 xs:p-2">
-                    <div className={`font-mono-numbers font-black text-base xs:text-lg sm:text-xl ${isTimedOut ? 'text-slate-500' : 'text-[#ffd700]'}`}>
+                  <div className="bg-[#07090e] border border-[#272a31] rounded-lg p-1 xs:p-1.5 sm:p-2 min-w-0">
+                    <div className={`font-mono-numbers font-black text-xs xs:text-sm sm:text-lg lg:text-xl truncate ${isTimedOut ? 'text-slate-500' : 'text-[#ffd700]'}`}>
                       {String(timeLeft.seconds).padStart(2, '0')}
                     </div>
-                    <div className="text-[8px] xs:text-[9px] text-[#9b8f7c] uppercase font-bold">Secs</div>
+                    <div className="text-[7.5px] xs:text-[8.5px] sm:text-[9px] text-[#9b8f7c] uppercase font-bold truncate">Secs</div>
                   </div>
                 </div>
               </div>

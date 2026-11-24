@@ -646,13 +646,13 @@ function LotteryAppContent() {
         <main 
           id="main-content" 
           className={`flex-1 min-w-0 h-full text-left flex flex-col overscroll-contain ${
-            currentGameRoute?.roomId 
+            currentGameRoute 
               ? 'overflow-hidden p-1 xs:p-1.5 sm:p-2' 
               : 'overflow-y-auto pt-2.5 sm:pt-3.5 pb-0'
           }`}
         >
           
-          <div className={currentGameRoute?.roomId ? 'flex-1 min-h-0 flex flex-col overflow-hidden h-full' : 'w-full flex-grow shrink-0 px-2.5 xs:px-4 sm:px-6 lg:px-8'}>
+          <div className={currentGameRoute ? 'flex-1 min-h-0 flex flex-col overflow-hidden h-full' : 'w-full flex-grow shrink-0 px-2.5 xs:px-4 sm:px-6 lg:px-8'}>
             {/* DEDICATED SEPARATE PAGE: TRANSACTION HISTORY */}
             {(isTransactionRoute || activeTab === 'transactions') ? (
               <TransactionHistoryPage 

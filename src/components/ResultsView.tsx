@@ -23,7 +23,7 @@ import {
  */
 export default function ResultsView() {
   const { events, tickets } = useLottery();
-  const [statusFilter, setStatusFilter] = useState<'all' | 'declared' | 'pending'>('all');
+  const [statusFilter, setStatusFilter] = useState<'pending' | 'declared'>('pending');
   const [selectedShowResultEvent, setSelectedShowResultEvent] = useState<any>(null);
 
   // Filter and deduplicate strictly to ended events
@@ -34,14 +34,14 @@ export default function ResultsView() {
     (events || []).forEach((e: any) => {
       if (!e || !e.id || seenIds.has(e.id)) return;
 
-      const isConcluded = Boolean(
-        (e.drawTime && new Date(e.drawTime).getTime() <= Date.now()) ||
+      const isConcludedOrPending = Boolean(
+        e.status === 'result_pending' ||
         e.status === 'completed' ||
         Boolean(e.winningDigits) ||
-        (Array.isArray(e.winning_codes) && e.winning_codes.length > 0)
+        (e.drawTime && new Date(e.drawTime).getTime() <= Date.now())
       );
 
-      if (isConcluded) {
+      if (isConcludedOrPending) {
         seenIds.add(e.id);
         list.push(e);
       }
@@ -55,21 +55,19 @@ export default function ResultsView() {
     });
   }, [events]);
 
-  // Declared vs Pending counts
+  // Declared vs Pending strictly driven by official declaration state in backend
   const declaredEvents = useMemo(() => {
-    return endedEvents.filter(e => Boolean(e.winningDigits || (Array.isArray(e.winning_codes) && e.winning_codes.length > 0)));
+    return endedEvents.filter(e => e.status === 'completed' && Boolean(e.winningDigits || (Array.isArray(e.winning_codes) && e.winning_codes.length > 0)));
   }, [endedEvents]);
 
   const pendingEvents = useMemo(() => {
-    return endedEvents.filter(e => !Boolean(e.winningDigits || (Array.isArray(e.winning_codes) && e.winning_codes.length > 0)));
+    return endedEvents.filter(e => e.status !== 'completed' || !Boolean(e.winningDigits || (Array.isArray(e.winning_codes) && e.winning_codes.length > 0)));
   }, [endedEvents]);
 
-  // Filtered list based on active tab
+  // Filtered list based on active tab: ONLY 'pending' and 'declared'
   const displayEvents = useMemo(() => {
-    if (statusFilter === 'declared') return declaredEvents;
-    if (statusFilter === 'pending') return pendingEvents;
-    return endedEvents;
-  }, [statusFilter, endedEvents, declaredEvents, pendingEvents]);
+    return statusFilter === 'declared' ? declaredEvents : pendingEvents;
+  }, [statusFilter, declaredEvents, pendingEvents]);
 
   return (
     <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 text-left select-none">
@@ -98,12 +96,11 @@ export default function ResultsView() {
         </div>
       </div>
 
-      {/* 2. Filter Pills */}
+      {/* 2. Filter Pills — Strictly 2 Status Options (No "All" or "Concluded Draw") */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
         {[
-          { key: 'all', label: `All Concluded Draws (${endedEvents.length})` },
-          { key: 'declared', label: `Officially Declared (${declaredEvents.length})` },
-          { key: 'pending', label: `Pending Declaration (${pendingEvents.length})` }
+          { key: 'pending', label: `Pending Official Declaration (${pendingEvents.length})` },
+          { key: 'declared', label: `Official Declaration (${declaredEvents.length})` }
         ].map((tab) => (
           <button
             key={tab.key}
@@ -125,11 +122,13 @@ export default function ResultsView() {
           <div className="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
             <Trophy className="w-6 h-6" />
           </div>
-          <h3 className="font-display font-bold text-base text-white">No Concluded Draws Found</h3>
+          <h3 className="font-display font-bold text-base text-white">
+            {statusFilter === 'pending' ? 'No Draws Pending Official Declaration' : 'No Official Declarations Yet'}
+          </h3>
           <p className="text-xs text-[#94A3B8] leading-relaxed">
-            {statusFilter === 'all'
-              ? 'All current lottery events are active in the live room. Once a countdown concludes, its official result will appear here.'
-              : `There are currently no events matching the "${statusFilter}" status filter.`}
+            {statusFilter === 'pending'
+              ? 'There are currently no concluded lottery events awaiting official result finalization by the admin.'
+              : 'Once winning digits are officially declared and verified in the Admin Panel, finalized results will appear here.'}
           </p>
         </div>
       ) : (

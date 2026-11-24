@@ -357,34 +357,24 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('lotto_events');
     } catch (e) {}
 
-    // Auto-settle timer check: run every 3 seconds to transition & finalize any event that expires
+    // Timer check: run every 3 seconds to transition any expired active event to 'result_pending' (Pending Official Declaration)
+    // CRITICAL FINANCIAL INTEGRITY: Never auto-finalize or disburse payouts without explicit Admin Official Declaration!
     const timerCheck = setInterval(async () => {
       const now = Date.now();
       setEvents(prev => {
         let hasChanges = false;
         const updated = prev.map(e => {
           if (e.status === 'active' && e.drawTime && e.drawTime <= now) {
-            const hasWinningCodes = (Array.isArray(e.winningCodes) && e.winningCodes.length > 0) || e.presetWinningDigits || e.winningDigits;
-            const isRandomMode = e.drawMode === 'random';
-
-            // If winning digits or random mode configured, execute automatic draw
-            if ((hasWinningCodes || isRandomMode) && executeDrawRef.current && !autoSettlingEventsRef.current.has(e.id)) {
-              autoSettlingEventsRef.current.add(e.id);
-              executeDrawRef.current(e.id, e.winningCodes || (e.presetWinningDigits ? [e.presetWinningDigits] : null))
-                .catch((err: any) => console.warn('Auto draw execution error for event:', e.id, err));
-            } else if (!hasWinningCodes && !isRandomMode && e.status !== 'result_pending') {
-              // Flag for Admin Action: Waiting for winning digits configuration
-              hasChanges = true;
-              supabase
-                .from('lottery_events')
-                .update({ status: 'result_pending' })
-                .eq('id', e.id)
-                .then(() => {});
-              return {
-                ...e,
-                status: 'result_pending'
-              };
-            }
+            hasChanges = true;
+            supabase
+              .from('lottery_events')
+              .update({ status: 'result_pending' })
+              .eq('id', e.id)
+              .then(() => {});
+            return {
+              ...e,
+              status: 'result_pending'
+            };
           }
           return e;
         });
@@ -2747,31 +2737,26 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     // Active tickets for this event
     const activeTicketsForEvent = tickets.filter(t => t.eventId === eventId && t.status === 'active');
 
-    // Selection of lucky winners (Pure Luck-based distribution, not rank-based):
-    // 1. Any ticket matching the target winning sequence gets selected
-    // 2. Remaining winner slots up to configuredWinnerCount are randomly sampled from active tickets
-    const selectedWinnerTicketIds = new Set();
-    const exactMatches = activeTicketsForEvent.filter(t => t.ticketNumber === winDigits);
-    exactMatches.forEach(t => selectedWinnerTicketIds.add(t.id));
+    // STRICT FINANCIAL INTEGRITY: Only tickets genuinely matching the target winning sequence(s) get selected!
+    // Never randomly sample non-matching tickets or fabricate winners when no tickets match.
+    const targetCodesList: string[] = codesPayload && codesPayload.length > 0 
+      ? codesPayload 
+      : (winDigits ? [winDigits] : []);
+    const targetCodeSet = new Set(targetCodesList);
 
-    if (selectedWinnerTicketIds.size < configuredWinnerCount && activeTicketsForEvent.length > 0) {
-      const remainingCandidates = activeTicketsForEvent.filter(t => !selectedWinnerTicketIds.has(t.id));
-      const shuffled = [...remainingCandidates].sort(() => Math.random() - 0.5);
-      for (let i = 0; i < shuffled.length && selectedWinnerTicketIds.size < configuredWinnerCount; i++) {
-        selectedWinnerTicketIds.add(shuffled[i].id);
-      }
-    }
+    const winningTickets = activeTicketsForEvent.filter(t => targetCodeSet.has(t.ticketNumber));
+    const selectedWinnerTicketIds = new Set(winningTickets.map(t => t.id));
+    const finalWinnerCount = winningTickets.length;
 
-    const winningTickets = activeTicketsForEvent.filter(t => selectedWinnerTicketIds.has(t.id));
-    const finalWinnerCount = Math.max(1, winningTickets.length || configuredWinnerCount);
-
-    // Calculate pool collection & equal winner share % (Distributed equally based on luck!)
+    // Calculate pool collection & equal winner share % (Distributed only if valid winning tickets exist!)
     const totalPoolCollected = event.ticketsSold > 0 
       ? (event.ticketsSold * event.ticketPrice) 
       : event.poolPrize;
     const winnerSharePct = event.winnerSharePercent || 90;
     const totalWinnerPool = parseFloat(((totalPoolCollected * winnerSharePct) / 100).toFixed(2));
-    const perWinnerCalculated = parseFloat((totalWinnerPool / finalWinnerCount).toFixed(2));
+    const perWinnerCalculated = finalWinnerCount > 0 
+      ? parseFloat((totalWinnerPool / finalWinnerCount).toFixed(2))
+      : 0;
 
     let totalWonByUser = 0;
     let winningTicketsFound: any[] = [];
