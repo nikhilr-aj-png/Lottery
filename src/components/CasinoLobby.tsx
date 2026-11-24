@@ -194,7 +194,7 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules, onShowRe
             <Ticket className="w-10 h-10 text-amber-400/60 mx-auto" />
             <h3 className="font-display font-bold text-white text-base">New Draws Coming Soon</h3>
             <p className="text-xs text-[#94A3B8] max-w-md mx-auto">
-              Our automated lottery engine publishes new pools regularly. Check back shortly or view past winning numbers in Draw Results.
+              Our automated lottery engine publishes new pools regularly. Check back shortly or view past winning numbers in Results.
             </p>
           </div>
         ) : (
@@ -223,7 +223,7 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules, onShowRe
               <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-amber-400 shrink-0" />
                 <h2 className="font-display font-extrabold text-lg sm:text-xl text-white">
-                  Recent Draw Results &amp; Concluded Pools
+                  Recent Results &amp; Concluded Pools
                 </h2>
               </div>
               <p className="text-xs text-[#94A3B8] mt-0.5">
@@ -235,7 +235,7 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules, onShowRe
               onClick={() => setActiveTab('results')}
               className="text-xs text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer transition-colors"
             >
-              <span>View All Past Results</span>
+              <span>View All Results</span>
               <ChevronDown className="w-3.5 h-3.5 -rotate-90" />
             </button>
           </div>

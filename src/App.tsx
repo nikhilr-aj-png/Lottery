@@ -286,18 +286,33 @@ function LotteryAppContent() {
     } else if (clean === '/my-tickets' || clean === '/tickets') {
       setActiveTab('tickets', false);
       document.title = 'My Tickets · EarnFlow.in';
-    } else if (clean === '/results' || clean === '/lottery-results') {
+    } else if (clean === '/results' || clean === '/lottery-results' || clean === '/draw-results') {
       setActiveTab('results', false);
-      document.title = 'Lottery Draw Results · EarnFlow.in';
+      document.title = 'Results · EarnFlow.in';
     } else if (clean === '/terms' || clean === '/terms-and-conditions' || clean === '/legal/terms') {
       setActiveTab('terms', false);
       document.title = 'Terms & Conditions · EarnFlow.in';
     } else if (clean === '/privacy' || clean === '/privacy-policy' || clean === '/legal/privacy') {
       setActiveTab('privacy', false);
       document.title = 'Privacy Policy · EarnFlow.in';
-    } else if (clean === '/responsible-gaming') {
+    } else if (clean === '/responsible-gaming' || clean === '/responsible-gaming-policy') {
       setActiveTab('responsible-gaming', false);
       document.title = 'Responsible Gaming · EarnFlow.in';
+    } else if (clean === '/how-it-works' || clean === '/howitworks') {
+      setActiveTab('how-it-works', false);
+      document.title = 'How It Works · EarnFlow.in';
+    } else if (clean === '/lottery-rules' || clean === '/rules' || clean === '/rules-and-prizes' || clean === '/lottery-rules-and-prize-distribution') {
+      setActiveTab('rules', false);
+      document.title = 'Lottery Rules & Prize Distribution · EarnFlow.in';
+    } else if (clean === '/faq' || clean === '/faqs' || clean === '/frequently-asked-questions') {
+      setActiveTab('faq', false);
+      document.title = 'Frequently Asked Questions · EarnFlow.in';
+    } else if (clean === '/contact-support' || clean === '/contact' || clean === '/contact-us' || clean === '/support' || clean === '/help') {
+      setActiveTab('contact', false);
+      document.title = 'Contact & Support · EarnFlow.in';
+    } else if (clean === '/promotion' || clean === '/promotions' || clean === '/referral') {
+      setActiveTab('promotion', false);
+      document.title = 'Promotions & Referral Hub · EarnFlow.in';
     } else if (clean === '/refund-policy') {
       setActiveTab('refund-policy', false);
       document.title = 'Refund and Cancellation Policy · EarnFlow.in';
@@ -307,21 +322,6 @@ function LotteryAppContent() {
     } else if (clean === '/disclaimer') {
       setActiveTab('disclaimer', false);
       document.title = 'Disclaimer · EarnFlow.in';
-    } else if (clean === '/faq') {
-      setActiveTab('faq', false);
-      document.title = 'Frequently Asked Questions · EarnFlow.in';
-    } else if (clean === '/contact' || clean === '/contact-us') {
-      setActiveTab('contact', false);
-      document.title = 'Customer Support & Contact · EarnFlow.in';
-    } else if (clean === '/support' || clean === '/help') {
-      setActiveTab('support', false);
-      document.title = 'Customer Support · EarnFlow.in';
-    } else if (clean === '/how-it-works' || clean === '/howitworks') {
-      setActiveTab('how-it-works', false);
-      document.title = 'How It Works · EarnFlow.in';
-    } else if (clean === '/rules' || clean === '/lottery-rules') {
-      setActiveTab('rules', false);
-      document.title = 'Lottery Rules & Prize Distribution · EarnFlow.in';
     }
 
     const mainEl = document.getElementById('main-content');
@@ -345,70 +345,32 @@ function LotteryAppContent() {
     }
     setCurrentGameRoute(null);
     setActiveGameId(null);
+    setIsTransactionRoute(tab === 'transactions');
 
-    if (tab === 'transactions') {
-      navigate('/transaction-history');
-    } else if (tab === 'how-it-works') {
-      setIsTransactionRoute(false);
-      navigate('/how-it-works');
-      setActiveTab('how-it-works');
-    } else if (tab === 'rules') {
-      setIsTransactionRoute(false);
-      navigate('/rules');
-      setActiveTab('rules');
-    } else if (tab === 'contact') {
-      setIsTransactionRoute(false);
-      navigate('/contact');
-      setActiveTab('contact');
-    } else if (tab === 'support') {
-      setIsTransactionRoute(false);
-      navigate('/support');
-      setActiveTab('support');
-    } else if (tab === 'terms') {
-      setIsTransactionRoute(false);
-      navigate('/terms-and-conditions');
-      setActiveTab('terms');
-    } else if (tab === 'privacy') {
-      setIsTransactionRoute(false);
-      navigate('/privacy-policy');
-      setActiveTab('privacy');
-    } else if (tab === 'responsible-gaming') {
-      setIsTransactionRoute(false);
-      navigate('/responsible-gaming');
-      setActiveTab('responsible-gaming');
-    } else if (tab === 'refund-policy') {
-      setIsTransactionRoute(false);
-      navigate('/refund-policy');
-      setActiveTab('refund-policy');
-    } else if (tab === 'payment-policy') {
-      setIsTransactionRoute(false);
-      navigate('/payment-policy');
-      setActiveTab('payment-policy');
-    } else if (tab === 'disclaimer') {
-      setIsTransactionRoute(false);
-      navigate('/disclaimer');
-      setActiveTab('disclaimer');
-    } else if (tab === 'faq') {
-      setIsTransactionRoute(false);
-      navigate('/faq');
-      setActiveTab('faq');
-    } else if (tab === 'promotion') {
-      setIsTransactionRoute(false);
-      navigate('/promotion');
-      setActiveTab('promotion');
-    } else if (tab === 'tickets') {
-      setIsTransactionRoute(false);
-      navigate('/my-tickets');
-      setActiveTab('tickets');
-    } else if (tab === 'results') {
-      setIsTransactionRoute(false);
-      navigate('/results');
-      setActiveTab('results');
-    } else {
-      setIsTransactionRoute(false);
-      navigate(`/?tab=${tab}`);
-      setActiveTab(tab);
-    }
+    const tabRouteMap: Record<string, string> = {
+      'how-it-works': '/how-it-works',
+      'rules': '/lottery-rules',
+      'faq': '/faq',
+      'responsible-gaming': '/responsible-gaming',
+      'terms': '/terms-and-conditions',
+      'privacy': '/privacy-policy',
+      'contact': '/contact-support',
+      'support': '/contact-support',
+      'results': '/results',
+      'tickets': '/my-tickets',
+      'wallet': '/wallet',
+      'profile': '/profile',
+      'promotion': '/promotion',
+      'transactions': '/transaction-history',
+      'refund-policy': '/refund-policy',
+      'payment-policy': '/payment-policy',
+      'disclaimer': '/disclaimer',
+      'rewards': '/?tab=rewards',
+      'leaderboard': '/?tab=leaderboard'
+    };
+
+    const targetUrl = tabRouteMap[tab] || `/?tab=${tab}`;
+    navigate(targetUrl);
   };
   
   // Dedicated check for isolated Admin Route
@@ -476,15 +438,49 @@ function LotteryAppContent() {
       if (onTx) {
         setActiveTab('transactions', false);
         document.title = 'Transaction History · EarnFlow.in';
-      } else if (cleanPath === '/privacy' || cleanPath === '/privacy-policy' || cleanPath === '/legal/privacy' || search.get('tab') === 'privacy') {
-        setActiveTab('privacy', false);
-        document.title = 'Privacy Policy · EarnFlow.in';
+      } else if (cleanPath === '/how-it-works' || cleanPath === '/howitworks' || search.get('tab') === 'how-it-works' || search.get('tab') === 'howitworks') {
+        setActiveTab('how-it-works', false);
+        document.title = 'How It Works · EarnFlow.in';
+      } else if (cleanPath === '/lottery-rules' || cleanPath === '/rules' || cleanPath === '/rules-and-prizes' || search.get('tab') === 'rules' || search.get('tab') === 'lottery-rules') {
+        setActiveTab('rules', false);
+        document.title = 'Lottery Rules & Prize Distribution · EarnFlow.in';
+      } else if (cleanPath === '/faq' || cleanPath === '/faqs' || cleanPath === '/frequently-asked-questions' || search.get('tab') === 'faq' || search.get('tab') === 'faqs') {
+        setActiveTab('faq', false);
+        document.title = 'Frequently Asked Questions · EarnFlow.in';
+      } else if (cleanPath === '/responsible-gaming' || cleanPath === '/responsible-gaming-policy' || search.get('tab') === 'responsible-gaming') {
+        setActiveTab('responsible-gaming', false);
+        document.title = 'Responsible Gaming · EarnFlow.in';
       } else if (cleanPath === '/terms' || cleanPath === '/terms-and-conditions' || cleanPath === '/legal/terms' || search.get('tab') === 'terms') {
         setActiveTab('terms', false);
         document.title = 'Terms & Conditions · EarnFlow.in';
-      } else if (cleanPath === '/responsible-gaming' || search.get('tab') === 'responsible-gaming') {
-        setActiveTab('responsible-gaming', false);
-        document.title = 'Responsible Gaming · EarnFlow.in';
+      } else if (cleanPath === '/privacy' || cleanPath === '/privacy-policy' || cleanPath === '/legal/privacy' || search.get('tab') === 'privacy') {
+        setActiveTab('privacy', false);
+        document.title = 'Privacy Policy · EarnFlow.in';
+      } else if (
+        cleanPath === '/contact-support' ||
+        cleanPath === '/contact' ||
+        cleanPath === '/contact-us' ||
+        cleanPath === '/support' ||
+        cleanPath === '/help' ||
+        pParam === 'contact-support' ||
+        pParam === 'contact' ||
+        pParam === 'support' ||
+        pParam === 'help' ||
+        search.get('tab') === 'contact' ||
+        search.get('tab') === 'support' ||
+        search.get('tab') === 'help'
+      ) {
+        setActiveTab('contact', false);
+        document.title = 'Contact & Support · EarnFlow.in';
+      } else if (cleanPath === '/promotion' || cleanPath === '/promotions' || cleanPath === '/referral' || search.get('tab') === 'promotion') {
+        setActiveTab('promotion', false);
+        document.title = 'Promotions & Referral Hub · EarnFlow.in';
+      } else if (cleanPath === '/tickets' || cleanPath === '/my-tickets' || search.get('tab') === 'tickets') {
+        setActiveTab('tickets', false);
+        document.title = 'My Tickets · EarnFlow.in';
+      } else if (cleanPath === '/results' || cleanPath === '/lottery-results' || cleanPath === '/draw-results' || search.get('tab') === 'results') {
+        setActiveTab('results', false);
+        document.title = 'Results · EarnFlow.in';
       } else if (cleanPath === '/refund-policy' || search.get('tab') === 'refund-policy') {
         setActiveTab('refund-policy', false);
         document.title = 'Refund and Cancellation Policy · EarnFlow.in';
@@ -494,37 +490,6 @@ function LotteryAppContent() {
       } else if (cleanPath === '/disclaimer' || search.get('tab') === 'disclaimer') {
         setActiveTab('disclaimer', false);
         document.title = 'Disclaimer · EarnFlow.in';
-      } else if (cleanPath === '/how-it-works' || cleanPath === '/howitworks' || search.get('tab') === 'how-it-works') {
-        setActiveTab('how-it-works', false);
-        document.title = 'How It Works · EarnFlow.in';
-      } else if (cleanPath === '/rules' || cleanPath === '/lottery-rules' || search.get('tab') === 'rules') {
-        setActiveTab('rules', false);
-        document.title = 'Lottery Rules & Prize Distribution · EarnFlow.in';
-      } else if (cleanPath === '/faq' || search.get('tab') === 'faq') {
-        setActiveTab('faq', false);
-        document.title = 'Frequently Asked Questions · EarnFlow.in';
-      } else if (cleanPath === '/contact' || cleanPath === '/contact-us' || search.get('tab') === 'contact') {
-        setActiveTab('contact', false);
-        document.title = 'Customer Support & Contact · EarnFlow.in';
-      } else if (
-        cleanPath === '/support' ||
-        cleanPath === '/help' ||
-        pParam === 'support' ||
-        pParam === 'help' ||
-        search.get('tab') === 'support' ||
-        search.get('tab') === 'help'
-      ) {
-        setActiveTab('support', false);
-        document.title = 'Customer Support · EarnFlow.in';
-      } else if (cleanPath === '/promotion' || cleanPath === '/referral' || search.get('tab') === 'promotion') {
-        setActiveTab('promotion', false);
-        document.title = 'Promotions & Referral Hub · EarnFlow.in';
-      } else if (cleanPath === '/tickets' || cleanPath === '/my-tickets' || search.get('tab') === 'tickets') {
-        setActiveTab('tickets', false);
-        document.title = 'My Tickets · EarnFlow.in';
-      } else if (cleanPath === '/results' || search.get('tab') === 'results') {
-        setActiveTab('results', false);
-        document.title = 'Lottery Draw Results · EarnFlow.in';
       } else if (!gr && (cleanPath === '/' || cleanPath === '' || cleanPath === '/profile' || cleanPath === '/wallet')) {
         const tab = search.get('tab') || (cleanPath === '/profile' ? 'profile' : cleanPath === '/wallet' ? 'wallet' : null);
         if (tab) {
@@ -562,10 +527,9 @@ function LotteryAppContent() {
 
   // Strict Login Gating for sensitive direct modals/actions
   useEffect(() => {
-    if (!user && (activeTab === 'tickets' || activeTab === 'results' || activeTab === 'transactions')) {
+    if (!user && (activeTab === 'tickets' || activeTab === 'transactions')) {
       const tabNames = {
         tickets: 'My Tickets',
-        results: 'Draw Results & Past Winners',
         transactions: 'Transaction History'
       };
       setActiveTab('lotteries');
@@ -755,13 +719,9 @@ function LotteryAppContent() {
               ))}
 
               {/* VIEW 4: RESULTS */}
-              {activeTab === 'results' && (user ? <ResultsView /> : (
-                <AuthRequiredPrompt 
-                  title="Draw Results & Past Winners" 
-                  onLogin={() => setIsAuthModalOpen(true)} 
-                  onHome={() => setActiveTab('lotteries')} 
-                />
-              ))}
+              {activeTab === 'results' && (
+                <ResultsView />
+              )}
 
               {/* VIEW 5: PLAYER PROFILE FULL SCREEN PAGE */}
               {activeTab === 'profile' && (user ? (
@@ -787,14 +747,9 @@ function LotteryAppContent() {
                 <LeaderboardView />
               )}
 
-              {/* VIEW 10: CUSTOMER SUPPORT & FAQ */}
-              {activeTab === 'support' && (
-                <SupportView />
-              )}
-
-              {/* VIEW 11: CONTACT US */}
-              {activeTab === 'contact' && (
-                <ContactPage onBackToHome={() => setActiveTab('lotteries')} />
+              {/* VIEW 10: CUSTOMER SUPPORT & CONTACT */}
+              {(activeTab === 'contact' || activeTab === 'support') && (
+                <ContactPage onBackToHome={handleGoHome} />
               )}
 
               {/* VIEW 18: PROMOTIONS & REFERRAL HUB */}
@@ -804,17 +759,17 @@ function LotteryAppContent() {
 
               {/* VIEW 12: TERMS & CONDITIONS PAGE */}
               {activeTab === 'terms' && (
-                <TermsPage onBackToHome={() => setActiveTab('lotteries')} />
+                <TermsPage onBackToHome={handleGoHome} />
               )}
 
               {/* VIEW 13: PRIVACY POLICY PAGE */}
               {activeTab === 'privacy' && (
-                <PrivacyPolicyPage onBackToHome={() => setActiveTab('lotteries')} />
+                <PrivacyPolicyPage onBackToHome={handleGoHome} />
               )}
 
               {/* VIEW 14: RESPONSIBLE GAMING PAGE */}
               {activeTab === 'responsible-gaming' && (
-                <ResponsibleGamingPage onBackToHome={() => setActiveTab('lotteries')} />
+                <ResponsibleGamingPage onBackToHome={handleGoHome} />
               )}
 
               {/* VIEW 15: REFUND & CANCELLATION POLICY PAGE */}
@@ -834,7 +789,10 @@ function LotteryAppContent() {
 
               {/* VIEW 18: FAQ PAGE */}
               {activeTab === 'faq' && (
-                <FaqPage onBackToHome={() => setActiveTab('lotteries')} />
+                <FaqPage 
+                  onBackToHome={handleGoHome} 
+                  onNavigateToTab={(tab) => handleSelectTab(tab)}
+                />
               )}
 
               {/* VIEW 19: HOW IT WORKS PAGE */}

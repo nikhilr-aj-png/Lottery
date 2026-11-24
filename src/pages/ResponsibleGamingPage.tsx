@@ -77,6 +77,43 @@ export default function ResponsibleGamingPage({ onBackToHome }: ResponsibleGamin
           </div>
         </div>
 
+        {/* Stake Control & Practical Tools */}
+        <h2 className="font-display font-bold text-base text-white pt-4">Stake Control &amp; Session Management</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+          <div className="p-3.5 rounded-xl bg-[#0B0F19] border border-[#1F2737] space-y-1.5">
+            <span className="font-mono-numbers text-xs font-bold text-amber-400 block">1. Fixed Single-Ticket Entry</span>
+            <p className="text-[11px] text-[#94A3B8] leading-relaxed">
+              Ticket entries are purchased individually with transparent per-unit pricing, preventing impulsive bulk wagering.
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-[#0B0F19] border border-[#1F2737] space-y-1.5">
+            <span className="font-mono-numbers text-xs font-bold text-emerald-400 block">2. Personal Deposit Caps</span>
+            <p className="text-[11px] text-[#94A3B8] leading-relaxed">
+              Define your monthly USDT wallet deposit ceiling in advance and never exceed your allocated entertainment budget.
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-[#0B0F19] border border-[#1F2737] space-y-1.5">
+            <span className="font-mono-numbers text-xs font-bold text-cyan-400 block">3. Time &amp; Draw Limits</span>
+            <p className="text-[11px] text-[#94A3B8] leading-relaxed">
+              Take regular breaks between lottery rounds. Avoid participating in every consecutive pool without taking time off.
+            </p>
+          </div>
+        </div>
+
+        {/* Strict 18+ Age Restrictions */}
+        <h2 className="font-display font-bold text-base text-white pt-4">Strict 18+ Age Restrictions</h2>
+        <div className="p-4 rounded-xl bg-[#0B0F19] border border-amber-500/20 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/40 text-[10px] font-mono-numbers font-black">
+              18+ ONLY
+            </span>
+            <span className="font-bold text-xs text-white">Underage Gaming Prohibition</span>
+          </div>
+          <p className="text-xs text-[#94A3B8] leading-relaxed">
+            EarnFlow.in strictly prohibits anyone under the age of 18 (or the legal age of majority in your jurisdiction) from creating an account, depositing cryptocurrency, or purchasing lottery tickets. Any account identified as belonging to a minor will be immediately closed, and any active ticket orders will be voided.
+          </p>
+        </div>
+
         <h2 className="font-display font-bold text-base text-white pt-4">Self-Exclusion &amp; Account Limits</h2>
         <p>
           If you feel you are developing unhealthy gaming habits, you can request temporary or permanent self-exclusion at any time. During exclusion, your account will be locked and prevented from purchasing tickets.

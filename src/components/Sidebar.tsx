@@ -86,7 +86,7 @@ export default function Sidebar({
         { id: 'lotteries', label: 'Home', icon: LayoutGrid, isLobby: true },
         { id: 'lottery-game', label: 'Four-Digit Lottery', icon: Ticket, image: '/items/Four Digit Lottery.jpg', isLottery: true },
         { id: 'tickets', label: 'My Tickets', icon: Ticket, requiresAuth: true },
-        { id: 'results', label: 'Draw Results', icon: Trophy }
+        { id: 'results', label: 'Results', icon: Trophy }
       ]
     },
     {
@@ -109,7 +109,7 @@ export default function Sidebar({
     {
       title: 'Support & Legal',
       items: [
-        { id: 'contact', label: 'Customer Support', icon: Headphones },
+        { id: 'contact', label: 'Contact & Support', icon: Headphones },
         { id: 'responsible-gaming', label: 'Responsible Gaming', icon: HeartHandshake },
         { id: 'terms', label: 'Terms & Conditions', icon: FileText },
         { id: 'privacy', label: 'Privacy Policy', icon: ShieldCheck }

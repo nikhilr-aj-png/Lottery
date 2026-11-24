@@ -1846,37 +1846,144 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     const pParam = search.get('p')?.toLowerCase().replace(/\/+$/, '');
     const effectivePath = pParam ? '/' + pParam : path;
 
-    if (effectivePath === '/legal/privacy' || effectivePath === '/privacy-policy' || effectivePath === '/privacy' || hash === 'legal/privacy' || hash === 'privacy-policy' || hash === 'privacy' || tabParam === 'privacy') {
-      return 'privacy';
+    // 1. Dedicated Information Pages
+    if (
+      effectivePath === '/how-it-works' ||
+      effectivePath === '/howitworks' ||
+      hash === 'how-it-works' ||
+      hash === 'howitworks' ||
+      tabParam === 'how-it-works' ||
+      tabParam === 'howitworks'
+    ) {
+      return 'how-it-works';
     }
-    if (effectivePath === '/legal/terms' || effectivePath === '/terms-and-conditions' || effectivePath === '/terms' || hash === 'legal/terms' || hash === 'terms-and-conditions' || hash === 'terms' || tabParam === 'terms') {
+
+    if (
+      effectivePath === '/lottery-rules' ||
+      effectivePath === '/rules' ||
+      effectivePath === '/rules-and-prizes' ||
+      effectivePath === '/lottery-rules-and-prize-distribution' ||
+      hash === 'lottery-rules' ||
+      hash === 'rules' ||
+      hash === 'rules-and-prizes' ||
+      tabParam === 'rules' ||
+      tabParam === 'lottery-rules'
+    ) {
+      return 'rules';
+    }
+
+    if (
+      effectivePath === '/faq' ||
+      effectivePath === '/faqs' ||
+      effectivePath === '/frequently-asked-questions' ||
+      hash === 'faq' ||
+      hash === 'faqs' ||
+      hash === 'frequently-asked-questions' ||
+      tabParam === 'faq' ||
+      tabParam === 'faqs'
+    ) {
+      return 'faq';
+    }
+
+    if (
+      effectivePath === '/responsible-gaming' ||
+      effectivePath === '/responsible-gaming-policy' ||
+      hash === 'responsible-gaming' ||
+      tabParam === 'responsible-gaming'
+    ) {
+      return 'responsible-gaming';
+    }
+
+    // 2. Legal Pages
+    if (
+      effectivePath === '/terms-and-conditions' ||
+      effectivePath === '/terms' ||
+      effectivePath === '/legal/terms' ||
+      hash === 'terms-and-conditions' ||
+      hash === 'terms' ||
+      hash === 'legal/terms' ||
+      tabParam === 'terms' ||
+      tabParam === 'terms-and-conditions'
+    ) {
       return 'terms';
     }
+
     if (
-      effectivePath === '/support' ||
+      effectivePath === '/privacy-policy' ||
+      effectivePath === '/privacy' ||
+      effectivePath === '/legal/privacy' ||
+      hash === 'privacy-policy' ||
+      hash === 'privacy' ||
+      hash === 'legal/privacy' ||
+      tabParam === 'privacy' ||
+      tabParam === 'privacy-policy'
+    ) {
+      return 'privacy';
+    }
+
+    if (effectivePath === '/refund-policy' || hash === 'refund-policy' || tabParam === 'refund-policy') {
+      return 'refund-policy';
+    }
+
+    if (effectivePath === '/payment-policy' || hash === 'payment-policy' || tabParam === 'payment-policy') {
+      return 'payment-policy';
+    }
+
+    if (effectivePath === '/disclaimer' || hash === 'disclaimer' || tabParam === 'disclaimer') {
+      return 'disclaimer';
+    }
+
+    // 3. Customer Support & Contact
+    if (
+      effectivePath === '/contact-support' ||
       effectivePath === '/contact' ||
       effectivePath === '/contact-us' ||
+      effectivePath === '/support' ||
       effectivePath === '/help' ||
-      effectivePath === '/faq' ||
-      hash === 'support' ||
+      hash === 'contact-support' ||
       hash === 'contact' ||
       hash === 'contact-us' ||
+      hash === 'support' ||
       hash === 'help' ||
-      hash === 'faq' ||
-      tabParam === 'support' ||
+      tabParam === 'contact-support' ||
       tabParam === 'contact' ||
-      tabParam === 'faq' ||
+      tabParam === 'support' ||
       tabParam === 'help'
     ) {
-      return 'support';
+      return 'contact';
     }
-    if (effectivePath === '/results' || hash === 'results' || tabParam === 'results') return 'results';
-    if (effectivePath === '/tickets' || hash === 'tickets' || tabParam === 'tickets') return 'tickets';
+
+    // 4. Results & Tickets
+    if (
+      effectivePath === '/results' ||
+      effectivePath === '/lottery-results' ||
+      effectivePath === '/draw-results' ||
+      hash === 'results' ||
+      hash === 'lottery-results' ||
+      hash === 'draw-results' ||
+      tabParam === 'results'
+    ) {
+      return 'results';
+    }
+
+    if (
+      effectivePath === '/tickets' ||
+      effectivePath === '/my-tickets' ||
+      hash === 'tickets' ||
+      hash === 'my-tickets' ||
+      tabParam === 'tickets' ||
+      tabParam === 'my-tickets'
+    ) {
+      return 'tickets';
+    }
+
+    // 5. Account, Wallet & Hub
     if (effectivePath === '/wallet' || hash === 'wallet' || tabParam === 'wallet') return 'wallet';
     if (effectivePath === '/profile' || hash === 'profile' || tabParam === 'profile') return 'profile';
+    if (effectivePath === '/promotion' || effectivePath === '/promotions' || effectivePath === '/referral' || hash === 'promotion' || tabParam === 'promotion') return 'promotion';
+    if (effectivePath === '/transactions' || effectivePath === '/transaction-history' || hash === 'transactions' || hash === 'transaction-history' || tabParam === 'transactions' || tabParam === 'transaction-history') return 'transactions';
     if (effectivePath === '/rewards' || hash === 'rewards' || tabParam === 'rewards') return 'rewards';
     if (effectivePath === '/leaderboard' || hash === 'leaderboard' || tabParam === 'leaderboard') return 'leaderboard';
-    if (effectivePath === '/transactions' || effectivePath === '/transaction-history' || hash === 'transactions' || hash === 'transaction-history' || tabParam === 'transactions' || tabParam === 'transaction-history') return 'transactions';
 
     return 'lotteries';
   };
@@ -1889,46 +1996,72 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     if (typeof window === 'undefined') return;
 
     let targetPath = '/';
-    let pageTitle = 'EarnFlow.in – Online Gaming Platform | USDT Games & Lottery';
+    let pageTitle = 'EarnFlow.in – Online Four-Digit Lottery Platform';
 
-    if (tabName === 'privacy') {
-      targetPath = '/legal/privacy';
-      pageTitle = 'Privacy Policy · EarnFlow.in';
+    if (tabName === 'how-it-works') {
+      targetPath = '/how-it-works';
+      pageTitle = 'How It Works · EarnFlow.in';
+    } else if (tabName === 'rules') {
+      targetPath = '/lottery-rules';
+      pageTitle = 'Lottery Rules & Prize Distribution · EarnFlow.in';
+    } else if (tabName === 'faq') {
+      targetPath = '/faq';
+      pageTitle = 'Frequently Asked Questions · EarnFlow.in';
+    } else if (tabName === 'responsible-gaming') {
+      targetPath = '/responsible-gaming';
+      pageTitle = 'Responsible Gaming · EarnFlow.in';
     } else if (tabName === 'terms') {
-      targetPath = '/legal/terms';
+      targetPath = '/terms-and-conditions';
       pageTitle = 'Terms & Conditions · EarnFlow.in';
-    } else if (tabName === 'support' || tabName === 'contact') {
-      targetPath = '/support';
-      pageTitle = 'Customer Support & FAQ · EarnFlow.in';
+    } else if (tabName === 'privacy') {
+      targetPath = '/privacy-policy';
+      pageTitle = 'Privacy Policy · EarnFlow.in';
+    } else if (tabName === 'contact' || tabName === 'support') {
+      targetPath = '/contact-support';
+      pageTitle = 'Contact & Support · EarnFlow.in';
     } else if (tabName === 'results') {
-      targetPath = '/?tab=results';
-      pageTitle = 'Draw Results & Verified Winners · EarnFlow.in';
+      targetPath = '/results';
+      pageTitle = 'Results · EarnFlow.in';
     } else if (tabName === 'tickets') {
-      targetPath = '/?tab=tickets';
-      pageTitle = 'My Lottery Tickets · EarnFlow.in';
+      targetPath = '/my-tickets';
+      pageTitle = 'My Tickets · EarnFlow.in';
     } else if (tabName === 'wallet') {
       targetPath = '/wallet';
       pageTitle = 'USDT Wallet & 24h Payouts · EarnFlow.in';
     } else if (tabName === 'profile') {
       targetPath = '/profile';
-      pageTitle = 'Player Profile & Settings · EarnFlow.in';
-    } else if (tabName === 'rewards') {
-      targetPath = '/?tab=rewards';
-      pageTitle = 'Daily Rewards & Streaks · EarnFlow.in';
-    } else if (tabName === 'leaderboard') {
-      targetPath = '/?tab=leaderboard';
-      pageTitle = 'Leaderboard & High Rollers · EarnFlow.in';
+      pageTitle = 'Player Profile · EarnFlow.in';
+    } else if (tabName === 'promotion') {
+      targetPath = '/promotion';
+      pageTitle = 'Promotions & Referral Hub · EarnFlow.in';
     } else if (tabName === 'transactions' || tabName === 'transaction-history') {
       targetPath = '/transaction-history';
       pageTitle = 'Transaction History · EarnFlow.in';
+    } else if (tabName === 'refund-policy') {
+      targetPath = '/refund-policy';
+      pageTitle = 'Refund Policy · EarnFlow.in';
+    } else if (tabName === 'payment-policy') {
+      targetPath = '/payment-policy';
+      pageTitle = 'Payment Policy · EarnFlow.in';
+    } else if (tabName === 'disclaimer') {
+      targetPath = '/disclaimer';
+      pageTitle = 'Disclaimer · EarnFlow.in';
+    } else if (tabName === 'rewards') {
+      targetPath = '/?tab=rewards';
+      pageTitle = 'Daily Rewards · EarnFlow.in';
+    } else if (tabName === 'leaderboard') {
+      targetPath = '/?tab=leaderboard';
+      pageTitle = 'Leaderboard · EarnFlow.in';
+    } else if (tabName === 'lotteries') {
+      targetPath = '/';
+      pageTitle = 'EarnFlow - Four Digit Lottery | Online USDT 4-Digit Lucky Draw';
     }
 
     if (shouldPushHistory) {
-      const currentLoc = window.location.pathname + window.location.search;
+      const currentLoc = window.location.pathname;
       if (currentLoc !== targetPath) {
         try {
           window.history.pushState({ tab: tabName }, pageTitle, targetPath);
-          window.dispatchEvent(new PopStateEvent('popstate'));
         } catch (e) {
           // ignore
         }

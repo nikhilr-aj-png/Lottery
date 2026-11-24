@@ -23,9 +23,6 @@ interface FooterProps {
 }
 
 export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
-  const { platformSettings } = useLottery();
-  const supportEmail = platformSettings?.supportEmail ? platformSettings.supportEmail.trim() : 'earnflow.user@gmail.com';
-
   const handleLinkClick = (e: React.MouseEvent, tabId: string, path: string) => {
     e.preventDefault();
     onSelectTab(tabId);
@@ -97,8 +94,8 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
               </li>
               <li>
                 <a 
-                  href="/rules"
-                  onClick={(e) => handleLinkClick(e, 'rules', '/rules')}
+                  href="/lottery-rules"
+                  onClick={(e) => handleLinkClick(e, 'rules', '/lottery-rules')}
                   className="hover:text-amber-400 transition-colors cursor-pointer"
                 >
                   Lottery Rules &amp; Prize Distribution
@@ -111,15 +108,6 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
                   className="hover:text-amber-400 transition-colors cursor-pointer"
                 >
                   Frequently Asked Questions
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="/results"
-                  onClick={(e) => handleLinkClick(e, 'results', '/results')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
-                >
-                  Draw Results &amp; History
                 </a>
               </li>
             </ul>
@@ -142,8 +130,8 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
               </li>
               <li>
                 <a 
-                  href="/terms"
-                  onClick={(e) => handleLinkClick(e, 'terms', '/terms')}
+                  href="/terms-and-conditions"
+                  onClick={(e) => handleLinkClick(e, 'terms', '/terms-and-conditions')}
                   className="hover:text-amber-400 transition-colors cursor-pointer"
                 >
                   Terms &amp; Conditions
@@ -151,8 +139,8 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
               </li>
               <li>
                 <a 
-                  href="/contact"
-                  onClick={(e) => handleLinkClick(e, 'contact', '/contact')}
+                  href="/contact-support"
+                  onClick={(e) => handleLinkClick(e, 'contact', '/contact-support')}
                   className="hover:text-amber-400 transition-colors cursor-pointer"
                 >
                   Contact &amp; Support
@@ -165,15 +153,6 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
                   className="hover:text-amber-400 transition-colors cursor-pointer"
                 >
                   Privacy Policy
-                </a>
-              </li>
-              <li className="pt-1">
-                <a 
-                  href={`mailto:${supportEmail}`}
-                  className="text-amber-400 hover:underline break-words text-[11px] font-mono-numbers inline-flex items-center gap-1.5"
-                >
-                  <Mail className="w-3.5 h-3.5 shrink-0" />
-                  <span>{supportEmail}</span>
                 </a>
               </li>
             </ul>

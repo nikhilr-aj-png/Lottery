@@ -26,7 +26,7 @@ check('Homepage lobby does NOT embed How It Works section', !casinoLobby.include
 check('Homepage lobby does NOT embed FAQ section', !casinoLobby.includes('SECTION 6: FREQUENTLY ASKED QUESTIONS'));
 check('Homepage lobby does NOT embed Rules section', !casinoLobby.includes('SECTION 5: OFFICIAL LOTTERY RULES'));
 check('Homepage lobby has Available Pool (Available Lucky Draws)', casinoLobby.includes('Available Lucky Draws') || casinoLobby.includes('Available Pool'));
-check('Homepage lobby has Concluded Results', casinoLobby.includes('Concluded Draw Results') || casinoLobby.includes('Recent Draw Results'));
+check('Homepage lobby has Concluded Results', casinoLobby.includes('Concluded Results') || casinoLobby.includes('Recent Results') || casinoLobby.includes('Concluded Draw Results'));
 
 // 2. Dedicated Pages Existence & Scroll-to-top
 const pages = [

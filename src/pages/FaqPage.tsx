@@ -4,9 +4,10 @@ import { useLottery } from '../context/LotteryContext';
 
 export interface FaqPageProps {
   onBackToHome?: () => void;
+  onNavigateToTab?: (tabId: string) => void;
 }
 
-export default function FaqPage({ onBackToHome }: FaqPageProps) {
+export default function FaqPage({ onBackToHome, onNavigateToTab }: FaqPageProps) {
   const { platformSettings } = useLottery();
   const supportEmail = platformSettings?.supportEmail?.trim() || 'earnflow.user@gmail.com';
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -153,13 +154,24 @@ export default function FaqPage({ onBackToHome }: FaqPageProps) {
             Our support desk is available to assist you with tickets, payments, or rules.
           </p>
         </div>
-        <a
-          href={`mailto:${supportEmail}`}
-          className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs transition-colors shrink-0 flex items-center gap-1.5"
-        >
-          <Mail className="w-3.5 h-3.5" />
-          <span>Contact Support</span>
-        </a>
+        {onNavigateToTab ? (
+          <button
+            type="button"
+            onClick={() => onNavigateToTab('contact')}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer shadow-md shadow-amber-500/20"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            <span>Contact Support</span>
+          </button>
+        ) : (
+          <a
+            href={`mailto:${supportEmail}`}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs transition-colors shrink-0 flex items-center gap-1.5"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            <span>Contact Support</span>
+          </a>
+        )}
       </div>
     </div>
   );
