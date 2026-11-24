@@ -93,10 +93,15 @@ export default function LotteryCard({
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
                 <span>LIVE {formatLiveClock()}</span>
               </span>
+            ) : event.winningDigits ? (
+              <span className="px-2.5 py-1 rounded-md text-[10px] sm:text-[11px] font-mono-numbers font-extrabold tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>OFFICIALLY DECLARED</span>
+              </span>
             ) : (
-              <span className="px-2.5 py-1 rounded-md text-[10px] sm:text-[11px] font-mono-numbers font-extrabold tracking-wider bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                <span>ENDED</span>
+              <span className="px-2.5 py-1 rounded-md text-[10px] sm:text-[11px] font-mono-numbers font-extrabold tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0 animate-pulse" />
+                <span>PENDING DECLARATION</span>
               </span>
             )}
 
@@ -167,25 +172,32 @@ export default function LotteryCard({
         {/* Concluded Winning Digits Preview if Ended */}
         {isCompleted && (
           <div className="mb-3.5 p-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-emerald-500/10 border border-amber-500/30 text-center">
-            <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block mb-1">
-              🏆 Winning Combination:
-            </span>
-            <div className="flex items-center justify-center gap-1.5">
-              {event.winningDigits ? (
-                event.winningDigits.split('').map((d: string, i: number) => (
-                  <span 
-                    key={i} 
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#0B0F19] border border-amber-400/80 text-amber-300 font-display font-black text-sm sm:text-base flex items-center justify-center shadow-inner"
-                  >
-                    {d}
-                  </span>
-                ))
-              ) : (
-                <span className="text-xs font-mono-numbers font-bold text-amber-400">
-                  Draw Concluded
+            {event.winningDigits ? (
+              <>
+                <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block mb-1">
+                  🏆 Official Winning Combination:
                 </span>
-              )}
-            </div>
+                <div className="flex items-center justify-center gap-1.5">
+                  {event.winningDigits.split('').map((d: string, i: number) => (
+                    <span 
+                      key={i} 
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#0B0F19] border border-amber-400/80 text-amber-300 font-display font-black text-sm sm:text-base flex items-center justify-center shadow-inner"
+                    >
+                      {d}
+                    </span>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="py-1">
+                <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block">
+                  Draw Pending Official Declaration
+                </span>
+                <span className="text-[10px] text-[#94A3B8] block mt-0.5">
+                  Ticket sales closed • Oracle processing results
+                </span>
+              </div>
+            )}
           </div>
         )}
 

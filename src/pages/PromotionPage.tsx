@@ -41,8 +41,11 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
-  // Unique referral code derived from username or user ID
+  // Unique referral code derived from profile or username or user ID
   const referralCode = useMemo(() => {
+    if (profile?.referral_code) {
+      return profile.referral_code.toUpperCase();
+    }
     if (profile?.username) {
       return profile.username.toUpperCase();
     }
@@ -50,7 +53,7 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
       return 'EF' + user.id.replace(/-/g, '').slice(0, 6).toUpperCase();
     }
     return 'EARNFLOW';
-  }, [profile?.username, user?.id]);
+  }, [profile?.referral_code, profile?.username, user?.id]);
 
   const referralLink = useMemo(() => {
     if (typeof window !== 'undefined') {

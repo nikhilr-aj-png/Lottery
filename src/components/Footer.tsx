@@ -1,20 +1,10 @@
 import React from 'react';
 import { useLottery } from '../context/LotteryContext';
+import { usePwa } from '../context/PwaContext';
 import { 
-  Coins, 
-  Clock, 
-  Headphones, 
-  ArrowRight, 
-  FileText, 
-  ShieldCheck,
-  ShieldAlert,
-  Zap,
-  Mail,
-  Ticket,
-  HelpCircle,
-  HeartHandshake,
-  RefreshCcw,
-  AlertCircle
+  Download,
+  Smartphone,
+  CheckCircle2
 } from 'lucide-react';
 
 interface FooterProps {
@@ -23,6 +13,9 @@ interface FooterProps {
 }
 
 export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
+  const { isNativeApp, apkDirectDownloadUrl } = useLottery();
+  const { isInstalled, isInstallable, triggerInstall } = usePwa();
+
   const handleLinkClick = (e: React.MouseEvent, tabId: string, path: string) => {
     e.preventDefault();
     onSelectTab(tabId);
@@ -34,6 +27,8 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
 
+  const showAppSection = (!isNativeApp && !isInstalled) && (Boolean(apkDirectDownloadUrl) || isInstallable);
+
   return (
     <footer className="shrink-0 w-full mt-auto border-t border-[#1F2737] bg-[#07090D] text-left pt-7 pb-16 md:pb-7 px-3 xs:px-4 sm:px-6 lg:px-8 select-none">
       <div className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto space-y-6">
@@ -41,8 +36,8 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
         {/* 1. MAIN FOOTER GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 lg:gap-8 pb-6 border-b border-[#1F2737]">
           
-          {/* Column 1: Brand & Overview (5 cols) */}
-          <div className="lg:col-span-5 space-y-3.5">
+          {/* Column 1: Brand & Overview */}
+          <div className={`${showAppSection ? 'lg:col-span-4' : 'lg:col-span-5'} space-y-3.5`}>
             <div 
               onClick={onGoHome}
               className="flex items-center gap-2.5 cursor-pointer group select-none inline-flex"
@@ -77,7 +72,7 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
             </div>
           </div>
 
-          {/* Column 2: Information Pages (3 cols) */}
+          {/* Column 2: Information Pages */}
           <div className="lg:col-span-3 space-y-2.5">
             <h4 className="font-display font-bold text-xs uppercase tracking-wider text-white">
               Information
@@ -113,8 +108,8 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
             </ul>
           </div>
 
-          {/* Column 3: Support & Legal (4 cols) */}
-          <div className="lg:col-span-4 space-y-2.5">
+          {/* Column 3: Support & Legal */}
+          <div className={`${showAppSection ? 'lg:col-span-3' : 'lg:col-span-4'} space-y-2.5`}>
             <h4 className="font-display font-bold text-xs uppercase tracking-wider text-white">
               Support &amp; Legal
             </h4>
@@ -157,6 +152,42 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
               </li>
             </ul>
           </div>
+
+          {/* Column 4: App & Mobile Installation (if configured & not installed) */}
+          {showAppSection && (
+            <div className="lg:col-span-2 space-y-2.5">
+              <h4 className="font-display font-bold text-xs uppercase tracking-wider text-white">
+                App &amp; Mobile
+              </h4>
+              <p className="text-[11px] text-[#94A3B8] leading-tight">
+                Play in full-screen with instant one-tap draws.
+              </p>
+              <div className="flex flex-col gap-2 pt-1">
+                {apkDirectDownloadUrl && (
+                  <a
+                    href={apkDirectDownloadUrl}
+                    download="earnflow.apk"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold transition-colors cursor-pointer"
+                    title="Direct Android APK Download"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download APK</span>
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={triggerInstall}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold transition-colors cursor-pointer"
+                  title="Install EarnFlow Web App (PWA)"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Install App</span>
+                </button>
+              </div>
+            </div>
+          )}
 
         </div>
 

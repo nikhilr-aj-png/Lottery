@@ -3,19 +3,10 @@ import {
   Ticket,
   Trophy,
   Wallet,
-  ShieldCheck,
-  Headphones,
-  FileText,
-  X,
   LayoutGrid,
   History,
-  User,
-  Award,
   Gift,
-  BookOpen,
-  HelpCircle,
-  Scale,
-  HeartHandshake
+  X
 } from 'lucide-react';
 import { useLottery } from '../context/LotteryContext';
 
@@ -85,34 +76,15 @@ export default function Sidebar({
       items: [
         { id: 'lotteries', label: 'Home', icon: LayoutGrid, isLobby: true },
         { id: 'lottery-game', label: 'Four-Digit Lottery', icon: Ticket, image: '/items/Four Digit Lottery.jpg', isLottery: true },
-        { id: 'tickets', label: 'My Tickets', icon: Ticket, requiresAuth: true },
         { id: 'results', label: 'Results', icon: Trophy }
       ]
     },
     {
-      title: 'Information',
-      items: [
-        { id: 'how-it-works', label: 'How It Works', icon: BookOpen },
-        { id: 'rules', label: 'Lottery Rules & Prizes', icon: Scale },
-        { id: 'faq', label: 'Frequently Asked Questions', icon: HelpCircle }
-      ]
-    },
-    {
-      title: 'Player Hub',
+      title: 'Account & Hub',
       items: [
         { id: 'wallet', label: 'USDT Wallet', icon: Wallet, requiresAuth: true },
         { id: 'promotion', label: 'Promotions & Referral', icon: Gift, badge: 'HOT' },
-        { id: 'profile', label: 'Player Profile', icon: User, requiresAuth: true },
         { id: 'transactions', label: 'Transaction History', icon: History, requiresAuth: true }
-      ]
-    },
-    {
-      title: 'Support & Legal',
-      items: [
-        { id: 'contact', label: 'Contact & Support', icon: Headphones },
-        { id: 'responsible-gaming', label: 'Responsible Gaming', icon: HeartHandshake },
-        { id: 'terms', label: 'Terms & Conditions', icon: FileText },
-        { id: 'privacy', label: 'Privacy Policy', icon: ShieldCheck }
       ]
     }
   ];

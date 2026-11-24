@@ -65,14 +65,14 @@ check('App.tsx renders LotteryRulesPage', appContent.includes('<LotteryRulesPage
 const sidebarPath = path.resolve('src/components/Sidebar.tsx');
 const sidebarContent = fs.readFileSync(sidebarPath, 'utf8');
 
-check('Sidebar has Information group', sidebarContent.includes("title: 'Information'"));
-check('Sidebar has How It Works link', sidebarContent.includes("id: 'how-it-works'"));
-check('Sidebar has Lottery Rules link', sidebarContent.includes("id: 'rules'"));
-check('Sidebar has FAQ link', sidebarContent.includes("id: 'faq'"));
-check('Sidebar has Support & Legal group', sidebarContent.includes("title: 'Support & Legal'"));
-check('Sidebar has Responsible Gaming link', sidebarContent.includes("id: 'responsible-gaming'"));
-check('Sidebar has Terms link', sidebarContent.includes("id: 'terms'"));
-check('Sidebar has Customer Support link', sidebarContent.includes("id: 'contact'"));
+check('Sidebar does NOT have Information group (moved to footer only)', !sidebarContent.includes("title: 'Information'"));
+check('Sidebar does NOT have Support & Legal group (moved to footer only)', !sidebarContent.includes("title: 'Support & Legal'"));
+check('Sidebar has Home link', sidebarContent.includes("id: 'lotteries'"));
+check('Sidebar has Four-Digit Lottery link', sidebarContent.includes("id: 'lottery-game'"));
+check('Sidebar has Results link', sidebarContent.includes("id: 'results'"));
+check('Sidebar has USDT Wallet link', sidebarContent.includes("id: 'wallet'"));
+check('Sidebar has Promotions & Referral link', sidebarContent.includes("id: 'promotion'"));
+check('Sidebar has Transaction History link', sidebarContent.includes("id: 'transactions'"));
 check('Sidebar menu container has overscroll-contain', sidebarContent.includes('overscroll-contain'));
 
 // 5. LotteryContext.tsx Ticket Uniqueness Pre-checks
