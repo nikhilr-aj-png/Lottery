@@ -12,16 +12,16 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useLottery } from '../context/LotteryContext';
 import { useSoundFX } from '../hooks/useSoundFX';
-import { 
-  Headphones, 
-  HelpCircle, 
-  ShieldCheck, 
-  ChevronDown, 
-  ChevronUp, 
-  Send, 
-  CheckCircle2, 
-  AlertTriangle, 
-  HeartHandshake, 
+import {
+  Headphones,
+  HelpCircle,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+  Send,
+  CheckCircle2,
+  AlertTriangle,
+  HeartHandshake,
   Lock,
   Mail,
   MessageSquare,
@@ -65,7 +65,7 @@ export default function SupportView() {
   const { user, profile, wallet, showToast, setIsAuthModalOpen, platformSettings } = useLottery();
   const { playClick, playChipBet } = useSoundFX();
   const supportEmail = platformSettings?.supportEmail ? platformSettings.supportEmail.trim() : '';
-  
+
   // Active Support Tab: 'faq' | 'tickets' | 'responsible'
   const [activeTab, setActiveTab] = useState('faq');
 
@@ -196,7 +196,7 @@ export default function SupportView() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 text-left">
-      
+
       {/* 1. HERO HEADER */}
       <div className="relative rounded-3xl bg-gradient-to-r from-[#111827] via-[#151C2B] to-[#111827] border border-[#1F2737] p-6 sm:p-8 overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -219,11 +219,10 @@ export default function SupportView() {
       <div className="flex items-center gap-1.5 p-1 bg-[#111827] rounded-2xl border border-[#1F2737] max-w-md">
         <button
           onClick={() => { playClick(); setActiveTab('faq'); }}
-          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-            activeTab === 'faq'
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${activeTab === 'faq'
               ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-md'
               : 'text-[#94A3B8] hover:text-white'
-          }`}
+            }`}
         >
           <HelpCircle className="w-4 h-4" />
           <span>FAQ & Rules</span>
@@ -231,11 +230,10 @@ export default function SupportView() {
 
         <button
           onClick={() => { playClick(); setActiveTab('tickets'); }}
-          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-            activeTab === 'tickets'
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${activeTab === 'tickets'
               ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-md'
               : 'text-[#94A3B8] hover:text-white'
-          }`}
+            }`}
         >
           <MessageSquare className="w-4 h-4" />
           <span>My Tickets ({myTickets.length})</span>
@@ -243,11 +241,10 @@ export default function SupportView() {
 
         <button
           onClick={() => { playClick(); setActiveTab('responsible'); }}
-          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-            activeTab === 'responsible'
+          className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${activeTab === 'responsible'
               ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-black shadow-md'
               : 'text-[#94A3B8] hover:text-white'
-          }`}
+            }`}
         >
           <HeartHandshake className="w-4 h-4" />
           <span>Responsible Gaming</span>
@@ -259,7 +256,7 @@ export default function SupportView() {
       {/* ==================================================================== */}
       {activeTab === 'faq' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
+
           {/* LEFT: FAQ ACCORDION */}
           <div className="lg:col-span-7 rounded-3xl bg-[#111827] border border-[#1F2737] p-5 sm:p-6 space-y-4 shadow-xl">
             <div className="pb-3 border-b border-[#1F2737] flex items-center gap-2">
@@ -457,13 +454,12 @@ export default function SupportView() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-xs font-bold text-amber-300">#{t.id}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase ${
-                        t.status === 'resolved' 
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase ${t.status === 'resolved'
                           ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                           : t.status === 'in_review'
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                          : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                      }`}>
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                        }`}>
                         {t.status}
                       </span>
                     </div>
@@ -527,7 +523,7 @@ export default function SupportView() {
 
           {/* Settings Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
+
             {/* Setting 1: Daily Wagering Cap */}
             <div className="p-4 rounded-2xl bg-[#0B0F19] border border-[#1F2737] space-y-3">
               <div className="flex items-center gap-2 text-white font-bold text-xs sm:text-sm">
@@ -544,11 +540,10 @@ export default function SupportView() {
                     key={val}
                     type="button"
                     onClick={() => handleSaveResponsibleLimits(val, sessionReminder)}
-                    className={`py-2 px-2.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
-                      dailyLimit === val
+                    className={`py-2 px-2.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${dailyLimit === val
                         ? 'bg-amber-400 text-black shadow-md'
                         : 'bg-[#151C2B] text-[#94A3B8] border border-[#272a31] hover:text-white'
-                    }`}
+                      }`}
                   >
                     {val === 'none' ? 'No Limit' : `${val} USDT`}
                   </button>
@@ -577,11 +572,10 @@ export default function SupportView() {
                     key={item.id}
                     type="button"
                     onClick={() => handleSaveResponsibleLimits(dailyLimit, item.id)}
-                    className={`py-2 px-2.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
-                      sessionReminder === item.id
+                    className={`py-2 px-2.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${sessionReminder === item.id
                         ? 'bg-emerald-400 text-black shadow-md'
                         : 'bg-[#151C2B] text-[#94A3B8] border border-[#272a31] hover:text-white'
-                    }`}
+                      }`}
                   >
                     {item.label}
                   </button>

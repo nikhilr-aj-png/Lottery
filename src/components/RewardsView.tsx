@@ -308,8 +308,8 @@ export default function RewardsView() {
         setRecentPrize(data);
         setWheelCooldownSeconds(86400);
 
-        // Win Audio & Celebration
-        if (data.final_prize >= 500) {
+        // Win Audio & Celebration (USDT Currency)
+        if (Number(data.final_prize) >= 2.50) {
           playWinFanfare('jackpot');
         } else {
           playWinFanfare('big');

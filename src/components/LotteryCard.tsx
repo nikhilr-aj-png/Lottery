@@ -1,23 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Users, Ticket, ArrowRight, ShieldCheck, Flame, Trophy } from 'lucide-react';
+import { Clock, Users, Ticket, ArrowRight, Flame, Trophy, Play, CheckCircle2 } from 'lucide-react';
 import { getEventStatusInfo } from '../utils/eventStatus';
 
 interface LotteryCardProps {
   event: any;
-  onSelect: (event: any) => void;
+  onSelect?: (event: any) => void;
+  onEnterRoom?: (event: any) => void;
+  onShowResult?: (event: any) => void;
+  mode?: 'available' | 'result';
+  isLive?: boolean;
 }
 
-export default function LotteryCard({ event, onSelect }: LotteryCardProps) {
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+export default function LotteryCard({ 
+  event, 
+  onSelect, 
+  onEnterRoom, 
+  onShowResult,
+  mode = 'available',
+  isLive = false 
+}: LotteryCardProps) {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 });
 
   useEffect(() => {
     const updateCountdown = () => {
-      const diff = Math.max(0, event.drawTime - Date.now());
+      const targetTime = event.drawTime || (Date.now() + 86400000);
+      const diff = Math.max(0, targetTime - Date.now());
+      const totalSecs = Math.floor(diff / 1000);
       const d = Math.floor(diff / (1000 * 60 * 60 * 24));
       const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
       const m = Math.floor((diff / (1000 * 60)) % 60);
       const s = Math.floor((diff / 1000) % 60);
-      setTimeLeft({ days: d, hours: h, minutes: m, seconds: s });
+      setTimeLeft({ days: d, hours: h, minutes: m, seconds: s, totalSeconds: totalSecs });
     };
 
     updateCountdown();
@@ -26,8 +39,17 @@ export default function LotteryCard({ event, onSelect }: LotteryCardProps) {
   }, [event.drawTime]);
 
   const statusInfo = getEventStatusInfo(event);
-  const isCompleted = statusInfo.isEnd;
-  const isTimedOut = statusInfo.isEnd;
+  const isCompleted = mode === 'result' || statusInfo.isEnd || Boolean(event.winningDigits) || event.status === 'completed';
+  const isTimedOut = isCompleted || (timeLeft.totalSeconds === 0 && Boolean(event.drawTime && event.drawTime <= Date.now()));
+
+  // Authoritative event title (Never fallback to generic verification text)
+  const eventTitle = event.title || event.name || event.roomName || 'Four Digit Lottery Draw';
+
+  // Live timer formatted as HH:MM:SS
+  const formatLiveClock = () => {
+    const totalHours = timeLeft.days * 24 + timeLeft.hours;
+    return `${String(totalHours).padStart(2, '0')}:${String(timeLeft.minutes).padStart(2, '0')}:${String(timeLeft.seconds).padStart(2, '0')}`;
+  };
 
   const getThemeStyling = () => {
     switch (event.theme) {
@@ -42,188 +64,167 @@ export default function LotteryCard({ event, onSelect }: LotteryCardProps) {
       case 'new_year':
         return 'border-purple-500/50 shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:border-purple-400 hover:shadow-[0_0_40px_rgba(168,85,247,0.35)]';
       default:
-        return 'border-[#272a31] hover:border-[#f5c451]/50';
+        return isCompleted 
+          ? 'border-[#272a31] hover:border-amber-500/40 bg-[#0E131F]/90'
+          : 'border-amber-500/35 hover:border-amber-400/80 shadow-[0_0_25px_rgba(245,196,81,0.12)] bg-[#111728]/95';
+    }
+  };
+
+  const handleCardAction = () => {
+    if (isCompleted) {
+      if (onShowResult) onShowResult(event);
+      else if (onSelect) onSelect(event);
+    } else {
+      if (onEnterRoom) onEnterRoom(event);
+      else if (onSelect) onSelect(event);
     }
   };
 
   return (
-    <div className={`glass-panel rounded-2xl p-3.5 xs:p-4.5 sm:p-6 relative flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1 overflow-hidden ${getThemeStyling()}`}>
-      {/* Seasonal Banner Image with Overlaid Text & Badges */}
-      {event.bannerImage ? (
-        <div className="relative -mx-3.5 xs:-mx-4.5 sm:-mx-6 -mt-3.5 xs:-mt-4.5 sm:-mt-6 mb-3 sm:mb-4 h-32 xs:h-36 overflow-hidden border-b border-[#272a31]">
-          <img 
-            src={event.bannerImage} 
-            alt={event.title} 
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e14] via-[#0b0e14]/50 to-black/30" />
-          
-          {/* Overlaid Badges */}
-          <div className="absolute top-2.5 xs:top-3 left-2.5 xs:left-3 right-2.5 xs:right-3 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className={`text-[10px] xs:text-[11px] font-mono-numbers px-2 xs:px-2.5 py-0.5 xs:py-1 rounded-md font-bold tracking-wider ${statusInfo.badgeClass}`}>
-                {statusInfo.label}
+    <div className={`glass-panel rounded-2xl p-4 sm:p-5 relative flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1 overflow-hidden text-left ${getThemeStyling()}`}>
+      
+      {/* Top Banner & Status Header */}
+      <div>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Status Beacon / LIVE Ticking Countdown */}
+            {!isCompleted ? (
+              <span className="px-2.5 py-1 rounded-md text-[10px] sm:text-[11px] font-mono-numbers font-extrabold tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                <span>LIVE {formatLiveClock()}</span>
               </span>
-              {event.badge && (
-                <span className="text-[10px] xs:text-[11px] font-mono-numbers px-2 xs:px-2.5 py-0.5 xs:py-1 rounded-md font-bold tracking-wider bg-black/70 backdrop-blur-md text-[#ffd700] border border-[#f5c451]/40 shadow-lg flex items-center gap-1">
-                  {event.badge}
+            ) : (
+              <span className="px-2.5 py-1 rounded-md text-[10px] sm:text-[11px] font-mono-numbers font-extrabold tracking-wider bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                <span>ENDED</span>
+              </span>
+            )}
+
+            {event.badge && (
+              <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded-md font-bold tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/25 flex items-center gap-1">
+                <Flame className="w-3 h-3 text-amber-400" />
+                <span>{event.badge}</span>
+              </span>
+            )}
+          </div>
+
+          <span className="text-[10px] font-mono-numbers text-[#94A3B8] font-bold">
+            #{event.id?.replace('evt-', '').toUpperCase().slice(0, 8)}
+          </span>
+        </div>
+
+        {/* Event Title */}
+        <h3 className="font-display font-extrabold text-base sm:text-lg text-white mb-2 leading-snug group-hover:text-amber-300 transition-colors line-clamp-1" title={eventTitle}>
+          {eventTitle}
+        </h3>
+
+        {/* Prize Pool Display */}
+        <div className="p-3 rounded-xl bg-[#090D16] border border-[#1F2737] mb-3.5">
+          <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-[#94A3B8] mb-0.5">
+            <span className="font-bold uppercase tracking-wider text-amber-400">
+              {event.minPrize && event.maxPrize ? 'Prize Pool Range' : 'Jackpot Pool'}
+            </span>
+            <span className="text-emerald-400 font-mono-numbers font-semibold">
+              USDT (TRC-20)
+            </span>
+          </div>
+
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-display font-black text-xl sm:text-2xl text-white tracking-tight text-gold-gradient">
+              {event.minPrize && event.maxPrize
+                ? `${event.minPrize} – ${event.maxPrize}`
+                : Number(event.poolPrize || event.pool_prize || 1000).toLocaleString()}
+            </span>
+            <span className="text-xs sm:text-sm font-bold text-amber-400 font-mono-numbers">
+              USDT
+            </span>
+          </div>
+        </div>
+
+        {/* Key Metrics Row */}
+        <div className="grid grid-cols-2 gap-2 mb-3.5 text-xs">
+          <div className="p-2 rounded-xl bg-[#0B0F19] border border-[#1F2737]">
+            <span className="text-[10px] text-[#94A3B8] flex items-center gap-1 mb-0.5">
+              <Ticket className="w-3 h-3 text-amber-400" />
+              <span>Ticket Price</span>
+            </span>
+            <strong className="font-mono-numbers font-bold text-white text-xs">
+              {event.ticketPrice || event.ticket_price || 10} USDT
+            </strong>
+          </div>
+
+          <div className="p-2 rounded-xl bg-[#0B0F19] border border-[#1F2737]">
+            <span className="text-[10px] text-[#94A3B8] flex items-center gap-1 mb-0.5">
+              <Users className="w-3 h-3 text-cyan-400" />
+              <span>{isCompleted ? 'Total Entries' : 'Tickets Sold'}</span>
+            </span>
+            <strong className="font-mono-numbers font-bold text-white text-xs">
+              {Number(event.ticketsSold || event.tickets_sold || 0).toLocaleString()}
+            </strong>
+          </div>
+        </div>
+
+        {/* Concluded Winning Digits Preview if Ended */}
+        {isCompleted && (
+          <div className="mb-3.5 p-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-emerald-500/10 border border-amber-500/30 text-center">
+            <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider block mb-1">
+              🏆 Winning Combination:
+            </span>
+            <div className="flex items-center justify-center gap-1.5">
+              {event.winningDigits ? (
+                event.winningDigits.split('').map((d: string, i: number) => (
+                  <span 
+                    key={i} 
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#0B0F19] border border-amber-400/80 text-amber-300 font-display font-black text-sm sm:text-base flex items-center justify-center shadow-inner"
+                  >
+                    {d}
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs font-mono-numbers font-bold text-amber-400">
+                  Draw Concluded
                 </span>
               )}
             </div>
           </div>
+        )}
 
-          {/* Overlaid Title on Banner */}
-          <div className="absolute bottom-2 xs:bottom-2.5 left-3 xs:left-4 right-3 xs:right-4">
-            <h3 className="font-display font-black text-lg xs:text-xl text-white drop-shadow-md truncate">
-              {event.title}
-            </h3>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Default Top Banner Accent */}
-          <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
-            <div className="flex items-center gap-1.5">
-              <span className={`text-[10px] xs:text-[11px] font-mono-numbers px-2.5 xs:px-3 py-0.5 xs:py-1 rounded-md font-bold tracking-wider ${statusInfo.badgeClass}`}>
-                {statusInfo.label}
-              </span>
-              {event.badge && (
-                <span className="text-[10px] xs:text-[11px] font-mono-numbers px-2.5 xs:px-3 py-0.5 xs:py-1 rounded-md font-bold tracking-wider bg-[rgba(245,196,81,0.12)] text-[#ffd700] border border-[#f5c451]/30">
-                  {event.badge}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Title */}
-          <h3 className="font-display font-bold text-lg xs:text-xl text-white mb-2 group-hover:text-[#ffd700] transition-colors truncate">
-            {event.title}
-          </h3>
-        </>
-      )}
-
-      {/* Pool Prize Highlight */}
-      <div className="my-3 sm:my-4 p-3 xs:p-4 rounded-xl bg-[#0b0e14]/80 border border-[#32353c] group-hover:border-[#f5c451]/40 transition-colors">
-        <div className="text-[11px] xs:text-xs text-[#9b8f7c] uppercase font-bold tracking-wider mb-1 flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <span className="text-amber-400 font-extrabold">
-              {event.minPrize && event.maxPrize ? 'PRIZE RANGE' : 'WIN UP TO'}
+        {/* Live Draw Scheduled Info */}
+        {isCompleted && event.drawTime && (
+          <div className="text-[10px] text-[#94A3B8] flex items-center justify-between mb-3 px-1">
+            <span>Concluded On:</span>
+            <span className="font-mono-numbers text-white font-medium">
+              {new Date(event.drawTime).toLocaleDateString()} {new Date(event.drawTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
-            <span className="text-[9px] xs:text-[10px] text-[#9b8f7c] font-normal">
-              {event.minPrize && event.maxPrize ? '(Guaranteed Range)' : '(Jackpot Cap)'}
-            </span>
-          </span>
-          <span className="text-[9px] xs:text-[10px] text-[#05d5aa] font-semibold bg-[#05d5aa]/10 px-1.5 xs:px-2 py-0.5 rounded border border-[#05d5aa]/20">
-            {event.winnerCount > 1 ? `${event.winnerCount} Lucky Winners` : 'Lucky Winner Pot'}
-          </span>
-        </div>
-        <div className="flex items-baseline gap-1.5 xs:gap-2">
-          <span className="font-display font-black text-2xl xs:text-3xl text-gold-gradient tracking-tight">
-            {event.minPrize && event.maxPrize 
-              ? `${event.minPrize} – ${event.maxPrize}` 
-              : event.poolPrize.toLocaleString()}
-          </span>
-          <span className="font-display font-black text-base xs:text-lg text-purple-400 font-mono-numbers">
-            USDT
-          </span>
-        </div>
-        <div className="mt-2 pt-1.5 sm:mt-2.5 sm:pt-2 border-t border-[#272a31]/60 flex items-center justify-between text-[10px] xs:text-[11px] text-[#9b8f7c]">
-          <span className="text-white/90 font-medium truncate pr-1">
-            {event.winnerCount > 1 ? `${event.winnerCount} Lucky Winners Share Pot` : 'Lucky 4-Digit Match Wins Full Pot'}
-          </span>
-          <span className="text-[#05d5aa] font-medium text-[9px] xs:text-[10px] shrink-0">Live Draw</span>
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-2 gap-2 xs:gap-3 mb-3.5 sm:mb-5 text-[11px] xs:text-xs">
-        <div className="bg-[#10131a] p-2 xs:p-2.5 rounded-lg border border-[#272a31]">
-          <span className="text-[#9b8f7c] block mb-0.5 xs:mb-1 flex items-center gap-1 text-[10px] xs:text-[11px] truncate">
-            <Ticket className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-[#f5c451] shrink-0" />
-            Entry Price
-          </span>
-          <span className="font-mono-numbers font-bold text-xs xs:text-sm text-white truncate block">
-            {event.ticketPrice} USDT
-          </span>
-        </div>
-
-        <div className="bg-[#10131a] p-2 xs:p-2.5 rounded-lg border border-[#272a31]">
-          <span className="text-[#9b8f7c] block mb-0.5 xs:mb-1 flex items-center gap-1 text-[10px] xs:text-[11px] truncate">
-            <Users className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-[#00f2fe] shrink-0" />
-            Tickets Sold
-          </span>
-          <span className="font-mono-numbers font-bold text-xs xs:text-sm text-white truncate block">
-            {event.ticketsSold.toLocaleString()}
-          </span>
-        </div>
+      {/* CTA Button */}
+      <div className="pt-1">
+        {isCompleted ? (
+          <button
+            type="button"
+            onClick={handleCardAction}
+            className="w-full py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-[#141924] to-amber-500/20 hover:from-amber-500/30 hover:to-amber-500/30 text-amber-300 border border-amber-500/40 font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md group-hover:border-amber-400"
+          >
+            <Trophy className="w-4 h-4 text-amber-400" />
+            <span>Show Result</span>
+            <ArrowRight className="w-3.5 h-3.5 ml-0.5 text-amber-400" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleCardAction}
+            className="w-full py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/20 active:scale-98 transition-all"
+          >
+            <Play className="w-3.5 h-3.5 fill-current" />
+            <span>Enter Room</span>
+            <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
+          </button>
+        )}
       </div>
 
-      {/* 4-Digit Lucky Preview */}
-      {isCompleted ? (
-        <div className="mb-3.5 sm:mb-5 p-2.5 xs:p-3 rounded-xl bg-[#1a2232] border border-[#05d5aa]/40">
-          <span className="text-[10px] xs:text-[11px] text-[#05d5aa] font-bold block uppercase mb-1.5 text-center">
-            🏆 Official Winning Number:
-          </span>
-          <div className="flex items-center justify-center gap-1.5 xs:gap-2">
-            {event.winningDigits ? event.winningDigits.split('').map((d, i) => (
-              <span 
-                key={i} 
-                className="w-7 xs:w-8 sm:w-9 h-7 xs:h-8 sm:h-9 rounded-lg bg-[#0b0e14] border border-[#05d5aa] flex items-center justify-center font-display font-extrabold text-base xs:text-lg text-[#05d5aa]"
-              >
-                {d}
-              </span>
-            )) : null}
-          </div>
-        </div>
-      ) : isTimedOut ? (
-        <div className="mb-3.5 sm:mb-5 p-2.5 xs:p-3 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-between text-[11px] xs:text-xs text-red-400">
-          <span className="flex items-center gap-1.5 font-bold">
-            <Clock className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-red-400" />
-            Draw Ended
-          </span>
-          <span className="font-mono-numbers text-[10px] xs:text-[11px] text-red-400 font-bold uppercase">
-            END
-          </span>
-        </div>
-      ) : (
-        <div className="mb-3.5 sm:mb-5">
-          <div className="flex items-center justify-between text-[11px] xs:text-xs text-[#9b8f7c] mb-1.5 font-medium">
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-[#f5c451]" />
-              Draw Countdown:
-            </span>
-            <span className="font-mono-numbers text-[#e1e2eb] font-semibold text-[10px] xs:text-[11px]">
-              {timeLeft.days > 0 ? `${timeLeft.days}d ` : ''}
-              {String(timeLeft.hours).padStart(2, '0')}h : {String(timeLeft.minutes).padStart(2, '0')}m : {String(timeLeft.seconds).padStart(2, '0')}s
-            </span>
-          </div>
-          {/* Progress bar visual */}
-          <div className="w-full bg-[#191c22] h-1.5 rounded-full overflow-hidden">
-            <div className="bg-gradient-to-r from-[#ffd700] to-[#05d5aa] h-full w-[65%]" />
-          </div>
-        </div>
-      )}
-
-      {/* CTA Button: Show Result if timed out, else Buy 4-Digit Ticket */}
-      {isTimedOut ? (
-        <button
-          onClick={() => onSelect(event)}
-          className="w-full min-h-[44px] py-2.5 xs:py-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-[#191c22] to-emerald-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 text-amber-300 border border-amber-500/40 text-xs xs:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md"
-        >
-          <Trophy className="w-3.5 xs:w-4 h-3.5 xs:h-4 text-[#ffd700]" />
-          <span>Show Result</span>
-          <ArrowRight className="w-3.5 xs:w-4 h-3.5 xs:h-4 ml-1 text-[#ffd700]" />
-        </button>
-      ) : (
-        <button
-          onClick={() => onSelect(event)}
-          className="btn-gold w-full min-h-[44px] py-2.5 xs:py-3 rounded-xl text-xs xs:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
-        >
-          <Flame className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
-          <span>Buy 4-Digit Ticket ({event.ticketPrice} USDT)</span>
-          <ArrowRight className="w-3.5 xs:w-4 h-3.5 xs:h-4 ml-1" />
-        </button>
-      )}
     </div>
   );
 }

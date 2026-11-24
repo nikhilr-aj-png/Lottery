@@ -17,7 +17,8 @@ import {
   Flame,
   Ticket,
   Lock,
-  Trophy
+  Trophy,
+  Gift
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -338,14 +339,14 @@ export default function Navbar({
 
       {/* ======================================================== */}
       {/* 2. REFINED BOTTOM MOBILE NAV BAR (< 768px, Hidden in Active Room) */}
-      {/* Three items only: 1. Home, 2. Wallet, 3. Profile          */}
+      {/* Four items: 1. Home, 2. Wallet, 3. Promotion, 4. Profile */}
       {/* ======================================================== */}
       {!isInGameRoom && (
         <nav 
-          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B0F19]/95 backdrop-blur-xl border-t border-[rgba(245,196,81,0.18)] px-2 py-1 safe-area-pb shadow-[0_-5px_25px_rgba(0,0,0,0.85)]"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B0F19]/95 backdrop-blur-xl border-t border-[rgba(245,196,81,0.18)] px-1 xs:px-2 py-1 safe-area-pb shadow-[0_-5px_25px_rgba(0,0,0,0.85)]"
           aria-label="Mobile Bottom Navigation"
         >
-          <div className="grid grid-cols-3 max-w-md mx-auto items-center">
+          <div className="grid grid-cols-4 max-w-md mx-auto items-center">
             
             {/* 1. Home */}
             <button
@@ -353,14 +354,14 @@ export default function Navbar({
                 if (onGoHome) onGoHome();
                 else handleNavClick('lotteries');
               }}
-              className={`min-h-[48px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${
+              className={`min-h-[46px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${
                 activeTab === 'lotteries' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
               }`}
             >
               <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'lotteries' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
-                <Flame className="w-5 h-5" />
+                <Flame className="w-4.5 h-4.5 xs:w-5 xs:h-5" />
               </div>
-              <span className={`text-[11px] tracking-tight mt-0.5 leading-none ${activeTab === 'lotteries' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
+              <span className={`text-[10px] xs:text-[11px] tracking-tight mt-0.5 leading-none ${activeTab === 'lotteries' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
                 Home
               </span>
             </button>
@@ -368,32 +369,47 @@ export default function Navbar({
             {/* 2. Virtual Wallet */}
             <button
               onClick={() => handleNavClick('wallet')}
-              className={`min-h-[48px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${
+              className={`min-h-[46px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${
                 activeTab === 'wallet' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
               }`}
             >
               <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'wallet' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
-                <Wallet className="w-5 h-5" />
+                <Wallet className="w-4.5 h-4.5 xs:w-5 xs:h-5" />
               </div>
-              <span className={`text-[11px] tracking-tight mt-0.5 leading-none ${activeTab === 'wallet' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
+              <span className={`text-[10px] xs:text-[11px] tracking-tight mt-0.5 leading-none ${activeTab === 'wallet' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
                 Wallet
               </span>
             </button>
 
-            {/* 3. Player Profile */}
+            {/* 3. Promotion */}
+            <button
+              onClick={() => handleNavClick('promotion')}
+              className={`min-h-[46px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${
+                activeTab === 'promotion' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
+              }`}
+            >
+              <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'promotion' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
+                <Gift className="w-4.5 h-4.5 xs:w-5 xs:h-5" />
+              </div>
+              <span className={`text-[10px] xs:text-[11px] tracking-tight mt-0.5 leading-none ${activeTab === 'promotion' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
+                Promotion
+              </span>
+            </button>
+
+            {/* 4. Player Profile */}
             <button
               onClick={() => {
                 if (onOpenProfile) onOpenProfile();
                 else handleNavClick('profile');
               }}
-              className={`min-h-[48px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${
+              className={`min-h-[46px] flex flex-col items-center justify-center py-1 rounded-xl transition-all cursor-pointer ${
                 activeTab === 'profile' ? 'text-[#ffd700]' : 'text-[#94A3B8] hover:text-[#E1E2EB]'
               }`}
             >
               <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'profile' ? 'bg-amber-500/15 text-[#ffd700]' : ''}`}>
-                <User className="w-5 h-5" />
+                <User className="w-4.5 h-4.5 xs:w-5 xs:h-5" />
               </div>
-              <span className={`text-[11px] tracking-tight mt-0.5 leading-none ${activeTab === 'profile' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
+              <span className={`text-[10px] xs:text-[11px] tracking-tight mt-0.5 leading-none ${activeTab === 'profile' ? 'font-bold text-[#ffd700]' : 'font-medium'}`}>
                 Profile
               </span>
             </button>

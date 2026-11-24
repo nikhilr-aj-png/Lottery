@@ -10,7 +10,8 @@ import {
   LayoutGrid,
   History,
   User,
-  Award
+  Award,
+  Gift
 } from 'lucide-react';
 import { useLottery } from '../context/LotteryContext';
 
@@ -88,6 +89,7 @@ export default function Sidebar({
       title: 'Player Hub',
       items: [
         { id: 'wallet', label: 'USDT Wallet', icon: Wallet, requiresAuth: true },
+        { id: 'promotion', label: 'Promotions & Referral', icon: Gift, badge: 'HOT' },
         { id: 'profile', label: 'Player Profile', icon: User, requiresAuth: true },
         { id: 'transactions', label: 'Transaction History', icon: History, requiresAuth: true }
       ]

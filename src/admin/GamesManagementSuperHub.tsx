@@ -1248,7 +1248,11 @@ export default function GamesManagementSuperHub({
                           onChange={(e) => {
                             const val = e.target.value;
                             setWizardData(prev => {
-                              const updated = { ...prev, eventName: val };
+                              const updated = { 
+                                ...prev, 
+                                eventName: val,
+                                roomName: val.trim() || 'Four Digit Lottery Room'
+                              };
                               updated.roomDescription = generateAutoDescription(updated);
                               return updated;
                             });
@@ -1910,7 +1914,8 @@ export default function GamesManagementSuperHub({
                             try {
                               const res = await directCreateEvent({
                                 ...wizardData,
-                                title: wizardData.eventName,
+                                title: wizardData.eventName.trim(),
+                                roomName: wizardData.eventName.trim() || wizardData.roomName,
                                 durationHours: wizardData.durationHours,
                                 durationMinutes: wizardData.durationMinutes,
                                 batchTag: wizardData.eventTag,

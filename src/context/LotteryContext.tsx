@@ -1090,7 +1090,22 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     treasuryTrc20: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m',
     supportEmail: 'earnflow.user@gmail.com',
     usernameChangeFee: 5.0,
-    apkDownloadUrl: '/download/earnflow.apk'
+    apkDownloadUrl: '/download/earnflow.apk',
+    resultsRetentionHours: 1,
+    referralSettings: {
+      registration_reward_enabled: true,
+      registration_reward_amount: 0.25,
+      first_deposit_reward_enabled: true,
+      first_deposit_reward_percent: 10,
+      lifetime_commission_enabled: true,
+      lifetime_commission_percent: 2
+    },
+    spinWheelSettings: {
+      is_active: true,
+      daily_spins_limit: 1,
+      min_deposit_required: 0,
+      require_kyc: false
+    }
   };
 
   // Detection for Native Android App vs Web Browser
@@ -1149,12 +1164,24 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('platform_settings')
-        .select('value')
-        .eq('key', 'global')
-        .maybeSingle();
+        .select('key, value');
 
-      if (!error && data && data.value) {
-        setPlatformSettings(prev => ({ ...prev, ...data.value }));
+      if (!error && data && data.length > 0) {
+        setPlatformSettings(prev => {
+          let merged = { ...prev };
+          data.forEach((row: any) => {
+            if (row.key === 'global' && row.value) {
+              merged = { ...merged, ...row.value };
+            } else if (row.key === 'results_retention' && row.value) {
+              merged.resultsRetentionHours = Number(row.value.duration_hours || 1);
+            } else if (row.key === 'referral_settings' && row.value) {
+              merged.referralSettings = { ...merged.referralSettings, ...row.value };
+            } else if (row.key === 'spin_wheel_settings' && row.value) {
+              merged.spinWheelSettings = { ...merged.spinWheelSettings, ...row.value };
+            }
+          });
+          return merged;
+        });
       }
     } catch (err) {
       console.error('fetchPlatformSettings error:', err);
@@ -1162,27 +1189,30 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   };
 
   // Update platform settings from Admin Console
-  const adminUpdatePlatformSettings = async (newSettings) => {
+  const adminUpdatePlatformSettings = async (newSettings: any) => {
     try {
       const updated = {
         ...platformSettings,
         ...newSettings,
-        minWithdrawal: parseFloat(newSettings.minWithdrawal || platformSettings.minWithdrawal),
-        maxWithdrawal: parseFloat(newSettings.maxWithdrawal || platformSettings.maxWithdrawal),
-        houseFeePercent: parseFloat(newSettings.houseFeePercent || platformSettings.houseFeePercent),
-        defaultWinnerSharePercent: parseFloat(newSettings.defaultWinnerSharePercent || platformSettings.defaultWinnerSharePercent),
+        minWithdrawal: parseFloat(newSettings.minWithdrawal !== undefined ? newSettings.minWithdrawal : platformSettings.minWithdrawal),
+        maxWithdrawal: parseFloat(newSettings.maxWithdrawal !== undefined ? newSettings.maxWithdrawal : platformSettings.maxWithdrawal),
+        houseFeePercent: parseFloat(newSettings.houseFeePercent !== undefined ? newSettings.houseFeePercent : platformSettings.houseFeePercent),
+        defaultWinnerSharePercent: parseFloat(newSettings.defaultWinnerSharePercent !== undefined ? newSettings.defaultWinnerSharePercent : platformSettings.defaultWinnerSharePercent),
         treasuryTrc20: (newSettings.treasuryTrc20 || platformSettings.treasuryTrc20).trim(),
         supportEmail: (newSettings.supportEmail || platformSettings.supportEmail).trim(),
         usernameChangeFee: parseFloat(newSettings.usernameChangeFee !== undefined ? newSettings.usernameChangeFee : (platformSettings.usernameChangeFee ?? 5.0)),
-        apkDownloadUrl: (newSettings.apkDownloadUrl !== undefined ? newSettings.apkDownloadUrl : (platformSettings.apkDownloadUrl || '/download/earnflow.apk')).trim()
+        apkDownloadUrl: (newSettings.apkDownloadUrl !== undefined ? newSettings.apkDownloadUrl : (platformSettings.apkDownloadUrl || '/download/earnflow.apk')).trim(),
+        resultsRetentionHours: Number(newSettings.resultsRetentionHours !== undefined ? newSettings.resultsRetentionHours : (platformSettings.resultsRetentionHours || 1)),
+        referralSettings: newSettings.referralSettings ? { ...platformSettings.referralSettings, ...newSettings.referralSettings } : platformSettings.referralSettings,
+        spinWheelSettings: newSettings.spinWheelSettings ? { ...platformSettings.spinWheelSettings, ...newSettings.spinWheelSettings } : platformSettings.spinWheelSettings
       };
 
       // Optimistic update
       setPlatformSettings(updated);
       localStorage.setItem('lotto_platform_settings', JSON.stringify(updated));
 
-      // Persist to dedicated Supabase platform_settings table
-      const { error } = await supabase
+      // Persist global settings
+      const { error: globalErr } = await supabase
         .from('platform_settings')
         .upsert({
           key: 'global',
@@ -1190,13 +1220,46 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           updated_at: new Date().toISOString()
         });
 
-      if (error) {
-        console.warn('Supabase settings upsert error:', error.message);
+      if (globalErr) {
+        console.warn('Supabase settings upsert error:', globalErr.message);
+      }
+
+      // Persist results retention
+      if (newSettings.resultsRetentionHours !== undefined) {
+        await supabase
+          .from('platform_settings')
+          .upsert({
+            key: 'results_retention',
+            value: { duration_hours: Number(newSettings.resultsRetentionHours), label: `${newSettings.resultsRetentionHours} hour(s)` },
+            updated_at: new Date().toISOString()
+          });
+      }
+
+      // Persist referral settings
+      if (newSettings.referralSettings) {
+        await supabase
+          .from('platform_settings')
+          .upsert({
+            key: 'referral_settings',
+            value: updated.referralSettings,
+            updated_at: new Date().toISOString()
+          });
+      }
+
+      // Persist spin wheel settings
+      if (newSettings.spinWheelSettings) {
+        await supabase
+          .from('platform_settings')
+          .upsert({
+            key: 'spin_wheel_settings',
+            value: updated.spinWheelSettings,
+            updated_at: new Date().toISOString()
+          });
       }
 
       showToast('Platform governance settings updated and synced across all user portals!', 'success');
       return { success: true, settings: updated };
-    } catch (err) {
+    } catch (err: any) {
       console.error('adminUpdatePlatformSettings error:', err);
       showToast('Failed to update settings: ' + err.message, 'error');
       return { success: false, error: err.message };
@@ -1240,6 +1303,110 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
   const [needsUsernameSetup, setNeedsUsernameSetup] = useState(false);
 
+  const processReferralSignup = async (newUserId: string, referralCode: string) => {
+    if (!newUserId || !referralCode) return;
+    try {
+      const cleanCode = referralCode.trim();
+
+      // Check if this user was already referred
+      const { data: existingRef } = await supabase
+        .from('user_referrals')
+        .select('id')
+        .eq('referred_user_id', newUserId)
+        .maybeSingle();
+
+      if (existingRef) {
+        localStorage.removeItem('earnflow_referrer_code');
+        return;
+      }
+
+      // Find the referrer by referral code (matches username or direct user ID)
+      let referrerId: string | null = null;
+
+      const { data: profMatch } = await supabase
+        .from('profiles')
+        .select('id')
+        .ilike('username', cleanCode)
+        .maybeSingle();
+
+      if (profMatch && profMatch.id && profMatch.id !== newUserId) {
+        referrerId = profMatch.id;
+      } else {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanCode);
+        if (isUuid && cleanCode !== newUserId) {
+          referrerId = cleanCode;
+        }
+      }
+
+      if (!referrerId) {
+        localStorage.removeItem('earnflow_referrer_code');
+        return;
+      }
+
+      // Check platform referral settings
+      let regRewardEnabled = true;
+      let regRewardAmount = 0.25;
+
+      const { data: settingsData } = await supabase
+        .from('platform_settings')
+        .select('value')
+        .eq('key', 'referral_settings')
+        .maybeSingle();
+
+      if (settingsData && settingsData.value) {
+        regRewardEnabled = settingsData.value.registration_reward_enabled !== false;
+        regRewardAmount = parseFloat(settingsData.value.registration_reward_amount || '0.25');
+      }
+
+      const initialComm = regRewardEnabled ? regRewardAmount : 0.0;
+
+      // 1. Insert referral link record
+      const { error: insErr } = await supabase
+        .from('user_referrals')
+        .insert({
+          referrer_id: referrerId,
+          referred_user_id: newUserId,
+          referral_code: cleanCode,
+          status: 'active',
+          total_commission_usdt: initialComm
+        });
+
+      if (insErr) {
+        console.warn('user_referrals insert error:', insErr.message);
+        return;
+      }
+
+      // 2. Credit referrer registration reward if enabled
+      if (regRewardEnabled && regRewardAmount > 0) {
+        try {
+          await supabase.rpc('credit_virtual_credits', {
+            p_user_id: referrerId,
+            p_amount: regRewardAmount,
+            p_action: 'referral_registration_reward',
+            p_reference_id: newUserId,
+            p_notes: `Referral registration bonus for inviting user ${newUserId.slice(0, 8)}`
+          });
+
+          await supabase
+            .from('referral_rewards')
+            .insert({
+              referrer_id: referrerId,
+              referred_user_id: newUserId,
+              reward_type: 'registration',
+              reward_amount_usdt: regRewardAmount,
+              description: `Registration bonus for inviting user ${newUserId.slice(0, 8)}`
+            });
+        } catch (credErr) {
+          console.warn('Referral reward credit error:', credErr);
+        }
+      }
+
+      localStorage.removeItem('earnflow_referrer_code');
+    } catch (e) {
+      console.warn('processReferralSignup error:', e);
+    }
+  };
+
   const fetchProfile = async (userId) => {
     try {
       const { data, error } = await supabase
@@ -1272,6 +1439,14 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         } else {
           setNeedsUsernameSetup(false);
         }
+
+        // Process any pending referral attribution
+        try {
+          const storedRef = typeof window !== 'undefined' ? localStorage.getItem('earnflow_referrer_code') : null;
+          if (storedRef) {
+            await processReferralSignup(userId, storedRef);
+          }
+        } catch (e) {}
       } else {
         // First-time login without existing profile record
         const initialProfile = {
@@ -1288,6 +1463,14 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         }
         setProfile(initialProfile);
         setNeedsUsernameSetup(!resolvedUsername);
+
+        // Process any pending referral attribution on first creation
+        try {
+          const storedRef = typeof window !== 'undefined' ? localStorage.getItem('earnflow_referrer_code') : null;
+          if (storedRef) {
+            await processReferralSignup(userId, storedRef);
+          }
+        } catch (e) {}
       }
     } catch (err) {
       console.error('Fetch profile error:', err);
@@ -2916,11 +3099,14 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       const cooldownUntil = cooldownMs > 0 ? startTime : null;
       const initialStatus = cooldownMs > 0 ? 'scheduled' : 'active';
 
-      // Unique Event ID, Tag & Room Identity
+      // Unique Event ID, Tag & Room Identity (Preserves exact custom event name)
       const newId = eventData.eventId || eventData.id || `evt-${Date.now().toString(36)}-${Math.floor(100 + Math.random() * 900)}`;
-      const title = eventData.eventName || eventData.title || 'Four Digit Lottery Event';
+      const customName = (eventData.eventName || eventData.title || '').trim();
+      const title = customName || 'Four Digit Lottery Event';
       const batchTag = eventData.eventTag || eventData.batchTag || eventData.badge || `BATCH-${Date.now().toString(36).toUpperCase().slice(-4)}${Math.floor(10 + Math.random() * 90)}`;
-      const roomName = eventData.roomName || 'Room 1: Grand Pot Arena';
+      const roomName = (eventData.roomName && eventData.roomName !== 'Room 1: Grand Pot Arena' && !eventData.roomName.includes('Verification Arena'))
+        ? eventData.roomName.trim()
+        : (customName || 'Four Digit Lottery Event');
       const roomId = eventData.roomId || `room-${newId}`;
       const description = eventData.roomDescription || eventData.description || 'Pick lucky digits from 0000 to 9999.';
       if (eventData.currency && eventData.currency.toUpperCase() !== 'USDT') {
@@ -3103,16 +3289,34 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       // Soft-delete in database: Never delete user wallet balances, ledger entries, or historical payouts!
       const { error } = await supabase
         .from('lottery_events')
-        .update({ status: 'deleted', is_active: false })
+        .update({ status: 'deleted', is_active: false, is_deleted: true, archived_at: new Date().toISOString() })
         .eq('id', eventId);
 
       if (error) {
         console.warn('Soft-delete event update error:', error);
       }
 
+      // Record administrative audit log
+      try {
+        await supabase.from('admin_audit_logs').insert({
+          action: 'safe_delete_event',
+          target_type: 'lottery_event',
+          target_id: eventId,
+          details: {
+            preserved_wallet_balances: true,
+            preserved_payouts: true,
+            deleted_at: new Date().toISOString()
+          },
+          admin_id: user?.id || null,
+          admin_email: user?.email || null
+        });
+      } catch (logErr) {
+        console.warn('Audit log insert warning:', logErr);
+      }
+
       // Immediately remove from active event management list
       setEvents(prev => prev.filter(e => e.id !== eventId));
-      showToast('Event removed from Event Management. All historical user payouts remain 100% intact.', 'info');
+      showToast('Event safely archived. All historical user payouts remain 100% permanently intact.', 'info');
       return { success: true };
     } catch (err: any) {
       console.error('adminDeleteEvent error:', err);
@@ -3372,6 +3576,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         checkUsernameAvailability,
         verifyEmailOtp,
         resendSignupOtp,
+        processReferralSignup,
         loginWithGoogle,
         logout,
         updateTrc20Address,

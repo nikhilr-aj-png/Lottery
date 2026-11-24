@@ -29,6 +29,7 @@ import RefundPolicyPage from './pages/RefundPolicyPage';
 import PaymentPolicyPage from './pages/PaymentPolicyPage';
 import DisclaimerPage from './pages/DisclaimerPage';
 import FaqPage from './pages/FaqPage';
+import PromotionPage from './pages/PromotionPage';
 import AdminPortal from './admin/AdminPortal';
 import GamePage from './pages/GamePage';
 import { getGameById } from './engine';
@@ -257,7 +258,7 @@ function LotteryAppContent() {
     if (gr) {
       setActiveGameId(null);
     }
-    if (path === '/admin') {
+    if (path.startsWith('/admin')) {
       setIsAdminRoute(true);
       setIsViewingUserLobby(false);
     } else {
@@ -375,6 +376,10 @@ function LotteryAppContent() {
       setIsTransactionRoute(false);
       navigate('/faq');
       setActiveTab('faq');
+    } else if (tab === 'promotion') {
+      setIsTransactionRoute(false);
+      navigate('/promotion');
+      setActiveTab('promotion');
     } else if (tab === 'tickets') {
       setIsTransactionRoute(false);
       navigate('/my-tickets');
@@ -392,13 +397,13 @@ function LotteryAppContent() {
   
   // Dedicated check for isolated Admin Route
   const [isAdminRoute, setIsAdminRoute] = useState(() => {
-    return window.location.pathname === '/admin' || 
+    return window.location.pathname.startsWith('/admin') || 
            window.location.hash === '#admin' || 
            window.location.search.includes('admin=true');
   });
 
   const [isViewingUserLobby, setIsViewingUserLobby] = useState(() => {
-    if (window.location.pathname === '/admin' || window.location.hash === '#admin' || window.location.search.includes('admin=true')) {
+    if (window.location.pathname.startsWith('/admin') || window.location.hash === '#admin' || window.location.search.includes('admin=true')) {
       return false;
     }
     return sessionStorage.getItem('earnflow_view_mode_user') === 'true';
@@ -420,7 +425,7 @@ function LotteryAppContent() {
 
   useEffect(() => {
     const handleLocationChange = () => {
-      const onAdmin = window.location.pathname === '/admin' || 
+      const onAdmin = window.location.pathname.startsWith('/admin') || 
                       window.location.hash === '#admin' || 
                       window.location.search.includes('admin=true');
       setIsAdminRoute(onAdmin);
@@ -431,10 +436,18 @@ function LotteryAppContent() {
         setIsViewingUserLobby(userMode);
       }
 
+      // Capture optional referral query parameter
+      const search = new URLSearchParams(window.location.search || '');
+      const refCode = search.get('ref') || search.get('r');
+      if (refCode) {
+        try {
+          localStorage.setItem('earnflow_referrer_code', refCode.trim());
+        } catch (e) {}
+      }
+
       const gr = parseGameRoute(window.location.pathname);
       setCurrentGameRoute(gr);
 
-      const search = new URLSearchParams(window.location.search || '');
       const pParam = search.get('p')?.toLowerCase().replace(/\/+$/, '');
       const onTx = isTransactionHistoryRoute(window.location.pathname) || 
                    (pParam && isTransactionHistoryRoute('/' + pParam)) ||
@@ -481,6 +494,9 @@ function LotteryAppContent() {
       ) {
         setActiveTab('support', false);
         document.title = 'Customer Support · EarnFlow.in';
+      } else if (cleanPath === '/promotion' || cleanPath === '/referral' || search.get('tab') === 'promotion') {
+        setActiveTab('promotion', false);
+        document.title = 'Promotions & Referral Hub · EarnFlow.in';
       } else if (cleanPath === '/tickets' || cleanPath === '/my-tickets' || search.get('tab') === 'tickets') {
         setActiveTab('tickets', false);
         document.title = 'My Tickets · EarnFlow.in';
@@ -660,14 +676,18 @@ function LotteryAppContent() {
               />
             ) : (
               <>
-                {/* VIEW 1: MULTI-GAME CASINO LOBBY & FOUR-DIGIT LOTTERY */}
+                {/* VIEW 1: DEDICATED FOUR-DIGIT LOTTERY HOMEPAGE */}
                 {activeTab === 'lotteries' && (
                   <CasinoLobby 
-                    onLaunchGame={(gid) => {
-                      const g = getGameById(gid);
-                      navigate('/games/' + (g?.slug || gid));
+                    onLaunchGame={(gidOrEventId) => {
+                      if (gidOrEventId && gidOrEventId.startsWith('evt-')) {
+                        navigate('/games/lottery/' + gidOrEventId);
+                      } else {
+                        navigate('/game/lottery');
+                      }
                     }}
                     onOpenLotteryRules={() => setIsRulesModalOpen(true)}
+                    onShowResult={(evt) => setSelectedEventForModal(evt)}
                   />
                 )}
 
@@ -744,6 +764,11 @@ function LotteryAppContent() {
               {/* VIEW 11: CONTACT US */}
               {activeTab === 'contact' && (
                 <ContactPage onBackToHome={() => setActiveTab('lotteries')} />
+              )}
+
+              {/* VIEW 18: PROMOTIONS & REFERRAL HUB */}
+              {activeTab === 'promotion' && (
+                <PromotionPage onBackToHome={handleGoHome} />
               )}
 
               {/* VIEW 12: TERMS & CONDITIONS PAGE */}

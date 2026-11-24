@@ -49,8 +49,11 @@ import {
   Gamepad2,
   Binary,
   ShieldCheck,
-  Gift
+  Gift,
+  Share2
 } from 'lucide-react';
+import ReferralsManagement from './ReferralsManagement';
+import SpinWheelManagement from './SpinWheelManagement';
 
 interface AdminConsoleProps {
   onLogout?: () => void;
@@ -90,9 +93,27 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
     getDirectDownloadUrl
   } = useLottery();
 
-  // Navigation tab: 'overview' | 'games-management' | 'pools' | 'games' | 'game-rounds' | 'withdrawals' | 'users' | 'winner-payouts' | 'support' | 'settings'
-  const [activeAdminTab, setActiveAdminTab] = useState('overview');
+  // Navigation tab: 'overview' | 'games-management' | 'pools' | 'games' | 'game-rounds' | 'withdrawals' | 'users' | 'winner-payouts' | 'support' | 'rewards-control' | 'referrals' | 'spin-wheel' | 'settings'
+  const [activeAdminTab, setActiveAdminTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const p = window.location.pathname.toLowerCase();
+      if (p.includes('/referrals') || window.location.search.includes('tab=referrals')) return 'referrals';
+      if (p.includes('/spin-wheel') || window.location.search.includes('tab=spin-wheel')) return 'spin-wheel';
+      if (p.includes('/settings') || window.location.search.includes('tab=settings')) return 'settings';
+    }
+    return 'overview';
+  });
   const [gamesManagementSubTab, setGamesManagementSubTab] = useState('all-games');
+
+  const switchAdminTab = (tab: string) => {
+    setActiveAdminTab(tab);
+    try {
+      let targetPath = '/admin';
+      if (tab === 'referrals') targetPath = '/admin/referrals';
+      else if (tab === 'spin-wheel') targetPath = '/admin/spin-wheel';
+      window.history.replaceState(null, '', targetPath);
+    } catch (e) {}
+  };
 
   // Dynamic active games count from database-driven game configurations
   const activeGamesCount = useMemo(() => {
@@ -275,6 +296,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
   const [supportEmail, setSupportEmail] = useState(() => platformSettings?.supportEmail || 'earnflow.user@gmail.com');
   const [usernameChangeFee, setUsernameChangeFee] = useState(() => String(platformSettings?.usernameChangeFee ?? '5.00'));
   const [apkDownloadUrl, setApkDownloadUrl] = useState(() => platformSettings?.apkDownloadUrl || '/download/earnflow.apk');
+  const [resultsRetentionHours, setResultsRetentionHours] = useState(() => String(platformSettings?.resultsRetentionHours ?? '1'));
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
 
@@ -289,6 +311,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       setSupportEmail(platformSettings.supportEmail || 'earnflow.user@gmail.com');
       setUsernameChangeFee(String(platformSettings.usernameChangeFee ?? '5.00'));
       setApkDownloadUrl(platformSettings.apkDownloadUrl || '/download/earnflow.apk');
+      setResultsRetentionHours(String(platformSettings.resultsRetentionHours ?? '1'));
     }
   }, [platformSettings]);
 
@@ -411,7 +434,8 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
         treasuryTrc20,
         supportEmail,
         usernameChangeFee,
-        apkDownloadUrl
+        apkDownloadUrl,
+        resultsRetentionHours: parseFloat(resultsRetentionHours) || 1
       });
       if (res?.success) {
         setLastSavedTime(new Date().toLocaleTimeString());
@@ -637,6 +661,30 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
           </button>
 
           <button
+            onClick={() => switchAdminTab('referrals')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeAdminTab === 'referrals'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
+                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Share2 className="w-4 h-4" />
+            <span>Referrals & Affiliates</span>
+          </button>
+
+          <button
+            onClick={() => switchAdminTab('spin-wheel')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeAdminTab === 'spin-wheel'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
+                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Dices className="w-4 h-4" />
+            <span>Spin Wheel Control</span>
+          </button>
+
+          <button
             onClick={() => { setActiveAdminTab('rewards-control'); loadRewardsAnalytics(); }}
             className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
               activeAdminTab === 'rewards-control'
@@ -649,7 +697,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
           </button>
 
           <button
-            onClick={() => setActiveAdminTab('settings')}
+            onClick={() => switchAdminTab('settings')}
             className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
               activeAdminTab === 'settings'
                 ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
@@ -1769,6 +1817,62 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                   </div>
                 </div>
 
+                {/* Results Retention Duration Setting */}
+                <div className="bg-[#07090d] p-4 rounded-xl border border-[#1f2737] space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                    <label className="text-xs text-white font-bold flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-[#ffd700]" />
+                      <span>Lottery Results Display Retention Period</span>
+                    </label>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold self-start sm:self-auto">
+                      Current: {resultsRetentionHours} Hour(s)
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-[#8b92a2] leading-relaxed">
+                    Determines how long ended lottery events remain visible under the homepage "Recent Draw Results" section before being automatically cleared from public display.
+                  </p>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                    {[
+                      { label: '15 Min', value: '0.25' },
+                      { label: '30 Min', value: '0.5' },
+                      { label: '1 Hour', value: '1' },
+                      { label: '2 Hours', value: '2' },
+                      { label: '6 Hours', value: '6' },
+                      { label: '12 Hours', value: '12' },
+                      { label: '24 Hours', value: '24' }
+                    ].map((preset) => (
+                      <button
+                        key={preset.value}
+                        type="button"
+                        onClick={() => setResultsRetentionHours(preset.value)}
+                        className={`p-2 rounded-xl text-center text-xs font-bold transition-all cursor-pointer border ${
+                          resultsRetentionHours === preset.value
+                            ? 'bg-amber-400 text-black border-amber-400 shadow-md font-black'
+                            : 'bg-[#141924] text-[#8b92a2] border-[#272a31] hover:text-white'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-[11px] text-[#8b92a2]">Or custom duration (hours):</span>
+                    <input
+                      type="number"
+                      step="0.25"
+                      min="0.1"
+                      max="168"
+                      value={resultsRetentionHours}
+                      onChange={(e) => setResultsRetentionHours(e.target.value)}
+                      className="w-24 bg-[#0b0e14] border border-[#272a31] rounded-lg px-2.5 py-1 text-xs font-bold font-mono-numbers text-white outline-none focus:border-amber-400"
+                    />
+                    <span className="text-[11px] text-[#8b92a2]">hours</span>
+                  </div>
+                </div>
+
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-2">
                   <button
                     type="submit"
@@ -1799,6 +1903,16 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
             </div>
           </div>
         )}
+
+        {/* ============================================================== */}
+        {/* TAB: REFERRALS & AFFILIATE MANAGEMENT                           */}
+        {/* ============================================================== */}
+        {activeAdminTab === 'referrals' && <ReferralsManagement />}
+
+        {/* ============================================================== */}
+        {/* TAB: DAILY BONUS SPIN WHEEL MANAGEMENT                         */}
+        {/* ============================================================== */}
+        {activeAdminTab === 'spin-wheel' && <SpinWheelManagement />}
 
         {/* ============================================================== */}
         {/* TAB 7: SUPPORT & USER INQUIRIES                                */}

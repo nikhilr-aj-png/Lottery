@@ -89,7 +89,7 @@ export default function GamePage({
       id: evt.id,
       gameId: 'lottery',
       drawId: evt.id,
-      name: evt.roomName || evt.title || `Room ${idx + 1}`,
+      name: evt.title || evt.roomName || `Room ${idx + 1}`,
       type: evt.badge?.toLowerCase().includes('vip') ? ROOM_TYPES.VIP : (evt.badge?.toLowerCase().includes('high') ? ROOM_TYPES.HIGH_ROLLER : ROOM_TYPES.STANDARD),
       status: evt.status === 'completed' ? ROOM_STATUSES.COMPLETED : ROOM_STATUSES.ACTIVE,
       description: evt.description || `Pick 4 lucky digits from 0000 to 9999. Payouts distributed in ${evt.currency || 'USDT'}.`,
@@ -119,11 +119,16 @@ export default function GamePage({
     return rooms;
   }, [game?.id, lotteryRooms, rooms]);
 
-  // Selected room
+  // Selected room: Directly resolve active lottery room to ensure seamless 1-click entry without duplicate screens
   const selectedRoom = useMemo(() => {
-    if (!roomId) return null;
-    return activeRooms.find(r => r.id === roomId) || activeRooms[0] || null;
-  }, [activeRooms, roomId]);
+    if (roomId) {
+      return activeRooms.find(r => r.id === roomId) || activeRooms[0] || null;
+    }
+    if (game?.id === 'lottery' && activeRooms.length > 0) {
+      return activeRooms.find(r => r.status === ROOM_STATUSES.ACTIVE) || activeRooms[0];
+    }
+    return null;
+  }, [activeRooms, roomId, game?.id]);
 
   // State for active lottery event if game is lottery
   const activeLotteryEvent = useMemo(() => {
