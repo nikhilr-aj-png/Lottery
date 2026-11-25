@@ -106,16 +106,16 @@ export default function GamePage({
     );
   }
 
-  // While events are loading on direct navigation, show a single-screen skeleton (prevents layout flash)
+  // While events are loading on direct navigation, show a single-screen 3-column skeleton (prevents layout flash)
   if (loadingEvents && !selectedRoom) {
     return (
-      <div className="w-full h-full flex flex-col p-2 sm:p-3 gap-2.5 overflow-hidden bg-[#0B0F19]">
-        <div className="h-10 rounded-xl bg-[#111728] border border-[#1B2238] animate-pulse shrink-0" />
-        <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-2.5">
-          <div className="md:col-span-7 rounded-xl bg-[#111728] border border-[#1B2238] animate-pulse" />
-          <div className="md:col-span-5 rounded-xl bg-[#111728] border border-[#1B2238] animate-pulse" />
+      <div className="w-full h-full flex flex-col p-3 lg:p-4 gap-3 overflow-hidden bg-[#080C16]">
+        <div className="h-12 lg:h-14 rounded-2xl bg-[#111728] border border-[#1B2238] animate-pulse shrink-0" />
+        <div className="flex-1 min-h-0 grid grid-cols-3 gap-3 lg:gap-4 max-h-[660px]">
+          <div className="rounded-2xl bg-[#111728] border border-[#1B2238] animate-pulse" />
+          <div className="rounded-2xl bg-[#111728] border border-[#1B2238] animate-pulse" />
+          <div className="rounded-2xl bg-[#111728] border border-[#1B2238] animate-pulse" />
         </div>
-        <div className="h-32 rounded-xl bg-[#0E1422] border border-[#1B2238] animate-pulse shrink-0" />
       </div>
     );
   }

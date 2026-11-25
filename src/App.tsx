@@ -177,17 +177,17 @@ function LotteryAppContent() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
-      return window.innerWidth >= 1024 && window.innerWidth < 1440;
+      return window.innerWidth < 1440;
     }
     return false;
   });
 
-  // Responsive sidebar collapse on window resize
+  // Responsive sidebar default on window resize
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1024 && window.innerWidth < 1440) {
+      if (window.innerWidth < 1440) {
         setIsSidebarCollapsed(true);
-      } else if (window.innerWidth >= 1440) {
+      } else {
         setIsSidebarCollapsed(false);
       }
     };
@@ -279,6 +279,9 @@ function LotteryAppContent() {
     const gr = parseGameRoute(path);
     if (!wasInGame && gr) {
       enteredRoomFromInAppRef.current = true;
+      if (typeof window !== 'undefined') {
+        setIsSidebarCollapsed(window.innerWidth < 1440);
+      }
     } else if (!gr) {
       enteredRoomFromInAppRef.current = false;
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import {
   ShieldCheck,
@@ -58,8 +58,13 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
   } = useLottery();
 
   // ---------------------------------------------------------------------------
-  // 1. Dynamic Viewport, Aspect Ratio & Mandatory Mobile Landscape Detection
+  // 1. Dynamic Viewport, Container Width & Mandatory Mobile Landscape Detection
   // ---------------------------------------------------------------------------
+  const shellRef = useRef<HTMLDivElement | null>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(
+    typeof window !== 'undefined' ? window.innerWidth : 1200
+  );
+
   const readViewport = useCallback((): ViewportMetrics => {
     if (typeof window === 'undefined') {
       return { width: 1200, height: 800, isPortraitMedia: false };
@@ -97,13 +102,29 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
     };
   }, [readViewport]);
 
+  // Observe actual available width next to collapsible sidebar
+  useEffect(() => {
+    const el = shellRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect?.width) {
+          setContainerWidth(Math.round(entry.contentRect.width));
+        }
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const isPortrait =
     viewport.height > viewport.width ||
     (viewport.width === viewport.height && viewport.isPortraitMedia);
   const isMobileViewport = viewport.width < 768;
   const isMobilePortrait = isMobileViewport && isPortrait;
   const isCompactLandscape = !isMobilePortrait && viewport.height <= 540;
-  const isUltraNarrowLandscape = isCompactLandscape && viewport.width < 500;
+  const isUltraNarrowStage = isCompactLandscape && containerWidth < 450;
+  const isDesktopLayout = !isCompactLandscape && viewport.width >= 1024;
 
   // Best-effort Screen Orientation API lock on mobile devices (graceful fallback to overlay)
   useEffect(() => {
@@ -481,28 +502,43 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
     isTimedOut ||
     (Boolean(user) && (isAlreadyPurchasedByMe || isSoldToAnyPlayer || !hasSufficientBalance));
 
+  const useCompactLabels = containerWidth < 1080;
+  const isTightColumnStage = !isCompactLandscape && containerWidth < 1100;
+
   // ---------------------------------------------------------------------------
-  // 11. Three Unified Column Renderers (Consistent Across All Devices)
+  // 11. Three Unified Column Renderers
+  //     - Mobile Landscape preserves its clean, verified look
+  //     - Desktop / Laptop / Tablet uses polished Stitch dashboard proportions
   // ---------------------------------------------------------------------------
 
   const renderDigitSelectionPanel = () => (
     <section
       aria-label="Four-Digit Selection Panel"
-      className="ef-game-card rounded-xl flex flex-col justify-between min-h-0 h-full overflow-hidden p-[clamp(8px,1.4dvh,16px)] gap-[clamp(6px,1.1dvh,12px)]"
+      className={`ef-game-card rounded-xl lg:rounded-2xl flex flex-col justify-between min-h-0 h-full overflow-hidden ${
+        isCompactLandscape
+          ? 'p-[clamp(6px,1.1dvh,12px)] gap-[clamp(4px,0.8dvh,8px)]'
+          : 'p-3 lg:p-4 xl:p-5 gap-2.5 lg:gap-3 xl:gap-4'
+      }`}
     >
       {/* Column 1 Header */}
       <div className="flex items-center justify-between gap-1.5 pb-[clamp(5px,0.9dvh,10px)] border-b border-[#1E293B] shrink-0">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <div className="w-[clamp(20px,3.2dvh,28px)] h-[clamp(20px,3.2dvh,28px)] rounded-lg bg-[#7C3AED]/15 border border-[#7C3AED]/35 flex items-center justify-center text-[#A78BFA] shrink-0">
-            <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-[clamp(22px,3.2dvh,30px)] h-[clamp(22px,3.2dvh,30px)] rounded-lg bg-[#7C3AED]/15 border border-[#7C3AED]/35 flex items-center justify-center text-[#A78BFA] shrink-0">
+            <Sparkles className="w-3.5 h-3.5" />
           </div>
-          <h2 className="font-display font-extrabold text-[clamp(10px,1.25vw,15px)] text-white leading-tight whitespace-nowrap">
+          <h2
+            className={`font-display font-extrabold text-white leading-tight whitespace-nowrap ${
+              isCompactLandscape ? 'text-[clamp(10px,1.25vw,13px)]' : 'text-sm lg:text-base xl:text-lg'
+            }`}
+          >
             Pick 4 Digits
           </h2>
         </div>
 
         <span
-          className={`text-[clamp(7.5px,0.9vw,10px)] font-mono-numbers px-1.5 sm:px-2 py-0.5 rounded-full font-bold uppercase flex items-center gap-1 border shrink-0 whitespace-nowrap ${availabilityBadge.cls}`}
+          className={`font-mono-numbers px-2 py-0.5 rounded-full font-bold uppercase flex items-center gap-1.5 border shrink-0 whitespace-nowrap ${
+            isCompactLandscape ? 'text-[7.5px]' : 'text-[9.5px] lg:text-[10px]'
+          } ${availabilityBadge.cls}`}
         >
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${availabilityBadge.dot}`} />
           <span>{availabilityBadge.label}</span>
@@ -510,7 +546,7 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
       </div>
 
       {/* 4 Position Digit Slots (1ST, 2ND, 3RD, 4TH) */}
-      <div className="grid grid-cols-4 gap-[clamp(4px,0.85vw,10px)] shrink-0">
+      <div className={`grid grid-cols-4 shrink-0 ${isCompactLandscape ? 'gap-1.5' : 'gap-2.5 lg:gap-3'}`}>
         {digits.map((digit, idx) => {
           const isSelected = activeSlot === idx;
           const isDisabledSlot = isTimedOut || isSubmitting;
@@ -525,36 +561,36 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
               aria-label={`${ORDINALS[idx]} digit: ${digit}`}
               className={`ef-touch-btn relative rounded-xl flex flex-col items-center justify-center transition-all duration-150 select-none border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] ${
                 isCompactLandscape
-                  ? 'h-[clamp(40px,13.5dvh,60px)]'
-                  : 'h-[clamp(54px,8.5dvh,84px)]'
+                  ? 'h-[clamp(40px,13.5dvh,58px)]'
+                  : 'h-[clamp(60px,10dvh,86px)]'
               } ${
                 isDisabledSlot
                   ? 'opacity-60 cursor-not-allowed bg-[#080D18] border-[#1B2438]'
                   : isSelected
-                  ? 'cursor-pointer bg-gradient-to-b from-[#1E1940] to-[#110D28] border-[#8B5CF6] shadow-[0_0_18px_rgba(124,58,237,0.38)] scale-[1.015]'
-                  : 'cursor-pointer bg-[#070B14] border-[#1E293B] hover:border-[#475569] hover:bg-[#0D1424] active:scale-[0.98]'
+                  ? 'cursor-pointer bg-gradient-to-b from-[#231C4A] to-[#120E2B] border-[#8B5CF6] shadow-[0_0_22px_rgba(124,58,237,0.42)] scale-[1.015]'
+                  : 'cursor-pointer bg-[#141B2D]/90 border-[#24304A] hover:border-[#475569] hover:bg-[#192238] active:scale-[0.98]'
               }`}
             >
               <span
                 className={`font-mono-numbers font-black tracking-wider uppercase leading-none transition-colors ${
-                  isCompactLandscape ? 'text-[7.5px]' : 'text-[9px]'
-                } ${isSelected ? 'text-[#DDD6FE]' : 'text-[#64748B]'}`}
+                  isCompactLandscape ? 'text-[7.5px]' : 'text-[9px] lg:text-[10px]'
+                } ${isSelected ? 'text-[#DDD6FE]' : 'text-[#94A3B8]'}`}
               >
                 {ORDINALS[idx]}
               </span>
 
               <span
-                className={`font-mono-numbers font-black leading-none mt-0.5 transition-colors ${
+                className={`font-mono-numbers font-black leading-none mt-1 transition-colors ${
                   isCompactLandscape
-                    ? 'text-[clamp(17px,5.2dvh,26px)]'
-                    : 'text-[clamp(22px,4dvh,36px)]'
+                    ? 'text-[clamp(17px,5.2dvh,25px)]'
+                    : 'text-[clamp(24px,4.2dvh,34px)]'
                 } ${isSelected ? 'text-[#FBBF24]' : 'text-white'}`}
               >
                 {digit}
               </span>
 
               {isSelected && (
-                <span className="absolute -bottom-0.5 w-5 h-0.5 rounded-full bg-[#8B5CF6] shadow-[0_0_8px_#8B5CF6]" />
+                <span className="absolute -bottom-0.5 w-6 h-0.5 rounded-full bg-[#8B5CF6] shadow-[0_0_8px_#8B5CF6]" />
               )}
             </button>
           );
@@ -562,7 +598,11 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
       </div>
 
       {/* Tactile 3x4 Numeric Keypad (0–9, Clear, Reset) */}
-      <div className="flex-1 min-h-0 grid grid-cols-3 grid-rows-4 gap-[clamp(4px,0.8dvh,9px)]">
+      <div
+        className={`flex-1 min-h-0 grid grid-cols-3 grid-rows-4 ${
+          isCompactLandscape ? 'gap-[clamp(3px,0.75dvh,6px)]' : 'gap-2 lg:gap-2.5'
+        }`}
+      >
         {KEYPAD_NUMS.map((num) => {
           const isCurrentSlotValue = digits[activeSlot] === String(num);
           const disabled = isTimedOut || isSubmitting;
@@ -575,14 +615,16 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
               onClick={() => handleKeypadPress(num)}
               className={`ef-touch-btn rounded-xl font-mono-numbers font-extrabold flex items-center justify-center transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] ${
                 isCompactLandscape
-                  ? 'text-[clamp(13px,3.8dvh,18px)]'
-                  : 'text-[clamp(15px,2.4dvh,22px)]'
+                  ? 'text-[clamp(13px,3.8dvh,17px)]'
+                  : 'text-[clamp(16px,2.4dvh,20px)]'
               } ${
                 disabled
-                  ? 'opacity-45 cursor-not-allowed bg-[#070B14] border-[#1B2438] text-[#64748B]'
+                  ? 'opacity-45 cursor-not-allowed bg-[#0B101D] border-[#1B2438] text-[#64748B]'
                   : isCurrentSlotValue
-                  ? 'cursor-pointer bg-[#141A33] hover:bg-[#1B2344] active:scale-[0.96] border-[#7C3AED]/70 text-[#FBBF24] shadow-[inset_0_0_12px_rgba(124,58,237,0.18)]'
-                  : 'cursor-pointer bg-[#070B14] hover:bg-[#11192B] active:bg-[#1B2540] active:scale-[0.96] border-[#1E293B] hover:border-[#7C3AED]/50 text-white shadow-sm'
+                  ? 'cursor-pointer bg-[#1B2242] hover:bg-[#232C52] active:scale-[0.96] border-[#7C3AED]/75 text-[#FBBF24] shadow-[inset_0_0_14px_rgba(124,58,237,0.2)]'
+                  : isCompactLandscape
+                  ? 'cursor-pointer bg-[#070B14] hover:bg-[#11192B] active:bg-[#1B2540] active:scale-[0.96] border-[#1E293B] hover:border-[#7C3AED]/50 text-white shadow-sm'
+                  : 'cursor-pointer bg-[#151D30]/95 hover:bg-[#1E2942] active:bg-[#263454] active:scale-[0.96] border-[#25324D] hover:border-[#7C3AED]/60 text-white shadow-md'
               }`}
             >
               {num}
@@ -596,11 +638,11 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
           onClick={handleClearSlot}
           title="Clear active digit"
           className={`ef-touch-btn rounded-xl font-mono-numbers font-bold flex items-center justify-center transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${
-            isCompactLandscape ? 'text-[10.5px]' : 'text-xs sm:text-sm'
+            isCompactLandscape ? 'text-[10.5px]' : 'text-xs lg:text-sm uppercase tracking-wider'
           } ${
             isTimedOut || isSubmitting
               ? 'opacity-45 cursor-not-allowed bg-[#160E17] border-rose-900/20 text-rose-400/50'
-              : 'cursor-pointer bg-[#18101A] hover:bg-[#271528] active:bg-[#331B34] active:scale-[0.96] border-rose-500/30 text-rose-300'
+              : 'cursor-pointer bg-[#1C1220] hover:bg-[#2B172F] active:bg-[#381C3D] active:scale-[0.96] border-rose-500/35 text-rose-300'
           }`}
         >
           Clear
@@ -612,14 +654,16 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
           onClick={() => handleKeypadPress(0)}
           className={`ef-touch-btn rounded-xl font-mono-numbers font-extrabold flex items-center justify-center transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] ${
             isCompactLandscape
-              ? 'text-[clamp(13px,3.8dvh,18px)]'
-              : 'text-[clamp(15px,2.4dvh,22px)]'
+              ? 'text-[clamp(13px,3.8dvh,17px)]'
+              : 'text-[clamp(16px,2.4dvh,20px)]'
           } ${
             isTimedOut || isSubmitting
-              ? 'opacity-45 cursor-not-allowed bg-[#070B14] border-[#1B2438] text-[#64748B]'
+              ? 'opacity-45 cursor-not-allowed bg-[#0B101D] border-[#1B2438] text-[#64748B]'
               : digits[activeSlot] === '0'
-              ? 'cursor-pointer bg-[#141A33] hover:bg-[#1B2344] active:scale-[0.96] border-[#7C3AED]/70 text-[#FBBF24]'
-              : 'cursor-pointer bg-[#070B14] hover:bg-[#11192B] active:bg-[#1B2540] active:scale-[0.96] border-[#1E293B] hover:border-[#7C3AED]/50 text-white shadow-sm'
+              ? 'cursor-pointer bg-[#1B2242] hover:bg-[#232C52] active:scale-[0.96] border-[#7C3AED]/75 text-[#FBBF24]'
+              : isCompactLandscape
+              ? 'cursor-pointer bg-[#070B14] hover:bg-[#11192B] active:bg-[#1B2540] active:scale-[0.96] border-[#1E293B] hover:border-[#7C3AED]/50 text-white shadow-sm'
+              : 'cursor-pointer bg-[#151D30]/95 hover:bg-[#1E2942] active:bg-[#263454] active:scale-[0.96] border-[#25324D] hover:border-[#7C3AED]/60 text-white shadow-md'
           }`}
         >
           0
@@ -631,118 +675,202 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
           onClick={handleResetAll}
           title="Reset all 4 digits to 0000"
           className={`ef-touch-btn rounded-xl font-mono-numbers font-bold flex items-center justify-center transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${
-            isCompactLandscape ? 'text-[10.5px]' : 'text-xs sm:text-sm'
+            isCompactLandscape ? 'text-[10.5px]' : 'text-xs lg:text-sm uppercase tracking-wider'
           } ${
             isTimedOut || isSubmitting
               ? 'opacity-45 cursor-not-allowed bg-[#0D1320] border-[#1E293B] text-[#64748B]'
-              : 'cursor-pointer bg-[#111827] hover:bg-[#1B253A] active:bg-[#24324E] active:scale-[0.96] border-[#263248] text-[#CBD5E1] hover:text-white'
+              : 'cursor-pointer bg-[#151D30] hover:bg-[#1F2B46] active:bg-[#29385A] active:scale-[0.96] border-[#283550] text-[#CBD5E1] hover:text-white'
           }`}
         >
           Reset
         </button>
       </div>
 
-      {/* Clean Quick Helper Bar (Lucky Pick + Reset 0000 only) */}
-      <div className="flex items-center justify-between gap-2 pt-0.5 px-0.5 text-[clamp(10px,1.1vw,12px)] shrink-0">
-        <button
-          type="button"
-          disabled={isTimedOut || isSubmitting}
-          onClick={handleRandomize}
-          className="ef-touch-btn inline-flex items-center gap-1.5 text-[#CBD5E1] hover:text-[#FBBF24] disabled:opacity-45 cursor-pointer disabled:cursor-not-allowed font-bold transition-colors"
-        >
-          <Dices className="w-3.5 h-3.5 text-[#F59E0B]" />
-          <span>Lucky Pick</span>
-        </button>
+      {/* Quick Action Bar: Preserved compact links on mobile, Stitch pill buttons on tablet/desktop */}
+      {isCompactLandscape ? (
+        <div className="flex items-center justify-between gap-2 pt-0.5 px-0.5 text-[10px] shrink-0">
+          <button
+            type="button"
+            disabled={isTimedOut || isSubmitting}
+            onClick={handleRandomize}
+            className="ef-touch-btn inline-flex items-center gap-1 text-[#CBD5E1] hover:text-[#FBBF24] disabled:opacity-45 cursor-pointer disabled:cursor-not-allowed font-bold transition-colors"
+          >
+            <Dices className="w-3.5 h-3.5 text-[#F59E0B]" />
+            <span>Lucky Pick</span>
+          </button>
 
-        <button
-          type="button"
-          disabled={isTimedOut || isSubmitting}
-          onClick={handleResetAll}
-          className="ef-touch-btn inline-flex items-center gap-1 text-[#94A3B8] hover:text-rose-400 disabled:opacity-45 cursor-pointer disabled:cursor-not-allowed font-semibold transition-colors"
-        >
-          <RotateCcw className="w-3 h-3" />
-          <span>0000</span>
-        </button>
-      </div>
+          <button
+            type="button"
+            disabled={isTimedOut || isSubmitting}
+            onClick={handleResetAll}
+            className="ef-touch-btn inline-flex items-center gap-1 text-[#94A3B8] hover:text-rose-400 disabled:opacity-45 cursor-pointer disabled:cursor-not-allowed font-semibold transition-colors"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>0000</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2.5 lg:gap-3 shrink-0 pt-0.5">
+          <button
+            type="button"
+            disabled={isTimedOut || isSubmitting}
+            onClick={handleRandomize}
+            className="ef-touch-btn h-10 lg:h-11 rounded-xl bg-[#7C3AED]/20 hover:bg-[#7C3AED]/32 active:scale-[0.98] border border-[#7C3AED]/45 text-[#DDD6FE] hover:text-white font-mono-numbers text-[11px] lg:text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed transition-all shadow-sm"
+          >
+            <Dices className="w-4 h-4 text-[#A78BFA]" />
+            <span>Lucky Pick</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={isTimedOut || isSubmitting}
+            onClick={handleResetAll}
+            className="ef-touch-btn h-10 lg:h-11 rounded-xl bg-[#161F33] hover:bg-[#1E2A44] active:scale-[0.98] border border-[#263248] text-[#CBD5E1] hover:text-white font-mono-numbers text-[11px] lg:text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed transition-all shadow-sm"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset 0000</span>
+          </button>
+        </div>
+      )}
     </section>
   );
 
   const renderPurchasePanel = () => (
     <section
       aria-label="Direct Purchase Summary"
-      className="ef-game-card rounded-xl flex flex-col justify-between min-h-0 h-full overflow-hidden p-[clamp(6px,1.3dvh,16px)] gap-[clamp(6px,1.1dvh,12px)]"
+      className={`ef-game-card rounded-xl lg:rounded-2xl flex flex-col justify-between min-h-0 h-full overflow-hidden ${
+        isCompactLandscape
+          ? 'p-[clamp(6px,1.1dvh,12px)] gap-[clamp(4px,0.8dvh,8px)]'
+          : 'p-3 lg:p-4 xl:p-5 gap-2.5 lg:gap-3 xl:gap-4'
+      }`}
     >
       {/* Column 2 Header */}
       <div className="flex items-center justify-between gap-1.5 pb-[clamp(5px,0.9dvh,10px)] border-b border-[#1E293B] shrink-0">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <div className="w-[clamp(20px,3.2dvh,28px)] h-[clamp(20px,3.2dvh,28px)] rounded-lg bg-[#F59E0B]/15 border border-[#F59E0B]/35 flex items-center justify-center text-[#FBBF24] shrink-0">
-            <Ticket className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-[clamp(22px,3.2dvh,30px)] h-[clamp(22px,3.2dvh,30px)] rounded-lg bg-[#F59E0B]/15 border border-[#F59E0B]/35 flex items-center justify-center text-[#FBBF24] shrink-0">
+            <Ticket className="w-3.5 h-3.5" />
           </div>
-          <h2 className="font-display font-extrabold text-[clamp(10.5px,1.3vw,15px)] text-white leading-tight whitespace-nowrap">
+          <h2
+            className={`font-display font-extrabold text-white leading-tight whitespace-nowrap ${
+              isCompactLandscape ? 'text-[clamp(10.5px,1.3vw,13px)]' : 'text-sm lg:text-base xl:text-lg'
+            }`}
+          >
             Purchase
           </h2>
         </div>
 
-        <span className="text-[clamp(7.5px,0.85vw,9.5px)] font-mono-numbers px-1.5 sm:px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold uppercase shrink-0">
-          INSTANT
+        <span
+          className={`font-mono-numbers px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold uppercase shrink-0 inline-flex items-center gap-1 ${
+            isCompactLandscape ? 'text-[7.5px]' : 'text-[9px] lg:text-[10px]'
+          }`}
+        >
+          <Zap className="w-2.5 h-2.5 fill-current" />
+          <span>INSTANT</span>
         </span>
       </div>
 
-      {/* Focused Payment Breakdown Card (Evenly Distributed & Clip-Free) */}
-      <div className="flex-1 min-h-0 flex flex-col justify-evenly rounded-xl bg-[#070B14] border border-[#1B2438] p-[clamp(7px,1.2vw,16px)] font-mono-numbers overflow-hidden gap-[clamp(4px,0.8dvh,10px)]">
-        {/* Unit Ticket Price */}
-        <div className="flex items-center justify-between gap-1.5 text-[clamp(9.5px,1.05vw,13px)] min-w-0">
-          <span className="text-[#94A3B8] truncate min-w-0">
-            {viewport.width < 900 ? 'Unit Price' : 'Unit Ticket Price'}
-          </span>
-          <strong className="text-white font-bold shrink-0 whitespace-nowrap">
-            {ticketPrice.toFixed(2)} USDT
-          </strong>
-        </div>
+      {/* Payment Breakdown: Compact box on Mobile Landscape vs Framed Stitch Row Cards on Tablet/Desktop */}
+      {isCompactLandscape ? (
+        <div className="flex-1 min-h-0 flex flex-col justify-evenly rounded-xl bg-[#070B14] border border-[#1B2438] p-[clamp(6px,1.1vw,12px)] font-mono-numbers overflow-hidden gap-1">
+          <div className="flex items-center justify-between gap-1.5 text-[clamp(9.5px,1.05vw,12px)] min-w-0">
+            <span className="text-[#94A3B8] truncate min-w-0">
+              {useCompactLabels ? 'Unit Price' : 'Unit Ticket Price'}
+            </span>
+            <strong className="text-white font-bold shrink-0 whitespace-nowrap">
+              {ticketPrice.toFixed(2)} USDT
+            </strong>
+          </div>
 
-        {/* Gas / Escrow */}
-        <div className="flex items-center justify-between gap-1.5 text-[clamp(9.5px,1.05vw,13px)] min-w-0">
-          <span className="text-[#94A3B8] truncate min-w-0">Gas / Escrow</span>
-          <span className="text-emerald-400 font-bold shrink-0 whitespace-nowrap">
-            0.00 USDT
-          </span>
-        </div>
+          <div className="flex items-center justify-between gap-1.5 text-[clamp(9.5px,1.05vw,12px)] min-w-0">
+            <span className="text-[#94A3B8] truncate min-w-0">Gas / Escrow</span>
+            <span className="text-emerald-400 font-bold shrink-0 whitespace-nowrap">
+              0.00 USDT
+            </span>
+          </div>
 
-        {/* Total Purchase */}
-        <div className="flex items-center justify-between gap-1.5 pt-[clamp(5px,1.1dvh,12px)] border-t border-[#1B2438] min-w-0">
-          <span className="text-[#DDD6FE] font-bold text-[clamp(10px,1.15vw,14px)] truncate min-w-0">
-            {viewport.width < 900 ? 'Total' : 'Total Purchase'}
-          </span>
-          <strong className="text-[#FBBF24] font-black text-[clamp(11px,1.4vw,18px)] shrink-0 whitespace-nowrap">
-            {totalPurchaseCost.toFixed(2)} USDT
-          </strong>
-        </div>
+          <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-[#1B2438] min-w-0">
+            <span className="text-[#DDD6FE] font-bold text-[clamp(10px,1.15vw,12.5px)] truncate min-w-0">
+              {useCompactLabels ? 'Total' : 'Total Purchase'}
+            </span>
+            <strong className="text-[#FBBF24] font-black text-[clamp(11px,1.35vw,14px)] shrink-0 whitespace-nowrap">
+              {totalPurchaseCost.toFixed(2)} USDT
+            </strong>
+          </div>
 
-        {/* Available Wallet Balance */}
-        <div className="flex items-center justify-between gap-1.5 pt-[clamp(5px,1dvh,10px)] border-t border-[#1B2438]/60 text-[clamp(9.5px,1.05vw,12.5px)] min-w-0">
-          <span className="flex items-center gap-1 text-[#94A3B8] truncate min-w-0">
-            <Wallet className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-            <span className="truncate">{viewport.width < 900 ? 'Balance' : 'Wallet Balance'}</span>
-          </span>
-          <span
-            className={`font-bold shrink-0 whitespace-nowrap ${
-              user && !hasSufficientBalance ? 'text-rose-400' : 'text-emerald-400'
-            }`}
-          >
-            {walletBalance.toFixed(2)} USDT
-          </span>
+          <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-[#1B2438]/60 text-[clamp(9.5px,1.05vw,11.5px)] min-w-0">
+            <span className="flex items-center gap-1 text-[#94A3B8] truncate min-w-0">
+              <Wallet className="w-3 h-3 shrink-0" />
+              <span className="truncate">{useCompactLabels ? 'Balance' : 'Wallet Balance'}</span>
+            </span>
+            <span
+              className={`font-bold shrink-0 whitespace-nowrap ${
+                user && !hasSufficientBalance ? 'text-rose-400' : 'text-emerald-400'
+              }`}
+            >
+              {walletBalance.toFixed(2)} USDT
+            </span>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex-1 min-h-0 rounded-xl bg-[#070B14]/75 border border-[#1B2438] p-2.5 lg:p-3.5 flex flex-col justify-evenly gap-2 font-mono-numbers overflow-hidden">
+          {/* Row 1: Unit Ticket Price */}
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-[#151D30]/85 border border-[#222D45] px-3 xl:px-4 py-2.5 lg:py-3 min-w-0">
+            <span className="font-sans text-xs xl:text-sm text-[#CBD5E1] truncate min-w-0">
+              {useCompactLabels ? 'Unit Price' : 'Unit Ticket Price'}
+            </span>
+            <strong className="text-white font-bold text-xs xl:text-sm shrink-0 whitespace-nowrap">
+              {ticketPrice.toFixed(2)} USDT
+            </strong>
+          </div>
+
+          {/* Row 2: Gas / Escrow */}
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-[#151D30]/85 border border-[#222D45] px-3 xl:px-4 py-2.5 lg:py-3 min-w-0">
+            <span className="font-sans text-xs xl:text-sm text-[#CBD5E1] truncate min-w-0">
+              Gas / Escrow
+            </span>
+            <span className="text-emerald-400 font-bold text-xs xl:text-sm shrink-0 whitespace-nowrap">
+              0.00 USDT
+            </span>
+          </div>
+
+          {/* Row 3: Total Purchase Highlighted Card */}
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-amber-500/12 border border-amber-500/35 px-3 xl:px-4 py-2.5 lg:py-3.5 shadow-[0_0_20px_rgba(245,158,11,0.1)] min-w-0">
+            <span className="font-sans font-bold text-xs xl:text-sm text-[#FCD34D] truncate min-w-0">
+              {useCompactLabels ? 'Total' : 'Total Purchase'}
+            </span>
+            <strong className="text-[#FBBF24] font-black text-sm xl:text-lg shrink-0 whitespace-nowrap">
+              {totalPurchaseCost.toFixed(2)} USDT
+            </strong>
+          </div>
+
+          {/* Row 4: Available Wallet Balance */}
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-[#151D30]/85 border border-[#222D45] px-3 xl:px-4 py-2.5 lg:py-3 min-w-0">
+            <span className="font-sans flex items-center gap-1.5 text-xs xl:text-sm text-[#CBD5E1] truncate min-w-0">
+              <Wallet className="w-3.5 h-3.5 text-[#94A3B8] shrink-0" />
+              <span className="truncate">{useCompactLabels ? 'Balance' : 'Wallet Balance'}</span>
+            </span>
+            <span
+              className={`font-bold text-xs xl:text-sm shrink-0 whitespace-nowrap ${
+                user && !hasSufficientBalance ? 'text-rose-400' : 'text-emerald-400'
+              }`}
+            >
+              {walletBalance.toFixed(2)} USDT
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Golden-Yellow Primary Purchase / Login Action Button */}
       <button
         type="button"
         onClick={handlePurchaseAction}
         disabled={isPurchaseDisabled}
-        className={`ef-touch-btn w-full rounded-xl font-display font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-lg whitespace-nowrap shrink-0 ${
+        className={`ef-touch-btn w-full min-w-0 rounded-xl font-display font-black uppercase flex items-center justify-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
           isCompactLandscape
-            ? 'h-[clamp(32px,10dvh,40px)] text-[10.5px] px-2'
-            : 'h-[clamp(40px,6dvh,48px)] text-xs sm:text-sm px-3'
+            ? 'h-[clamp(32px,10dvh,38px)] text-[10.5px] px-2 tracking-wider shadow-lg'
+            : isTightColumnStage
+            ? 'h-11 lg:h-12 text-[11px] lg:text-xs px-2.5 tracking-wide shadow-xl'
+            : 'h-12 xl:h-14 text-xs lg:text-sm px-4 tracking-wider shadow-xl'
         } ${
           isSubmitting
             ? 'bg-amber-400/80 text-black cursor-wait'
@@ -759,37 +887,41 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
       >
         {isSubmitting ? (
           <>
-            <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin shrink-0" />
             <span>Processing...</span>
           </>
         ) : !user ? (
           <>
-            <Lock className="w-3.5 h-3.5 shrink-0" />
+            <Lock className="w-3.5 h-3.5 lg:w-4 lg:h-4 shrink-0" />
             <span>
               {isCompactLandscape
                 ? `Log In · ${totalPurchaseCost.toFixed(0)} USDT`
-                : `Log In · ${totalPurchaseCost.toFixed(2)} USDT`}
+                : isTightColumnStage
+                ? `Log In (${totalPurchaseCost.toFixed(2)} USDT)`
+                : `Log In to Buy (${totalPurchaseCost.toFixed(2)} USDT)`}
             </span>
           </>
         ) : isAlreadyPurchasedByMe ? (
           <>
-            <AlertCircle className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-purple-400 shrink-0" />
             <span>Already Owned</span>
           </>
         ) : isSoldToAnyPlayer ? (
           <>
-            <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
             <span>Sold Out</span>
           </>
         ) : !hasSufficientBalance ? (
           <span>Insufficient Balance</span>
         ) : (
           <>
-            <Zap className="w-3.5 h-3.5 fill-current shrink-0" />
+            <Ticket className="w-3.5 h-3.5 lg:w-4 lg:h-4 shrink-0" />
             <span>
               {isCompactLandscape
                 ? `Buy · ${totalPurchaseCost.toFixed(0)} USDT`
-                : `Buy Ticket · ${totalPurchaseCost.toFixed(2)} USDT`}
+                : isTightColumnStage
+                ? `Buy (${totalPurchaseCost.toFixed(2)} USDT)`
+                : `Buy Ticket (${totalPurchaseCost.toFixed(2)} USDT)`}
             </span>
           </>
         )}
@@ -800,25 +932,42 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
   const renderActivityPanel = () => (
     <section
       aria-label="Live Recent Activity"
-      className="ef-game-card rounded-xl flex flex-col justify-between min-h-0 h-full overflow-hidden p-[clamp(8px,1.4dvh,16px)] gap-[clamp(6px,1dvh,12px)]"
+      className={`ef-game-card rounded-xl lg:rounded-2xl flex flex-col justify-between min-h-0 h-full overflow-hidden ${
+        isCompactLandscape
+          ? 'p-[clamp(6px,1.1dvh,12px)] gap-[clamp(4px,0.8dvh,8px)]'
+          : 'p-3 lg:p-4 xl:p-5 gap-2.5 lg:gap-3 xl:gap-4'
+      }`}
     >
       {/* Column 3 Header */}
-      <div className="flex items-center justify-between gap-1 pb-[clamp(5px,0.9dvh,10px)] border-b border-[#1E293B] shrink-0">
-        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-          {!isCompactLandscape && (
-            <div className="w-[clamp(20px,3dvh,28px)] h-[clamp(20px,3dvh,28px)] rounded-lg bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981] shrink-0">
+      <div className="flex items-center justify-between gap-1.5 pb-[clamp(5px,0.9dvh,10px)] border-b border-[#1E293B] shrink-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {!isCompactLandscape && !isTightColumnStage && (
+            <div className="w-[clamp(22px,3.2dvh,30px)] h-[clamp(22px,3.2dvh,30px)] rounded-lg bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981] shrink-0">
               <Activity className="w-3.5 h-3.5" />
             </div>
           )}
-          <h2 className="font-display font-extrabold text-[clamp(10px,1.2vw,14px)] text-white whitespace-nowrap">
+          <h2
+            className={`font-display font-extrabold text-white whitespace-nowrap ${
+              isCompactLandscape ? 'text-[clamp(10px,1.2vw,13px)]' : 'text-sm lg:text-base xl:text-lg'
+            }`}
+          >
             Activity
           </h2>
-          <span className="text-[clamp(7.5px,0.85vw,9.5px)] font-mono-numbers font-black px-1.5 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 shrink-0 whitespace-nowrap">
+          <span
+            className={`font-mono-numbers font-black px-1.5 sm:px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 shrink-0 whitespace-nowrap ${
+              isCompactLandscape ? 'text-[7.5px]' : 'text-[9.5px] lg:text-[10px]'
+            }`}
+          >
             {roomActivityTickets.length}
+            {!isCompactLandscape && !isTightColumnStage ? ' Minted' : ''}
           </span>
         </div>
 
-        <span className="flex items-center gap-1 text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20 text-[clamp(7.5px,0.85vw,9.5px)] font-mono-numbers font-bold shrink-0 whitespace-nowrap">
+        <span
+          className={`flex items-center gap-1 text-emerald-400 bg-emerald-500/10 px-1.5 sm:px-2 py-0.5 rounded-full border border-emerald-500/25 font-mono-numbers font-bold shrink-0 whitespace-nowrap ${
+            isCompactLandscape ? 'text-[7.5px]' : 'text-[9px] lg:text-[10px] uppercase'
+          }`}
+        >
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
           <span>Live</span>
         </span>
@@ -826,18 +975,42 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
 
       {/* Internal Vertical Scrollable Feed (Never Scrolls Page) */}
       {roomActivityTickets.length === 0 ? (
-        <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-2 text-center space-y-1">
-          {!isUltraNarrowLandscape && (
-            <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-[#64748B] opacity-60 shrink-0" />
+        <div
+          className={`flex-1 min-h-0 flex flex-col items-center justify-center text-center ${
+            isCompactLandscape
+              ? 'p-1.5 space-y-1'
+              : 'rounded-xl bg-[#070B14]/75 border border-[#1B2438] p-5 space-y-3'
+          }`}
+        >
+          {!isUltraNarrowStage && (
+            <div
+              className={
+                isCompactLandscape
+                  ? 'text-[#64748B] opacity-60'
+                  : 'w-12 h-12 rounded-2xl bg-[#151D30] border border-[#222D45] flex items-center justify-center text-[#94A3B8] shadow-inner'
+              }
+            >
+              <Activity className={isCompactLandscape ? 'w-4 h-4' : 'w-5 h-5 text-emerald-400/80'} />
+            </div>
           )}
-          <p className="font-bold text-white text-[clamp(10px,1.2vw,13px)] leading-tight">
-            No tickets minted yet
-          </p>
-          {!isUltraNarrowLandscape && (
-            <p className="text-[clamp(9px,1vw,11px)] text-[#64748B] leading-snug max-w-[220px]">
-              Be the first to claim a 4-digit combination in this live draw.
+          <div className="space-y-1">
+            <p
+              className={`font-display font-bold text-white leading-tight ${
+                isCompactLandscape ? 'text-[clamp(9.5px,1.15vw,12px)]' : 'text-sm'
+              }`}
+            >
+              No Tickets Minted Yet
             </p>
-          )}
+            {!isUltraNarrowStage && (
+              <p
+                className={`text-[#94A3B8] leading-snug mx-auto ${
+                  isCompactLandscape ? 'text-[9px] max-w-[200px]' : 'text-xs max-w-[230px]'
+                }`}
+              >
+                Select 4 digits and purchase a ticket to see live VRF entries here.
+              </p>
+            )}
+          </div>
         </div>
       ) : (
         <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-1.5 pr-0.5">
@@ -860,10 +1033,10 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
             return (
               <div
                 key={tkt.id || idx}
-                className={`px-2 py-1.5 rounded-lg border flex items-center justify-between gap-1.5 text-[10px] sm:text-xs font-mono-numbers transition-colors ${
+                className={`px-2.5 py-2 rounded-xl border flex items-center justify-between gap-1.5 text-[10px] sm:text-xs font-mono-numbers transition-colors ${
                   isMine
                     ? 'bg-[#7C3AED]/15 border-[#7C3AED]/40 text-[#DDD6FE]'
-                    : 'bg-[#070B14] border-[#1B2438] hover:border-[#2C3A57] text-white'
+                    : 'bg-[#12192A]/90 border-[#1E293B] hover:border-[#2C3A57] text-white'
                 }`}
               >
                 <div className="flex items-center gap-1.5 min-w-0">
@@ -872,18 +1045,20 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
                       isMine ? 'bg-[#F59E0B]' : 'bg-[#10B981]'
                     }`}
                   />
-                  <span className="font-bold truncate text-[10px] sm:text-[11px] text-[#E2E8F0]">
-                    {displayUsername}
-                  </span>
-                  {!isCompactLandscape && (
-                    <span className="text-[9.5px] text-[#64748B] shrink-0 hidden xl:inline">
-                      {formatTimeAgo(Number(tkt.purchaseTime || Date.now()))}
+                  <div className="min-w-0">
+                    <span className="font-bold truncate block text-[10px] sm:text-[11px] text-[#E2E8F0]">
+                      {displayUsername}
                     </span>
-                  )}
+                    {!isCompactLandscape && (
+                      <span className="text-[9.5px] text-[#64748B] block leading-tight">
+                        {formatTimeAgo(Number(tkt.purchaseTime || Date.now()))}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="font-black text-[10px] sm:text-[11px] text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded border border-[#10B981]/25">
+                  <span className="font-black text-[10px] sm:text-[11px] text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded-md border border-[#10B981]/25">
                     {ticketNumberFormatted}
                   </span>
                   <span className="text-[10px] sm:text-[11px] font-bold text-[#FBBF24]">
@@ -902,7 +1077,10 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
   // 12. Main Render (Portrait Guard Overlay + Distraction-Free 3-Column Room)
   // ---------------------------------------------------------------------------
   return (
-    <div className="relative w-full h-full max-h-full min-h-0 overflow-hidden select-none bg-[#080C16]">
+    <div
+      ref={shellRef}
+      className="relative w-full h-full max-h-full min-h-0 overflow-hidden select-none bg-[#080C16]"
+    >
       {/* Subtle Ambient Background Accents */}
       <div
         aria-hidden="true"
@@ -981,70 +1159,126 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
           isMobilePortrait ? 'invisible pointer-events-none' : ''
         }`}
       >
-        <div className="w-full max-w-[1640px] mx-auto my-auto flex-1 min-h-0 flex flex-col justify-center gap-[clamp(6px,1.1dvh,14px)]">
+        <div
+          className={`w-full max-w-[1640px] mx-auto my-auto flex-1 min-h-0 flex flex-col justify-center ${
+            isCompactLandscape
+              ? 'gap-[clamp(5px,0.95dvh,10px)]'
+              : 'gap-3 lg:gap-4 px-1 lg:px-3 py-1 lg:py-2 max-h-[880px]'
+          }`}
+        >
           {/* ================================================================= */}
-          {/* A. COMPACT TELEMETRY HEADER BAR (NO TOP NAVBAR, NO BACK BUTTON)   */}
+          {/* A. TOP GAME TELEMETRY BAR                                         */}
+          {/*    Mobile Landscape keeps compact strip; Desktop/Tablet uses Stitch*/}
           {/* ================================================================= */}
-          <header className="ef-game-card rounded-xl w-full shrink-0 px-[clamp(8px,1.2vw,16px)] py-[clamp(5px,0.85dvh,10px)] flex items-center justify-between gap-2 overflow-hidden">
-            {/* Left: Draw Identification, LIVE & VRF Indicators */}
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <div className="flex items-center gap-1 min-w-0">
-                <Hash className="w-3.5 h-3.5 text-[#F59E0B] shrink-0 hidden sm:block" />
-                <h1 className="font-display font-black text-white text-[clamp(10.5px,1.35vw,15px)] truncate max-w-[90px] sm:max-w-[200px] md:max-w-xs">
+          {isCompactLandscape ? (
+            <header className="ef-game-card rounded-xl w-full shrink-0 px-[clamp(6px,1.2vw,12px)] py-[clamp(4px,0.75dvh,8px)] flex items-center justify-between gap-1.5 overflow-hidden">
+              <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+                <h1 className="font-display font-black text-white text-[clamp(10px,1.3vw,13px)] truncate max-w-[85px] sm:max-w-[160px]">
                   {eventTitle}
                 </h1>
+
+                {!isUltraNarrowStage && (
+                  <span className="text-[clamp(8.5px,1vw,10.5px)] font-mono-numbers text-[#94A3B8] font-semibold shrink-0 whitespace-nowrap">
+                    {drawIdFormatted}
+                  </span>
+                )}
+
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[7.5px] font-mono-numbers font-extrabold uppercase flex items-center gap-1 shrink-0 whitespace-nowrap ${statusInfo.badgeClass}`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusInfo.dotClass}`} />
+                  <span>{statusInfo.label}</span>
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setIsVrfModalOpen(true)}
+                  title="View VRF Cryptographic Commitment"
+                  className="ef-touch-btn inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/12 hover:bg-emerald-500/22 text-emerald-300 border border-emerald-500/30 text-[7.5px] font-mono-numbers font-bold cursor-pointer transition-colors shrink-0 whitespace-nowrap"
+                >
+                  <ShieldCheck className="w-3 h-3 shrink-0" />
+                  <span>VRF</span>
+                </button>
               </div>
 
-              {!isUltraNarrowLandscape && (
-                <span className="text-[clamp(8.5px,1vw,11px)] font-mono-numbers text-[#94A3B8] font-semibold shrink-0 whitespace-nowrap">
+              <div className="flex items-center gap-1.5 font-mono-numbers shrink-0">
+                <div className="flex items-center gap-0.5 text-[clamp(8.5px,1vw,11px)] whitespace-nowrap">
+                  {!isUltraNarrowStage && <span className="text-[#94A3B8]">Entry:</span>}
+                  <strong className="text-white font-bold">{ticketPrice} USDT</strong>
+                </div>
+
+                <div className="flex items-center gap-0.5 text-[clamp(8.5px,1vw,11px)] whitespace-nowrap">
+                  <Trophy className="w-3 h-3 text-[#F59E0B] shrink-0" />
+                  <strong className="text-[#FBBF24] font-extrabold">{jackpotDisplay}</strong>
+                </div>
+
+                <div className="flex items-center gap-1 text-[clamp(9px,1vw,11.5px)] bg-[#070B14] px-1.5 py-0.5 rounded-lg border border-[#1E293B] shrink-0 whitespace-nowrap">
+                  <Clock className="w-3 h-3 text-[#A78BFA] shrink-0" />
+                  <span className="text-[#DDD6FE] font-bold">{countdownFormatted}</span>
+                </div>
+              </div>
+            </header>
+          ) : (
+            <header className="relative overflow-hidden ef-game-card rounded-2xl w-full shrink-0 px-4 lg:px-5 py-3 flex flex-wrap xl:flex-nowrap items-center justify-between gap-2.5 shadow-xl">
+              <div className="flex items-center gap-2 lg:gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-[#7C3AED]/20 border border-[#7C3AED]/40 flex items-center justify-center text-[#A78BFA] shrink-0 shadow-[0_0_16px_rgba(124,58,237,0.25)]">
+                  <Hash className="w-4.5 h-4.5" />
+                </div>
+
+                <h1 className="font-display font-black text-white text-base lg:text-xl tracking-tight truncate max-w-[180px] lg:max-w-[260px]">
+                  {eventTitle}
+                </h1>
+
+                <span className="px-2.5 py-1 rounded-lg bg-[#151D30] border border-[#24304A] text-[11px] font-mono-numbers text-[#CBD5E1] font-semibold shrink-0 whitespace-nowrap">
                   {drawIdFormatted}
                 </span>
-              )}
 
-              <span
-                className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[clamp(7.5px,0.95vw,10px)] font-mono-numbers font-extrabold uppercase flex items-center gap-1 shrink-0 whitespace-nowrap ${statusInfo.badgeClass}`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusInfo.dotClass}`} />
-                <span>{statusInfo.label}</span>
-              </span>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-mono-numbers font-extrabold uppercase flex items-center gap-1.5 shrink-0 whitespace-nowrap ${statusInfo.badgeClass}`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusInfo.dotClass}`} />
+                  <span>{statusInfo.label}</span>
+                </span>
 
-              <button
-                type="button"
-                onClick={() => setIsVrfModalOpen(true)}
-                title="View VRF Cryptographic Commitment"
-                className="ef-touch-btn inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/12 hover:bg-emerald-500/22 text-emerald-300 border border-emerald-500/30 text-[clamp(7.5px,0.95vw,10px)] font-mono-numbers font-bold cursor-pointer transition-colors shrink-0 whitespace-nowrap"
-              >
-                <ShieldCheck className="w-3 h-3 shrink-0" />
-                <span>VRF</span>
-              </button>
-            </div>
-
-            {/* Right: Entry Price, Jackpot Amount & Live Countdown */}
-            <div className="flex items-center gap-1.5 sm:gap-3 font-mono-numbers shrink-0">
-              <div className="flex items-center gap-0.5 sm:gap-1 text-[clamp(8.5px,1.05vw,12px)] whitespace-nowrap">
-                {!isUltraNarrowLandscape && <span className="text-[#94A3B8]">Entry:</span>}
-                <strong className="text-white font-bold">{ticketPrice} USDT</strong>
+                <button
+                  type="button"
+                  onClick={() => setIsVrfModalOpen(true)}
+                  title="View VRF Cryptographic Commitment"
+                  className="ef-touch-btn inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 text-[10px] font-mono-numbers font-bold uppercase cursor-pointer transition-colors shrink-0 whitespace-nowrap"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                  <span>VRF Verified</span>
+                </button>
               </div>
 
-              <div className="flex items-center gap-0.5 sm:gap-1 text-[clamp(8.5px,1.05vw,12px)] whitespace-nowrap">
-                <Trophy className="w-3 h-3 text-[#F59E0B] shrink-0" />
-                <span className="text-[#94A3B8] hidden sm:inline">Jackpot:</span>
-                <strong className="text-[#FBBF24] font-extrabold">{jackpotDisplay}</strong>
-              </div>
+              <div className="flex items-center gap-2 lg:gap-2.5 font-mono-numbers shrink-0">
+                <div className="flex items-center gap-1.5 rounded-xl bg-[#151D30] border border-[#24304A] px-3 py-1.5 text-xs whitespace-nowrap">
+                  <span className="text-[10px] uppercase text-[#94A3B8] font-bold">Entry</span>
+                  <strong className="text-white font-bold">{ticketPrice} USDT</strong>
+                </div>
 
-              <div className="flex items-center gap-1 text-[clamp(9px,1.05vw,12.5px)] bg-[#070B14] px-2 py-0.5 rounded-lg border border-[#1E293B] shrink-0 whitespace-nowrap">
-                <Clock className="w-3 h-3 text-[#A78BFA] shrink-0" />
-                <span className="text-[#DDD6FE] font-bold">{countdownFormatted}</span>
+                <div className="flex items-center gap-1.5 rounded-xl bg-amber-500/12 border border-amber-500/35 px-3 py-1.5 text-xs shadow-[0_0_16px_rgba(245,158,11,0.12)] whitespace-nowrap">
+                  <Trophy className="w-3.5 h-3.5 text-[#F59E0B] shrink-0" />
+                  <span className="text-[10px] uppercase text-[#FCD34D] font-bold hidden md:inline">
+                    Jackpot
+                  </span>
+                  <strong className="text-[#FBBF24] font-black">{jackpotDisplay}</strong>
+                </div>
+
+                <div className="flex items-center gap-1.5 rounded-xl bg-[#7C3AED]/20 border border-[#7C3AED]/45 px-3.5 py-1.5 text-sm shadow-[0_0_18px_rgba(124,58,237,0.25)] whitespace-nowrap">
+                  <Clock className="w-4 h-4 text-[#C4B5FD] shrink-0" />
+                  <span className="text-white font-black">{countdownFormatted}</span>
+                </div>
               </div>
-            </div>
-          </header>
+            </header>
+          )}
 
           {/* ================================================================= */}
-          {/* B. UNIFIED THREE-COLUMN GAME STAGE ACROSS ALL DEVICES             */}
+          {/* B. UNIFIED THREE-COLUMN GAME STAGE                                */}
           {/* ================================================================= */}
-          {isUltraNarrowLandscape ? (
-            /* Ultra-Narrow Edge Case (< 500px wide): 50% Pick 4 Digits | 50% Purchase + Activity */
-            <div className="flex-1 min-h-0 grid grid-cols-[minmax(0,50fr)_minmax(0,50fr)] gap-1.5">
+          {isUltraNarrowStage ? (
+            /* Ultra-Narrow Stage Fallback (e.g. expanded sidebar on 568x320 or 425x320) */
+            <div className="flex-1 min-h-0 grid grid-cols-[minmax(0,52fr)_minmax(0,48fr)] gap-1.5">
               {renderDigitSelectionPanel()}
               <div className="min-h-0 h-full grid grid-rows-[minmax(0,1.4fr)_minmax(52px,0.6fr)] gap-1.5">
                 {renderPurchasePanel()}
@@ -1052,10 +1286,14 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
               </div>
             </div>
           ) : (
-            /* Preferred 3-Column Horizontal Interface (Mobile Landscape, Tablet, Laptop, Desktop, 4K) */
+            /* Three Horizontal Columns Across Mobile Landscape, Tablet, Laptop & Desktop */
             <div
-              className={`flex-1 min-h-0 grid grid-cols-[minmax(0,38fr)_minmax(0,34fr)_minmax(0,28fr)] gap-[clamp(6px,1.1vw,16px)] ${
-                !isCompactLandscape ? 'max-h-[clamp(420px,70dvh,600px)]' : ''
+              className={`flex-1 min-h-0 grid ${
+                isDesktopLayout
+                  ? 'grid-cols-[minmax(0,40fr)_minmax(0,33fr)_minmax(0,27fr)] gap-4 xl:gap-5 max-h-[clamp(440px,74dvh,650px)]'
+                  : isCompactLandscape
+                  ? 'grid-cols-[minmax(0,38fr)_minmax(0,34fr)_minmax(0,28fr)] gap-[clamp(6px,1vw,12px)]'
+                  : 'grid-cols-[minmax(0,37fr)_minmax(0,36fr)_minmax(0,27fr)] gap-2.5 sm:gap-3 max-h-[clamp(420px,60dvh,540px)]'
               }`}
             >
               {renderDigitSelectionPanel()}
