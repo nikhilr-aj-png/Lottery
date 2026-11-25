@@ -250,12 +250,45 @@ function LotteryAppContent() {
     return false;
   });
 
+  const enteredRoomFromInAppRef = React.useRef(false);
+
+  const requestImmersiveFullscreen = () => {
+    if (typeof document === 'undefined') return;
+    const docEl = document.documentElement as any;
+    if (!document.fullscreenElement && typeof docEl?.requestFullscreen === 'function') {
+      try {
+        const p = docEl.requestFullscreen();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      } catch { }
+    }
+  };
+
+  const exitImmersiveFullscreen = () => {
+    if (typeof document === 'undefined') return;
+    if (document.fullscreenElement && typeof document.exitFullscreen === 'function') {
+      try {
+        const p = document.exitFullscreen();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      } catch { }
+    }
+  };
+
   // Programmatic navigation for SPA routing
   const navigate = (path: string) => {
-    try {
-      window.history.pushState(null, '', path);
-    } catch (e) { }
+    const wasInGame = Boolean(parseGameRoute(window.location.pathname));
     const gr = parseGameRoute(path);
+    if (!wasInGame && gr) {
+      enteredRoomFromInAppRef.current = true;
+    } else if (!gr) {
+      enteredRoomFromInAppRef.current = false;
+    }
+
+    const currentFull = window.location.pathname + window.location.search;
+    if (currentFull !== path) {
+      try {
+        window.history.pushState(null, '', path);
+      } catch (e) { }
+    }
     setCurrentGameRoute(gr);
     if (gr) {
       setActiveGameId(null);
@@ -564,9 +597,43 @@ function LotteryAppContent() {
     }
   }, [selectedEventForModal, events]);
 
+  // Dedicated game room route state (any /games/... or /lottery route renders the single-screen Game Room)
+  const isAdminView = (profile?.role === 'super_admin' && !isViewingUserLobby) || isAdminRoute;
+  const isInGameRoom = Boolean(currentGameRoute) && !isAdminView;
+
+  // Ensure native fullscreen exits cleanly whenever user leaves the Game Room
+  useEffect(() => {
+    if (!isInGameRoom) {
+      exitImmersiveFullscreen();
+    }
+  }, [isInGameRoom]);
+
+  // Escape key behavior in Game Room: exit fullscreen first if active, otherwise return to previous view
+  useEffect(() => {
+    if (!isInGameRoom) return;
+
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (document.fullscreenElement) return;
+      if (isNotificationsOpen || isMobileSidebarOpen || isRulesModalOpen || Boolean(selectedEventForModal)) return;
+      if (document.querySelector('[role="dialog"][data-game-modal="true"]')) return;
+
+      e.preventDefault();
+      if (enteredRoomFromInAppRef.current && window.history.length > 1) {
+        enteredRoomFromInAppRef.current = false;
+        window.history.back();
+      } else {
+        handleGoHome();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscapeKey);
+    return () => window.removeEventListener('keydown', handleEscapeKey);
+  }, [isInGameRoom, isNotificationsOpen, isMobileSidebarOpen, isRulesModalOpen, selectedEventForModal]);
+
   // 1. DATABASE ROLE & ROUTE CHECK:
   // If user has role 'super_admin' and is on /admin or hasn't selected User Lobby mode:
-  if ((profile?.role === 'super_admin' && !isViewingUserLobby) || isAdminRoute) {
+  if (isAdminView) {
     // If logged in as normal user (not super_admin), strictly block access to admin route
     if (user && profile && profile.role !== 'super_admin') {
       return (
@@ -609,34 +676,33 @@ function LotteryAppContent() {
     return <AdminPortal onSwitchToUserLobby={switchToUserLobby} />;
   }
 
-  // Dedicated game room route state (any /games/... or /lottery route renders the single-screen Game Room)
-  const isInGameRoom = Boolean(currentGameRoute);
-
   // Otherwise: Pure Public User Platform
   return (
     <div className="h-screen h-[100dvh] bg-[#0B0F19] text-[#F8FAFC] flex flex-col font-sans overflow-hidden">
-      {/* Top Navbar */}
-      <Navbar
-        onGoHome={handleGoHome}
-        onSelectTab={handleSelectTab}
-        isInGameRoom={isInGameRoom}
-        onOpenProfile={() => {
-          handleSelectTab('profile');
-        }}
-        onToggleSidebar={() => {
-          if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-            setIsMobileSidebarOpen(prev => !prev);
-          } else {
-            setIsSidebarCollapsed(prev => !prev);
-          }
-        }}
-        onOpenNotifications={() => setIsNotificationsOpen(true)}
-      />
+      {/* Top Navbar — Hidden during Immersive Game Room Gameplay */}
+      {!isInGameRoom && (
+        <Navbar
+          onGoHome={handleGoHome}
+          onSelectTab={handleSelectTab}
+          isInGameRoom={false}
+          onOpenProfile={() => {
+            handleSelectTab('profile');
+          }}
+          onToggleSidebar={() => {
+            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              setIsMobileSidebarOpen(prev => !prev);
+            } else {
+              setIsSidebarCollapsed(prev => !prev);
+            }
+          }}
+          onOpenNotifications={() => setIsNotificationsOpen(true)}
+        />
+      )}
 
       {/* Main Layout: Left Navigation Sidebar + Content Area */}
       <div className="flex-1 min-h-0 flex overflow-hidden w-full max-w-[2000px] mx-auto min-w-0">
 
-        {/* Left Navigation Sidebar */}
+        {/* Left Navigation Sidebar (Remains visible in compact/responsive form during gameplay) */}
         <Sidebar
           isOpen={isMobileSidebarOpen}
           onClose={() => setIsMobileSidebarOpen(false)}
@@ -644,6 +710,8 @@ function LotteryAppContent() {
           onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
           activeTab={isTransactionRoute ? 'transactions' : (currentGameRoute ? `game-${currentGameRoute.gameSlug}` : activeTab)}
           onSelectTab={handleSelectTab}
+          isInGameRoom={isInGameRoom}
+          onGoHome={handleGoHome}
           onLaunchGame={(gid) => {
             setIsTransactionRoute(false);
             const g = getGameById(gid);
@@ -684,6 +752,7 @@ function LotteryAppContent() {
                 {activeTab === 'lotteries' && (
                   <CasinoLobby
                     onLaunchGame={(gidOrEventId) => {
+                      requestImmersiveFullscreen();
                       if (gidOrEventId && gidOrEventId !== 'lottery' && gidOrEventId !== 'four-digit-lottery') {
                         navigate('/games/four-digit-lottery/' + gidOrEventId);
                       } else {
