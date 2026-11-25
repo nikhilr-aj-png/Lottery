@@ -1,24 +1,25 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLottery } from '../context/LotteryContext';
-import { 
-  ShieldCheck, 
-  Sparkles, 
-  AlertCircle, 
-  Clock, 
-  Ticket, 
-  RotateCcw, 
-  Activity, 
-  CheckCircle2, 
-  Wallet, 
-  Check, 
-  Trophy, 
-  Zap, 
-  Copy, 
-  Plus, 
-  Minus,
+import {
+  ShieldCheck,
+  Sparkles,
+  AlertCircle,
+  Clock,
+  Ticket,
+  RotateCcw,
+  Activity,
+  CheckCircle2,
+  Wallet,
+  Check,
+  Trophy,
+  Zap,
+  Copy,
   Dices,
-  Radio,
-  ChevronLeft
+  Smartphone,
+  Maximize2,
+  X,
+  Lock,
+  Hash
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundFX } from '../engine/SoundFXService';
@@ -27,71 +28,140 @@ import { getEventStatusInfo } from '../utils/eventStatus';
 
 export interface LotteryWorkstationProps {
   room?: any;
-  onBackToLobby?: () => void;
-  activityBox?: React.ReactNode;
 }
 
-/**
- * Four Digit Lottery Workstation
- * Redesigned strictly in Google Stitch (Obsidian Sovereign Design System: #0B0F19, #111728, #7C3AED, #F59E0B, #10B981)
- * Stitch Screen ID (Desktop): projects/9963092336677896554/screens/0fe3ce9de3b64ea79f9d3ef27bf5c934
- * Stitch Screen ID (Mobile): projects/9963092336677896554/screens/a922fdfb6e714d1eb567b8efe7060910
- * 
- * Strict Redesign Mandates Implemented:
- * 1. Desktop Top Section: Exactly TWO balanced columns:
- *    - Left Column: Pick 4 Digits (header, 4 digit slots, availability, keypad, controls)
- *    - Right Column: Direct Purchase Panel (quantity, unit price, total cost, wallet balance, buy button)
- * 2. Bottom Section: ONE FULL-WIDTH Section spanning 100% of the combined width beneath BOTH columns:
- *    - Live Room Activity with real-time on-chain ticket records and internal vertical scrolling.
- * 3. Mobile Low-Scroll Ergonomics: Compact digit selection with purchase summary & Buy button immediately
- *    visible without scrolling away from selected digits.
- * 4. Multi-row non-overlapping Room Header with responsive timer and stats pills.
- */
-export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorkstationProps) {
-  const { 
-    user, 
-    wallet, 
-    events, 
-    tickets, 
-    buyTickets, 
+interface ViewportMetrics {
+  width: number;
+  height: number;
+  isPortraitMedia: boolean;
+}
+
+interface DialState {
+  digits: string[];
+  activeSlot: number;
+}
+
+const ORDINALS = ['1ST', '2ND', '3RD', '4TH'] as const;
+const KEYPAD_NUMS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+
+export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
+  const {
+    user,
+    wallet,
+    events,
+    tickets,
+    buyTickets,
+    isTicketNumberSold,
     isUserTicketNumberPurchased,
-    getUnsoldRandomNumber, 
-    showToast, 
-    setIsAuthModalOpen 
+    getUnsoldRandomNumber,
+    showToast,
+    setIsAuthModalOpen
   } = useLottery();
 
   // ---------------------------------------------------------------------------
-  // 1. Dynamic Viewport & Orientation Detection
+  // 1. Dynamic Viewport, Aspect Ratio & Mandatory Mobile Landscape Detection
   // ---------------------------------------------------------------------------
-  const [viewport, setViewport] = useState({
-    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
-    height: typeof window !== 'undefined' ? window.innerHeight : 800
-  });
-
-  useEffect(() => {
-    const handleResize = () => {
-      setViewport({
-        width: window.innerWidth,
-        height: window.innerHeight
-      });
+  const readViewport = useCallback((): ViewportMetrics => {
+    if (typeof window === 'undefined') {
+      return { width: 1200, height: 800, isPortraitMedia: false };
+    }
+    const isPortraitMedia =
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia('(orientation: portrait)').matches
+        : window.innerHeight > window.innerWidth;
+    return {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      isPortraitMedia
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const isMobileLandscape = viewport.width > viewport.height && viewport.height < 540;
-  const isMobilePortrait = viewport.width < 768 && !isMobileLandscape;
+  const [viewport, setViewport] = useState<ViewportMetrics>(() => readViewport());
+  const [orientationLockMessage, setOrientationLockMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const syncViewport = () => setViewport(readViewport());
+
+    window.addEventListener('resize', syncViewport);
+    window.addEventListener('orientationchange', syncViewport);
+    const orientationObj = window.screen?.orientation;
+    if (orientationObj && typeof orientationObj.addEventListener === 'function') {
+      orientationObj.addEventListener('change', syncViewport);
+    }
+
+    return () => {
+      window.removeEventListener('resize', syncViewport);
+      window.removeEventListener('orientationchange', syncViewport);
+      if (orientationObj && typeof orientationObj.removeEventListener === 'function') {
+        orientationObj.removeEventListener('change', syncViewport);
+      }
+    };
+  }, [readViewport]);
+
+  const isPortrait =
+    viewport.height > viewport.width ||
+    (viewport.width === viewport.height && viewport.isPortraitMedia);
+  const isMobileViewport = viewport.width < 768;
+  const isMobilePortrait = isMobileViewport && isPortrait;
+  const isCompactLandscape =
+    !isMobilePortrait && viewport.height <= 540 && viewport.width >= viewport.height;
+  const isUltraNarrowLandscape = isCompactLandscape && viewport.width < 540;
+
+  // Best-effort Screen Orientation API lock on mobile devices (graceful fallback to overlay)
+  useEffect(() => {
+    const orientationApi = (window.screen?.orientation as any) || null;
+    if (!orientationApi || typeof orientationApi.lock !== 'function') return;
+
+    const isTouchOrMobile =
+      viewport.width < 768 ||
+      (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches);
+
+    if (isTouchOrMobile) {
+      orientationApi.lock('landscape').catch(() => {
+        // Browsers often require fullscreen or PWA context for orientation.lock; overlay handles fallback cleanly.
+      });
+    }
+
+    return () => {
+      if (typeof orientationApi.unlock === 'function') {
+        try {
+          orientationApi.unlock();
+        } catch {
+          // Ignore unlock errors on unsupported browsers
+        }
+      }
+    };
+  }, []);
+
+  const handleRequestLandscapeFullscreen = async () => {
+    try {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+      const orientationApi = (window.screen?.orientation as any) || null;
+      if (orientationApi && typeof orientationApi.lock === 'function') {
+        await orientationApi.lock('landscape');
+        setOrientationLockMessage(null);
+      } else {
+        setOrientationLockMessage('Please rotate your device sideways into landscape mode.');
+      }
+    } catch {
+      setOrientationLockMessage('Automatic rotation is blocked by your browser. Please turn your device sideways.');
+    }
+  };
 
   // ---------------------------------------------------------------------------
-  // 2. Resolve matching or active lottery event for this room
+  // 2. Resolve Matching or Active Lottery Event for This Room
   // ---------------------------------------------------------------------------
   const event = useMemo(() => {
     if (!room) return events[0] || null;
     if (room.event) return room.event;
-    const matching = events.find((e: any) => 
-      e.id === room.id || 
-      e.id === room.drawId || 
-      (room.name && e.title && e.title.toLowerCase().includes(room.name.toLowerCase()))
+
+    const matching = events.find(
+      (e: any) =>
+        e.id === room.id ||
+        e.id === room.drawId ||
+        (room.name && e.title && e.title.toLowerCase().includes(room.name.toLowerCase()))
     );
     if (matching) return matching;
 
@@ -116,20 +186,26 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
       status: 'active',
       ticketsSold: 0,
       participantsCount: 0,
-      sha256Seed: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
+      sha256Seed: ''
     };
   }, [room, events]);
 
   // ---------------------------------------------------------------------------
-  // 3. Active 4-digit input slots state (Pure manual selection flow)
+  // 3. Atomic 4-Digit Selection & Feedback State (Never Reset on Rotate)
   // ---------------------------------------------------------------------------
-  const [digits, setDigits] = useState<string[]>(['7', '4', '2', '9']);
-  const [activeSlot, setActiveSlot] = useState<number>(0);
+  const [dialState, setDialState] = useState<DialState>({
+    digits: ['7', '4', '2', '9'],
+    activeSlot: 0
+  });
+  const { digits, activeSlot } = dialState;
+
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [lastPurchasedTicket, setLastPurchasedTicket] = useState<string | null>(null);
+  const [isVrfModalOpen, setIsVrfModalOpen] = useState<boolean>(false);
   const [copiedSeed, setCopiedSeed] = useState<boolean>(false);
 
   // ---------------------------------------------------------------------------
-  // 4. Countdown timer & Status
+  // 4. Countdown Timer & Status
   // ---------------------------------------------------------------------------
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const statusInfo = getEventStatusInfo(event);
@@ -137,7 +213,7 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
 
   useEffect(() => {
     const updateTime = () => {
-      const diff = Math.max(0, (event.drawTime || Date.now() + 86400000) - Date.now());
+      const diff = Math.max(0, (event?.drawTime || Date.now() + 86400000) - Date.now());
       const h = Math.floor(diff / (1000 * 60 * 60));
       const m = Math.floor((diff / (1000 * 60)) % 60);
       const s = Math.floor((diff / 1000) % 60);
@@ -147,75 +223,97 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, [event.drawTime]);
+  }, [event?.drawTime]);
 
-  // Current dial combination string
   const currentNumberStr = digits.join('');
 
   // ---------------------------------------------------------------------------
-  // 5. Check if CURRENT USER already purchased this number in this event
+  // 5. Availability Checks (Current User Ownership + Global Draw Uniqueness)
   // ---------------------------------------------------------------------------
   const isAlreadyPurchasedByMe = useMemo(() => {
+    if (!event?.id) return false;
     if (isUserTicketNumberPurchased) {
       return isUserTicketNumberPurchased(event.id, currentNumberStr);
     }
     if (!user && !wallet?.address) return false;
-    return (tickets || []).some((t: any) => 
-      (t.eventId === event.id || t.event_id === event.id) && 
-      String(t.ticketNumber).padStart(4, '0') === currentNumberStr &&
-      (
-        (wallet?.address && t.userAddress === wallet.address) ||
-        (user?.id && (t.userId === user.id || t.user_id === user.id))
-      )
+    return (tickets || []).some(
+      (t: any) =>
+        (t.eventId === event.id || t.event_id === event.id) &&
+        String(t.ticketNumber).padStart(4, '0') === currentNumberStr &&
+        ((wallet?.address && t.userAddress === wallet.address) ||
+          (user?.id && (t.userId === user.id || t.user_id === user.id)))
     );
-  }, [isUserTicketNumberPurchased, event.id, currentNumberStr, tickets, user, wallet?.address]);
+  }, [isUserTicketNumberPurchased, event?.id, currentNumberStr, tickets, user, wallet?.address]);
+
+  const isSoldToAnyPlayer = useMemo(() => {
+    if (!event?.id || isAlreadyPurchasedByMe) return false;
+    if (isTicketNumberSold) {
+      return isTicketNumberSold(event.id, currentNumberStr);
+    }
+    return false;
+  }, [isTicketNumberSold, event?.id, currentNumberStr, isAlreadyPurchasedByMe]);
 
   // ---------------------------------------------------------------------------
-  // 6. Manual Keypad Actions (1-9, Clear, 0)
+  // 6. Atomic Manual Keypad & Keyboard Actions (Safe Under Rapid Input)
   // ---------------------------------------------------------------------------
-  const handleKeypadPress = useCallback((val: number) => {
-    soundFX.playDialTick();
-    setDigits(prev => {
-      const updated = [...prev];
-      updated[activeSlot] = String(val);
-      return updated;
-    });
-    // Advance to next slot automatically for smooth input
-    setActiveSlot(prev => (prev < 3 ? prev + 1 : 0));
-  }, [activeSlot]);
-
-  const handleClearSlot = useCallback(() => {
-    soundFX.playClick();
-    setDigits(prev => {
-      const updated = [...prev];
-      updated[activeSlot] = '0';
-      return updated;
-    });
-    setActiveSlot(prev => (prev === 0 ? 0 : prev - 1));
-  }, [activeSlot]);
-
-  const handleResetAll = useCallback(() => {
-    soundFX.playClick();
-    setDigits(['0', '0', '0', '0']);
-    setActiveSlot(0);
+  const selectSlot = useCallback((slotIndex: number) => {
+    setDialState((prev) => ({ ...prev, activeSlot: slotIndex }));
   }, []);
 
-  const handleRandomize = useCallback(() => {
-    soundFX.playClick();
-    if (getUnsoldRandomNumber) {
-      const rnd = getUnsoldRandomNumber(event.id);
-      if (rnd) {
-        setDigits(rnd.split(''));
-        return;
-      }
-    }
-    const rndStr = String(Math.floor(1000 + Math.random() * 9000)).padStart(4, '0');
-    setDigits(rndStr.split(''));
-  }, [event.id, getUnsoldRandomNumber]);
+  const handleKeypadPress = useCallback(
+    (val: number) => {
+      if (isTimedOut || isSubmitting) return;
+      soundFX.playDialTick();
+      setLastPurchasedTicket(null);
+      setDialState((prev) => {
+        const updated = [...prev.digits];
+        updated[prev.activeSlot] = String(val);
+        return {
+          digits: updated,
+          activeSlot: prev.activeSlot < 3 ? prev.activeSlot + 1 : 0
+        };
+      });
+    },
+    [isTimedOut, isSubmitting]
+  );
 
-  // Physical keyboard listener (0-9, Backspace, Arrow keys for accessibility)
+  const handleClearSlot = useCallback(() => {
+    if (isTimedOut || isSubmitting) return;
+    soundFX.playClick();
+    setLastPurchasedTicket(null);
+    setDialState((prev) => {
+      const updated = [...prev.digits];
+      updated[prev.activeSlot] = '0';
+      return {
+        digits: updated,
+        activeSlot: prev.activeSlot === 0 ? 0 : prev.activeSlot - 1
+      };
+    });
+  }, [isTimedOut, isSubmitting]);
+
+  const handleResetAll = useCallback(() => {
+    if (isTimedOut || isSubmitting) return;
+    soundFX.playClick();
+    setLastPurchasedTicket(null);
+    setDialState({ digits: ['0', '0', '0', '0'], activeSlot: 0 });
+  }, [isTimedOut, isSubmitting]);
+
+  const handleRandomize = useCallback(() => {
+    if (isTimedOut || isSubmitting) return;
+    soundFX.playClick();
+    setLastPurchasedTicket(null);
+    const rndStr =
+      (getUnsoldRandomNumber && event?.id ? getUnsoldRandomNumber(event.id) : null) ||
+      String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    setDialState((prev) => ({ ...prev, digits: rndStr.split('') }));
+  }, [event?.id, getUnsoldRandomNumber, isTimedOut, isSubmitting]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isMobilePortrait || isVrfModalOpen) {
+        if (e.key === 'Escape' && isVrfModalOpen) setIsVrfModalOpen(false);
+        return;
+      }
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
 
       if (/^[0-9]$/.test(e.key)) {
@@ -223,21 +321,30 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
       } else if (e.key === 'Backspace' || e.key === 'Delete') {
         handleClearSlot();
       } else if (e.key === 'ArrowLeft') {
-        setActiveSlot(prev => (prev === 0 ? 3 : prev - 1));
+        setDialState((prev) => ({
+          ...prev,
+          activeSlot: prev.activeSlot === 0 ? 3 : prev.activeSlot - 1
+        }));
       } else if (e.key === 'ArrowRight') {
-        setActiveSlot(prev => (prev === 3 ? 0 : prev + 1));
+        setDialState((prev) => ({
+          ...prev,
+          activeSlot: prev.activeSlot === 3 ? 0 : prev.activeSlot + 1
+        }));
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeypadPress, handleClearSlot]);
+  }, [handleKeypadPress, handleClearSlot, isMobilePortrait, isVrfModalOpen]);
 
   // ---------------------------------------------------------------------------
-  // 7. Direct Ticket Purchase Action (STRICT 1 TICKET PER PURCHASE)
+  // 7. Direct Ticket Purchase Flow (Preserves Existing Backend Contract)
   // ---------------------------------------------------------------------------
-  const ticketPrice = Number(event.ticketPrice || 10);
-  const totalPurchaseCost = ticketPrice;
+  const ticketPrice = Number(event?.ticketPrice || 10);
+  const gasEscrowFee = 0;
+  const totalPurchaseCost = ticketPrice + gasEscrowFee;
+  const walletBalance = Number(wallet?.balance || 0);
+  const hasSufficientBalance = walletBalance >= totalPurchaseCost;
 
   const handlePurchaseAction = async () => {
     if (isSubmitting) return;
@@ -247,18 +354,23 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
       return;
     }
     if (!user) {
-      showToast('Authentication required: Please log in to buy lottery tickets!', 'info');
+      showToast('Please log in to complete your ticket purchase!', 'info');
       setIsAuthModalOpen(true);
       return;
     }
-
-    if (Number(wallet.balance || 0) < totalPurchaseCost) {
-      showToast(`Insufficient USDT balance. Required: ${totalPurchaseCost.toFixed(2)} USDT, Available: ${Number(wallet.balance || 0).toFixed(2)} USDT`, 'error');
+    if (!hasSufficientBalance) {
+      showToast(
+        `Insufficient USDT balance. Required: ${totalPurchaseCost.toFixed(2)} USDT, Available: ${walletBalance.toFixed(2)} USDT`,
+        'error'
+      );
       return;
     }
-
     if (isAlreadyPurchasedByMe) {
       showToast(`You already own ticket #${currentNumberStr} in this round. Please pick another number!`, 'info');
+      return;
+    }
+    if (isSoldToAnyPlayer) {
+      showToast(`Ticket #${currentNumberStr} is already taken by another player. Please choose a different number!`, 'error');
       return;
     }
 
@@ -266,16 +378,15 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
     soundFX.playChipBet();
 
     try {
-      const numbersToBuy = [currentNumberStr];
-      const success = await buyTickets(event.id, numbersToBuy);
+      const success = await buyTickets(event.id, [currentNumberStr]);
       if (success) {
+        setLastPurchasedTicket(currentNumberStr);
         soundFX.playWinFanfare();
         confetti({
-          particleCount: 50,
-          spread: 60,
+          particleCount: 55,
+          spread: 65,
           origin: { y: 0.6 }
         });
-        showToast(`🎉 Successfully purchased ticket #${currentNumberStr}!`, 'success');
       }
     } finally {
       setIsSubmitting(false);
@@ -283,25 +394,24 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   };
 
   // ---------------------------------------------------------------------------
-  // 8. Room Activity Data
+  // 8. Room Activity Data (Real Backend Tickets Stream)
   // ---------------------------------------------------------------------------
   const roomActivityTickets = useMemo(() => {
-    if (!tickets) return [];
+    if (!tickets || !event?.id) return [];
     return tickets
       .filter((t: any) => t.eventId === event.id || t.event_id === event.id)
-      .slice(0, 30);
-  }, [tickets, event.id]);
+      .slice(0, 40);
+  }, [tickets, event?.id]);
 
   const myTicketsInThisRoom = useMemo(() => {
-    if (!tickets || (!user && !wallet?.address)) return [];
-    return tickets.filter((t: any) => 
-      (t.eventId === event.id || t.event_id === event.id) && 
-      (
-        (wallet?.address && t.userAddress === wallet.address) ||
-        (user?.id && (t.userId === user.id || t.user_id === user.id))
-      )
+    if (!tickets || (!user && !wallet?.address) || !event?.id) return [];
+    return tickets.filter(
+      (t: any) =>
+        (t.eventId === event.id || t.event_id === event.id) &&
+        ((wallet?.address && t.userAddress === wallet.address) ||
+          (user?.id && (t.userId === user.id || t.user_id === user.id)))
     );
-  }, [tickets, user, wallet?.address, event.id]);
+  }, [tickets, user, wallet?.address, event?.id]);
 
   const formatTimeAgo = (timestamp: number) => {
     const diff = Math.max(0, Date.now() - timestamp);
@@ -314,9 +424,9 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   };
 
   const handleCopySeed = () => {
-    const seed = event.sha256Seed || event.sha256_seed;
+    const seed = event?.sha256Seed || event?.sha256_seed;
     if (seed) {
-      navigator.clipboard.writeText(seed);
+      navigator.clipboard?.writeText(seed);
       setCopiedSeed(true);
       setTimeout(() => setCopiedSeed(false), 2000);
     }
@@ -331,7 +441,6 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
         <LotteryShowResultScreen
           event={event}
           room={room}
-          onBackToLobby={onBackToLobby}
           myTickets={myTicketsInThisRoom}
         />
       </div>
@@ -339,509 +448,840 @@ export default function LotteryWorkstation({ room, onBackToLobby }: LotteryWorks
   }
 
   // ---------------------------------------------------------------------------
-  // 10. Render Sub-components
+  // 10. Computed Display Values & Interactive Status Helpers
   // ---------------------------------------------------------------------------
+  const eventTitle = event?.title || room?.name || 'Four-Digit Lottery';
+  const drawIdFormatted = event?.id
+    ? `#DRAW-${String(event.id).replace(/^evt-/, '').slice(-6).toUpperCase()}`
+    : '#DRAW-LIVE';
 
-  // Digit Slots: 1st, 2nd, 3rd, 4th
-  const renderDigitSlots = () => {
-    const ordinals = ['1ST', '2ND', '3RD', '4TH'];
+  const jackpotDisplay =
+    event?.minPrize && event?.maxPrize
+      ? `${Number(event.minPrize).toLocaleString()}–${Number(event.maxPrize).toLocaleString()} USDT`
+      : `${Number(event?.poolPrize || event?.pool_prize || 1000).toLocaleString()} USDT`;
 
-    return (
-      <div className="w-full space-y-1">
-        <div className="grid grid-cols-4 gap-1.5 xs:gap-2 sm:gap-2.5">
-          {digits.map((digit, idx) => {
-            const isSelected = activeSlot === idx;
+  const countdownFormatted = `${String(timeLeft.hours).padStart(2, '0')}:${String(timeLeft.minutes).padStart(2, '0')}:${String(timeLeft.seconds).padStart(2, '0')}`;
 
-            return (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setActiveSlot(idx)}
-                className={`h-11 xs:h-12 sm:h-13 lg:h-14 xl:h-15 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-150 select-none border-2 shadow-inner group relative ${
-                  isSelected
-                    ? 'bg-gradient-to-b from-[#1C1836] to-[#120F24] border-[#7C3AED] shadow-[0_0_16px_rgba(124,58,237,0.4)] scale-[1.01]'
-                    : 'bg-[#0B0F19] border-[#1F2737] hover:border-[#2D374D] hover:bg-[#101522]'
-                }`}
-                title={`Edit ${ordinals[idx]} digit`}
-              >
-                {/* Ordinal Pill Tag */}
-                <span className={`text-[8px] xs:text-[9px] font-mono-numbers font-black tracking-wider uppercase mb-0.5 transition-colors ${
-                  isSelected ? 'text-[#D2BBFF]' : 'text-[#64748B] group-hover:text-[#94A3B8]'
-                }`}>
-                  {ordinals[idx]}{isSelected ? ' ACTIVE' : ''}
-                </span>
+  const availabilityBadge = isAlreadyPurchasedByMe
+    ? {
+        label: isCompactLandscape ? 'OWNED' : 'ALREADY OWNED',
+        cls: 'bg-purple-500/15 text-purple-300 border-purple-500/35',
+        dot: 'bg-purple-400'
+      }
+    : isSoldToAnyPlayer
+    ? {
+        label: 'SOLD OUT',
+        cls: 'bg-rose-500/15 text-rose-300 border-rose-500/35',
+        dot: 'bg-rose-500'
+      }
+    : {
+        label: isCompactLandscape ? 'AVAILABLE' : 'AVAILABLE TO PURCHASE',
+        cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35',
+        dot: 'bg-emerald-400 animate-pulse'
+      };
 
-                {/* Dialed Digit */}
-                <span className={`font-mono-numbers font-black text-xl xs:text-2xl sm:text-3xl transition-colors ${
-                  isSelected ? 'text-[#F59E0B]' : 'text-white'
-                }`}>
-                  {digit}
-                </span>
+  const isPurchaseDisabled =
+    isSubmitting ||
+    isTimedOut ||
+    (Boolean(user) && (isAlreadyPurchasedByMe || isSoldToAnyPlayer || !hasSufficientBalance));
 
-                {/* Active Indicator Bar */}
-                {isSelected && (
-                  <div className="absolute -bottom-1 w-5 h-0.5 rounded-full bg-[#7C3AED] shadow-[0_0_8px_#7C3AED]" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  // 3x4 Numeric Keypad
-  const renderNumericKeypad = () => {
-    const keypadKeys = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-
-    return (
-      <div className="w-full space-y-1.5 pt-0.5">
-        <div className="grid grid-cols-3 gap-1 xs:gap-1.5 sm:gap-2">
-          {keypadKeys.map((num) => (
-            <button
-              key={num}
-              type="button"
-              onClick={() => handleKeypadPress(num)}
-              className="h-8 xs:h-8.5 sm:h-9.5 lg:h-10 rounded-xl bg-[#0B0F19] hover:bg-[#141A29] active:bg-[#1D253A] border border-[#1F2737] hover:border-[#7C3AED]/40 text-white font-mono-numbers font-extrabold text-sm xs:text-base sm:text-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm"
-            >
-              {num}
-            </button>
-          ))}
-
-          {/* Bottom Row: Clear, 0, Reset/Backspace */}
-          <button
-            type="button"
-            onClick={handleClearSlot}
-            className="h-8 xs:h-8.5 sm:h-9.5 lg:h-10 rounded-xl bg-[#181119] hover:bg-[#251525] active:bg-[#301A30] border border-rose-900/30 text-rose-400 font-mono-numbers text-xs xs:text-sm font-bold flex items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm"
-            title="Clear current slot"
-          >
-            Clear
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleKeypadPress(0)}
-            className="h-8 xs:h-8.5 sm:h-9.5 lg:h-10 rounded-xl bg-[#0B0F19] hover:bg-[#141A29] active:bg-[#1D253A] border border-[#1F2737] hover:border-[#7C3AED]/40 text-white font-mono-numbers font-extrabold text-sm xs:text-base sm:text-lg flex items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm"
-          >
-            0
-          </button>
-
-          <button
-            type="button"
-            onClick={handleResetAll}
-            className="h-8 xs:h-8.5 sm:h-9.5 lg:h-10 rounded-xl bg-[#141924] hover:bg-[#1C2333] active:bg-[#242D40] border border-[#222B40] text-[#94A3B8] hover:text-white font-mono-numbers text-xs xs:text-sm font-bold flex items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm"
-            title="Reset all slots to 0000"
-          >
-            Reset
-          </button>
-        </div>
-
-        {/* Quick Helper Sub-row */}
-        <div className="flex items-center justify-between text-[10px] text-[#64748B] pt-0.5 px-1">
-          <button
-            type="button"
-            onClick={handleRandomize}
-            className="text-[#94A3B8] hover:text-amber-400 transition-colors flex items-center gap-1 cursor-pointer font-bold"
-          >
-            <Dices className="w-3 h-3 text-amber-400" />
-            <span>Lucky Pick</span>
-          </button>
-
-          <span className="font-mono-numbers text-[9px] hidden xs:inline text-slate-500">
-            Manual 4-Digit Entry
-          </span>
-
-          <button
-            type="button"
-            onClick={handleResetAll}
-            className="text-[#94A3B8] hover:text-rose-400 transition-colors flex items-center gap-1 cursor-pointer"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span>Reset 0000</span>
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  // Full-Width Live Room Activity Records Table
-  const renderActivityFeed = () => {
-    if (roomActivityTickets.length === 0) {
+  const renderPurchaseFeedbackBanner = () => {
+    if (lastPurchasedTicket) {
       return (
-        <div className="flex-1 flex flex-col items-center justify-center py-4 text-center text-xs text-[#94A3B8] space-y-1">
-          <Activity className="w-4 h-4 mx-auto text-[#64748B] opacity-50" />
-          <p className="font-bold text-white text-xs">No tickets minted yet</p>
-          <p className="text-[10px] text-[#64748B]">Be the first to secure a 4-digit number in this draw!</p>
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 text-[9.5px] sm:text-[10px] font-mono-numbers font-semibold">
+          <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-emerald-400" />
+          <span className="truncate">Ticket #{lastPurchasedTicket} confirmed!</span>
         </div>
       );
     }
-
+    if (isAlreadyPurchasedByMe) {
+      return (
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-purple-500/15 border border-purple-500/35 text-purple-200 text-[9.5px] sm:text-[10px] font-mono-numbers font-semibold">
+          <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-purple-400" />
+          <span className="truncate">You already own #{currentNumberStr}.</span>
+        </div>
+      );
+    }
+    if (isSoldToAnyPlayer) {
+      return (
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-rose-500/15 border border-rose-500/35 text-rose-200 text-[9.5px] sm:text-[10px] font-mono-numbers font-semibold">
+          <AlertCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-rose-400" />
+          <span className="truncate">#{currentNumberStr} taken. Try Lucky Pick.</span>
+        </div>
+      );
+    }
+    if (user && !hasSufficientBalance) {
+      const shortfall = Math.max(0, totalPurchaseCost - walletBalance).toFixed(2);
+      return (
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[9.5px] sm:text-[10px] font-mono-numbers font-semibold">
+          <Wallet className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-amber-400" />
+          <span className="truncate">Need {shortfall} more USDT.</span>
+        </div>
+      );
+    }
     return (
-      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar pr-1 divide-y divide-[#1F2737]/40 space-y-1">
-        {roomActivityTickets.map((tkt: any, idx: number) => {
-          const isMine = (user && tkt.userId === user.id) || (wallet?.address && tkt.userAddress === wallet.address);
-          const rawName = tkt.username || (tkt.userAddress ? `${tkt.userAddress.slice(0, 6)}...${tkt.userAddress.slice(-4)}` : `@p_${tkt.id ? String(tkt.id).slice(-4) : idx}`);
-          const displayUsername = isMine ? '★ You' : (rawName.startsWith('@') ? rawName : `@${rawName}`);
-          const ticketNumberFormatted = `#${String(tkt.ticketNumber).padStart(4, '0')}`;
-
-          return (
-            <div
-              key={tkt.id || idx}
-              className={`p-1.5 sm:p-2 rounded-lg border flex items-center justify-between text-xs font-mono-numbers transition-colors ${
-                isMine
-                  ? 'bg-[#7C3AED]/15 border-[#7C3AED]/40 text-[#D2BBFF]'
-                  : 'bg-[#0B0F19] border-[#1F2737] hover:border-[#2A354D] text-white'
-              }`}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isMine ? 'bg-[#F59E0B]' : 'bg-[#10B981]'}`} />
-                <span className="font-bold truncate text-xs text-[#E2E8F0] max-w-[100px] xs:max-w-[140px] sm:max-w-xs">
-                  {displayUsername}
-                </span>
-                <span className="text-[10px] text-[#64748B] hidden xs:inline">
-                  {formatTimeAgo(Number(tkt.purchaseTime || Date.now()))}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                <span className="font-black text-xs text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded-md border border-[#10B981]/20">
-                  {ticketNumberFormatted}
-                </span>
-                <span className="text-[11px] font-bold text-amber-400">
-                  {tkt.price || ticketPrice} USDT
-                </span>
-                <span className="text-[9px] uppercase font-bold text-emerald-400 hidden sm:inline">
-                  ✓ Confirmed
-                </span>
-              </div>
-            </div>
-          );
-        })}
+      <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300/90 text-[9.5px] sm:text-[10px] font-mono-numbers font-medium">
+        <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-emerald-400" />
+        <span className="truncate">
+          {user ? `Ready to mint #${currentNumberStr}` : `Sign in to lock #${currentNumberStr}`}
+        </span>
       </div>
     );
   };
 
   // ---------------------------------------------------------------------------
-  // 11. Main View Layout
+  // 11. Unified Section Renderers (Identical Feature Set Across All Devices)
   // ---------------------------------------------------------------------------
-  const eventTitle = event?.title || room?.name || 'Four Digit Lottery';
-  const drawIdFormatted = event?.id 
-    ? `#DRAW-${String(event.id).replace(/^evt-/, '').slice(-6).toUpperCase()}` 
-    : '#DRAW-884';
 
-  return (
-    <div className="w-full h-full max-h-full flex flex-col justify-between overflow-y-auto lg:overflow-hidden text-left p-2 sm:p-2.5 lg:p-3.5 gap-2 sm:gap-2.5 lg:gap-3 select-none no-scrollbar">
-      
-      {/* ===================================================================== */}
-      {/* 1. COMPACT IN-GAME TELEMETRY STRIP (NO EXTRA NAVIGATION STRIP)        */}
-      {/* ===================================================================== */}
-      <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-[#111728]/95 border border-[#1B2238] shadow-md shrink-0 text-xs">
-        {/* Game Title, Status & Draw ID */}
+  const renderDigitSelectionPanel = () => (
+    <section
+      aria-label="Four-Digit Selection Panel"
+      className="ef-game-card rounded-xl flex flex-col justify-between min-h-0 h-full overflow-hidden p-[clamp(6px,1.1dvh,14px)] gap-[clamp(4px,0.85dvh,10px)]"
+    >
+      {/* Panel Header */}
+      <div className="flex items-center justify-between gap-2 pb-[clamp(4px,0.7dvh,8px)] border-b border-[#1E293B] shrink-0">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-          {onBackToLobby && (
+          <div className="w-[clamp(22px,3.2dvh,28px)] h-[clamp(22px,3.2dvh,28px)] rounded-lg bg-[#7C3AED]/15 border border-[#7C3AED]/35 flex items-center justify-center text-[#A78BFA] shrink-0">
+            <Sparkles className="w-3.5 h-3.5" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="font-display font-extrabold text-[clamp(11px,1.4vw,14px)] text-white leading-tight truncate">
+              Pick 4 Digits
+            </h2>
+            {!isCompactLandscape && (
+              <p className="text-[10px] text-[#94A3B8] leading-tight truncate">
+                Select 1st–4th position and enter 0–9
+              </p>
+            )}
+          </div>
+        </div>
+
+        <span
+          className={`text-[clamp(8px,0.95vw,10px)] font-mono-numbers px-2 py-0.5 rounded-full font-bold uppercase flex items-center gap-1 border shrink-0 whitespace-nowrap ${availabilityBadge.cls}`}
+        >
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${availabilityBadge.dot}`} />
+          <span>{availabilityBadge.label}</span>
+        </span>
+      </div>
+
+      {/* 4 Position Digit Slots (1ST, 2ND, 3RD, 4TH) */}
+      <div className="grid grid-cols-4 gap-[clamp(4px,0.9vw,10px)] shrink-0">
+        {digits.map((digit, idx) => {
+          const isSelected = activeSlot === idx;
+          const isDisabledSlot = isTimedOut || isSubmitting;
+
+          return (
             <button
+              key={idx}
               type="button"
-              onClick={onBackToLobby}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#0B0F19] hover:bg-[#1A2234] border border-[#1F2737] text-slate-300 text-[11px] font-bold cursor-pointer transition-colors"
-              title="Return to lobby"
+              disabled={isDisabledSlot}
+              onClick={() => selectSlot(idx)}
+              aria-pressed={isSelected}
+              aria-label={`${ORDINALS[idx]} digit: ${digit}`}
+              className={`ef-touch-btn relative rounded-xl flex flex-col items-center justify-center transition-all duration-150 select-none border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] ${
+                isCompactLandscape
+                  ? 'h-[clamp(36px,12.5dvh,56px)]'
+                  : 'h-[clamp(50px,8.6dvh,82px)]'
+              } ${
+                isDisabledSlot
+                  ? 'opacity-60 cursor-not-allowed bg-[#080D18] border-[#1B2438]'
+                  : isSelected
+                  ? 'cursor-pointer bg-gradient-to-b from-[#1E1940] to-[#110D28] border-[#8B5CF6] shadow-[0_0_18px_rgba(124,58,237,0.38)] scale-[1.015]'
+                  : 'cursor-pointer bg-[#070B14] border-[#1E293B] hover:border-[#475569] hover:bg-[#0D1424] active:scale-[0.98]'
+              }`}
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
-              <span className="hidden xs:inline">Lobby</span>
+              <span
+                className={`font-mono-numbers font-black tracking-wider uppercase leading-none transition-colors ${
+                  isCompactLandscape ? 'text-[7.5px]' : 'text-[9px]'
+                } ${isSelected ? 'text-[#DDD6FE]' : 'text-[#64748B]'}`}
+              >
+                {ORDINALS[idx]}
+                {!isCompactLandscape && isSelected ? ' · ACTIVE' : ''}
+              </span>
+
+              <span
+                className={`font-mono-numbers font-black leading-none mt-0.5 transition-colors ${
+                  isCompactLandscape
+                    ? 'text-[clamp(16px,4.8dvh,24px)]'
+                    : 'text-[clamp(22px,3.8dvh,36px)]'
+                } ${isSelected ? 'text-[#FBBF24]' : 'text-white'}`}
+              >
+                {digit}
+              </span>
+
+              {isSelected && (
+                <span className="absolute -bottom-0.5 w-6 h-0.5 rounded-full bg-[#8B5CF6] shadow-[0_0_8px_#8B5CF6]" />
+              )}
             </button>
+          );
+        })}
+      </div>
+
+      {/* Tactile 3x4 Numeric Keypad */}
+      <div
+        className={`flex-1 min-h-0 grid grid-cols-3 grid-rows-4 gap-[clamp(3px,0.75dvh,8px)] ${
+          !isCompactLandscape ? 'max-h-[290px]' : ''
+        }`}
+      >
+        {KEYPAD_NUMS.map((num) => {
+          const isCurrentSlotValue = digits[activeSlot] === String(num);
+          const disabled = isTimedOut || isSubmitting;
+
+          return (
+            <button
+              key={num}
+              type="button"
+              disabled={disabled}
+              onClick={() => handleKeypadPress(num)}
+              className={`ef-touch-btn rounded-xl font-mono-numbers font-extrabold flex items-center justify-center transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] ${
+                isCompactLandscape
+                  ? 'text-[clamp(12px,3.6dvh,17px)]'
+                  : 'text-[clamp(15px,2.3dvh,20px)]'
+              } ${
+                disabled
+                  ? 'opacity-45 cursor-not-allowed bg-[#070B14] border-[#1B2438] text-[#64748B]'
+                  : isCurrentSlotValue
+                  ? 'cursor-pointer bg-[#141A33] hover:bg-[#1B2344] active:scale-[0.96] border-[#7C3AED]/70 text-[#FBBF24] shadow-[inset_0_0_12px_rgba(124,58,237,0.18)]'
+                  : 'cursor-pointer bg-[#070B14] hover:bg-[#11192B] active:bg-[#1B2540] active:scale-[0.96] border-[#1E293B] hover:border-[#7C3AED]/50 text-white shadow-sm'
+              }`}
+            >
+              {num}
+            </button>
+          );
+        })}
+
+        <button
+          type="button"
+          disabled={isTimedOut || isSubmitting}
+          onClick={handleClearSlot}
+          title="Clear active digit"
+          className={`ef-touch-btn rounded-xl font-mono-numbers font-bold flex items-center justify-center transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${
+            isCompactLandscape ? 'text-[10px]' : 'text-xs'
+          } ${
+            isTimedOut || isSubmitting
+              ? 'opacity-45 cursor-not-allowed bg-[#160E17] border-rose-900/20 text-rose-400/50'
+              : 'cursor-pointer bg-[#18101A] hover:bg-[#271528] active:bg-[#331B34] active:scale-[0.96] border-rose-500/30 text-rose-300'
+          }`}
+        >
+          Clear
+        </button>
+
+        <button
+          type="button"
+          disabled={isTimedOut || isSubmitting}
+          onClick={() => handleKeypadPress(0)}
+          className={`ef-touch-btn rounded-xl font-mono-numbers font-extrabold flex items-center justify-center transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] ${
+            isCompactLandscape
+              ? 'text-[clamp(12px,3.6dvh,17px)]'
+              : 'text-[clamp(15px,2.3dvh,20px)]'
+          } ${
+            isTimedOut || isSubmitting
+              ? 'opacity-45 cursor-not-allowed bg-[#070B14] border-[#1B2438] text-[#64748B]'
+              : digits[activeSlot] === '0'
+              ? 'cursor-pointer bg-[#141A33] hover:bg-[#1B2344] active:scale-[0.96] border-[#7C3AED]/70 text-[#FBBF24]'
+              : 'cursor-pointer bg-[#070B14] hover:bg-[#11192B] active:bg-[#1B2540] active:scale-[0.96] border-[#1E293B] hover:border-[#7C3AED]/50 text-white shadow-sm'
+          }`}
+        >
+          0
+        </button>
+
+        <button
+          type="button"
+          disabled={isTimedOut || isSubmitting}
+          onClick={handleResetAll}
+          title="Reset all 4 digits to 0000"
+          className={`ef-touch-btn rounded-xl font-mono-numbers font-bold flex items-center justify-center transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${
+            isCompactLandscape ? 'text-[10px]' : 'text-xs'
+          } ${
+            isTimedOut || isSubmitting
+              ? 'opacity-45 cursor-not-allowed bg-[#0D1320] border-[#1E293B] text-[#64748B]'
+              : 'cursor-pointer bg-[#111827] hover:bg-[#1B253A] active:bg-[#24324E] active:scale-[0.96] border-[#263248] text-[#CBD5E1] hover:text-white'
+          }`}
+        >
+          Reset
+        </button>
+      </div>
+
+      {/* Quick Utility Footer Bar */}
+      <div className="flex items-center justify-between gap-2 pt-0.5 px-0.5 text-[10px] shrink-0">
+        <button
+          type="button"
+          disabled={isTimedOut || isSubmitting}
+          onClick={handleRandomize}
+          className="ef-touch-btn inline-flex items-center gap-1 text-[#CBD5E1] hover:text-[#FBBF24] disabled:opacity-45 cursor-pointer disabled:cursor-not-allowed font-bold transition-colors"
+        >
+          <Dices className="w-3.5 h-3.5 text-[#F59E0B]" />
+          <span>Lucky Pick</span>
+        </button>
+
+        <span className="font-mono-numbers text-[9px] text-[#64748B] truncate">
+          Combo <strong className="text-[#FBBF24]">#{currentNumberStr}</strong>
+        </span>
+
+        <button
+          type="button"
+          disabled={isTimedOut || isSubmitting}
+          onClick={handleResetAll}
+          className="ef-touch-btn inline-flex items-center gap-1 text-[#94A3B8] hover:text-rose-400 disabled:opacity-45 cursor-pointer disabled:cursor-not-allowed font-semibold transition-colors"
+        >
+          <RotateCcw className="w-3 h-3" />
+          <span>0000</span>
+        </button>
+      </div>
+    </section>
+  );
+
+  const renderPurchasePanel = () => (
+    <section
+      aria-label="Direct Purchase Summary"
+      className="ef-game-card rounded-xl flex flex-col justify-between min-h-0 h-full overflow-hidden p-[clamp(6px,1.1dvh,14px)] gap-[clamp(4px,0.85dvh,10px)]"
+    >
+      {/* Panel Header */}
+      <div className="flex items-center justify-between gap-1.5 pb-[clamp(4px,0.7dvh,8px)] border-b border-[#1E293B] shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <div className="w-[clamp(20px,3dvh,28px)] h-[clamp(20px,3dvh,28px)] rounded-lg bg-[#F59E0B]/15 border border-[#F59E0B]/35 flex items-center justify-center text-[#FBBF24] shrink-0">
+            <Ticket className="w-3.5 h-3.5" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="font-display font-extrabold text-[clamp(10.5px,1.35vw,14px)] text-white leading-tight whitespace-nowrap">
+              {isCompactLandscape ? 'Purchase' : 'Direct Purchase'}
+            </h2>
+            {!isCompactLandscape && (
+              <p className="text-[10px] text-[#94A3B8] leading-tight truncate">
+                Instant settlement order summary
+              </p>
+            )}
+          </div>
+        </div>
+
+        <span className="text-[clamp(7.5px,0.9vw,9px)] font-mono-numbers px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold uppercase shrink-0">
+          INSTANT
+        </span>
+      </div>
+
+      {/* Order Breakdown Card */}
+      <div className="flex-1 min-h-0 flex flex-col justify-between rounded-xl bg-[#070B14] border border-[#1B2438] p-[clamp(5px,0.95dvh,14px)] font-mono-numbers overflow-hidden gap-1.5">
+        {/* Standard Mode Ticket Preview Strip (Gives balanced desktop/tablet visual anchor) */}
+        {!isCompactLandscape && (
+          <div className="rounded-xl bg-gradient-to-r from-[#131B2E] via-[#0E1525] to-[#171230] border border-[#24324D] px-3 py-2 flex items-center justify-between gap-2 shrink-0">
+            <div className="min-w-0">
+              <span className="text-[9px] uppercase tracking-wider text-[#94A3B8] block">
+                Selected Ticket
+              </span>
+              <span className="text-xs font-bold text-white truncate block">
+                {drawIdFormatted}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              {digits.map((d, idx) => (
+                <span
+                  key={idx}
+                  className="w-7 h-8 rounded-lg bg-[#080C16] border border-[#F59E0B]/50 flex items-center justify-center text-sm font-black text-[#FBBF24] shadow-[0_0_10px_rgba(245,158,11,0.15)]"
+                >
+                  {d}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex-1 min-h-0 flex flex-col justify-center space-y-[clamp(2px,0.65dvh,8px)]">
+          {/* Selected 4-Digit Combination */}
+          <div className="flex items-center justify-between gap-1.5 pb-[clamp(2px,0.65dvh,7px)] border-b border-[#1B2438]">
+            <span className="text-[#94A3B8] text-[clamp(9px,1.05vw,11px)] whitespace-nowrap">
+              {isCompactLandscape ? 'Combo:' : 'Combination:'}
+            </span>
+            <div className="flex items-center gap-0.5 shrink-0">
+              {digits.map((d, idx) => (
+                <span
+                  key={idx}
+                  className="w-[clamp(16px,2vw,22px)] h-[clamp(17px,2.5dvh,23px)] rounded bg-[#131B2E] border border-[#334155] flex items-center justify-center text-[clamp(9.5px,1.1vw,12px)] font-black text-[#FBBF24]"
+                >
+                  {d}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Unit Ticket Price */}
+          <div className="flex items-center justify-between gap-1.5 text-[clamp(9px,1.05vw,11px)]">
+            <span className="text-[#94A3B8] whitespace-nowrap">
+              {isCompactLandscape ? 'Unit Price:' : 'Unit Ticket Price:'}
+            </span>
+            <strong className="text-white font-bold shrink-0">
+              {ticketPrice.toFixed(2)} USDT
+            </strong>
+          </div>
+
+          {/* Gas / Escrow */}
+          <div className="flex items-center justify-between gap-1.5 text-[clamp(9px,1.05vw,11px)]">
+            <span className="text-[#94A3B8] whitespace-nowrap">Gas / Escrow:</span>
+            <span className="text-emerald-400 font-bold shrink-0">
+              0.00 USDT{!isCompactLandscape ? ' (0% Subsidised)' : ''}
+            </span>
+          </div>
+
+          {/* Total Purchase */}
+          <div className="flex items-center justify-between gap-1.5 pt-[clamp(2px,0.65dvh,7px)] border-t border-[#1B2438]">
+            <span className="text-[#DDD6FE] font-bold text-[clamp(9.5px,1.1vw,12px)] whitespace-nowrap">
+              {isCompactLandscape ? 'Total:' : 'Total Purchase:'}
+            </span>
+            <strong className="text-[#FBBF24] font-black text-[clamp(11px,1.4vw,16px)] shrink-0">
+              {totalPurchaseCost.toFixed(2)} USDT
+            </strong>
+          </div>
+
+          {/* Available Wallet Balance */}
+          <div className="flex items-center justify-between gap-1.5 text-[clamp(9px,1vw,11px)]">
+            <span className="flex items-center gap-1 text-[#94A3B8] whitespace-nowrap">
+              <Wallet className="w-3 h-3 shrink-0" />
+              <span>{isCompactLandscape ? 'Balance:' : 'Wallet Balance:'}</span>
+            </span>
+            <span
+              className={`font-bold shrink-0 ${
+                user && !hasSufficientBalance ? 'text-rose-400' : 'text-emerald-400'
+              }`}
+            >
+              {walletBalance.toFixed(2)} USDT
+            </span>
+          </div>
+        </div>
+
+        {/* Inline Status & Transaction Feedback */}
+        {!isUltraNarrowLandscape && (
+          <div className="shrink-0">{renderPurchaseFeedbackBanner()}</div>
+        )}
+      </div>
+
+      {/* Purchase CTA & Settlement Note */}
+      <div className="space-y-1 shrink-0">
+        <button
+          type="button"
+          onClick={handlePurchaseAction}
+          disabled={isPurchaseDisabled}
+          className={`ef-touch-btn w-full rounded-xl font-display font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-lg whitespace-nowrap ${
+            isCompactLandscape
+              ? 'h-[clamp(28px,9dvh,36px)] text-[10px] px-2'
+              : 'h-[clamp(38px,5.8dvh,46px)] text-xs sm:text-sm px-3'
+          } ${
+            isSubmitting
+              ? 'bg-amber-400/80 text-black cursor-wait'
+              : !user
+              ? 'btn-gold cursor-pointer shadow-[#F59E0B]/25 active:scale-[0.98]'
+              : isAlreadyPurchasedByMe
+              ? 'bg-[#181D29] text-purple-300 border border-purple-500/40 cursor-not-allowed opacity-85'
+              : isSoldToAnyPlayer
+              ? 'bg-[#181D29] text-rose-300 border border-rose-500/40 cursor-not-allowed opacity-85'
+              : !hasSufficientBalance
+              ? 'bg-[#181D29] text-[#94A3B8] border border-[#263248] cursor-not-allowed opacity-85'
+              : 'btn-gold cursor-pointer shadow-[#F59E0B]/25 active:scale-[0.98]'
+          }`}
+        >
+          {isSubmitting ? (
+            <>
+              <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+              <span>Processing...</span>
+            </>
+          ) : !user ? (
+            <>
+              <Lock className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+              <span>
+                {isCompactLandscape
+                  ? `Log In · ${totalPurchaseCost.toFixed(0)} USDT`
+                  : `Log In to Buy (${totalPurchaseCost.toFixed(2)} USDT)`}
+              </span>
+            </>
+          ) : isAlreadyPurchasedByMe ? (
+            <>
+              <AlertCircle className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+              <span>{isCompactLandscape ? 'Already Owned' : 'Ticket Already Owned'}</span>
+            </>
+          ) : isSoldToAnyPlayer ? (
+            <>
+              <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+              <span>{isCompactLandscape ? 'Sold Out' : 'Number Sold Out'}</span>
+            </>
+          ) : !hasSufficientBalance ? (
+            <span>{isCompactLandscape ? 'Low Balance' : 'Insufficient USDT Balance'}</span>
+          ) : (
+            <>
+              <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current shrink-0" />
+              <span>
+                {isCompactLandscape
+                  ? `Buy · ${totalPurchaseCost.toFixed(0)} USDT`
+                  : `Buy Ticket (${totalPurchaseCost.toFixed(2)} USDT)`}
+              </span>
+            </>
           )}
+        </button>
 
-          <span className="font-display font-black text-white text-xs sm:text-sm truncate max-w-[150px] xs:max-w-[200px] sm:max-w-xs">
-            {eventTitle}
-          </span>
+        {!isCompactLandscape && (
+          <p className="text-[9px] text-[#64748B] text-center font-mono-numbers truncate">
+            Non-custodial TRC-20 smart contract escrow settlement
+          </p>
+        )}
+      </div>
+    </section>
+  );
 
-          <span className="px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 text-[10px] font-mono-numbers font-extrabold uppercase flex items-center gap-1 shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping" />
-            <span>LIVE</span>
-          </span>
-
-          <span className="text-[10px] font-mono-numbers text-slate-400 hidden sm:inline">
-            {drawIdFormatted}
-          </span>
-
-          <span className="hidden md:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono-numbers font-bold">
-            ✓ VRF
+  const renderActivityPanel = () => (
+    <section
+      aria-label="Live Recent Activity"
+      className="ef-game-card rounded-xl flex flex-col justify-between min-h-0 h-full overflow-hidden p-[clamp(6px,1.1dvh,12px)] gap-[clamp(4px,0.75dvh,8px)]"
+    >
+      {/* Activity Header */}
+      <div className="flex items-center justify-between gap-1 pb-[clamp(3px,0.6dvh,8px)] border-b border-[#1E293B] shrink-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+          <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981] shrink-0">
+            <Activity className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+          </div>
+          <h2 className="font-display font-extrabold text-[clamp(10px,1.2vw,13px)] text-white whitespace-nowrap">
+            {isCompactLandscape ? 'Activity' : 'Live Activity'}
+          </h2>
+          <span className="text-[8px] sm:text-[9px] font-mono-numbers font-black px-1.5 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 shrink-0 whitespace-nowrap">
+            {roomActivityTickets.length}
+            {!isCompactLandscape ? ' MINTED' : ''}
           </span>
         </div>
 
-        {/* Compact Telemetry Metrics */}
-        <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono-numbers shrink-0">
-          <div className="flex items-center gap-1 text-[11px]">
-            <span className="text-[#94A3B8]">Entry:</span>
-            <strong className="text-white font-bold">{ticketPrice} USDT</strong>
-          </div>
+        <span className="flex items-center gap-1 text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20 text-[8.5px] sm:text-[9px] font-mono-numbers font-bold shrink-0 whitespace-nowrap">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Live</span>
+        </span>
+      </div>
 
-          <div className="flex items-center gap-1 text-[11px]">
-            <Trophy className="w-3 h-3 text-[#F59E0B]" />
-            <span className="text-[#94A3B8] hidden xs:inline">Jackpot:</span>
-            <strong className="text-[#F59E0B] font-bold">{Number(event.poolPrize || 5000).toLocaleString()} USDT</strong>
-          </div>
+      {/* Internal Vertical Scrollable Feed (Never Scrolls Page) */}
+      {roomActivityTickets.length === 0 ? (
+        <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-1.5 text-center space-y-0.5 sm:space-y-1">
+          {!isUltraNarrowLandscape && (
+            <Activity className="w-4 h-4 text-[#64748B] opacity-60 shrink-0" />
+          )}
+          <p className="font-bold text-white text-[clamp(9.5px,1.15vw,12px)] leading-tight">
+            No tickets minted yet
+          </p>
+          {!isUltraNarrowLandscape && (
+            <p className="text-[clamp(8.5px,0.95vw,10.5px)] text-[#64748B] leading-tight max-w-[240px]">
+              Be the first to claim a 4-digit combination in this live draw.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-1 pr-0.5">
+          {roomActivityTickets.map((tkt: any, idx: number) => {
+            const isMine =
+              (user && (tkt.userId === user.id || tkt.user_id === user.id)) ||
+              (wallet?.address && tkt.userAddress === wallet.address);
+            const rawName =
+              tkt.username ||
+              (tkt.userAddress
+                ? `${tkt.userAddress.slice(0, 5)}..${tkt.userAddress.slice(-3)}`
+                : `@p_${tkt.id ? String(tkt.id).slice(-4) : idx}`);
+            const displayUsername = isMine
+              ? '★ You'
+              : rawName.startsWith('@')
+              ? rawName
+              : `@${rawName}`;
+            const ticketNumberFormatted = `#${String(tkt.ticketNumber).padStart(4, '0')}`;
 
-          <div className="flex items-center gap-1 text-[11px] bg-[#0B0F19] px-2 py-0.5 rounded-md border border-[#1F2737]">
-            <Clock className="w-3 h-3 text-[#7C3AED]" />
-            <span className="text-[#D2BBFF] font-bold">
-              {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+            return (
+              <div
+                key={tkt.id || idx}
+                className={`px-2 py-1 rounded-lg border flex items-center justify-between gap-1.5 text-[10px] sm:text-xs font-mono-numbers transition-colors ${
+                  isMine
+                    ? 'bg-[#7C3AED]/15 border-[#7C3AED]/40 text-[#DDD6FE]'
+                    : 'bg-[#070B14] border-[#1B2438] hover:border-[#2C3A57] text-white'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      isMine ? 'bg-[#F59E0B]' : 'bg-[#10B981]'
+                    }`}
+                  />
+                  <span className="font-bold truncate text-[10px] sm:text-[11px] text-[#E2E8F0]">
+                    {displayUsername}
+                  </span>
+                  {!isCompactLandscape && (
+                    <span className="text-[9.5px] text-[#64748B] shrink-0">
+                      {formatTimeAgo(Number(tkt.purchaseTime || Date.now()))}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                  <span className="font-black text-[10px] sm:text-[11px] text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded border border-[#10B981]/25">
+                    {ticketNumberFormatted}
+                  </span>
+                  <span className="text-[10px] sm:text-[11px] font-bold text-[#FBBF24]">
+                    {tkt.price || ticketPrice} USDT
+                  </span>
+                  {!isCompactLandscape && (
+                    <span className="text-[9px] uppercase font-bold text-emerald-400">
+                      ✓ Confirmed
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+
+  // ---------------------------------------------------------------------------
+  // 12. Main Render (Portrait Guard Overlay + Single-Screen Zero-Scroll Room)
+  // ---------------------------------------------------------------------------
+  return (
+    <div className="relative w-full h-full max-h-full min-h-0 overflow-hidden select-none bg-[#080C16]">
+      {/* Subtle Ambient Background Accents */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 rounded-full bg-[#7C3AED]/10 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-[#F59E0B]/8 blur-3xl"
+      />
+
+      {/* MANDATORY MOBILE PORTRAIT ORIENTATION GUARD (Full-Screen Blocking Overlay) */}
+      {isMobilePortrait && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Rotate Device to Landscape Mode"
+          className="fixed inset-0 z-50 bg-[#070B14]/98 backdrop-blur-xl flex flex-col items-center justify-between p-6 text-center overflow-hidden"
+        >
+          {/* Top Brand Identity */}
+          <div className="flex items-center gap-2 shrink-0 pt-2">
+            <img
+              src="/logo.png"
+              alt="EarnFlow.in"
+              className="w-8 h-8 rounded-full border border-amber-400/50 object-cover"
+            />
+            <span className="font-display font-black text-base text-white">
+              EarnFlow<span className="text-[#F5C451]">.in</span>
             </span>
           </div>
+
+          {/* Center Rotation Guidance */}
+          <div className="max-w-xs w-full flex flex-col items-center space-y-5 my-auto">
+            <div className="relative w-24 h-24 rounded-3xl bg-[#111728] border border-[#7C3AED]/40 flex items-center justify-center shadow-[0_0_35px_rgba(124,58,237,0.25)]">
+              <Smartphone className="w-11 h-11 text-[#FBBF24] ef-rotate-phone-anim" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-mono-numbers font-bold uppercase tracking-wider">
+                Landscape Mode Required
+              </span>
+              <h1 className="font-display font-extrabold text-lg text-white leading-snug">
+                Please Rotate Your Device to Landscape Mode to Play
+              </h1>
+              <p className="text-xs text-[#94A3B8] leading-relaxed">
+                The Four-Digit Lottery Game Room runs in widescreen landscape so your digit controls, purchase summary, and live draw feed stay on one screen.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleRequestLandscapeFullscreen}
+              className="ef-touch-btn btn-gold w-full py-3 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/20"
+            >
+              <Maximize2 className="w-4 h-4 shrink-0" />
+              <span>Switch to Landscape Fullscreen</span>
+            </button>
+
+            {orientationLockMessage && (
+              <p className="text-[11px] text-amber-300/90 leading-snug">
+                {orientationLockMessage}
+              </p>
+            )}
+          </div>
+
+          {/* Bottom Preserved State Note */}
+          <div className="shrink-0 pb-2 text-[11px] font-mono-numbers text-[#64748B]">
+            Combination <strong className="text-[#FBBF24]">#{currentNumberStr}</strong> &amp; wallet state preserved
+          </div>
+        </div>
+      )}
+
+      {/* GAME ROOM WORKSTATION (Kept mounted while hidden in mobile portrait to preserve state) */}
+      <div
+        aria-hidden={isMobilePortrait}
+        className={`ef-game-room-shell relative z-10 text-left ${
+          isMobilePortrait ? 'invisible pointer-events-none' : ''
+        }`}
+      >
+        <div className="w-full max-w-[1640px] 2xl:max-h-[1080px] mx-auto my-auto flex-1 min-h-0 flex flex-col gap-[clamp(5px,0.95dvh,12px)]">
+          {/* ================================================================= */}
+          {/* A. CLEAN TELEMETRY HEADER BAR (NO BACK TO LOBBY BUTTON)           */}
+          {/* ================================================================= */}
+          <header className="ef-game-card rounded-xl w-full shrink-0 px-[clamp(6px,1.2vw,14px)] py-[clamp(4px,0.75dvh,8px)] flex items-center justify-between gap-1.5 sm:gap-2 overflow-hidden">
+            {/* Left: Draw Identification, LIVE & VRF Indicators */}
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+              <div className="flex items-center gap-1 min-w-0">
+                <Hash className="w-3.5 h-3.5 text-[#F59E0B] shrink-0 hidden sm:block" />
+                <h1 className="font-display font-black text-white text-[clamp(10px,1.35vw,14px)] truncate max-w-[90px] sm:max-w-[200px] md:max-w-xs">
+                  {eventTitle}
+                </h1>
+              </div>
+
+              {!isUltraNarrowLandscape && (
+                <span className="text-[clamp(8.5px,1vw,10.5px)] font-mono-numbers text-[#94A3B8] font-semibold shrink-0 whitespace-nowrap">
+                  {drawIdFormatted}
+                </span>
+              )}
+
+              <span
+                className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[clamp(7.5px,0.95vw,10px)] font-mono-numbers font-extrabold uppercase flex items-center gap-1 shrink-0 whitespace-nowrap ${statusInfo.badgeClass}`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusInfo.dotClass}`} />
+                <span>{statusInfo.label}</span>
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setIsVrfModalOpen(true)}
+                title="View VRF Cryptographic Commitment"
+                className="ef-touch-btn inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/12 hover:bg-emerald-500/22 text-emerald-300 border border-emerald-500/30 text-[clamp(7.5px,0.95vw,9.5px)] font-mono-numbers font-bold cursor-pointer transition-colors shrink-0 whitespace-nowrap"
+              >
+                <ShieldCheck className="w-3 h-3 shrink-0" />
+                <span>VRF</span>
+              </button>
+            </div>
+
+            {/* Right: Entry Price, Jackpot Amount & Live Countdown */}
+            <div className="flex items-center gap-1.5 sm:gap-3 font-mono-numbers shrink-0">
+              <div className="flex items-center gap-0.5 sm:gap-1 text-[clamp(8.5px,1.05vw,11.5px)] whitespace-nowrap">
+                {!isUltraNarrowLandscape && <span className="text-[#94A3B8]">Entry:</span>}
+                <strong className="text-white font-bold">{ticketPrice} USDT</strong>
+              </div>
+
+              <div className="flex items-center gap-0.5 sm:gap-1 text-[clamp(8.5px,1.05vw,11.5px)] whitespace-nowrap">
+                <Trophy className="w-3 h-3 text-[#F59E0B] shrink-0" />
+                <span className="text-[#94A3B8] hidden sm:inline">Jackpot:</span>
+                <strong className="text-[#FBBF24] font-extrabold">{jackpotDisplay}</strong>
+              </div>
+
+              <div className="flex items-center gap-1 text-[clamp(8.5px,1.05vw,12px)] bg-[#070B14] px-1.5 sm:px-2 py-0.5 rounded-lg border border-[#1E293B] shrink-0 whitespace-nowrap">
+                <Clock className="w-3 h-3 text-[#A78BFA] shrink-0" />
+                <span className="text-[#DDD6FE] font-bold">{countdownFormatted}</span>
+              </div>
+            </div>
+          </header>
+
+          {/* ================================================================= */}
+          {/* B. ADAPTIVE SINGLE-SCREEN GAME STAGE (MOBILE LANDSCAPE & DESKTOP) */}
+          {/* ================================================================= */}
+          {isCompactLandscape ? (
+            isUltraNarrowLandscape ? (
+              /* Narrow Landscape Fallback: 50% Pick 4 Digits | 50% Purchase + Activity */
+              <div className="flex-1 min-h-0 grid grid-cols-[minmax(0,50fr)_minmax(0,50fr)] gap-1.5">
+                {renderDigitSelectionPanel()}
+                <div className="min-h-0 h-full grid grid-rows-[minmax(0,1.45fr)_minmax(52px,0.55fr)] gap-1.5">
+                  {renderPurchasePanel()}
+                  {renderActivityPanel()}
+                </div>
+              </div>
+            ) : (
+              /* Primary Mobile Landscape: 3 Proportional Side-by-Side Columns (Zero Scroll) */
+              <div className="flex-1 min-h-0 grid grid-cols-[minmax(0,39fr)_minmax(0,34fr)_minmax(0,27fr)] gap-[clamp(6px,1vw,12px)]">
+                {renderDigitSelectionPanel()}
+                {renderPurchasePanel()}
+                {renderActivityPanel()}
+              </div>
+            )
+          ) : (
+            /* Tablet / Laptop / Desktop Dashboard: Top 2 Columns + Full-Width Activity Below */
+            <div className="flex-1 min-h-0 grid grid-rows-[minmax(0,1.45fr)_minmax(125px,0.72fr)] gap-[clamp(6px,1.1dvh,14px)]">
+              <div className="min-h-0 grid grid-cols-[minmax(0,58fr)_minmax(0,42fr)] gap-[clamp(8px,1.2vw,16px)]">
+                {renderDigitSelectionPanel()}
+                {renderPurchasePanel()}
+              </div>
+              <div className="min-h-0">{renderActivityPanel()}</div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* ===================================================================== */}
-      {/* 2. TOP SECTION: TWO BALANCED COLUMNS (PICK 4 DIGITS + PURCHASE PANEL) */}
+      {/* VRF COMMITMENT VERIFICATION MODAL (ACTIVE DRAW AUDIT INFO)            */}
       {/* ===================================================================== */}
-      <main className="w-full max-w-7xl mx-auto flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 lg:gap-3.5 items-stretch">
-        
-        {/* ------------------------------------------------------------------- */}
-        {/* LEFT COLUMN: PICK 4 DIGITS & NUMERIC KEYPAD (~58% ON DESKTOP)       */}
-        {/* ------------------------------------------------------------------- */}
-        <section className="lg:col-span-7 bg-[#111728]/95 border border-[#1B2238] rounded-xl p-2.5 sm:p-3.5 flex flex-col justify-between shadow-xl space-y-2 sm:space-y-2.5 backdrop-blur-md">
-          
-          {/* Header & Availability */}
-          <div className="flex items-center justify-between pb-1.5 border-b border-[#1F2737]">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#7C3AED]/15 border border-[#7C3AED]/30 flex items-center justify-center text-[#7C3AED]">
-                <Sparkles className="w-3.5 h-3.5" />
-              </div>
-              <div>
-                <h3 className="font-display font-extrabold text-xs sm:text-sm text-white leading-tight">
-                  Pick 4 Digits
-                </h3>
-                <p className="text-[10px] text-[#94A3B8]">
-                  Select slot and enter chosen digits
-                </p>
-              </div>
-            </div>
-
-            {/* Combination Availability Pill */}
-            <span className={`text-[9px] font-mono-numbers px-2 py-0.5 rounded-full font-bold uppercase flex items-center gap-1.5 border ${
-              isAlreadyPurchasedByMe
-                ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-            }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${isAlreadyPurchasedByMe ? 'bg-rose-500' : 'bg-emerald-400 animate-ping'}`} />
-              <span>{isAlreadyPurchasedByMe ? 'ALREADY PURCHASED' : 'AVAILABLE TO PURCHASE'}</span>
-            </span>
-          </div>
-
-          {/* 4 Selected Digit Slots */}
-          {renderDigitSlots()}
-
-          {/* Interactive Numeric Keypad */}
-          {renderNumericKeypad()}
-
-          {/* Mobile-Only Integrated Quick Buy Strip (Zero Scroll to Purchase) */}
-          <div className="block lg:hidden pt-2 border-t border-[#1F2737] space-y-2">
-            <div className="flex items-center justify-between text-xs font-mono-numbers bg-[#0B0F19] p-2 rounded-lg border border-[#1F2737]">
-              <div>
-                <span className="text-[#94A3B8] text-[9px] uppercase block">Selected:</span>
-                <span className="font-black text-[#F59E0B] text-xs sm:text-sm">#{currentNumberStr}</span>
-              </div>
-              <div>
-                <span className="text-[#94A3B8] text-[9px] uppercase block">Total Cost:</span>
-                <span className="font-black text-white text-xs sm:text-sm">{totalPurchaseCost.toFixed(2)} USDT</span>
-              </div>
-              <div>
-                <span className="text-[#94A3B8] text-[9px] uppercase block">Balance:</span>
-                <span className="font-bold text-[#10B981] text-xs">{Number(wallet.balance || 0).toFixed(2)} USDT</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handlePurchaseAction}
-              disabled={
-                isSubmitting || 
-                isTimedOut || 
-                isAlreadyPurchasedByMe || 
-                Number(wallet.balance || 0) < totalPurchaseCost
-              }
-              className={`w-full py-2.5 rounded-xl font-display font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all ${
-                isAlreadyPurchasedByMe
-                  ? 'bg-[#181D29] text-rose-300 border border-rose-500/40 cursor-not-allowed opacity-80'
-                  : Number(wallet.balance || 0) < totalPurchaseCost
-                  ? 'bg-[#181D29] text-[#8B92A2] border border-[#242D40] cursor-not-allowed opacity-75'
-                  : 'btn-gold shadow-[#F59E0B]/25 active:scale-98'
-              }`}
-            >
-              {isSubmitting ? (
-                <span>Processing Transaction...</span>
-              ) : isAlreadyPurchasedByMe ? (
-                <span>Ticket Already Owned</span>
-              ) : Number(wallet.balance || 0) < totalPurchaseCost ? (
-                <span>Insufficient USDT Balance</span>
-              ) : (
-                <>
-                  <Zap className="w-3.5 h-3.5 fill-current" />
-                  <span>Buy Ticket ({totalPurchaseCost.toFixed(2)} USDT)</span>
-                </>
-              )}
-            </button>
-          </div>
-
-        </section>
-
-        {/* ------------------------------------------------------------------- */}
-        {/* RIGHT COLUMN: PURCHASE PANEL (~42% ON DESKTOP)                      */}
-        {/* ------------------------------------------------------------------- */}
-        <section className="hidden lg:flex lg:col-span-5 bg-[#111728]/95 border border-[#1B2238] rounded-xl p-2.5 sm:p-3.5 flex-col justify-between shadow-xl space-y-2.5 backdrop-blur-md">
-          
-          <div className="space-y-2.5">
-            
-            {/* Box Header */}
-            <div className="flex items-center justify-between pb-1.5 border-b border-[#1F2737]">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[#7C3AED]/15 border border-[#7C3AED]/30 flex items-center justify-center text-[#7C3AED]">
-                  <Ticket className="w-3.5 h-3.5" />
+      {isVrfModalOpen && (
+        <div
+          onClick={() => setIsVrfModalOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-2xl bg-[#0E1525] border border-emerald-500/35 p-4 sm:p-5 shadow-2xl space-y-3.5 text-left"
+          >
+            <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-[#1E293B]">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center text-emerald-400 shrink-0">
+                  <ShieldCheck className="w-4 h-4" />
                 </div>
-                <div>
-                  <h3 className="font-display font-extrabold text-xs sm:text-sm text-white leading-tight">
-                    Direct Purchase
+                <div className="min-w-0">
+                  <h3 className="font-display font-extrabold text-sm text-white truncate">
+                    VRF Provably Fair Commitment
                   </h3>
-                  <p className="text-[10px] text-[#94A3B8]">
-                    Instant settlement order summary
+                  <p className="text-[10px] font-mono-numbers text-[#94A3B8]">
+                    {eventTitle} · {drawIdFormatted}
                   </p>
                 </div>
               </div>
-
-              <span className="text-[9px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold uppercase">
-                INSTANT
-              </span>
+              <button
+                type="button"
+                onClick={() => setIsVrfModalOpen(false)}
+                className="w-7 h-7 rounded-lg bg-[#161F33] hover:bg-[#1F2A44] text-[#94A3B8] hover:text-white flex items-center justify-center cursor-pointer shrink-0"
+                aria-label="Close VRF modal"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Order Summary Card */}
-            <div className="p-2.5 rounded-xl bg-[#0B0F19] border border-[#1F2737] space-y-2 shadow-inner font-mono-numbers text-xs">
-              
-              {/* Combination Row */}
-              <div className="flex items-center justify-between pb-1.5 border-b border-[#1F2737]">
-                <span className="text-[#94A3B8] text-[11px]">Chosen Combination:</span>
-                <strong className="text-white font-black text-xs sm:text-sm bg-[#161F30] px-2 py-0.5 rounded-lg border border-[#27354F]">
-                  #{currentNumberStr}
-                </strong>
-              </div>
-
-              {/* Unit Price Row */}
-              <div className="flex items-center justify-between text-[#94A3B8] text-[11px]">
-                <span>Unit Ticket Price:</span>
-                <strong className="text-white">{ticketPrice.toFixed(2)} USDT</strong>
-              </div>
-
-              {/* Platform Fee / Escrow */}
-              <div className="flex items-center justify-between text-[#94A3B8] text-[11px]">
-                <span>Gas / Escrow:</span>
-                <span className="text-emerald-400 font-bold">0.00 USDT (0% subsidised)</span>
-              </div>
-
-              {/* Total Cost Highlight */}
-              <div className="flex items-center justify-between pt-1.5 border-t border-[#1F2737]">
-                <span className="text-[#D2BBFF] font-bold text-xs">Total Purchase:</span>
-                <strong className="text-[#F59E0B] font-black text-sm sm:text-base">
-                  {totalPurchaseCost.toFixed(2)} USDT
-                </strong>
-              </div>
-
-              {/* Available Wallet Balance */}
-              <div className="flex items-center justify-between pt-0.5 text-[10px] text-[#64748B]">
-                <span className="flex items-center gap-1">
-                  <Wallet className="w-3 h-3 text-[#94A3B8]" />
-                  <span>Wallet Balance:</span>
+            <div className="space-y-2.5 text-xs font-mono-numbers">
+              <div className="p-2.5 rounded-xl bg-[#070B14] border border-[#1B2438] space-y-1">
+                <span className="text-[10px] text-emerald-400 font-bold uppercase block">
+                  Pre-Draw SHA-256 Commit Hash
                 </span>
-                <span className={Number(wallet.balance || 0) < totalPurchaseCost ? 'text-rose-400 font-bold' : 'text-[#10B981] font-bold'}>
-                  {Number(wallet.balance || 0).toFixed(2)} USDT
-                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-amber-300 truncate select-all">
+                    {event?.sha256Seed || event?.sha256_seed || 'Committed on-chain prior to draw'}
+                  </span>
+                  {(event?.sha256Seed || event?.sha256_seed) && (
+                    <button
+                      type="button"
+                      onClick={handleCopySeed}
+                      className="p-1 rounded hover:bg-white/10 text-[#94A3B8] hover:text-white cursor-pointer shrink-0"
+                      title="Copy Commit Hash"
+                    >
+                      {copiedSeed ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  )}
+                </div>
               </div>
 
-            </div>
-
-          </div>
-
-          {/* Desktop Buy Button */}
-          <div className="space-y-1.5 pt-1">
-            <button
-              type="button"
-              onClick={handlePurchaseAction}
-              disabled={
-                isSubmitting || 
-                isTimedOut || 
-                isAlreadyPurchasedByMe || 
-                Number(wallet.balance || 0) < totalPurchaseCost
-              }
-              className={`w-full py-2.5 sm:py-3 rounded-xl font-display font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all ${
-                isAlreadyPurchasedByMe
-                  ? 'bg-[#181D29] text-rose-300 border border-rose-500/40 cursor-not-allowed opacity-80'
-                  : Number(wallet.balance || 0) < totalPurchaseCost
-                  ? 'bg-[#181D29] text-[#8B92A2] border border-[#242D40] cursor-not-allowed opacity-75'
-                  : 'btn-gold shadow-[#F59E0B]/25 active:scale-98'
-              }`}
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                  <span>Processing Transaction...</span>
-                </>
-              ) : isAlreadyPurchasedByMe ? (
-                <>
-                  <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
-                  <span>Ticket Already Owned</span>
-                </>
-              ) : Number(wallet.balance || 0) < totalPurchaseCost ? (
-                <span>Insufficient USDT Balance</span>
-              ) : (
-                <>
-                  <Zap className="w-3.5 h-3.5 fill-current" />
-                  <span>Buy Ticket ({totalPurchaseCost.toFixed(2)} USDT)</span>
-                </>
-              )}
-            </button>
-
-            <p className="text-[9px] text-[#64748B] text-center font-mono-numbers">
-              Instant smart contract escrow • Non-custodial settlement
-            </p>
-          </div>
-
-        </section>
-
-      </main>
-
-      {/* ===================================================================== */}
-      {/* 3. BOTTOM SECTION: FULL-WIDTH LIVE ROOM ACTIVITY (SPANS BOTH COLUMNS) */}
-      {/* ===================================================================== */}
-      <section className="w-full max-w-7xl mx-auto h-32 xs:h-36 sm:h-40 lg:h-44 xl:h-48 shrink-0 bg-[#0E1422]/95 border border-[#1B2238] rounded-xl p-2 sm:p-2.5 flex flex-col justify-between shadow-xl backdrop-blur-md">
-        
-        {/* Full-Width Section Header */}
-        <div className="flex items-center justify-between pb-1.5 border-b border-[#1F2737] shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981]">
-              <Activity className="w-3.5 h-3.5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-display font-extrabold text-xs sm:text-sm text-white">
-                  Live Room Activity
-                </h3>
-                <span className="text-[8px] sm:text-[9px] uppercase font-mono-numbers font-black px-1.5 py-0.2 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30">
-                  {roomActivityTickets.length} TICKETS MINTED
-                </span>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2.5 rounded-xl bg-[#070B14] border border-[#1B2438]">
+                  <span className="text-[9.5px] text-[#94A3B8] block">Ticket Snapshot</span>
+                  <strong className="text-white text-xs">
+                    {roomActivityTickets.length} Minted
+                  </strong>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#070B14] border border-[#1B2438]">
+                  <span className="text-[9.5px] text-[#94A3B8] block">Seed Status</span>
+                  <strong className="text-emerald-400 text-xs">Locked Pre-Draw</strong>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2 text-xs font-mono-numbers">
-            <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 text-[10px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Live Sync</span>
-            </span>
+              <p className="text-[11px] font-sans text-[#94A3B8] leading-relaxed">
+                The secret server seed is cryptographically hashed before ticket sales begin and revealed upon official draw settlement so outcomes cannot be altered.
+              </p>
+            </div>
           </div>
         </div>
-
-        {/* Real-time Records Stream with Smooth Internal Vertical Scroll */}
-        {renderActivityFeed()}
-
-      </section>
-
+      )}
     </div>
   );
 }

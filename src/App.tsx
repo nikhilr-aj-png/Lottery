@@ -198,11 +198,11 @@ function LotteryAppContent() {
   const [activeGameId, setActiveGameId] = useState(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
-  // Parse dedicated game routes: /games/:gameSlug or /games/:gameSlug/:roomId
+  // Parse dedicated game routes: /games/:gameSlug or /games/:gameSlug/:roomId (also normalize /game/:gameSlug)
   const parseGameRoute = (path) => {
     if (!path) return null;
-    const cleanPath = path.split('?')[0].split('#')[0];
-    const match = cleanPath.match(/^\/games\/([^\/]+)(?:\/([^\/]+))?/);
+    const cleanPath = path.split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
+    const match = cleanPath.match(/^\/games?\/([^\/]+)(?:\/([^\/]+))?/);
     if (match) {
       const slug = match[1]?.toLowerCase();
       if (slug === 'four-digit-lottery' || slug === 'lottery' || slug === '4-digit-lottery') {
@@ -609,6 +609,9 @@ function LotteryAppContent() {
     return <AdminPortal onSwitchToUserLobby={switchToUserLobby} />;
   }
 
+  // Dedicated game room route state (any /games/... or /lottery route renders the single-screen Game Room)
+  const isInGameRoom = Boolean(currentGameRoute);
+
   // Otherwise: Pure Public User Platform
   return (
     <div className="h-screen h-[100dvh] bg-[#0B0F19] text-[#F8FAFC] flex flex-col font-sans overflow-hidden">
@@ -616,7 +619,7 @@ function LotteryAppContent() {
       <Navbar
         onGoHome={handleGoHome}
         onSelectTab={handleSelectTab}
-        isInGameRoom={Boolean(currentGameRoute?.roomId)}
+        isInGameRoom={isInGameRoom}
         onOpenProfile={() => {
           handleSelectTab('profile');
         }}
@@ -652,7 +655,7 @@ function LotteryAppContent() {
         <main
           id="main-content"
           className={`flex-1 min-w-0 h-full text-left flex flex-col overscroll-contain ${currentGameRoute
-            ? 'overflow-hidden p-1 xs:p-1.5 sm:p-2'
+            ? 'overflow-hidden p-0'
             : 'overflow-y-auto pt-2.5 sm:pt-3.5 pb-0'
             }`}
         >
@@ -667,9 +670,9 @@ function LotteryAppContent() {
                 onBackToHome={handleGoHome}
               />
             ) : currentGameRoute ? (
-              /* DEDICATED GAME ROUTE VIEW (LOBBY OR DEDICATED ROOM) */
+              /* DEDICATED GAME ROUTE VIEW */
               <GamePage
-                key={`${currentGameRoute.gameSlug}-${currentGameRoute.roomId || 'lobby'}`}
+                key={`${currentGameRoute.gameSlug}-${currentGameRoute.roomId || 'active'}`}
                 gameSlug={currentGameRoute.gameSlug}
                 roomId={currentGameRoute.roomId}
                 onNavigate={(path) => navigate(path)}
@@ -681,10 +684,10 @@ function LotteryAppContent() {
                 {activeTab === 'lotteries' && (
                   <CasinoLobby
                     onLaunchGame={(gidOrEventId) => {
-                      if (gidOrEventId && gidOrEventId.startsWith('evt-')) {
-                        navigate('/games/lottery/' + gidOrEventId);
+                      if (gidOrEventId && gidOrEventId !== 'lottery' && gidOrEventId !== 'four-digit-lottery') {
+                        navigate('/games/four-digit-lottery/' + gidOrEventId);
                       } else {
-                        navigate('/game/lottery');
+                        navigate('/games/four-digit-lottery');
                       }
                     }}
                     onOpenLotteryRules={() => setIsRulesModalOpen(true)}
@@ -839,7 +842,7 @@ function LotteryAppContent() {
           </div>
 
           {/* Platform Public Footer — Hidden in Active Dedicated Game Rooms */}
-          {!currentGameRoute?.roomId && (
+          {!isInGameRoom && (
             <Footer
               onSelectTab={handleSelectTab}
               onGoHome={handleGoHome}
@@ -881,7 +884,7 @@ function LotteryAppContent() {
       <Toast />
 
       {/* PWA Add to Screen Prompt & Modal (Hidden in dedicated active game rooms) */}
-      {!currentGameRoute?.roomId && <PwaInstallBanner />}
+      {!isInGameRoom && <PwaInstallBanner />}
       <PwaInstallModal />
     </div>
   );

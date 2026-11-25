@@ -121,9 +121,9 @@ export default function Navbar({
       {/* ======================================================== */}
       {/* 1. TOP HEADER                                            */}
       {/* ======================================================== */}
-      <header className="sticky top-0 z-40 bg-[#0B0F19]/95 backdrop-blur-xl border-b border-[rgba(245,196,81,0.18)]">
+      <header className={`sticky top-0 z-40 bg-[#0B0F19]/95 backdrop-blur-xl border-b border-[rgba(245,196,81,0.18)] ${isInGameRoom ? 'ef-room-navbar' : ''}`}>
         <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2 xs:px-3 sm:px-4 lg:px-6 xl:px-8">
-          <div className="flex items-center justify-between h-13 xs:h-14 sm:h-16">
+          <div className={`flex items-center justify-between ${isInGameRoom ? 'ef-room-navbar-inner h-12 sm:h-14' : 'h-13 xs:h-14 sm:h-16'}`}>
 
             {/* LEFT: Sidebar Toggle & EarnFlow.in Branding */}
             <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 shrink-0">
@@ -244,17 +244,17 @@ export default function Navbar({
 
               {isLoggedIn ? (
                 <>
-                  {/* USDT Balance Pill: Desktop/Tablet view ONLY (>= 640px) */}
+                  {/* USDT Balance Pill: Visible across all viewports */}
                   <div
                     onClick={() => handleNavClick('wallet')}
                     title="Click to view USDT Wallet & 24h Payouts"
-                    className="hidden sm:flex cursor-pointer bg-[#10131A] hover:bg-[#151C2B] border border-emerald-500/30 hover:border-emerald-400 rounded-xl px-2.5 sm:px-3 py-1 sm:py-1.5 items-center gap-1.5 transition-all shadow-inner"
+                    className="flex cursor-pointer bg-[#10131A] hover:bg-[#151C2B] border border-emerald-500/30 hover:border-emerald-400 rounded-xl px-2 sm:px-3 py-1 sm:py-1.5 items-center gap-1 sm:gap-1.5 transition-all shadow-inner shrink-0"
                   >
-                    <Coins className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span className="font-mono-numbers font-bold text-xs sm:text-sm text-emerald-400 whitespace-nowrap">
+                    <Coins className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400 shrink-0" />
+                    <span className="font-mono-numbers font-bold text-[11px] sm:text-sm text-emerald-400 whitespace-nowrap">
                       {Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
-                    <span className="text-[10px] sm:text-xs text-emerald-400 font-extrabold font-mono-numbers">
+                    <span className="text-[9px] sm:text-xs text-emerald-400 font-extrabold font-mono-numbers">
                       USDT
                     </span>
                   </div>
