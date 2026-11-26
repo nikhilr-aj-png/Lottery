@@ -1,16 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useSoundFX } from '../hooks/useSoundFX';
-import { Trophy, RefreshCw, Crown, Megaphone } from 'lucide-react';
+import { Trophy, RefreshCw, Crown } from 'lucide-react';
 
 interface MonthlyAnnouncementPrize {
   rank: number;
-  reward_usdt: number;
-}
-
-interface MonthlyStandingRow {
-  rank: number;
-  username: string | null;
   reward_usdt: number;
 }
 
@@ -18,11 +12,8 @@ interface MonthlyLeaderboardAnnouncement {
   is_published: boolean;
   month_key?: string;
   month_label?: string;
-  title?: string;
-  description?: string;
   finalized?: boolean;
   prizes?: MonthlyAnnouncementPrize[];
-  standings?: MonthlyStandingRow[];
 }
 import { LeaderboardEntry } from '../types/database';
 
@@ -449,6 +440,20 @@ export default function LeaderboardView() {
   const activePeriodLabel =
     TIME_FILTERS.find((tf) => tf.id === timeFilter)?.label || '4 Weeks (1 Month)';
 
+  const rewardByRank = useMemo(() => {
+    const map = new Map<number, number>();
+    if (monthlyAnnouncement?.is_published && Array.isArray(monthlyAnnouncement.prizes)) {
+      for (const p of monthlyAnnouncement.prizes) {
+        const rankNum = Number(p.rank);
+        const amt = Number(p.reward_usdt || 0);
+        if (Number.isFinite(rankNum) && rankNum > 0 && Number.isFinite(amt) && amt > 0) {
+          map.set(rankNum, amt);
+        }
+      }
+    }
+    return map;
+  }, [monthlyAnnouncement]);
+
   return (
     <div className="w-full max-w-5xl mx-auto px-2 xs:px-3 sm:px-4 py-3 sm:py-6 space-y-4 sm:space-y-6 text-left">
       {/* Header */}
@@ -466,6 +471,9 @@ export default function LeaderboardView() {
               </h1>
               <p className="text-[11px] sm:text-xs text-[#94A3B8] mt-0.5 leading-snug">
                 Top ranked players and USDT winnings · {activePeriodLabel}
+                {monthlyAnnouncement?.is_published && monthlyAnnouncement.month_label
+                  ? ` · ${monthlyAnnouncement.month_label} Rewards Active`
+                  : ''}
               </p>
             </div>
           </div>
@@ -516,251 +524,145 @@ export default function LeaderboardView() {
         })}
       </div>
 
-      {/* This Month's Announcement (Published by Super Admin only — single-row Rank | Username | Reward) */}
-      {monthlyAnnouncement?.is_published &&
-        Array.isArray(monthlyAnnouncement.prizes) &&
-        monthlyAnnouncement.prizes.length > 0 && (() => {
-          const prizeRows: MonthlyStandingRow[] =
-            Array.isArray(monthlyAnnouncement.standings) && monthlyAnnouncement.standings.length > 0
-              ? monthlyAnnouncement.standings.slice(0, 10)
-              : monthlyAnnouncement.prizes.slice(0, 10).map((p) => ({
-                  rank: Number(p.rank),
-                  username: null,
-                  reward_usdt: Number(p.reward_usdt || 0)
-                }));
-
-          const totalMonthlyPool = prizeRows.reduce((sum, p) => sum + Number(p.reward_usdt || 0), 0);
-
-          return (
-            <div
-              data-testid="monthly-leaderboard-announcement"
-              className="rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#161c2c] via-[#111827] to-[#0B0F19] border border-[#f5c451]/35 p-3.5 sm:p-5 space-y-3.5 shadow-xl overflow-hidden"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
-                <div className="space-y-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                    <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono-numbers uppercase tracking-wider text-amber-400 font-bold">
-                      <Megaphone className="w-3.5 h-3.5 shrink-0" />
-                      This Month&apos;s Announcement
-                    </span>
-                    {monthlyAnnouncement.month_label && (
-                      <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-[10px] font-mono-numbers font-bold text-amber-300">
-                        {monthlyAnnouncement.month_label}
-                      </span>
-                    )}
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-mono-numbers font-bold uppercase border ${
-                        monthlyAnnouncement.finalized
-                          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                          : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
-                      }`}
-                    >
-                      {monthlyAnnouncement.finalized ? 'Finalized' : 'Active Competition'}
-                    </span>
-                  </div>
-                  <h2 className="font-display font-bold text-sm sm:text-base text-white break-words">
-                    {monthlyAnnouncement.title || `${monthlyAnnouncement.month_label || 'Monthly'} Top 10 Prize Pool`}
-                  </h2>
-                  {monthlyAnnouncement.description && (
-                    <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-relaxed">
-                      {monthlyAnnouncement.description}
-                    </p>
-                  )}
-                </div>
-
-                <div className="shrink-0 flex sm:flex-col items-center sm:items-end justify-between gap-1 px-3 py-2 rounded-xl bg-[#0B0F19]/80 border border-amber-500/25">
-                  <span className="text-[10px] font-mono-numbers uppercase tracking-wider text-[#94A3B8]">
-                    Top 10 Pool
-                  </span>
-                  <span className="text-xs sm:text-sm font-mono-numbers font-extrabold text-amber-400 whitespace-nowrap">
-                    $
-                    {totalMonthlyPool.toLocaleString('en-US', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
-                    })}{' '}
-                    USDT
-                  </span>
-                </div>
-              </div>
-
-              {/* Single-Row Standings & Rewards Table: Rank | Username | Reward (USDT) */}
-              <div className="rounded-xl border border-[#1F2737] bg-[#0B0F19]/75 overflow-hidden">
-                <div className="grid grid-cols-[44px_minmax(0,1fr)_auto] sm:grid-cols-[72px_minmax(0,1fr)_160px] items-center gap-2 sm:gap-4 px-2.5 sm:px-4 py-2 bg-[#080B12] border-b border-[#1F2737] text-[10px] font-mono-numbers uppercase tracking-wider text-[#94A3B8]">
-                  <span>Rank</span>
-                  <span>Username</span>
-                  <span className="text-right">Reward (USDT)</span>
-                </div>
-
-                <div className="divide-y divide-[#1F2737]/70">
-                  {prizeRows.map((row) => {
-                    const rank = Number(row.rank);
-                    const reward = Number(row.reward_usdt || 0);
-                    const rankBadgeClass =
-                      rank === 1
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/45'
-                        : rank === 2
-                        ? 'bg-slate-400/20 text-slate-200 border-slate-400/40'
-                        : rank === 3
-                        ? 'bg-orange-500/20 text-orange-300 border-orange-500/40'
-                        : 'bg-[#111827] text-[#94A3B8] border-[#1F2737]';
-
-                    return (
-                      <div
-                        key={rank}
-                        data-testid={`monthly-prize-row-${rank}`}
-                        className="grid grid-cols-[44px_minmax(0,1fr)_auto] sm:grid-cols-[72px_minmax(0,1fr)_160px] items-center gap-2 sm:gap-4 px-2.5 sm:px-4 py-2 text-xs hover:bg-white/[0.02] transition-colors"
-                      >
-                        <div className="shrink-0">
-                          <span
-                            className={`inline-flex items-center justify-center min-w-[34px] sm:min-w-[40px] px-1.5 py-0.5 rounded-md border font-mono-numbers font-extrabold text-[10px] sm:text-xs whitespace-nowrap ${rankBadgeClass}`}
-                          >
-                            #{rank}
-                          </span>
-                        </div>
-
-                        <div className="min-w-0">
-                          {row.username ? (
-                            <span
-                              className={`block truncate whitespace-nowrap font-display font-bold text-[11px] xs:text-xs sm:text-sm ${
-                                rank === 1 ? 'text-amber-300' : 'text-white'
-                              }`}
-                              title={row.username}
-                            >
-                              {row.username}
-                            </span>
-                          ) : (
-                            <span className="block truncate whitespace-nowrap font-mono-numbers text-[11px] sm:text-xs text-[#64748B] italic">
-                              Rank #{rank} Qualifying Slot
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="text-right whitespace-nowrap shrink-0 font-mono-numbers font-extrabold text-[11px] xs:text-xs sm:text-sm text-emerald-400">
-                          {reward.toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                          })}{' '}
-                          <span className="text-[9.5px] sm:text-[11px] text-emerald-300/85">USDT</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-      {/* Strictly 3-Column Leaderboard Table: Rank | Username | Total Won (USDT) */}
+      {/* Inline 4-Column Leaderboard Table: Rank | Username | Reward | Total Won */}
       <div className="rounded-2xl sm:rounded-3xl bg-[#111827] border border-[#1F2737] overflow-hidden shadow-xl">
         <div
           data-testid="leaderboard-scroll-container"
           className="max-h-[540px] sm:max-h-[580px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain"
         >
-          <table className="w-full text-left">
+          <table className="w-full min-w-[420px] sm:min-w-full text-left">
             <thead className="sticky top-0 z-10 bg-[#0B0F19] text-[#94A3B8] font-mono-numbers uppercase text-[10px] sm:text-xs tracking-wider shadow-[0_1px_0_0_#1F2737]">
-            <tr>
-              <th className="py-3 px-2.5 xs:px-3.5 sm:px-6 w-12 xs:w-16 sm:w-28 whitespace-nowrap">Rank</th>
-              <th className="py-3 px-2 xs:px-3.5 sm:px-6 whitespace-nowrap">Username</th>
-              <th className="py-3 px-2.5 xs:px-3.5 sm:px-6 text-right whitespace-nowrap">
-                Total Won (USDT)
-              </th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-[#1F2737] text-xs sm:text-sm">
-            {loading ? (
               <tr>
-                <td colSpan={3} className="py-14 text-center text-[#94A3B8]">
-                  <RefreshCw className="w-6 h-6 animate-spin text-amber-400 mx-auto mb-2" />
-                  <p className="text-xs font-mono-numbers">Loading leaderboard...</p>
-                </td>
+                <th className="py-3 px-2.5 xs:px-3.5 sm:px-5 w-14 xs:w-16 sm:w-24 whitespace-nowrap">
+                  Rank
+                </th>
+                <th className="py-3 px-2 xs:px-3.5 sm:px-5 whitespace-nowrap">Username</th>
+                <th className="py-3 px-2 xs:px-3.5 sm:px-5 text-right whitespace-nowrap">
+                  Reward
+                </th>
+                <th className="py-3 px-2.5 xs:px-3.5 sm:px-5 text-right whitespace-nowrap">
+                  Total Won
+                </th>
               </tr>
-            ) : rows.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="py-14 px-4 text-center text-[#94A3B8]">
-                  <Trophy className="w-8 h-8 text-[#64748B] mx-auto mb-2.5" />
-                  <p className="text-sm font-bold text-white">
-                    No winning activity recorded for {activePeriodLabel}
-                  </p>
-                  <p className="text-xs text-[#94A3B8] mt-1">
-                    Players with verified USDT winnings during this period will appear here.
-                  </p>
-                </td>
-              </tr>
-            ) : (
-              rows.map((player) => {
-                const isTop1 = player.rank === 1;
-                const isTop2 = player.rank === 2;
-                const isTop3 = player.rank === 3;
+            </thead>
 
-                return (
-                  <tr
-                    key={`${player.rank}-${player.username}`}
-                    className={`transition-colors hover:bg-[#151C2B] ${
-                      isTop1
-                        ? 'bg-amber-500/[0.06]'
-                        : isTop2
-                        ? 'bg-slate-400/[0.04]'
-                        : isTop3
-                        ? 'bg-amber-700/[0.04]'
-                        : ''
-                    }`}
-                  >
-                    {/* 1. Rank */}
-                    <td className="py-3 px-2.5 xs:px-3.5 sm:px-6 whitespace-nowrap">
-                      {isTop1 ? (
-                        <span className="inline-flex items-center justify-center w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 rounded-full bg-amber-400 text-black font-black text-[11px] sm:text-xs shadow-md shadow-amber-500/25">
-                          <Crown className="w-3.5 h-3.5 mr-0.5 hidden sm:inline" />1
-                        </span>
-                      ) : isTop2 ? (
-                        <span className="inline-flex items-center justify-center w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 rounded-full bg-slate-300 text-black font-black text-[11px] sm:text-xs shadow-md">
-                          2
-                        </span>
-                      ) : isTop3 ? (
-                        <span className="inline-flex items-center justify-center w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 rounded-full bg-amber-600 text-white font-black text-[11px] sm:text-xs shadow-md">
-                          3
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center justify-center w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 text-[#94A3B8] font-mono-numbers font-bold text-[11px] sm:text-sm">
-                          {player.rank}
-                        </span>
-                      )}
-                    </td>
+            <tbody className="divide-y divide-[#1F2737] text-xs sm:text-sm">
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="py-14 text-center text-[#94A3B8]">
+                    <RefreshCw className="w-6 h-6 animate-spin text-amber-400 mx-auto mb-2" />
+                    <p className="text-xs font-mono-numbers">Loading leaderboard...</p>
+                  </td>
+                </tr>
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-14 px-4 text-center text-[#94A3B8]">
+                    <Trophy className="w-8 h-8 text-[#64748B] mx-auto mb-2.5" />
+                    <p className="text-sm font-bold text-white">
+                      No winning activity recorded for {activePeriodLabel}
+                    </p>
+                    <p className="text-xs text-[#94A3B8] mt-1">
+                      Players with verified USDT winnings during this period will appear here.
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                rows.map((player) => {
+                  const isTop1 = player.rank === 1;
+                  const isTop2 = player.rank === 2;
+                  const isTop3 = player.rank === 3;
+                  const assignedReward = rewardByRank.get(player.rank) ?? 0;
 
-                    {/* 2. Username */}
-                    <td className="py-3 px-2 xs:px-3.5 sm:px-6 min-w-0 max-w-[110px] xs:max-w-[160px] sm:max-w-none">
-                      <span
-                        className={`font-display font-bold truncate block text-[12px] sm:text-sm ${
-                          isTop1 ? 'text-amber-300' : 'text-white'
-                        }`}
-                        title={player.username}
+                  return (
+                    <tr
+                      key={`${player.rank}-${player.username}`}
+                      data-testid={`leaderboard-row-${player.rank}`}
+                      className={`transition-colors hover:bg-[#151C2B] ${
+                        isTop1
+                          ? 'bg-amber-500/[0.06]'
+                          : isTop2
+                          ? 'bg-slate-400/[0.04]'
+                          : isTop3
+                          ? 'bg-amber-700/[0.04]'
+                          : ''
+                      }`}
+                    >
+                      {/* 1. Rank */}
+                      <td className="py-3 px-2.5 xs:px-3.5 sm:px-5 whitespace-nowrap">
+                        {isTop1 ? (
+                          <span className="inline-flex items-center justify-center min-w-[30px] h-7 sm:min-w-[36px] sm:h-8 px-2 rounded-full bg-amber-400 text-black font-black text-[11px] sm:text-xs shadow-md shadow-amber-500/25">
+                            <Crown className="w-3 h-3 mr-0.5 hidden sm:inline shrink-0" />#1
+                          </span>
+                        ) : isTop2 ? (
+                          <span className="inline-flex items-center justify-center min-w-[30px] h-7 sm:min-w-[36px] sm:h-8 px-2 rounded-full bg-slate-300 text-black font-black text-[11px] sm:text-xs shadow-md">
+                            #2
+                          </span>
+                        ) : isTop3 ? (
+                          <span className="inline-flex items-center justify-center min-w-[30px] h-7 sm:min-w-[36px] sm:h-8 px-2 rounded-full bg-amber-600 text-white font-black text-[11px] sm:text-xs shadow-md">
+                            #3
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center justify-center min-w-[30px] h-7 sm:min-w-[36px] sm:h-8 px-1.5 text-[#94A3B8] font-mono-numbers font-bold text-[11px] sm:text-sm">
+                            #{player.rank}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* 2. Username */}
+                      <td className="py-3 px-2 xs:px-3.5 sm:px-5 min-w-0 max-w-[125px] xs:max-w-[160px] sm:max-w-[240px] md:max-w-none">
+                        <span
+                          className={`font-display font-bold truncate block whitespace-nowrap text-[12px] sm:text-sm ${
+                            isTop1 ? 'text-amber-300' : 'text-white'
+                          }`}
+                          title={player.username}
+                        >
+                          {player.username}
+                        </span>
+                      </td>
+
+                      {/* 3. Reward (Inline directly between Username & Total Won) */}
+                      <td
+                        data-testid={`leaderboard-reward-cell-${player.rank}`}
+                        className="py-3 px-2 xs:px-3.5 sm:px-5 text-right whitespace-nowrap font-mono-numbers text-[11px] xs:text-xs sm:text-sm"
                       >
-                        {player.username}
-                      </span>
-                    </td>
+                        {assignedReward > 0 ? (
+                          <>
+                            <span className="font-extrabold text-amber-300">
+                              {assignedReward.toLocaleString('en-US', {
+                                minimumFractionDigits: assignedReward % 1 === 0 ? 0 : 2,
+                                maximumFractionDigits: 2
+                              })}
+                            </span>{' '}
+                            <span className="text-[9.5px] sm:text-xs font-bold text-amber-400/85">
+                              USDT
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[#475569] font-medium">—</span>
+                        )}
+                      </td>
 
-                    {/* 3. Total Won (USDT) */}
-                    <td className="py-3 px-2.5 xs:px-3.5 sm:px-6 text-right whitespace-nowrap font-mono-numbers text-[11px] xs:text-xs sm:text-sm">
-                      <span
-                        className={`font-black ${
-                          isTop1 ? 'text-amber-300' : 'text-emerald-400'
-                        }`}
-                      >
-                        {Number(player.total_won || 0).toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        })}
-                      </span>{' '}
-                      <span className="text-[9.5px] sm:text-xs font-bold text-amber-400/85">
-                        USDT
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
+                      {/* 4. Total Won (USDT) */}
+                      <td className="py-3 px-2.5 xs:px-3.5 sm:px-5 text-right whitespace-nowrap font-mono-numbers text-[11px] xs:text-xs sm:text-sm">
+                        <span
+                          className={`font-black ${
+                            isTop1 ? 'text-amber-300' : 'text-emerald-400'
+                          }`}
+                        >
+                          {Number(player.total_won || 0).toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}
+                        </span>{' '}
+                        <span className="text-[9.5px] sm:text-xs font-bold text-emerald-400/85">
+                          USDT
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
           </table>
         </div>
       </div>

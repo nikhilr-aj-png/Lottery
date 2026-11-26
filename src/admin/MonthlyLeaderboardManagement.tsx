@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useLottery } from '../context/LotteryContext';
 import {
-  Megaphone,
   Trophy,
   Calendar,
   Save,
@@ -309,16 +308,16 @@ export default function MonthlyLeaderboardManagement({
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-[#0d1117] border border-[#272a31] p-5 rounded-2xl">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <Megaphone className="w-5 h-5 text-amber-400 shrink-0" />
+            <Trophy className="w-5 h-5 text-amber-400 shrink-0" />
             <h2 className="font-display font-extrabold text-lg text-white">
-              Monthly Leaderboard Announcement &amp; Prize Distribution
+              Monthly Leaderboard Rewards &amp; Distribution
             </h2>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-mono-numbers font-bold uppercase">
               <ShieldCheck className="w-3 h-3" /> Super Admin Only
             </span>
           </div>
           <p className="text-xs text-[#8b92a2]">
-            Configure official Rank 1–10 USDT rewards per monthly leaderboard competition and publish to all authenticated users.
+            Configure independent Rank 1–10 USDT rewards per competition month. Published values appear inline directly between Username and Total Won in the User Leaderboard.
           </p>
         </div>
 
@@ -645,48 +644,57 @@ export default function MonthlyLeaderboardManagement({
           )}
         </div>
 
-        {/* Right: User Panel Preview & Saved Months */}
+        {/* Right: Inline Leaderboard Row Preview & Saved Months */}
         <div className="xl:col-span-5 space-y-5">
           <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[11px] font-mono-numbers uppercase tracking-wider text-amber-400 font-bold">
-                User Panel Card Preview
+                User Panel Inline Row Preview
               </span>
               <span className="text-[10px] font-mono-numbers text-[#8b92a2]">
-                {isSelectedCurrentlyPublished ? 'Visible to Users' : 'Hidden Until Published'}
+                {isSelectedCurrentlyPublished ? 'Live on Leaderboard' : 'Hidden Until Published'}
               </span>
             </div>
 
-            <div className="rounded-2xl bg-gradient-to-br from-[#161c2c] via-[#111827] to-[#0B0F19] border border-[#f5c451]/30 p-4 space-y-3.5">
-              <div className="flex items-start justify-between gap-2">
-                <div className="space-y-1 min-w-0">
-                  <span className="inline-flex items-center gap-1.5 text-[10px] font-mono-numbers uppercase tracking-wider text-amber-400 font-bold">
-                    <Megaphone className="w-3 h-3 shrink-0" /> This Month&apos;s Announcement
-                  </span>
-                  <h4 className="font-display font-bold text-sm sm:text-base text-white break-words">
-                    {title.trim() || `${formatMonthLabel(selectedMonth)} Top 10 Prize Pool`}
-                  </h4>
-                  <p className="text-[11px] text-[#94A3B8] leading-relaxed">
-                    {description.trim() ||
-                      'Top 10 ranked players by win rate share this month’s official USDT prize pool.'}
-                  </p>
-                </div>
-                <span className="shrink-0 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-[10px] font-mono-numbers font-bold text-amber-300">
-                  {formatMonthLabel(selectedMonth)}
-                </span>
+            <div className="rounded-xl bg-[#0B0F19] border border-[#1F2737] overflow-hidden">
+              <div className="grid grid-cols-[44px_minmax(0,1fr)_auto_auto] items-center gap-2 px-3 py-2 bg-[#07090d] border-b border-[#1F2737] text-[9.5px] font-mono-numbers uppercase tracking-wider text-[#94A3B8]">
+                <span>Rank</span>
+                <span>Username</span>
+                <span className="text-right">Reward</span>
+                <span className="text-right">Total Won</span>
               </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-5 xl:grid-cols-2 gap-2">
+              <div className="divide-y divide-[#1F2737]/70">
                 {normalizedPrizes.map((prize) => (
                   <div
                     key={prize.rank}
-                    className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#0B0F19]/80 border border-[#1F2737]"
+                    className="grid grid-cols-[44px_minmax(0,1fr)_auto_auto] items-center gap-2 px-3 py-2 text-[11px]"
                   >
-                    <span className="text-[11px] font-mono-numbers font-bold text-[#94A3B8]">
+                    <span
+                      className={`font-mono-numbers font-extrabold ${
+                        prize.rank === 1
+                          ? 'text-amber-300'
+                          : prize.rank === 2
+                          ? 'text-slate-200'
+                          : prize.rank === 3
+                          ? 'text-orange-300'
+                          : 'text-[#94A3B8]'
+                      }`}
+                    >
                       #{prize.rank}
                     </span>
-                    <span className="text-[11px] font-mono-numbers font-bold text-emerald-400">
-                      ${prize.reward_usdt.toFixed(2)}
+                    <span className="text-white/75 truncate">
+                      Player_{prize.rank}
+                    </span>
+                    <span className="font-mono-numbers font-bold text-amber-300 text-right whitespace-nowrap">
+                      {prize.reward_usdt > 0
+                        ? `${prize.reward_usdt.toLocaleString('en-US', {
+                            minimumFractionDigits: prize.reward_usdt % 1 === 0 ? 0 : 2,
+                            maximumFractionDigits: 2
+                          })} USDT`
+                        : '—'}
+                    </span>
+                    <span className="font-mono-numbers font-bold text-emerald-400 text-right whitespace-nowrap">
+                      {((11 - prize.rank) * 85).toFixed(2)} USDT
                     </span>
                   </div>
                 ))}
