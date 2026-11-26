@@ -175,6 +175,9 @@ function LotteryAppContent() {
 
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 1024 : false
+  );
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
       return window.innerWidth < 1440;
@@ -185,6 +188,11 @@ function LotteryAppContent() {
   // Responsive sidebar default on window resize
   useEffect(() => {
     const handleResize = () => {
+      const compact = window.innerWidth < 1024;
+      setIsMobileOrTablet(compact);
+      if (!compact) {
+        setIsMobileSidebarOpen(false);
+      }
       if (window.innerWidth < 1440) {
         setIsSidebarCollapsed(true);
       } else {
@@ -700,6 +708,7 @@ function LotteryAppContent() {
           onGoHome={handleGoHome}
           onSelectTab={handleSelectTab}
           isInGameRoom={false}
+          isSidebarExpanded={isMobileOrTablet ? isMobileSidebarOpen : !isSidebarCollapsed}
           onOpenProfile={() => {
             handleSelectTab('profile');
           }}
@@ -737,9 +746,12 @@ function LotteryAppContent() {
         {/* Main Content Pane */}
         <main
           id="main-content"
+          aria-hidden={(!currentGameRoute && isMobileSidebarOpen) || undefined}
           className={`flex-1 min-w-0 h-full text-left flex flex-col overscroll-contain ${currentGameRoute
             ? 'overflow-hidden p-0'
-            : 'overflow-y-auto pt-2.5 sm:pt-3.5 pb-0'
+            : isMobileSidebarOpen
+              ? 'overflow-hidden pointer-events-none select-none pt-2.5 sm:pt-3.5 pb-0'
+              : 'overflow-y-auto pt-2.5 sm:pt-3.5 pb-0'
             }`}
         >
 

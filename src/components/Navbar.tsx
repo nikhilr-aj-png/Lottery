@@ -27,6 +27,7 @@ interface NavbarProps {
   onGoHome?: () => void;
   onSelectTab?: (tabId: string) => void;
   isInGameRoom?: boolean;
+  isSidebarExpanded?: boolean;
 }
 
 export default function Navbar({
@@ -35,7 +36,8 @@ export default function Navbar({
   onOpenNotifications,
   onGoHome,
   onSelectTab,
-  isInGameRoom = false
+  isInGameRoom = false,
+  isSidebarExpanded = false
 }: NavbarProps) {
   const {
     user,
@@ -130,7 +132,10 @@ export default function Navbar({
 
               {/* Sidebar Drawer Toggle (Mobile / Tablet / Desktop) */}
               <button
+                type="button"
                 onClick={onToggleSidebar}
+                aria-expanded={isSidebarExpanded}
+                data-sidebar-toggle="true"
                 className="w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-9.5 sm:h-9.5 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-amber-500/40 transition-colors cursor-pointer shrink-0 shadow-sm"
                 title="Toggle Casino Navigation"
                 aria-label="Toggle Casino Navigation"
@@ -187,8 +192,8 @@ export default function Navbar({
                     setShowVolumeSlider(prev => !prev);
                   }}
                   className={`w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center transition-all cursor-pointer relative shrink-0 shadow-sm ${soundEnabled
-                      ? 'bg-[#10131A] hover:bg-[#151C2B] text-amber-400 border-[#2D3545] hover:border-amber-400/50 hover:shadow-[0_0_12px_rgba(245,196,81,0.2)]'
-                      : 'bg-[#10131A] text-[#64748B] border-[#2D3545] hover:text-[#94A3B8] hover:border-slate-600'
+                    ? 'bg-[#10131A] hover:bg-[#151C2B] text-amber-400 border-[#2D3545] hover:border-amber-400/50 hover:shadow-[0_0_12px_rgba(245,196,81,0.2)]'
+                    : 'bg-[#10131A] text-[#64748B] border-[#2D3545] hover:text-[#94A3B8] hover:border-slate-600'
                     }`}
                   title={soundEnabled ? `Sound FX On (${Math.round(soundVolume * 100)}%) — Tap to mute, right-click for volume` : 'Sound FX Muted — Tap to unmute'}
                   aria-label="Toggle Sound FX"
@@ -281,8 +286,8 @@ export default function Navbar({
                       else handleNavClick('profile');
                     }}
                     className={`hidden sm:flex items-center gap-1.5 text-xs font-mono-numbers px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer shrink-0 shadow-sm ${activeTab === 'profile'
-                        ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] border-[#fff2a3] font-bold'
-                        : 'bg-[#151C2B] text-[#E1E2EB] border-[#2D3545] hover:border-[#F5C451]/50'
+                      ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] border-[#fff2a3] font-bold'
+                      : 'bg-[#151C2B] text-[#E1E2EB] border-[#2D3545] hover:border-[#F5C451]/50'
                       }`}
                     title="Open Player Profile"
                     aria-label="Open Player Profile"
