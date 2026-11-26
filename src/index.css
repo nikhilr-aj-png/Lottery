@@ -56,6 +56,32 @@
   height: 0 !important;
 }
 
+.ef-subtle-scroll {
+  -ms-overflow-style: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(245, 196, 81, 0.35) rgba(7, 9, 13, 0.6) !important;
+}
+
+.ef-subtle-scroll::-webkit-scrollbar {
+  display: block !important;
+  width: 6px !important;
+  height: 6px !important;
+}
+
+.ef-subtle-scroll::-webkit-scrollbar-track {
+  background: rgba(7, 9, 13, 0.6) !important;
+  border-radius: 9999px;
+}
+
+.ef-subtle-scroll::-webkit-scrollbar-thumb {
+  background: rgba(245, 196, 81, 0.35) !important;
+  border-radius: 9999px;
+}
+
+.ef-subtle-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 196, 81, 0.6) !important;
+}
+
 /* Hide native browser up/down number spin arrows */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {

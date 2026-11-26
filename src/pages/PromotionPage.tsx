@@ -29,7 +29,7 @@ interface PromotionPageProps {
  * - Verified referral reward transaction ledger
  */
 export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
-  const { user, profile, wallet, showToast, setIsAuthModalOpen, platformSettings } = useLottery();
+  const { user, profile, wallet, showToast, setIsAuthModalOpen, platformSettings, requireAuth } = useLottery();
   const { playClick } = useSoundFX();
 
   // Copy state
@@ -105,6 +105,35 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
   const totalEarnedUsdt = useMemo(() => {
     return rewardsHistory.reduce((sum, r) => sum + Number(r.amount || 0), 0);
   }, [rewardsHistory]);
+
+  if (!user) {
+    return (
+      <div className="max-w-lg mx-auto my-12 bg-[#111728] border border-amber-500/30 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-2xl">
+        <h2 className="font-display font-black text-xl text-white">Login Required</h2>
+        <p className="text-xs sm:text-sm text-[#94A3B8]">
+          Please sign in or create an account to access your referral link, invite tracking, and USDT referral commissions.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2.5 justify-center pt-1">
+          <button
+            type="button"
+            onClick={() => requireAuth ? requireAuth({ type: 'tab', tab: 'promotion' }) : setIsAuthModalOpen(true)}
+            className="btn-gold px-6 py-2.5 rounded-xl text-xs font-black cursor-pointer"
+          >
+            Login / Sign Up
+          </button>
+          {onBackToHome && (
+            <button
+              type="button"
+              onClick={onBackToHome}
+              className="px-5 py-2.5 rounded-xl bg-[#151C2B] text-[#E1E2EB] border border-[#2D3545] text-xs font-bold cursor-pointer"
+            >
+              Return Home
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // Handle Copy Actions
   const handleCopyLink = () => {

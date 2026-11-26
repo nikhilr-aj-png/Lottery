@@ -199,9 +199,9 @@ export default function RewardsView() {
     }
   };
 
-  // Load VIP Status and Cooldowns
+  // Load VIP Status and Cooldowns (Authenticated Only)
   const fetchVipStatus = async () => {
-    if (!wallet?.address) return;
+    if (!user?.id || !wallet?.address) return;
     setVipLoading(true);
     try {
       const { data, error } = await supabase.rpc('get_or_update_user_vip', {

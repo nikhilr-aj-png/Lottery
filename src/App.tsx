@@ -168,8 +168,25 @@ function LotteryAppContent() {
     profile,
     logout,
     setIsAuthModalOpen,
-    showToast
+    showToast,
+    authLoading,
+    pendingAuthRedirect,
+    clearPendingAuthRedirect,
+    requireAuth
   } = useLottery();
+
+  const PROTECTED_TABS = useMemo(() => new Set([
+    'wallet',
+    'tickets',
+    'transactions',
+    'profile',
+    'promotion',
+    'rewards',
+    'daily-bonus',
+    'leaderboard'
+  ]), []);
+
+  const wasAuthenticatedRef = React.useRef(false);
 
   const { triggerInstall, isInstalled } = usePwa();
 
@@ -399,6 +416,10 @@ function LotteryAppContent() {
       handleGoHome();
       return;
     }
+    if (PROTECTED_TABS.has(tab) && !user) {
+      requireAuth({ type: 'tab', tab }, 'Please log in or create an account to access this section.');
+      return;
+    }
     setCurrentGameRoute(null);
     setActiveGameId(null);
     setIsTransactionRoute(tab === 'transactions');
@@ -588,18 +609,66 @@ function LotteryAppContent() {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [activeTab, currentGameRoute, isTransactionRoute]);
 
-  // Strict Login Gating for sensitive direct modals/actions
+  // Strict Authentication Gating & Post-Login Intended Redirect Handler
   useEffect(() => {
-    if (!user && (activeTab === 'tickets' || activeTab === 'transactions')) {
-      const tabNames = {
-        tickets: 'My Tickets',
-        transactions: 'Transaction History'
-      };
-      setActiveTab('lotteries');
-      setIsAuthModalOpen(true);
-      showToast(`Please log in to access ${tabNames[activeTab] || 'this section'}!`, 'info');
+    if (authLoading) return;
+
+    const onProtectedRoute = Boolean(currentGameRoute) || isTransactionRoute || PROTECTED_TABS.has(activeTab);
+
+    if (user) {
+      wasAuthenticatedRef.current = true;
+
+      if (pendingAuthRedirect && !isAdminView) {
+        const target = pendingAuthRedirect;
+        clearPendingAuthRedirect();
+
+        if (target.type === 'game') {
+          const slug = target.gameSlug || 'four-digit-lottery';
+          const gamePath = target.roomId ? `/games/${slug}/${target.roomId}` : `/games/${slug}`;
+          requestImmersiveFullscreen();
+          navigate(gamePath);
+        } else if (target.type === 'tab' && target.tab) {
+          handleSelectTab(target.tab);
+        }
+      }
+      return;
     }
-  }, [user, activeTab]);
+
+    // User signed out / session expired while on a protected view -> clean return to Home without modal spam
+    const justLoggedOut = wasAuthenticatedRef.current;
+    wasAuthenticatedRef.current = false;
+
+    if (onProtectedRoute && !isAdminRoute) {
+      if (!justLoggedOut) {
+        if (currentGameRoute) {
+          requireAuth(
+            {
+              type: 'game',
+              gameSlug: currentGameRoute.gameSlug,
+              roomId: currentGameRoute.roomId || null
+            },
+            'Please log in to enter the Four Digit Lottery Room.'
+          );
+        } else {
+          const targetTab = isTransactionRoute ? 'transactions' : activeTab;
+          requireAuth(
+            { type: 'tab', tab: targetTab },
+            'Please log in to access this feature.'
+          );
+        }
+      }
+
+      setCurrentGameRoute(null);
+      setIsTransactionRoute(false);
+      setActiveGameId(null);
+      setActiveTab('lotteries', false);
+      if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+        try {
+          window.history.replaceState(null, '', '/');
+        } catch {}
+      }
+    }
+  }, [authLoading, user, activeTab, currentGameRoute, isTransactionRoute, pendingAuthRedirect, isAdminRoute]);
 
   // Active events strictly filters out any pool whose draw time has expired
   const activeEvents = useMemo(() => {
@@ -699,6 +768,18 @@ function LotteryAppContent() {
     return <AdminPortal onSwitchToUserLobby={switchToUserLobby} />;
   }
 
+  // Prevent flashing protected route UI while initial Supabase session restores
+  if (authLoading && (Boolean(currentGameRoute) || isTransactionRoute || PROTECTED_TABS.has(activeTab))) {
+    return (
+      <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="w-10 h-10 rounded-full border-2 border-amber-400/30 border-t-amber-400 animate-spin" />
+          <p className="text-xs font-mono-numbers text-[#94A3B8]">Verifying your session...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Otherwise: Pure Public User Platform
   return (
     <div className="h-screen h-[100dvh] bg-[#0B0F19] text-[#F8FAFC] flex flex-col font-sans overflow-hidden">
@@ -757,14 +838,20 @@ function LotteryAppContent() {
 
           <div className={currentGameRoute ? 'flex-1 min-h-0 flex flex-col overflow-hidden h-full' : 'w-full flex-grow shrink-0 px-2.5 xs:px-4 sm:px-6 lg:px-8'}>
             {/* DEDICATED SEPARATE PAGE: TRANSACTION HISTORY */}
-            {(isTransactionRoute || activeTab === 'transactions') ? (
+            {(isTransactionRoute || activeTab === 'transactions') ? (user ? (
               <TransactionHistoryPage
                 onBackToWallet={() => {
                   handleSelectTab('wallet');
                 }}
                 onBackToHome={handleGoHome}
               />
-            ) : currentGameRoute ? (
+            ) : (
+              <AuthRequiredPrompt
+                title="Transaction History"
+                onLogin={() => requireAuth({ type: 'tab', tab: 'transactions' })}
+                onHome={handleGoHome}
+              />
+            )) : currentGameRoute ? (user ? (
               /* DEDICATED GAME ROUTE VIEW */
               <GamePage
                 key={`${currentGameRoute.gameSlug}-${currentGameRoute.roomId || 'active'}`}
@@ -774,14 +861,24 @@ function LotteryAppContent() {
                 onBackToHome={handleGoHome}
               />
             ) : (
+              <AuthRequiredPrompt
+                title="Four Digit Lucky Lottery Room"
+                onLogin={() => requireAuth({ type: 'game', gameSlug: currentGameRoute.gameSlug, roomId: currentGameRoute.roomId || null })}
+                onHome={handleGoHome}
+              />
+            )) : (
               <>
                 {/* VIEW 1: DEDICATED FOUR-DIGIT LOTTERY HOMEPAGE */}
                 {activeTab === 'lotteries' && (
                   <CasinoLobby
                     onLaunchGame={(gidOrEventId) => {
+                      const roomId = gidOrEventId && gidOrEventId !== 'lottery' && gidOrEventId !== 'four-digit-lottery' ? gidOrEventId : null;
+                      if (!requireAuth({ type: 'game', gameSlug: 'four-digit-lottery', roomId }, 'Please log in to enter the Live Draw Room.')) {
+                        return;
+                      }
                       requestImmersiveFullscreen();
-                      if (gidOrEventId && gidOrEventId !== 'lottery' && gidOrEventId !== 'four-digit-lottery') {
-                        navigate('/games/four-digit-lottery/' + gidOrEventId);
+                      if (roomId) {
+                        navigate('/games/four-digit-lottery/' + roomId);
                       } else {
                         navigate('/games/four-digit-lottery');
                       }
@@ -843,14 +940,26 @@ function LotteryAppContent() {
                 ))}
 
                 {/* VIEW 8: REWARDS & DAILY BONUS FAUCET */}
-                {(activeTab === 'rewards' || activeTab === 'daily-bonus') && (
+                {(activeTab === 'rewards' || activeTab === 'daily-bonus') && (user ? (
                   <RewardsView />
-                )}
+                ) : (
+                  <AuthRequiredPrompt
+                    title="Daily Bonus & Spin Wheel Rewards"
+                    onLogin={() => requireAuth({ type: 'tab', tab: 'rewards' })}
+                    onHome={handleGoHome}
+                  />
+                ))}
 
                 {/* VIEW 9: SOCIAL LEADERBOARD & HIGH ROLLERS */}
-                {activeTab === 'leaderboard' && (
+                {activeTab === 'leaderboard' && (user ? (
                   <LeaderboardView />
-                )}
+                ) : (
+                  <AuthRequiredPrompt
+                    title="Player Leaderboard"
+                    onLogin={() => requireAuth({ type: 'tab', tab: 'leaderboard' })}
+                    onHome={handleGoHome}
+                  />
+                ))}
 
                 {/* VIEW 10: CUSTOMER SUPPORT & CONTACT */}
                 {(activeTab === 'contact' || activeTab === 'support') && (
@@ -858,9 +967,15 @@ function LotteryAppContent() {
                 )}
 
                 {/* VIEW 11: PROMOTIONS & REFERRAL HUB */}
-                {activeTab === 'promotion' && (
+                {activeTab === 'promotion' && (user ? (
                   <PromotionPage onBackToHome={handleGoHome} />
-                )}
+                ) : (
+                  <AuthRequiredPrompt
+                    title="Promotions & Referral Program"
+                    onLogin={() => requireAuth({ type: 'tab', tab: 'promotion' })}
+                    onHome={handleGoHome}
+                  />
+                ))}
 
                 {/* VIEW 12: TERMS & CONDITIONS PAGE */}
                 {activeTab === 'terms' && (

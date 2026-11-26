@@ -46,6 +46,7 @@ export default function Navbar({
     activeTab,
     setActiveTab,
     setIsAuthModalOpen,
+    requireAuth,
     showToast,
     isNativeApp,
     apkDirectDownloadUrl,
@@ -77,16 +78,38 @@ export default function Navbar({
 
   const handleNavClick = (tabId) => {
     // Public tabs where unauthenticated visitors can freely navigate:
-    const publicTabs = ['lotteries', 'support', 'contact', 'terms', 'privacy', 'rewards', 'leaderboard', 'profile', 'wallet'];
+    const publicTabs = [
+      'lotteries',
+      'results',
+      'support',
+      'contact',
+      'terms',
+      'privacy',
+      'responsible-gaming',
+      'how-it-works',
+      'rules',
+      'faq',
+      'refund-policy',
+      'payment-policy',
+      'disclaimer'
+    ];
     if (!isLoggedIn && !publicTabs.includes(tabId)) {
-      setIsAuthModalOpen(true);
-      const tabNames = {
+      const tabNames: Record<string, string> = {
         tickets: 'My Tickets',
-        results: 'Lottery Results & Past Winners',
+        transactions: 'Transaction History',
         wallet: 'USDT Wallet & Payouts',
-        profile: 'User Profile'
+        profile: 'User Profile',
+        promotion: 'Promotions & Referral',
+        rewards: 'Spin Wheel & Daily Rewards',
+        'daily-bonus': 'Daily Bonus & Rewards',
+        leaderboard: 'Leaderboard'
       };
-      showToast(`Please log in to access ${tabNames[tabId] || 'this section'}!`, 'info');
+      if (requireAuth) {
+        requireAuth({ type: 'tab', tab: tabId }, `Please log in to access ${tabNames[tabId] || 'this section'}!`);
+      } else {
+        setIsAuthModalOpen(true);
+        showToast(`Please log in to access ${tabNames[tabId] || 'this section'}!`, 'info');
+      }
       return;
     }
 
@@ -124,11 +147,11 @@ export default function Navbar({
       {/* 1. TOP HEADER                                            */}
       {/* ======================================================== */}
       <header className={`sticky top-0 z-40 bg-[#0B0F19]/95 backdrop-blur-xl border-b border-[rgba(245,196,81,0.18)] ${isInGameRoom ? 'ef-room-navbar' : ''}`}>
-        <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2 xs:px-3 sm:px-4 lg:px-6 xl:px-8">
-          <div className={`flex items-center justify-between ${isInGameRoom ? 'ef-room-navbar-inner h-12 sm:h-14' : 'h-13 xs:h-14 sm:h-16'}`}>
+        <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2 max-[359px]:px-1.5 xs:px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div className={`flex items-center justify-between gap-1 ${isInGameRoom ? 'ef-room-navbar-inner h-12 sm:h-14' : 'h-13 xs:h-14 sm:h-16'}`}>
 
             {/* LEFT: Sidebar Toggle & EarnFlow.in Branding */}
-            <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 shrink-0">
+            <div className="flex items-center gap-1.5 max-[359px]:gap-1 xs:gap-2 sm:gap-3 shrink-0 min-w-0">
 
               {/* Sidebar Drawer Toggle (Mobile / Tablet / Desktop) */}
               <button
@@ -136,11 +159,11 @@ export default function Navbar({
                 onClick={onToggleSidebar}
                 aria-expanded={isSidebarExpanded}
                 data-sidebar-toggle="true"
-                className="w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-9.5 sm:h-9.5 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-amber-500/40 transition-colors cursor-pointer shrink-0 shadow-sm"
+                className="w-8 h-8 max-[359px]:w-7 max-[359px]:h-7 xs:w-8.5 xs:h-8.5 sm:w-9.5 sm:h-9.5 rounded-xl max-[359px]:rounded-lg bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-amber-500/40 transition-colors cursor-pointer shrink-0 shadow-sm"
                 title="Toggle Casino Navigation"
                 aria-label="Toggle Casino Navigation"
               >
-                <Menu className="w-4 h-4 xs:w-4.5 xs:h-4.5" />
+                <Menu className="w-4 h-4 max-[359px]:w-3.5 max-[359px]:h-3.5 xs:w-4.5 xs:h-4.5" />
               </button>
 
               {/* Brand Logo & Clean Name (Always visible together across all viewports) */}
@@ -152,12 +175,12 @@ export default function Navbar({
                     handleNavClick('lotteries');
                   }
                 }}
-                className="flex items-center gap-1.5 xs:gap-2 sm:gap-2.5 cursor-pointer group shrink-0 select-none"
+                className="flex items-center gap-1.5 max-[359px]:gap-1 xs:gap-2 sm:gap-2.5 cursor-pointer group shrink-0 select-none"
                 role="button"
                 tabIndex={0}
                 title="Return to EarnFlow.in Home Page"
               >
-                <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-9.5 sm:h-9.5 rounded-full p-0.5 shadow-[0_0_12px_rgba(245,196,81,0.3)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 max-[359px]:w-6 max-[359px]:h-6 xs:w-8 xs:h-8 sm:w-9.5 sm:h-9.5 rounded-full p-0.5 shadow-[0_0_12px_rgba(245,196,81,0.3)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
                   <img
                     src="/logo.png"
                     alt="EarnFlow.in"
@@ -166,7 +189,7 @@ export default function Navbar({
                 </div>
 
                 <div className="flex flex-col justify-center shrink-0">
-                  <span className="font-display font-extrabold text-[13px] xs:text-base sm:text-lg lg:text-xl tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-tight whitespace-nowrap shrink-0">
+                  <span className="font-display font-extrabold text-[13px] max-[359px]:text-[11.5px] xs:text-base sm:text-lg lg:text-xl tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-tight whitespace-nowrap shrink-0">
                     EarnFlow<span className="text-[#F5C451]">.in</span>
                   </span>
                   {/* Subtitle visible ONLY on xl (1280px+) where ample space exists */}
@@ -178,7 +201,7 @@ export default function Navbar({
             </div>
 
             {/* RIGHT: Desktop Controls (Wallet + Notifications + Profile) / Mobile Icons */}
-            <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-2.5 shrink-0">
+            <div className="ef-navbar-actions flex items-center gap-1 max-[359px]:gap-1 xs:gap-1.5 sm:gap-2.5 shrink-0">
 
               {/* Master Audio FX Toggle & Volume Popover (Mobile & Desktop) */}
               <div className="relative flex items-center" ref={volumeMenuRef}>
@@ -191,7 +214,7 @@ export default function Navbar({
                     e.preventDefault();
                     setShowVolumeSlider(prev => !prev);
                   }}
-                  className={`w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center transition-all cursor-pointer relative shrink-0 shadow-sm ${soundEnabled
+                  className={`w-8 h-8 max-[359px]:w-7 max-[359px]:h-7 xs:w-8.5 xs:h-8.5 sm:w-10 sm:h-10 rounded-xl max-[359px]:rounded-lg border flex items-center justify-center transition-all cursor-pointer relative shrink-0 shadow-sm ${soundEnabled
                     ? 'bg-[#10131A] hover:bg-[#151C2B] text-amber-400 border-[#2D3545] hover:border-amber-400/50 hover:shadow-[0_0_12px_rgba(245,196,81,0.2)]'
                     : 'bg-[#10131A] text-[#64748B] border-[#2D3545] hover:text-[#94A3B8] hover:border-slate-600'
                     }`}
@@ -199,9 +222,9 @@ export default function Navbar({
                   aria-label="Toggle Sound FX"
                 >
                   {soundEnabled ? (
-                    soundVolume > 0.4 ? <Volume2 className="w-4 h-4 text-amber-400" /> : <Volume1 className="w-4 h-4 text-amber-400" />
+                    soundVolume > 0.4 ? <Volume2 className="w-4 h-4 max-[359px]:w-3.5 max-[359px]:h-3.5 text-amber-400" /> : <Volume1 className="w-4 h-4 max-[359px]:w-3.5 max-[359px]:h-3.5 text-amber-400" />
                   ) : (
-                    <VolumeX className="w-4 h-4 text-[#64748B]" />
+                    <VolumeX className="w-4 h-4 max-[359px]:w-3.5 max-[359px]:h-3.5 text-[#64748B]" />
                   )}
                 </button>
 
@@ -253,13 +276,13 @@ export default function Navbar({
                   <div
                     onClick={() => handleNavClick('wallet')}
                     title="Click to view USDT Wallet & 24h Payouts"
-                    className="flex cursor-pointer bg-[#10131A] hover:bg-[#151C2B] border border-emerald-500/30 hover:border-emerald-400 rounded-xl px-2 sm:px-3 py-1 sm:py-1.5 items-center gap-1 sm:gap-1.5 transition-all shadow-inner shrink-0"
+                    className="flex cursor-pointer bg-[#10131A] hover:bg-[#151C2B] border border-emerald-500/30 hover:border-emerald-400 rounded-xl max-[359px]:rounded-lg px-2 max-[359px]:px-1.5 sm:px-3 py-1 sm:py-1.5 items-center gap-1 max-[359px]:gap-0.5 sm:gap-1.5 transition-all shadow-inner shrink-0"
                   >
-                    <Coins className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400 shrink-0" />
-                    <span className="font-mono-numbers font-bold text-[11px] sm:text-sm text-emerald-400 whitespace-nowrap">
+                    <Coins className="w-3 h-3 max-[359px]:w-2.5 max-[359px]:h-2.5 sm:w-3.5 sm:h-3.5 text-emerald-400 shrink-0" />
+                    <span className="font-mono-numbers font-bold text-[11px] max-[359px]:text-[10px] sm:text-sm text-emerald-400 whitespace-nowrap">
                       {Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
-                    <span className="text-[9px] sm:text-xs text-emerald-400 font-extrabold font-mono-numbers">
+                    <span className="text-[9px] max-[359px]:text-[8px] sm:text-xs text-emerald-400 font-extrabold font-mono-numbers">
                       USDT
                     </span>
                   </div>
@@ -267,11 +290,11 @@ export default function Navbar({
                   {/* Realtime Notifications Bell (Mobile & Desktop) */}
                   <button
                     onClick={onOpenNotifications}
-                    className="flex w-8 h-8 xs:w-8.5 xs:h-8.5 sm:w-9 sm:h-9 rounded-xl bg-[#10131A] hover:bg-[#151C2B] border border-[#2D3545] hover:border-amber-400/50 items-center justify-center text-[#94A3B8] hover:text-amber-300 transition-colors cursor-pointer relative shrink-0 shadow-sm"
+                    className="flex w-8 h-8 max-[359px]:w-7 max-[359px]:h-7 xs:w-8.5 xs:h-8.5 sm:w-9 sm:h-9 rounded-xl max-[359px]:rounded-lg bg-[#10131A] hover:bg-[#151C2B] border border-[#2D3545] hover:border-amber-400/50 items-center justify-center text-[#94A3B8] hover:text-amber-300 transition-colors cursor-pointer relative shrink-0 shadow-sm"
                     title={unreadNotificationsCount > 0 ? `${unreadNotificationsCount} unread notification(s)` : 'View Notifications'}
                     aria-label="View Notifications"
                   >
-                    <Bell className="w-4 h-4 sm:w-4 sm:h-4" />
+                    <Bell className="w-4 h-4 max-[359px]:w-3.5 max-[359px]:h-3.5 sm:w-4 sm:h-4" />
                     {unreadNotificationsCount > 0 && (
                       <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-black text-[9px] font-mono-numbers font-black flex items-center justify-center border border-[#0B0F19] shadow-sm animate-pulse">
                         {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
@@ -308,9 +331,9 @@ export default function Navbar({
                 /* Login / Sign Up Button when unauthenticated */
                 <button
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="btn-gold px-2.5 xs:px-3 sm:px-4.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 sm:gap-1.5 shadow-md cursor-pointer whitespace-nowrap shrink-0"
+                  className="btn-gold px-2.5 max-[359px]:px-2 xs:px-3 sm:px-4.5 py-1.5 max-[359px]:py-1 sm:py-2 rounded-xl max-[359px]:rounded-lg text-xs max-[359px]:text-[11px] sm:text-sm font-bold flex items-center gap-1 sm:gap-1.5 shadow-md cursor-pointer whitespace-nowrap shrink-0"
                 >
-                  <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <LogIn className="w-3.5 h-3.5 max-[359px]:w-3 max-[359px]:h-3 sm:w-4 sm:h-4" />
                   <span>Login</span>
                 </button>
               )}

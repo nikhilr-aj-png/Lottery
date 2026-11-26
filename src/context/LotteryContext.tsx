@@ -8,32 +8,22 @@ const LotteryContext = createContext<any>(null);
 
 // All events, tickets, withdrawals, and wallet states are 100% dynamic and database-driven via Supabase
 export function LotteryProvider({ children }: { children: ReactNode }) {
-  // Wallet State - Loaded dynamically from Supabase lottery_wallets
-  const [wallet, setWallet] = useState(() => {
-    const saved = localStorage.getItem('lotto_wallet');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.address && parsed.address !== '0x71A9f24E68B8910d54F30C8B38194aE02919B42') {
-          return parsed;
-        }
-      } catch (e) {}
-    }
-    let guestAddr = localStorage.getItem('lotto_guest_addr');
-    if (!guestAddr) {
-      const randHex = Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-      guestAddr = '0x' + randHex;
-      try { localStorage.setItem('lotto_guest_addr', guestAddr); } catch (e) {}
-    }
-    return {
-      address: guestAddr,
-      connected: false,
-      balance: 0,
-      network: 'TRC-20',
-      lifetimeWon: 0,
-      depositAddress: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m'
-    };
+  // Wallet State - Loaded strictly from Supabase lottery_wallets when authenticated
+  const [wallet, setWallet] = useState({
+    address: '',
+    connected: false,
+    balance: 0,
+    network: 'TRC-20',
+    lifetimeWon: 0,
+    depositAddress: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m'
   });
+
+  // User Authentication State (Declared early so downstream effects & callbacks reference safely)
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
 
   // Ref to hold executeDraw function for auto-settling timer
   const executeDrawRef = React.useRef<any>(null);
@@ -410,6 +400,10 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
   // Fetch deposits and automatically cancel/expire unpaid invoices older than 15 minutes
   const fetchDeposits = async () => {
+    if (!user?.id) {
+      setDeposits([]);
+      return;
+    }
     try {
       setLoadingDeposits(true);
       const { data, error } = await supabase
@@ -459,6 +453,10 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
   // User manual deposit cancellation
   const cancelDeposit = async (depositId) => {
+    if (!user?.id) {
+      requireAuth({ type: 'tab', tab: 'wallet' }, 'Please log in to manage your deposits.');
+      return;
+    }
     try {
       setDeposits(prev => prev.map(d => d.id === depositId ? { ...d, status: 'cancelled' } : d));
       await supabase
@@ -473,11 +471,16 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    fetchDeposits();
-  }, [wallet.address]);
+    if (user?.id) {
+      fetchDeposits();
+    } else {
+      setDeposits([]);
+    }
+  }, [user?.id, wallet.address]);
 
-  // NOWPayments Realtime Listener
+  // NOWPayments Realtime Listener (Authenticated Only)
   useEffect(() => {
+    if (!user?.id) return;
     const depositChannel = supabase
       .channel('realtime:lottery_deposits')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_deposits' }, (payload: any) => {
@@ -536,6 +539,10 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
   // NOWPayments: Create Crypto Deposit Invoice via Supabase Edge Function
   const createNowPaymentsInvoice = async (amount, payCurrency = 'usdttrc20') => {
+    if (!user?.id) {
+      requireAuth({ type: 'tab', tab: 'wallet' }, 'Please log in to deposit USDT into your wallet.');
+      return { success: false, error: 'Authentication required' };
+    }
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount < 20 || numAmount > 500) {
       showToast('Deposit amount must be between 20 USDT and 500 USDT (Min: 20 USDT, Max: 500 USDT)', 'error');
@@ -606,10 +613,13 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   const [walletLedger, setWalletLedger] = useState<any[]>([]);
   const [loadingLedger, setLoadingLedger] = useState(false);
 
-  // Fetch immutable ledger transactions for the active user/wallet
+  // Fetch immutable ledger transactions for the active authenticated user
   const fetchWalletLedger = async (targetAddr: any = null) => {
+    if (!user?.id) {
+      setWalletLedger([]);
+      return;
+    }
     const addr = targetAddr || wallet.address;
-    if (!addr && !user?.id) return;
     setLoadingLedger(true);
     try {
       let query = supabase
@@ -618,10 +628,10 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (user?.id) {
+      if (addr) {
         query = query.or(`user_id.eq.${user.id},wallet_address.eq.${addr}`);
       } else {
-        query = query.eq('wallet_address', addr);
+        query = query.eq('user_id', user.id);
       }
 
       const { data, error } = await query;
@@ -643,7 +653,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   // Fetch real persistent notifications from Supabase
-  const fetchUserNotifications = async (targetAddr = null) => {
+  const fetchUserNotifications = async (targetAddr: any = null) => {
     const addr = targetAddr || wallet?.address;
     if (!addr && !user?.id) {
       setUserNotifications([]);
@@ -844,8 +854,11 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Universal Server-Authoritative Debit RPC (Used by 12 Games, Tickets, etc.)
+  // Universal Server-Authoritative Debit RPC (Authenticated Only)
   const debitCredits = async (amount: any, type: any = 'game_bet', referenceId: any = null, description: any = null, metadata: any = {}) => {
+    if (!user?.id) {
+      return { success: false, error: 'Authentication required' };
+    }
     try {
       const numAmount = parseFloat(amount);
       if (isNaN(numAmount) || numAmount <= 0) {
@@ -871,8 +884,11 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Universal Server-Authoritative Credit RPC (Used by 12 Games, Wins, Grants)
+  // Universal Server-Authoritative Credit RPC (Authenticated Only)
   const creditCredits = async (amount: any, type: any = 'game_win', referenceId: any = null, description: any = null, metadata: any = {}) => {
+    if (!user?.id) {
+      return { success: false, error: 'Authentication required' };
+    }
     try {
       const numAmount = parseFloat(amount);
       if (isNaN(numAmount) || numAmount <= 0) {
@@ -971,8 +987,12 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   // Winner Payouts Queue State - 100% Dynamic from Supabase winner_payouts table
   const [winnerPayouts, setWinnerPayouts] = useState<any[]>([]);
 
-  // Fetch verified winner payouts directly from Supabase
+  // Fetch verified winner payouts directly from Supabase (Authenticated Only)
   const fetchWinnerPayouts = async () => {
+    if (!user?.id) {
+      setWinnerPayouts([]);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('winner_payouts')
@@ -1006,24 +1026,15 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Support Tickets State
-  const [supportTickets, setSupportTickets] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lotto_support_tickets');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Support Tickets State (Authenticated Only - no stale guest cache)
+  const [supportTickets, setSupportTickets] = useState<any[]>([]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('lotto_support_tickets', JSON.stringify(supportTickets));
-    } catch (e) {}
-  }, [supportTickets]);
-
-  // Fetch support tickets from dedicated Supabase support_tickets table
+  // Fetch support tickets from dedicated Supabase support_tickets table (Authenticated Only)
   const fetchSupportTickets = async () => {
+    if (!user?.id) {
+      setSupportTickets([]);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('support_tickets')
@@ -1292,39 +1303,86 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // User Authentication State
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
+  const [takenTicketsByEvent, setTakenTicketsByEvent] = useState<Record<string, string[]>>({});
+  const [pendingAuthRedirect, setPendingAuthRedirectState] = useState<any>(() => {
+    try {
+      const saved = sessionStorage.getItem('earnflow_pending_redirect');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const setPendingAuthRedirect = (target: any) => {
+    setPendingAuthRedirectState(target || null);
+    try {
+      if (target) {
+        sessionStorage.setItem('earnflow_pending_redirect', JSON.stringify(target));
+      } else {
+        sessionStorage.removeItem('earnflow_pending_redirect');
+      }
+    } catch {}
+  };
+
+  const clearPendingAuthRedirect = () => setPendingAuthRedirect(null);
+
+  const requireAuth = (redirectTarget: any = null, promptMessage?: string) => {
+    if (user) return true;
+    if (redirectTarget) {
+      setPendingAuthRedirect(redirectTarget);
+    }
+    if (authLoading) return false;
+    setAuthMode('login');
+    setIsAuthModalOpen(true);
+    if (promptMessage) {
+      showToast(promptMessage, 'info');
+    }
+    return false;
+  };
 
   // Listen to Supabase Auth state changes
   useEffect(() => {
+    let isMounted = true;
     const cleanAuthHash = () => {
       if (window.location.hash && (window.location.hash.includes('access_token=') || window.location.hash.includes('refresh_token='))) {
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }
     };
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-        cleanAuthHash();
-      }
-    });
+    supabase.auth.getSession()
+      .then(async ({ data: { session } }) => {
+        if (!isMounted) return;
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        if (currentUser) {
+          await fetchProfile(currentUser.id);
+          cleanAuthHash();
+        }
+      })
+      .catch((err) => {
+        console.warn('getSession error:', err);
+      })
+      .finally(() => {
+        if (isMounted) setAuthLoading(false);
+      });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
+      if (!isMounted) return;
+      const nextUser = session?.user ?? null;
+      setUser(nextUser);
+      setAuthLoading(false);
+      if (nextUser) {
+        fetchProfile(nextUser.id);
         cleanAuthHash();
       } else {
         setProfile(null);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const [needsUsernameSetup, setNeedsUsernameSetup] = useState(false);
@@ -1333,100 +1391,13 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     if (!newUserId || !referralCode) return;
     try {
       const cleanCode = referralCode.trim();
-
-      // Check if this user was already referred
-      const { data: existingRef } = await supabase
-        .from('user_referrals')
-        .select('id')
-        .eq('referred_user_id', newUserId)
-        .maybeSingle();
-
-      if (existingRef) {
-        localStorage.removeItem('earnflow_referrer_code');
+      const { error } = await supabase.rpc('process_referral_registration', {
+        p_referral_code: cleanCode
+      });
+      if (error) {
+        console.warn('process_referral_registration notice:', error.message);
         return;
       }
-
-      // Find the referrer by referral code (matches username or direct user ID)
-      let referrerId: string | null = null;
-
-      const { data: profMatch } = await supabase
-        .from('profiles')
-        .select('id')
-        .ilike('username', cleanCode)
-        .maybeSingle();
-
-      if (profMatch && profMatch.id && profMatch.id !== newUserId) {
-        referrerId = profMatch.id;
-      } else {
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanCode);
-        if (isUuid && cleanCode !== newUserId) {
-          referrerId = cleanCode;
-        }
-      }
-
-      if (!referrerId) {
-        localStorage.removeItem('earnflow_referrer_code');
-        return;
-      }
-
-      // Check platform referral settings
-      let regRewardEnabled = true;
-      let regRewardAmount = 0.25;
-
-      const { data: settingsData } = await supabase
-        .from('platform_settings')
-        .select('value')
-        .eq('key', 'referral_settings')
-        .maybeSingle();
-
-      if (settingsData && settingsData.value) {
-        regRewardEnabled = settingsData.value.registration_reward_enabled !== false;
-        regRewardAmount = parseFloat(settingsData.value.registration_reward_amount || '0.25');
-      }
-
-      const initialComm = regRewardEnabled ? regRewardAmount : 0.0;
-
-      // 1. Insert referral link record
-      const { error: insErr } = await supabase
-        .from('user_referrals')
-        .insert({
-          referrer_id: referrerId,
-          referred_user_id: newUserId,
-          referral_code: cleanCode,
-          status: 'active',
-          total_commission_usdt: initialComm
-        });
-
-      if (insErr) {
-        console.warn('user_referrals insert error:', insErr.message);
-        return;
-      }
-
-      // 2. Credit referrer registration reward if enabled
-      if (regRewardEnabled && regRewardAmount > 0) {
-        try {
-          await supabase.rpc('credit_virtual_credits', {
-            p_user_id: referrerId,
-            p_amount: regRewardAmount,
-            p_action: 'referral_registration_reward',
-            p_reference_id: newUserId,
-            p_notes: `Referral registration bonus for inviting user ${newUserId.slice(0, 8)}`
-          });
-
-          await supabase
-            .from('referral_rewards')
-            .insert({
-              referrer_id: referrerId,
-              referred_user_id: newUserId,
-              reward_type: 'registration',
-              reward_amount_usdt: regRewardAmount,
-              description: `Registration bonus for inviting user ${newUserId.slice(0, 8)}`
-            });
-        } catch (credErr) {
-          console.warn('Referral reward credit error:', credErr);
-        }
-      }
-
       localStorage.removeItem('earnflow_referrer_code');
     } catch (e) {
       console.warn('processReferralSignup error:', e);
@@ -1555,30 +1526,20 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     const requiredFee = isFirstTime ? 0 : fee;
 
     try {
-      // 3. If paid change, verify balance directly from Supabase lottery_wallets
+      // 3. If paid change, verify & deduct balance via secure server RPC
       if (requiredFee > 0) {
-        const { data: dbWal } = await supabase
-          .from('lottery_wallets')
-          .select('*')
-          .eq('address', wallet.address)
-          .maybeSingle();
-
-        const currentBal = Number(dbWal?.balance ?? wallet.balance ?? 0);
-        if (currentBal < requiredFee) {
-          return { 
-            success: false, 
-            error: `Insufficient USDT balance. Changing your User ID costs ${requiredFee} USDT (Available: ${currentBal.toFixed(2)} USDT). Please deposit funds in your wallet.` 
+        const debitRes = await debitCredits(
+          requiredFee,
+          'username_change',
+          `unc_${Date.now()}`,
+          `User ID change fee (@${clean})`
+        );
+        if (!debitRes?.success) {
+          return {
+            success: false,
+            error: debitRes?.error || `Insufficient USDT balance. Changing your User ID costs ${requiredFee} USDT.`
           };
         }
-
-        // Deduct fee from lottery_wallets in Supabase
-        const newBal = parseFloat((currentBal - requiredFee).toFixed(2));
-        await supabase
-          .from('lottery_wallets')
-          .update({ balance: newBal, updated_at: new Date().toISOString() })
-          .eq('address', wallet.address);
-
-        setWallet(prev => ({ ...prev, balance: newBal }));
       }
 
       // 4. Update profiles table in Supabase
@@ -1676,18 +1637,31 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .ilike('username', username)
-        .maybeSingle();
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('check_username_availability', {
+        p_username: username
+      });
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Check username error:', error);
+      if (!rpcErr && rpcRes) {
+        return {
+          valid: Boolean(rpcRes.valid ?? rpcRes.available),
+          message: rpcRes.message || (rpcRes.available ? 'User ID is available!' : 'This User ID is already taken. Please choose another.')
+        };
       }
 
-      if (data && data.id !== user?.id) {
-        return { valid: false, message: 'This User ID is already taken. Please choose another.' };
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, username')
+          .ilike('username', username)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Check username error:', error);
+        }
+
+        if (data && data.id !== user.id) {
+          return { valid: false, message: 'This User ID is already taken. Please choose another.' };
+        }
       }
 
       return { valid: true, message: 'User ID is available!' };
@@ -1812,8 +1786,8 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
-    setProfile(null);
-    setNeedsUsernameSetup(false);
+    setPendingAuthRedirect(null);
+    resetPrivateUserState();
     setActiveTab('lotteries');
     setSelectedEventForModal(null);
     showToast('Successfully signed out.', 'info');
@@ -2142,8 +2116,37 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     } catch (e) {}
   }, []);
 
-  // Fetch tickets directly from Supabase
+  // Fetch safe occupied 4-digit ticket numbers per event across all players (no PII)
+  const fetchTakenTicketNumbers = async (eventId: string | null = null) => {
+    try {
+      const { data, error } = await supabase.rpc('get_taken_ticket_numbers', {
+        p_event_id: eventId
+      });
+      if (!error && Array.isArray(data)) {
+        setTakenTicketsByEvent(prev => {
+          const next = eventId ? { ...prev } : {};
+          if (eventId) next[eventId] = [];
+          data.forEach((row: any) => {
+            if (!row?.event_id || !row?.ticket_number) return;
+            const eid = String(row.event_id);
+            const num = String(row.ticket_number).padStart(4, '0');
+            if (!next[eid]) next[eid] = [];
+            if (!next[eid].includes(num)) next[eid].push(num);
+          });
+          return next;
+        });
+      }
+    } catch (err) {
+      console.warn('fetchTakenTicketNumbers notice:', err);
+    }
+  };
+
+  // Fetch tickets directly from Supabase (Authenticated Only - RLS scoped to own tickets unless admin)
   const fetchTickets = async () => {
+    if (!user?.id) {
+      setTickets([]);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('lottery_tickets')
@@ -2193,8 +2196,12 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Fetch withdrawals directly from Supabase
+  // Fetch withdrawals directly from Supabase (Authenticated Only)
   const fetchWithdrawals = async () => {
+    if (!user?.id) {
+      setWithdrawals([]);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('lottery_withdrawals')
@@ -2222,16 +2229,16 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Fetch wallet balance directly from Supabase lottery_wallets
-  const fetchWallet = async (addressToFetch) => {
+  // Fetch wallet balance directly from Supabase lottery_wallets (Authenticated Only)
+  const fetchWallet = async (addressToFetch: any = null) => {
+    if (!user?.id) return;
     try {
+      const targetAddr = addressToFetch || wallet.address;
       let query = supabase.from('lottery_wallets').select('*');
-      if (user?.id) {
-        query = query.or(`user_id.eq.${user.id},address.eq.${addressToFetch || wallet.address}`);
-      } else if (addressToFetch || wallet.address) {
-        query = query.eq('address', addressToFetch || wallet.address);
+      if (targetAddr) {
+        query = query.or(`user_id.eq.${user.id},address.eq.${targetAddr}`);
       } else {
-        return;
+        query = query.eq('user_id', user.id);
       }
 
       const { data, error } = await query.order('updated_at', { ascending: false }).limit(1).maybeSingle();
@@ -2245,11 +2252,12 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           lifetimeWon: parseFloat(data.lifetime_won || 0),
           network: data.network || 'TRC-20'
         }));
-      } else if (!data && (addressToFetch || wallet.address)) {
-        const addrToUse = addressToFetch || wallet.address;
+      } else if (!data && user?.id) {
+        const randHex = Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        const addrToUse = targetAddr || profile?.trc20_address || ('0x' + randHex);
         await supabase.from('lottery_wallets').upsert({
           address: addrToUse,
-          user_id: user?.id || null,
+          user_id: user.id,
           balance: 0.00,
           lifetime_won: 0,
           network: 'TRC-20'
@@ -2268,29 +2276,58 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Sync wallet on address change or user login
+  // Clear all user-scoped state cleanly on logout or session expiry
+  const resetPrivateUserState = () => {
+    setProfile(null);
+    setNeedsUsernameSetup(false);
+    setTickets([]);
+    setWithdrawals([]);
+    setDeposits([]);
+    setWalletLedger([]);
+    setWinnerPayouts([]);
+    setSupportTickets([]);
+    setUserNotifications([]);
+    setUnreadNotificationsCount(0);
+    setUsernameChangeCount(0);
+    setTakenTicketsByEvent({});
+    setWallet({
+      address: '',
+      connected: false,
+      balance: 0,
+      network: 'TRC-20',
+      lifetimeWon: 0,
+      depositAddress: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m'
+    });
+    try {
+      localStorage.removeItem('lotto_wallet');
+      localStorage.removeItem('lotto_support_tickets');
+    } catch {}
+  };
+
   useEffect(() => {
-    if (wallet.address || user?.id) {
-      fetchWallet(wallet.address);
-      fetchWalletLedger(wallet.address);
-      fetchUserNotifications(wallet.address);
+    if (!authLoading && !user?.id) {
+      resetPrivateUserState();
     }
+  }, [authLoading, user?.id]);
+
+  // Sync private user records STRICTLY when authenticated
+  useEffect(() => {
+    if (!user?.id) return;
+    fetchTickets();
+    fetchTakenTicketNumbers();
+    fetchWithdrawals();
+    fetchWinnerPayouts();
+    fetchSupportTickets();
+    fetchWallet(wallet.address);
+    fetchWalletLedger(wallet.address);
+    fetchUserNotifications(wallet.address);
   }, [wallet.address, user?.id]);
 
-  // Initial fetch from Supabase
+  // Initial public catalog fetch from Supabase (events & platform settings only; private tables gated by user)
   useEffect(() => {
     async function loadSupabaseData() {
       try {
         await refreshEvents();
-        await fetchTickets();
-        await fetchWithdrawals();
-        await fetchWinnerPayouts();
-        if (wallet.address || user?.id) {
-          await fetchWallet(wallet.address);
-          await fetchWalletLedger(wallet.address);
-          await fetchUserNotifications(wallet.address);
-        }
-        await fetchSupportTickets();
         await fetchPlatformSettings();
         setIsSupabaseSynced(true);
       } catch (err) {
@@ -2301,12 +2338,26 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     loadSupabaseData();
   }, []);
 
-  // Realtime Supabase Channels for Tickets, Withdrawals, Wallets, Winner Payouts, Support, Settings & Ledger
+  // Realtime Supabase Channels (Settings always; private user channels ONLY when authenticated)
   useEffect(() => {
+    const setChannel = supabase
+      .channel('realtime:platform_settings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'platform_settings' }, () => {
+        fetchPlatformSettings();
+      })
+      .subscribe();
+
+    if (!user?.id) {
+      return () => {
+        supabase.removeChannel(setChannel);
+      };
+    }
+
     const tChannel = supabase
       .channel('realtime:lottery_tickets')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_tickets' }, () => {
         fetchTickets();
+        fetchTakenTicketNumbers();
       })
       .subscribe();
 
@@ -2328,13 +2379,6 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       .channel('realtime:support_tickets')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
         fetchSupportTickets();
-      })
-      .subscribe();
-
-    const setChannel = supabase
-      .channel('realtime:platform_settings')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'platform_settings' }, () => {
-        fetchPlatformSettings();
       })
       .subscribe();
 
@@ -2396,8 +2440,12 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Deposit USDT
+  // Deposit USDT (Authenticated Only)
   const depositUSDT = async (amount) => {
+    if (!user?.id) {
+      requireAuth({ type: 'tab', tab: 'wallet' }, 'Please log in to deposit USDT into your wallet.');
+      return false;
+    }
     const val = parseFloat(amount);
     if (isNaN(val) || val < 20 || val > 500) {
       showToast('Deposit amount must be between 20 USDT and 500 USDT (Min: 20 USDT, Max: 500 USDT)', 'error');
@@ -2415,6 +2463,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     try {
       await supabase.from('lottery_wallets').upsert({
         address: wallet.address,
+        user_id: user.id,
         balance: newBalance,
         lifetime_won: wallet.lifetimeWon,
         network: wallet.network
@@ -2426,10 +2475,12 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
-  // Helper: Check if a 4-digit number is already sold in an event (general check across ALL players)
+  // Helper: Check if a 4-digit number is already sold in an event (across ALL players)
   const isTicketNumberSold = (eventId, number) => {
     if (!eventId || number === undefined || number === null) return false;
     const formatted = String(number).padStart(4, '0');
+    const globalTaken = takenTicketsByEvent[eventId] || [];
+    if (globalTaken.includes(formatted)) return true;
     return tickets.some(t => 
       (t.eventId === eventId || t.event_id === eventId) && 
       String(t.ticketNumber ?? t.ticket_number ?? '').padStart(4, '0') === formatted
@@ -2458,11 +2509,12 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
   // Helper: Generate an unsold random 4-digit number for an event (across ALL players in the draw)
   const getUnsoldRandomNumber = (eventId) => {
-    const soldSet = new Set(
-      tickets
+    const soldSet = new Set([
+      ...(takenTicketsByEvent[eventId] || []),
+      ...tickets
         .filter(t => (t.eventId === eventId || t.event_id === eventId))
         .map(t => String(t.ticketNumber ?? t.ticket_number ?? '').padStart(4, '0'))
-    );
+    ]);
     for (let i = 0; i < 10000; i++) {
       const candidate = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
       if (!soldSet.has(candidate)) return candidate;
@@ -2516,7 +2568,10 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     const takenTicketsForEvent = tickets.filter(t => 
       (t.eventId === eventId || t.event_id === eventId)
     );
-    const takenSet = new Set(takenTicketsForEvent.map(t => String(t.ticketNumber).padStart(4, '0')));
+    const takenSet = new Set([
+      ...(takenTicketsByEvent[eventId] || []),
+      ...takenTicketsForEvent.map(t => String(t.ticketNumber).padStart(4, '0'))
+    ]);
     
     const seenInOrder = new Set();
     for (const num of ticketNumbers) {
@@ -2577,6 +2632,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
       // Refresh tickets, events, and ledger from database
       await fetchTickets();
+      await fetchTakenTicketNumbers(eventId);
       await refreshEvents();
       await fetchWalletLedger();
 
@@ -2631,61 +2687,38 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     const netDisbursal = parseFloat((val - networkFee).toFixed(2));
     const newBalance = parseFloat((wallet.balance - val).toFixed(2));
 
-    // Deduct from wallet balance
-    setWallet(prev => ({
-      ...prev,
-      balance: newBalance
-    }));
-
-    // Create withdrawal order with 24-Hour SLA target
-    const orderId = `W-${Math.floor(1000 + Math.random() * 9000)}`;
-    const nowMs = Date.now();
-    const newOrder = {
-      id: orderId,
-      amount: val,
-      netDisbursal,
-      networkFee,
-      network,
-      address: destinationAddress.trim(),
-      requestedAt: nowMs,
-      slaTargetMs: nowMs + 24 * 3600 * 1000,
-      status: 'processing',
-      txHash: null
-    };
-
-    setWithdrawals(prev => [newOrder, ...prev]);
-
-    showToast(`Withdrawal of ${val} USDT requested! Order #${orderId} queued for 24-hour processing.`, 'success');
-
-    // Sync to Supabase
+    // Call atomic Server-Authoritative Withdrawal RPC (verifies auth.uid(), balance, ledger & withdrawal row)
     try {
-      await supabase.from('lottery_wallets').upsert({
-        address: wallet.address,
-        user_id: user?.id || null,
-        balance: newBalance,
-        lifetime_won: wallet.lifetimeWon,
-        network: wallet.network
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('request_withdrawal_secure', {
+        p_amount: val,
+        p_destination_address: destinationAddress.trim(),
+        p_network: network,
+        p_user_address: wallet.address
       });
 
-      await supabase.from('lottery_withdrawals').insert({
-        id: newOrder.id,
-        user_id: user?.id || null,
-        user_address: wallet.address,
-        amount: newOrder.amount,
-        net_disbursal: newOrder.netDisbursal,
-        network_fee: newOrder.networkFee,
-        network: newOrder.network,
-        destination_address: newOrder.address,
-        requested_at: newOrder.requestedAt,
-        sla_target_ms: newOrder.slaTargetMs,
-        status: newOrder.status,
-        tx_hash: newOrder.txHash
-      });
-    } catch (err) {
-      console.error('Supabase withdrawal error:', err);
+      if (rpcErr || !rpcRes?.success) {
+        showToast(rpcRes?.error || rpcErr?.message || 'Withdrawal request failed', 'error');
+        return false;
+      }
+
+      if (rpcRes.new_balance !== undefined) {
+        setWallet(prev => ({
+          ...prev,
+          balance: parseFloat(rpcRes.new_balance)
+        }));
+      } else {
+        setWallet(prev => ({ ...prev, balance: newBalance }));
+      }
+
+      await fetchWithdrawals();
+      await fetchWalletLedger();
+      showToast(`Withdrawal of ${val} USDT requested! Order #${rpcRes.order_id} queued for 24-hour processing.`, 'success');
+      return true;
+    } catch (err: any) {
+      console.error('requestWithdrawal error:', err);
+      showToast('Withdrawal request error: ' + (err?.message || 'Server error'), 'error');
+      return false;
     }
-
-    return true;
   };
 
   // Draw Logic: Provably Fair Multi/Single Lucky Winner Match & Automated Payout
@@ -3637,8 +3670,12 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Submit User Contact / Support Inquiry
+  // Submit User Contact / Support Inquiry (Authenticated Only)
   const submitSupportTicket = async ({ name, username, email, subject, message }) => {
+    if (!user?.id) {
+      requireAuth({ type: 'tab', tab: 'contact' }, 'Please log in to submit a support inquiry.');
+      return { success: false, error: 'Authentication required' };
+    }
     const ticketId = `tkt-${Date.now().toString(36)}-${Math.floor(100 + Math.random() * 900)}`;
     const userMeta = {
       name: (name || '').trim(),
@@ -3728,6 +3765,11 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         wallet,
         user,
         profile,
+        authLoading,
+        pendingAuthRedirect,
+        setPendingAuthRedirect,
+        clearPendingAuthRedirect,
+        requireAuth,
         isAuthModalOpen,
         setIsAuthModalOpen,
         authMode,
@@ -3751,6 +3793,9 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         adminDeleteGame,
         adminUpdateGameConfig,
         tickets,
+        fetchTickets,
+        fetchTakenTicketNumbers,
+        takenTicketsByEvent,
         withdrawals,
         activeTab,
         setActiveTab,

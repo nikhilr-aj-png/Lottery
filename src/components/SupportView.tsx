@@ -62,7 +62,7 @@ const FAQS = [
 ];
 
 export default function SupportView() {
-  const { user, profile, wallet, showToast, setIsAuthModalOpen, platformSettings } = useLottery();
+  const { user, profile, wallet, showToast, setIsAuthModalOpen, platformSettings, requireAuth } = useLottery();
   const { playClick, playChipBet } = useSoundFX();
   const supportEmail = platformSettings?.supportEmail ? platformSettings.supportEmail.trim() : '';
 
@@ -95,9 +95,12 @@ export default function SupportView() {
     return localStorage.getItem('ef_self_exclusion_until') || null;
   });
 
-  // Fetch Player's Tickets from Database
+  // Fetch Player's Tickets from Database (Authenticated Only)
   const fetchMyTickets = async () => {
-    if (!wallet?.address && !user?.id) return;
+    if (!user?.id) {
+      setMyTickets([]);
+      return;
+    }
     setLoadingTickets(true);
     try {
       let query = supabase
@@ -126,9 +129,13 @@ export default function SupportView() {
     fetchMyTickets();
   }, [wallet?.address, user?.id]);
 
-  // Submit Support Ticket to Database
+  // Submit Support Ticket to Database (Authenticated Only)
   const handleSubmitTicket = async (e) => {
     e.preventDefault();
+    if (!user?.id) {
+      requireAuth({ type: 'tab', tab: 'contact' }, 'Please log in to submit a support ticket.');
+      return;
+    }
     if (!ticketSubject.trim() || !ticketMessage.trim()) {
       showToast('Please fill in both subject and message.', 'error');
       return;

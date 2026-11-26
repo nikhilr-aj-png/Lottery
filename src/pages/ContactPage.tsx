@@ -21,7 +21,7 @@ export interface ContactPageProps {
 }
 
 export default function ContactPage({ onBackToHome }: ContactPageProps) {
-  const { user, profile, submitSupportTicket, showToast, platformSettings } = useLottery();
+  const { user, profile, submitSupportTicket, showToast, platformSettings, requireAuth } = useLottery();
   const supportEmail = platformSettings?.supportEmail?.trim() || 'earnflow.user@gmail.com';
 
   useEffect(() => {
@@ -56,6 +56,11 @@ export default function ContactPage({ onBackToHome }: ContactPageProps) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!user?.id) {
+      requireAuth({ type: 'tab', tab: 'contact' }, 'Please log in to submit a support ticket.');
+      return;
+    }
 
     if (!name.trim()) {
       showToast('Please enter your full name', 'error');

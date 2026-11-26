@@ -82,15 +82,15 @@ export default function Sidebar({
       items: [
         { id: 'lotteries', label: 'Home', icon: LayoutGrid, isLobby: true },
         { id: 'results', label: 'Results', icon: Trophy },
-        { id: 'leaderboard', label: 'Leaderboard', icon: Award }
+        { id: 'leaderboard', label: 'Leaderboard', icon: Award, requiresAuth: true }
       ]
     },
     {
       title: 'Account & Hub',
       items: [
-        { id: 'rewards', label: 'Daily Bonus', icon: Gift, badge: 'FREE' },
+        { id: 'rewards', label: 'Daily Bonus', icon: Gift, badge: 'FREE', requiresAuth: true },
         { id: 'wallet', label: 'USDT Wallet', icon: Wallet, requiresAuth: true },
-        { id: 'promotion', label: 'Promotions & Referral', icon: Share2, badge: 'HOT' },
+        { id: 'promotion', label: 'Promotions & Referral', icon: Share2, badge: 'HOT', requiresAuth: true },
         { id: 'transactions', label: 'Transaction History', icon: History, requiresAuth: true }
       ]
     }

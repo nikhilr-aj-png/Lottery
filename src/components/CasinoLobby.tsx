@@ -30,7 +30,7 @@ interface CasinoLobbyProps {
 }
 
 export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules, onShowResult }: CasinoLobbyProps) {
-  const { events, setSelectedEventForModal, setActiveTab, platformSettings } = useLottery();
+  const { events, setSelectedEventForModal, setActiveTab, platformSettings, requireAuth } = useLottery();
 
   // Results Retention Setting from Admin Panel (Default: 1 hour)
   const retentionHours = useMemo(() => {
@@ -82,11 +82,16 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules, onShowRe
     }).sort((a, b) => (b.drawTime || 0) - (a.drawTime || 0));
   }, [events, retentionHours]);
 
-  // Single-action Direct Room Entry (Fixes duplicate enter room flow)
+  // Single-action Direct Room Entry (Protected: Login required)
   const handleDirectEnterRoom = (eventOrId?: any) => {
     const targetId = typeof eventOrId === 'string' 
       ? eventOrId 
       : (eventOrId?.id || primaryLiveEvent?.id || 'lottery');
+
+    const roomId = targetId && targetId !== 'lottery' && targetId !== 'four-digit-lottery' ? targetId : null;
+    if (!requireAuth({ type: 'game', gameSlug: 'four-digit-lottery', roomId }, 'Please log in to enter the Live Draw Room.')) {
+      return;
+    }
 
     if (onLaunchGame) {
       onLaunchGame(targetId);
@@ -107,62 +112,67 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules, onShowRe
       {/* ------------------------------------------------------------------ */}
       {/* 1. REFINED COMPACT HERO BANNER: FOUR DIGIT LOTTERY IDENTITY        */}
       {/* ------------------------------------------------------------------ */}
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#121624] via-[#0E131F] to-[#1A132F] border border-amber-500/30 p-4 sm:p-5 lg:p-6 shadow-xl">
+      <section className="ef-hero-320 relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#121624] via-[#0E131F] to-[#1A132F] border border-amber-500/30 p-4 max-[359px]:p-3 sm:p-5 lg:p-6 shadow-xl">
         <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-b from-amber-500/10 via-purple-600/5 to-transparent rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 max-[359px]:gap-3 sm:gap-6">
           
           {/* Left: Official Logo + Title + Badges */}
-          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
+          <div className="flex items-center max-[359px]:items-start gap-3.5 max-[359px]:gap-2.5 sm:gap-4 min-w-0 flex-1 w-full">
             {/* Four Digit Lottery Logo Asset */}
             <div className="relative group shrink-0">
-              <div className="w-16 h-16 xs:w-18 xs:h-18 sm:w-20 sm:h-20 rounded-2xl bg-[#090D16] border-2 border-amber-400/75 shadow-[0_0_20px_rgba(245,196,81,0.25)] overflow-hidden flex items-center justify-center transition-transform group-hover:scale-105 duration-200">
+              <div className="w-16 h-16 max-[359px]:w-13 max-[359px]:h-13 xs:w-18 xs:h-18 sm:w-20 sm:h-20 rounded-2xl max-[359px]:rounded-xl bg-[#090D16] border-2 border-amber-400/75 shadow-[0_0_20px_rgba(245,196,81,0.25)] overflow-hidden flex items-center justify-center transition-transform group-hover:scale-105 duration-200">
                 <img 
                   src="/items/Four Digit Lottery.jpg" 
                   alt="Four Digit Lucky Lottery" 
                   className="w-full h-full object-cover rounded-xl"
                 />
               </div>
-              <span className="absolute -bottom-1.5 -right-1 px-1.5 py-0.2 rounded bg-amber-500 text-black font-mono-numbers text-[8px] font-black uppercase tracking-wider shadow">
+              <span className="absolute -bottom-1.5 -right-1 px-1.5 max-[359px]:px-1 py-0.2 rounded bg-amber-500 text-black font-mono-numbers text-[8px] max-[359px]:text-[7px] font-black uppercase tracking-wider shadow">
                 OFFICIAL
               </span>
             </div>
 
             {/* Typography & Subtle Badges */}
             <div className="min-w-0 flex-1 space-y-1">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono-numbers text-[9px] xs:text-[10px] font-bold">
-                  <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
+              <div className="flex flex-wrap items-center gap-1.5 max-[359px]:gap-1">
+                <div className="inline-flex items-center gap-1 px-2 max-[359px]:px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono-numbers text-[9px] max-[359px]:text-[8.5px] xs:text-[10px] font-bold max-[359px]:whitespace-nowrap">
+                  <Sparkles className="w-3 h-3 max-[359px]:w-2.5 max-[359px]:h-2.5 text-amber-400 shrink-0" />
                   <span>EarnFlow.in · Official Lucky Draw</span>
                 </div>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold font-mono-numbers">
+                <span className="inline-flex items-center gap-1 px-2 max-[359px]:px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] max-[359px]:text-[8px] font-bold font-mono-numbers whitespace-nowrap">
                   USDT TRC-20
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/5 text-[#94A3B8] text-[9px] font-bold">
+                <span className="inline-flex items-center px-1.5 max-[359px]:px-1 py-0.5 rounded-full bg-white/5 text-[#94A3B8] text-[9px] max-[359px]:text-[8px] font-bold whitespace-nowrap">
                   18+ Players
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30 text-[9px] font-bold font-mono-numbers">
+                <span className="inline-flex items-center px-1.5 max-[359px]:px-1 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30 text-[9px] max-[359px]:text-[8px] font-bold font-mono-numbers whitespace-nowrap">
                   95.0% RTP
                 </span>
               </div>
 
-              <h1 className="font-display font-black text-white text-lg xs:text-xl sm:text-2xl tracking-tight leading-tight">
+              <h1 className="font-display font-black text-white text-lg max-[359px]:text-[15px] xs:text-xl sm:text-2xl tracking-tight leading-tight">
                 Four Digit <span className="text-amber-400">Lucky Lottery</span>
               </h1>
 
-              <p className="text-xs text-[#CBD5E1] line-clamp-2 max-w-xl leading-relaxed">
+              <p className="max-[359px]:hidden text-xs text-[#CBD5E1] line-clamp-2 max-w-xl leading-relaxed">
                 Pick your lucky 4-digit number between <strong>0000 and 9999</strong> to enter transparent jackpot pools. Instant 24-hour USDT payouts.
               </p>
             </div>
           </div>
+
+          {/* Full-width unwrapped description strictly for 320px screens so zero text is truncated */}
+          <p className="hidden max-[359px]:block w-full text-[11px] text-[#CBD5E1] leading-relaxed text-left">
+            Pick your lucky 4-digit number between <strong>0000 and 9999</strong> to enter transparent jackpot pools. Instant 24-hour USDT payouts.
+          </p>
 
           {/* Right: Primary 1-Click Action Button */}
           <div className="shrink-0 w-full md:w-auto flex flex-col sm:flex-row items-center gap-2.5">
             <button
               type="button"
               onClick={() => handleDirectEnterRoom(primaryLiveEvent?.id)}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:brightness-110 text-black font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+              className="w-full sm:w-auto px-6 max-[359px]:px-4 py-3 max-[359px]:py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:brightness-110 text-black font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition-all cursor-pointer active:scale-95 whitespace-nowrap"
             >
               <Play className="w-3.5 h-3.5 fill-current shrink-0" />
               <span>Enter Live Draw Room</span>
