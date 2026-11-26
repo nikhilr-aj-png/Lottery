@@ -50,7 +50,9 @@ import {
   Binary,
   ShieldCheck,
   Gift,
-  Share2
+  Share2,
+  Menu,
+  X
 } from 'lucide-react';
 import ReferralsManagement from './ReferralsManagement';
 import SpinWheelManagement from './SpinWheelManagement';
@@ -104,13 +106,34 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
     return 'overview';
   });
   const [gamesManagementSubTab, setGamesManagementSubTab] = useState('all-games');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 && window.innerWidth < 1024 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileSidebarOpen(false);
+        if (window.innerWidth < 1024) {
+          setIsSidebarCollapsed(true);
+        } else {
+          setIsSidebarCollapsed(false);
+        }
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const switchAdminTab = (tab: string) => {
     setActiveAdminTab(tab);
+    setIsMobileSidebarOpen(false);
     try {
       let targetPath = '/admin';
       if (tab === 'referrals') targetPath = '/admin/referrals';
       else if (tab === 'spin-wheel') targetPath = '/admin/spin-wheel';
+      else if (tab === 'settings') targetPath = '/admin/settings';
       window.history.replaceState(null, '', targetPath);
     } catch (e) {}
   };
@@ -272,7 +295,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
   const [supportEmail, setSupportEmail] = useState(() => platformSettings?.supportEmail || 'earnflow.user@gmail.com');
   const [usernameChangeFee, setUsernameChangeFee] = useState(() => String(platformSettings?.usernameChangeFee ?? '5.00'));
   const [apkDownloadUrl, setApkDownloadUrl] = useState(() => platformSettings?.apkDownloadUrl || '/download/earnflow.apk');
-  const [resultsRetentionHours, setResultsRetentionHours] = useState(() => String(platformSettings?.resultsRetentionHours ?? '1'));
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
 
@@ -287,7 +309,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       setSupportEmail(platformSettings.supportEmail || 'earnflow.user@gmail.com');
       setUsernameChangeFee(String(platformSettings.usernameChangeFee ?? '5.00'));
       setApkDownloadUrl(platformSettings.apkDownloadUrl || '/download/earnflow.apk');
-      setResultsRetentionHours(String(platformSettings.resultsRetentionHours ?? '1'));
     }
   }, [platformSettings]);
 
@@ -410,8 +431,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
         treasuryTrc20,
         supportEmail,
         usernameChangeFee,
-        apkDownloadUrl,
-        resultsRetentionHours: parseFloat(resultsRetentionHours) || 1
+        apkDownloadUrl
       });
       if (res?.success) {
         setLastSavedTime(new Date().toLocaleTimeString());
@@ -473,231 +493,410 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
 
   const pendingSupportCount = supportTickets.filter(t => t.status === 'pending').length;
 
+  const pendingWinnerApprovalCount = winnerPayouts.filter(p => p.status === 'pending_approval').length;
+
+  const adminNavItems = [
+    {
+      id: 'overview',
+      label: 'Overview',
+      icon: LayoutDashboard,
+      isActive: activeAdminTab === 'overview',
+      onClick: () => switchAdminTab('overview')
+    },
+    {
+      id: 'games-management',
+      label: 'Four-Digit Lottery',
+      icon: Sparkles,
+      isActive:
+        activeAdminTab === 'games-management' ||
+        activeAdminTab === 'lottery-management' ||
+        activeAdminTab === 'pools' ||
+        activeAdminTab === 'games',
+      badge: activeEvents.length > 0 ? `${activeEvents.length} Live` : 'Live',
+      badgeTone: 'amber',
+      compactCount: activeEvents.length > 0 ? activeEvents.length : null,
+      onClick: () => {
+        setGamesManagementSubTab('all-games');
+        switchAdminTab('games-management');
+      }
+    },
+    {
+      id: 'withdrawals',
+      label: '24h Withdrawals',
+      icon: Wallet,
+      isActive: activeAdminTab === 'withdrawals',
+      badge: pendingWithdrawals.length > 0 ? String(pendingWithdrawals.length) : undefined,
+      badgeTone: 'amber-solid',
+      compactCount: pendingWithdrawals.length > 0 ? pendingWithdrawals.length : null,
+      onClick: () => switchAdminTab('withdrawals')
+    },
+    {
+      id: 'users',
+      label: 'User Management',
+      icon: Users,
+      isActive: activeAdminTab === 'users',
+      badge: usersList.length > 0 ? String(usersList.length) : undefined,
+      badgeTone: 'muted',
+      compactCount: null,
+      onClick: () => {
+        switchAdminTab('users');
+        loadUsers();
+      }
+    },
+    {
+      id: 'winner-payouts',
+      label: 'Winner Payouts (Add USDT)',
+      icon: Trophy,
+      isActive: activeAdminTab === 'winner-payouts',
+      badge: pendingWinnerApprovalCount > 0 ? String(pendingWinnerApprovalCount) : undefined,
+      badgeTone: 'emerald-solid',
+      compactCount: pendingWinnerApprovalCount > 0 ? pendingWinnerApprovalCount : null,
+      onClick: () => switchAdminTab('winner-payouts')
+    },
+    {
+      id: 'support',
+      label: 'Support & Inquiries',
+      icon: MessageSquare,
+      isActive: activeAdminTab === 'support',
+      badge: pendingSupportCount > 0 ? String(pendingSupportCount) : undefined,
+      badgeTone: 'red-solid',
+      compactCount: pendingSupportCount > 0 ? pendingSupportCount : null,
+      onClick: () => {
+        switchAdminTab('support');
+        fetchSupportTickets();
+      }
+    },
+    {
+      id: 'referrals',
+      label: 'Referrals & Affiliates',
+      icon: Share2,
+      isActive: activeAdminTab === 'referrals',
+      onClick: () => switchAdminTab('referrals')
+    },
+    {
+      id: 'spin-wheel',
+      label: 'Spin Wheel Control',
+      icon: Dices,
+      isActive: activeAdminTab === 'spin-wheel',
+      onClick: () => switchAdminTab('spin-wheel')
+    },
+    {
+      id: 'rewards-control',
+      label: 'Bonus & Daily Rewards',
+      icon: Gift,
+      isActive: activeAdminTab === 'rewards-control',
+      onClick: () => {
+        switchAdminTab('rewards-control');
+        loadRewardsAnalytics();
+      }
+    },
+    {
+      id: 'settings',
+      label: 'Platform Settings',
+      icon: Settings,
+      isActive: activeAdminTab === 'settings',
+      onClick: () => switchAdminTab('settings')
+    }
+  ];
+
+  const activeNavMeta = adminNavItems.find((item) => item.isActive) || adminNavItems[0];
+
+  const handleOpenUserLobby = () => {
+    if (onSwitchToUserLobby) {
+      onSwitchToUserLobby();
+    } else {
+      sessionStorage.setItem('earnflow_view_mode_user', 'true');
+      window.location.hash = '';
+      window.location.href = '/';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#07090d] text-[#e1e2eb] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#07090d] text-[#e1e2eb] flex flex-col font-sans overflow-x-clip">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-[#0d1117]/95 backdrop-blur-xl border-b border-amber-500/25 px-2.5 xs:px-4 sm:px-8 py-2.5 sm:py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-2 xs:gap-3 shrink-0">
-          <div className="w-8 h-8 xs:w-9 xs:h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-[0_0_15px_rgba(245,196,81,0.3)] shrink-0">
+      <header className="sticky top-0 z-40 h-14 md:h-16 bg-[#0d1117]/95 backdrop-blur-xl border-b border-amber-500/25 px-2.5 sm:px-4 md:px-6 flex items-center justify-between gap-2 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {/* Mobile Drawer Hamburger (< md: 320px, 375px, 425px) */}
+          <button
+            type="button"
+            onClick={() => setIsMobileSidebarOpen((prev) => !prev)}
+            aria-label={isMobileSidebarOpen ? 'Close admin navigation' : 'Open admin navigation'}
+            aria-expanded={isMobileSidebarOpen}
+            className="md:hidden w-9 h-9 rounded-xl bg-[#141924] hover:bg-[#1b2232] border border-[#272a31] hover:border-amber-500/40 text-amber-400 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+          >
+            {isMobileSidebarOpen ? <X className="w-4.5 h-4.5" /> : <Menu className="w-4.5 h-4.5" />}
+          </button>
+
+          {/* Desktop/Tablet Sidebar Collapse Toggle (md+: 768px, 1024px) */}
+          <button
+            type="button"
+            data-testid="admin-desktop-sidebar-toggle"
+            onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+            aria-label={isSidebarCollapsed ? 'Expand admin sidebar' : 'Collapse admin sidebar'}
+            aria-expanded={!isSidebarCollapsed}
+            title={isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+            className="hidden md:flex w-9 h-9 rounded-xl bg-[#141924] hover:bg-[#1b2232] border border-[#272a31] hover:border-amber-500/40 text-amber-400 items-center justify-center transition-colors cursor-pointer shrink-0"
+          >
+            <Menu className="w-4.5 h-4.5" />
+          </button>
+
+          <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-[0_0_15px_rgba(245,196,81,0.3)] shrink-0">
             <img src="/logo.png" alt="EarnFlow Admin" className="w-full h-full rounded-full object-cover" />
           </div>
-          <div>
-            <div className="flex items-center gap-1.5 xs:gap-2">
-              <span className="font-display font-extrabold text-sm xs:text-base text-white">
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <span className="font-display font-extrabold text-sm sm:text-base text-white truncate">
                 EarnFlow<span className="text-amber-400">.In</span>
               </span>
-              <span className="hidden xs:inline-block text-[9px] xs:text-[10px] font-mono-numbers px-1.5 xs:px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold uppercase tracking-wider whitespace-nowrap">
+              <span className="hidden md:inline-block text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold uppercase tracking-wider whitespace-nowrap shrink-0">
                 SUPER ADMIN
               </span>
             </div>
-            <p className="text-[9px] xs:text-[10px] text-[#9b8f7c] hidden sm:block">
+            <p className="text-[10px] text-[#9b8f7c] hidden lg:block truncate">
               Sovereign Decentralized Cryptographic Governance
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {user && (
-            <div className="hidden md:flex items-center gap-2 bg-[#141924] px-3 py-1.5 rounded-xl border border-[#272a31]">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-              <span className="text-xs font-mono-numbers text-white font-bold">
+            <div className="hidden lg:flex items-center gap-2 bg-[#141924] px-3 py-1.5 rounded-xl border border-[#272a31]">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span className="text-xs font-mono-numbers text-white font-bold max-w-[130px] truncate">
                 @{profile?.username || user?.email?.split('@')[0]}
-              </span>
-              <span className="text-[9px] font-mono-numbers px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
-                SUPER ADMIN
               </span>
             </div>
           )}
+
           <button
             type="button"
-            onClick={() => {
-              if (onSwitchToUserLobby) {
-                onSwitchToUserLobby();
-              } else {
-                sessionStorage.setItem('earnflow_view_mode_user', 'true');
-                window.location.hash = '';
-                window.location.href = '/';
-              }
-            }}
-            className="px-2 xs:px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0"
+            onClick={handleOpenUserLobby}
+            className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
             title="Open Live Public User Platform"
+            aria-label="Open User Lobby"
           >
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline">User Lobby</span>
+            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden md:inline whitespace-nowrap">User Lobby</span>
           </button>
+
           <button
+            type="button"
             onClick={onLogout}
-            className="px-2 xs:px-3 sm:px-3.5 py-1.5 rounded-xl bg-red-950/30 hover:bg-red-950/60 text-xs font-bold text-red-400 border border-red-500/30 flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0"
+            className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-red-950/30 hover:bg-red-950/60 text-xs font-bold text-red-400 border border-red-500/30 flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+            title="Lock & Sign Out"
+            aria-label="Lock and Sign Out"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline">Lock & Sign Out</span>
+            <LogOut className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden md:inline whitespace-nowrap">Lock &amp; Sign Out</span>
           </button>
         </div>
       </header>
 
-      {/* Main Admin Container with Tabbed Navigation */}
-      <div className="flex-1 w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2 xs:px-3 sm:px-6 lg:px-8 py-4 sm:py-6 w-full space-y-4 sm:space-y-6">
-        
-        {/* Navigation Bar Tabs */}
-        <div className="flex items-center gap-1.5 xs:gap-2 p-1.5 bg-[#0d1117] border border-[#272a31] rounded-2xl overflow-x-auto no-scrollbar shadow-inner">
-          <button
-            onClick={() => setActiveAdminTab('overview')}
-            className={`px-3 xs:px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'overview'
-                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
-                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            <span>Overview</span>
-          </button>
+      {/* Mobile Navigation Drawer (< md: 320px, 375px, 425px) */}
+      {isMobileSidebarOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          <div
+            className="fixed inset-0 bg-black/75 backdrop-blur-xs"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+          <aside className="relative z-10 w-[272px] max-w-[85vw] h-full bg-[#0b0e14] border-r border-amber-500/25 flex flex-col shadow-2xl animate-in slide-in-from-left duration-200">
+            <div className="px-4 py-3.5 border-b border-[#1f2737] flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shrink-0">
+                  <img src="/logo.png" alt="EarnFlow Admin" className="w-full h-full rounded-full object-cover" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-display font-extrabold text-xs text-white truncate">Admin Console</div>
+                  <div className="text-[9px] font-mono-numbers text-amber-400 uppercase font-bold">Super Admin</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMobileSidebarOpen(false)}
+                aria-label="Close admin sidebar drawer"
+                className="w-8 h-8 rounded-lg bg-[#141924] text-[#9b8f7c] hover:text-white border border-[#272a31] flex items-center justify-center cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-          <button
-            onClick={() => {
-              setActiveAdminTab('games-management');
-              setGamesManagementSubTab('all-games');
-            }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'games-management' || activeAdminTab === 'lottery-management' || activeAdminTab === 'pools' || activeAdminTab === 'games'
-                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md font-black'
-                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Four-Digit Lottery</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-black/40 font-mono-numbers text-amber-300 font-bold">
-              {activeEvents.length > 0 ? `${activeEvents.length} Active Draws` : 'Live Room'}
-            </span>
-          </button>
+            <nav className="flex-1 overflow-y-auto no-scrollbar p-2.5 space-y-1">
+              {adminNavItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={item.onClick}
+                    className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer text-left ${
+                      item.isActive
+                        ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md font-black'
+                        : 'text-[#9ba3b4] hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5 min-w-0">
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </span>
+                    {item.badge && (
+                      <span
+                        className={`px-1.5 py-0.5 rounded-full text-[9px] font-mono-numbers font-bold shrink-0 ${
+                          item.isActive
+                            ? 'bg-black/25 text-black'
+                            : item.badgeTone === 'amber'
+                              ? 'bg-black/40 text-amber-300'
+                              : item.badgeTone === 'amber-solid'
+                                ? 'bg-amber-500 text-black'
+                                : item.badgeTone === 'emerald-solid'
+                                  ? 'bg-emerald-500 text-black'
+                                  : item.badgeTone === 'red-solid'
+                                    ? 'bg-red-500 text-white'
+                                    : 'bg-black/40 text-[#9ba3b4]'
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
 
-          <button
-            onClick={() => setActiveAdminTab('withdrawals')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'withdrawals'
-                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
-                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Wallet className="w-4 h-4" />
-            <span>24h Withdrawals</span>
-            {pendingWithdrawals.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-500 text-black font-bold font-mono-numbers">
-                {pendingWithdrawals.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => { setActiveAdminTab('users'); loadUsers(); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'users'
-                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
-                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>User Management</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-black/40 font-mono-numbers">
-              {usersList.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveAdminTab('winner-payouts')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'winner-payouts'
-                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
-                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Trophy className="w-4 h-4" />
-            <span>Winner Payouts (Add USDT)</span>
-            {winnerPayouts.filter(p => p.status === 'pending_approval').length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-emerald-500 text-black font-bold font-mono-numbers animate-pulse">
-                {winnerPayouts.filter(p => p.status === 'pending_approval').length}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => { setActiveAdminTab('support'); fetchSupportTickets(); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'support'
-                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
-                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>Support & Inquiries</span>
-            {pendingSupportCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-red-500 text-white font-bold font-mono-numbers animate-pulse">
-                {pendingSupportCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => switchAdminTab('referrals')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'referrals'
-                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
-                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Share2 className="w-4 h-4" />
-            <span>Referrals & Affiliates</span>
-          </button>
-
-          <button
-            onClick={() => switchAdminTab('spin-wheel')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'spin-wheel'
-                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
-                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Dices className="w-4 h-4" />
-            <span>Spin Wheel Control</span>
-          </button>
-
-          <button
-            onClick={() => { setActiveAdminTab('rewards-control'); loadRewardsAnalytics(); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'rewards-control'
-                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
-                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Gift className="w-4 h-4" />
-            <span>Bonus & Daily Rewards</span>
-          </button>
-
-          <button
-            onClick={() => switchAdminTab('settings')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
-              activeAdminTab === 'settings'
-                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md'
-                : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Settings className="w-4 h-4" />
-            <span>Platform Settings</span>
-          </button>
+            <div className="p-3 border-t border-[#1f2737] space-y-2 bg-[#07090d]">
+              <button
+                type="button"
+                onClick={handleOpenUserLobby}
+                className="w-full px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Open User Lobby</span>
+              </button>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="w-full px-3 py-2 rounded-xl bg-red-950/30 hover:bg-red-950/60 text-xs font-bold text-red-400 border border-red-500/30 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Lock &amp; Sign Out</span>
+              </button>
+            </div>
+          </aside>
         </div>
+      )}
+
+      {/* Workspace Body: Tablet/Laptop Sidebar + Main Content */}
+      <div className="flex-1 flex min-w-0 relative">
+        {/* Persistent Expandable/Collapsible Sidebar (md: 768px & lg: 1024px) */}
+        <aside
+          data-testid="admin-desktop-sidebar"
+          className={`hidden md:flex flex-col shrink-0 bg-[#0a0d13] border-r border-[#1f2737] sticky top-14 md:top-16 h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] transition-all duration-200 ${
+            isSidebarCollapsed ? 'w-[72px]' : 'w-60 lg:w-64'
+          }`}
+        >
+          <div className={`px-3 py-2.5 border-b border-[#1f2737]/80 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
+            {!isSidebarCollapsed && (
+              <span className="text-[10px] font-mono-numbers font-bold uppercase tracking-wider text-[#64748b]">
+                Admin Modules
+              </span>
+            )}
+            <span className="text-[10px] font-mono-numbers px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">
+              {adminNavItems.length}
+            </span>
+          </div>
+
+          <nav className="flex-1 overflow-y-auto no-scrollbar p-2 space-y-1">
+            {adminNavItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={item.onClick}
+                  title={item.label}
+                  className={`relative w-full rounded-xl text-xs font-bold flex items-center transition-all cursor-pointer ${
+                    isSidebarCollapsed
+                      ? 'justify-center h-11 px-0'
+                      : 'justify-between px-3 py-2.5 gap-2 text-left'
+                  } ${
+                    item.isActive
+                      ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-md font-black'
+                      : 'text-[#8b92a2] hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <span className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5 min-w-0'}`}>
+                    <Icon className="w-4 h-4 shrink-0" />
+                    {!isSidebarCollapsed && (
+                      <span className="leading-snug text-left">{item.label}</span>
+                    )}
+                  </span>
+
+                  {!isSidebarCollapsed && item.badge && (
+                    <span
+                      className={`px-1.5 py-0.5 rounded-full text-[9px] font-mono-numbers font-bold shrink-0 ${
+                        item.isActive
+                          ? 'bg-black/25 text-black'
+                          : item.badgeTone === 'amber'
+                            ? 'bg-black/40 text-amber-300'
+                            : item.badgeTone === 'amber-solid'
+                              ? 'bg-amber-500 text-black'
+                              : item.badgeTone === 'emerald-solid'
+                                ? 'bg-emerald-500 text-black'
+                                : item.badgeTone === 'red-solid'
+                                  ? 'bg-red-500 text-white'
+                                  : 'bg-black/40 text-[#9ba3b4]'
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+
+                  {isSidebarCollapsed && item.compactCount !== null && item.compactCount !== undefined && (
+                    <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-amber-400 text-black text-[9px] font-mono-numbers font-black flex items-center justify-center shadow">
+                      {item.compactCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+
+        {/* Main Admin Content Container */}
+        <main className="flex-1 min-w-0 w-full max-w-7xl mx-auto px-2.5 xs:px-3.5 sm:px-5 md:px-6 lg:px-7 py-3.5 sm:py-5 space-y-4 sm:space-y-6">
+          {/* Mobile Active Section Context Pill (< md) */}
+          <div className="md:hidden flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#0d1117] border border-[#272a31]">
+            <div className="flex items-center gap-2 min-w-0">
+              {(() => {
+                const ActiveIcon = activeNavMeta.icon;
+                return <ActiveIcon className="w-4 h-4 text-amber-400 shrink-0" />;
+              })()}
+              <span className="font-display font-bold text-xs text-white truncate">
+                {activeNavMeta.label}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="text-[11px] font-bold text-amber-400 hover:text-amber-300 cursor-pointer shrink-0"
+            >
+              Switch Section
+            </button>
+          </div>
 
         {/* ============================================================== */}
         {/* TAB 1: OVERVIEW DASHBOARD                                      */}
         {/* ============================================================== */}
         {activeAdminTab === 'overview' && (
-          <div className="space-y-6 animate-in fade-in duration-150">
+          <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-150">
             {/* KPI Cards Grid */}
-            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <div className="bg-[#0d1117] border border-[#272a31] p-5 rounded-2xl relative overflow-hidden shadow-lg">
-                <div className="flex items-center justify-between text-[#8b92a2] mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Active Jackpot Pots</span>
-                  <DollarSign className="w-4 h-4 text-amber-400" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="bg-[#0d1117] border border-[#272a31] p-4 rounded-2xl relative overflow-hidden shadow-lg">
+                <div className="flex items-center justify-between text-[#8b92a2] mb-2 gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider">Active Jackpot Pots</span>
+                  <DollarSign className="w-4 h-4 text-amber-400 shrink-0" />
                 </div>
-                <div className="text-2xl font-mono-numbers font-black text-amber-400">
+                <div className="text-xl font-mono-numbers font-black text-amber-400">
                   {totalPoolPrize.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   <span className="text-xs text-amber-400/80 font-normal ml-1">USDT</span>
                 </div>
@@ -706,26 +905,26 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                 </div>
               </div>
 
-              <div className="bg-[#0d1117] border border-[#272a31] p-5 rounded-2xl relative overflow-hidden shadow-lg">
-                <div className="flex items-center justify-between text-[#8b92a2] mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Total Tickets Sold</span>
-                  <Flame className="w-4 h-4 text-[#05d5aa]" />
+              <div className="bg-[#0d1117] border border-[#272a31] p-4 rounded-2xl relative overflow-hidden shadow-lg">
+                <div className="flex items-center justify-between text-[#8b92a2] mb-2 gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider">Total Tickets Sold</span>
+                  <Flame className="w-4 h-4 text-[#05d5aa] shrink-0" />
                 </div>
-                <div className="text-2xl font-mono-numbers font-black text-white">
+                <div className="text-xl font-mono-numbers font-black text-white">
                   {totalTicketsSold.toLocaleString()}
                 </div>
                 <div className="text-[11px] text-[#05d5aa] mt-1 flex items-center gap-1 font-medium">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                   <span>Provably fair hashed entries</span>
                 </div>
               </div>
 
-              <div className="bg-[#0d1117] border border-[#272a31] p-5 rounded-2xl relative overflow-hidden shadow-lg">
-                <div className="flex items-center justify-between text-[#8b92a2] mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Pending 24h Payouts</span>
-                  <Clock className="w-4 h-4 text-orange-400" />
+              <div className="bg-[#0d1117] border border-[#272a31] p-4 rounded-2xl relative overflow-hidden shadow-lg">
+                <div className="flex items-center justify-between text-[#8b92a2] mb-2 gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider">Pending 24h Payouts</span>
+                  <Clock className="w-4 h-4 text-orange-400 shrink-0" />
                 </div>
-                <div className="text-2xl font-mono-numbers font-black text-orange-400">
+                <div className="text-xl font-mono-numbers font-black text-orange-400">
                   {pendingWithdrawals.length}
                   <span className="text-xs text-[#9b8f7c] font-normal ml-1.5 font-mono">
                     ({totalPendingAmount.toFixed(2)} USDT)
@@ -736,16 +935,16 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                 </div>
               </div>
 
-              <div className="bg-[#0d1117] border border-[#272a31] p-5 rounded-2xl relative overflow-hidden shadow-lg">
-                <div className="flex items-center justify-between text-[#8b92a2] mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Registered Players</span>
-                  <Users className="w-4 h-4 text-sky-400" />
+              <div className="bg-[#0d1117] border border-[#272a31] p-4 rounded-2xl relative overflow-hidden shadow-lg">
+                <div className="flex items-center justify-between text-[#8b92a2] mb-2 gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider">Registered Players</span>
+                  <Users className="w-4 h-4 text-sky-400 shrink-0" />
                 </div>
-                <div className="text-2xl font-mono-numbers font-black text-white">
+                <div className="text-xl font-mono-numbers font-black text-white">
                   {usersList.length}
                 </div>
                 <div className="text-[11px] text-sky-400 mt-1 flex items-center gap-1 font-medium">
-                  <Shield className="w-3.5 h-3.5" />
+                  <Shield className="w-3.5 h-3.5 shrink-0" />
                   <span>TRC-20 enabled profiles</span>
                 </div>
               </div>
@@ -767,15 +966,17 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 <button
-                  onClick={() => setActiveAdminTab('pools')}
+                  type="button"
+                  onClick={() => switchAdminTab('games-management')}
                   className="px-3.5 py-2 rounded-xl btn-gold text-xs font-bold cursor-pointer"
                 >
                   Deploy Pool
                 </button>
                 <button
-                  onClick={() => setActiveAdminTab('withdrawals')}
+                  type="button"
+                  onClick={() => switchAdminTab('withdrawals')}
                   className="px-3.5 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] cursor-pointer"
                 >
                   Review Withdrawals ({pendingWithdrawals.length})
@@ -784,17 +985,18 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
             </div>
 
             {/* Live Pool Summary Table */}
-            <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-4 sm:p-5 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-amber-400" />
+                  <Layers className="w-4 h-4 text-amber-400 shrink-0" />
                   <h3 className="font-display font-bold text-sm text-white">
                     Active Lottery Pools Snapshot
                   </h3>
                 </div>
                 <button
-                  onClick={() => setActiveAdminTab('pools')}
-                  className="text-xs text-amber-400 hover:underline font-semibold"
+                  type="button"
+                  onClick={() => switchAdminTab('games-management')}
+                  className="text-xs text-amber-400 hover:underline font-semibold cursor-pointer"
                 >
                   Manage All Pools →
                 </button>
@@ -898,21 +1100,21 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
         {activeAdminTab === 'withdrawals' && (
           <div className="space-y-6 animate-in fade-in duration-150">
             {/* Header info & filters */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#0d1117] p-5 rounded-2xl border border-[#272a31]">
-              <div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 bg-[#0d1117] p-4 sm:p-5 rounded-2xl border border-[#272a31]">
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-amber-400" />
-                  <h3 className="font-display font-bold text-base text-white">
+                  <Clock className="w-5 h-5 text-amber-400 shrink-0" />
+                  <h3 className="font-display font-bold text-sm sm:text-base text-white">
                     24-Hour Withdrawal Disbursal Manager
                   </h3>
                 </div>
-                <p className="text-xs text-[#9b8f7c] mt-0.5">
+                <p className="text-xs text-[#9b8f7c] mt-0.5 leading-relaxed">
                   Approve and broadcast TRC-20 USDT withdrawals to user addresses within the 24-hour guarantee
                 </p>
               </div>
 
               {/* Status Filter buttons */}
-              <div className="flex items-center gap-1.5 bg-[#07090d] p-1 rounded-xl border border-[#1f2737]">
+              <div className="flex flex-wrap items-center gap-1.5 bg-[#07090d] p-1 rounded-xl border border-[#1f2737] w-full sm:w-auto">
                 <button
                   onClick={() => setWithdrawalFilter('all')}
                   className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
@@ -1313,7 +1515,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                 </div>
               </div>
 
-              <form onSubmit={handleManualCreditSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-3.5 items-end">
+              <form onSubmit={handleManualCreditSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5 items-end">
                 <div>
                   <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
                     Select Player / Target Address:
@@ -1575,170 +1777,201 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
         {/* TAB 5: PLATFORM SETTINGS & GOVERNANCE                         */}
         {/* ============================================================== */}
         {activeAdminTab === 'settings' && (
-          <div className="space-y-6 animate-in fade-in duration-150">
-            <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-6 space-y-6 shadow-lg">
-              <div className="flex items-center gap-3 pb-3 border-b border-[#1f2737]">
-                <Settings className="w-5 h-5 text-amber-400" />
-                <div>
-                  <h3 className="font-display font-bold text-base text-white">
-                    Platform Governance & Treasury Settings
+          <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-150">
+            <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-4 sm:p-6 space-y-5 shadow-lg">
+              <div className="flex items-start sm:items-center gap-3 pb-3 border-b border-[#1f2737]">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
+                  <Settings className="w-4.5 h-4.5 text-amber-400" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-display font-bold text-sm sm:text-base text-white">
+                    Platform Governance &amp; Treasury Settings
                   </h3>
-                  <p className="text-xs text-[#9b8f7c]">
-                    Configure global withdrawal thresholds, house fees, and official TRC-20 disbursement wallets
+                  <p className="text-xs text-[#9b8f7c] mt-0.5 leading-relaxed">
+                    Configure global withdrawal thresholds, house fees, and official TRC-20 disbursement wallets.
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={handleSaveSettings} className="space-y-5 max-w-2xl">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-[#07090d] p-3 rounded-xl border border-[#1f2737]">
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs text-[#8b92a2] font-semibold">
-                        Minimum Withdrawal (USDT)
-                      </label>
-                      <span className="text-[10px] text-amber-400 font-bold">Minimum Threshold</span>
+              <form onSubmit={handleSaveSettings} className="space-y-4 sm:space-y-5 w-full">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
+                  <div className="bg-[#07090d] p-3.5 sm:p-4 rounded-xl border border-[#1f2737] flex flex-col justify-between gap-2 min-w-0">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                        <label className="text-xs text-[#e1e2eb] font-semibold">
+                          Minimum Withdrawal (USDT)
+                        </label>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold shrink-0">
+                          Min Limit
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={minWithdrawal}
+                        onChange={(e) => setMinWithdrawal(e.target.value)}
+                        className="w-full min-w-0 bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
+                        required
+                      />
                     </div>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={minWithdrawal}
-                      onChange={(e) => setMinWithdrawal(e.target.value)}
-                      className="w-full bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
-                      required
-                    />
-                    <p className="text-[10px] text-[#9b8f7c] mt-1.5 leading-relaxed">
-                      💡 Users must maintain at least this balance to initiate an on-chain withdrawal.
+                    <p className="text-[11px] text-[#9b8f7c] leading-relaxed">
+                      Users must maintain at least this balance to initiate an on-chain withdrawal.
                     </p>
                   </div>
 
-                  <div className="bg-[#07090d] p-3 rounded-xl border border-[#1f2737]">
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs text-[#8b92a2] font-semibold">
-                        Maximum Single Withdrawal (USDT)
-                      </label>
-                      <span className="text-[10px] text-cyan-400 font-bold">Maximum Cap</span>
+                  <div className="bg-[#07090d] p-3.5 sm:p-4 rounded-xl border border-[#1f2737] flex flex-col justify-between gap-2 min-w-0">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                        <label className="text-xs text-[#e1e2eb] font-semibold">
+                          Maximum Single Withdrawal (USDT)
+                        </label>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold shrink-0">
+                          Max Cap
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={maxWithdrawal}
+                        onChange={(e) => setMaxWithdrawal(e.target.value)}
+                        className="w-full min-w-0 bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
+                        required
+                      />
                     </div>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={maxWithdrawal}
-                      onChange={(e) => setMaxWithdrawal(e.target.value)}
-                      className="w-full bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
-                      required
-                    />
-                    <p className="text-[10px] text-[#9b8f7c] mt-1.5 leading-relaxed">
-                      🛡️ Security limit: Maximum allowable USDT disbursed per single withdrawal transaction.
+                    <p className="text-[11px] text-[#9b8f7c] leading-relaxed">
+                      Security limit: Maximum allowable USDT disbursed per single withdrawal transaction.
+                    </p>
+                  </div>
+
+                  <div className="bg-[#07090d] p-3.5 sm:p-4 rounded-xl border border-[#1f2737] flex flex-col justify-between gap-2 min-w-0">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                        <label className="text-xs text-[#e1e2eb] font-semibold">
+                          Platform House Charge / Fee (%)
+                        </label>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold shrink-0">
+                          House Fee
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={houseFeePercent}
+                        onChange={(e) => setHouseFeePercent(e.target.value)}
+                        className="w-full min-w-0 bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
+                        required
+                      />
+                    </div>
+                    <p className="text-[11px] text-[#05d5aa]/90 leading-relaxed">
+                      Deducted automatically during settlement to fund oracle and operational infrastructure.
+                    </p>
+                  </div>
+
+                  <div className="bg-[#07090d] p-3.5 sm:p-4 rounded-xl border border-[#1f2737] flex flex-col justify-between gap-2 min-w-0">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                        <label className="text-xs text-[#e1e2eb] font-semibold">
+                          Default Winner Pool Share (%)
+                        </label>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold shrink-0">
+                          Winner Share
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        min="10"
+                        max="100"
+                        value={defaultWinnerSharePercent}
+                        onChange={(e) => setDefaultWinnerSharePercent(e.target.value)}
+                        className="w-full min-w-0 bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
+                        required
+                      />
+                    </div>
+                    <p className="text-[11px] text-[#9b8f7c] leading-relaxed">
+                      Percentage of total ticket pool disbursed to the verified winning combination.
+                    </p>
+                  </div>
+
+                  <div className="bg-[#07090d] p-3.5 sm:p-4 rounded-xl border border-[#1f2737] flex flex-col justify-between gap-2 min-w-0">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                        <label className="text-xs text-[#e1e2eb] font-semibold">
+                          Username Change Fee (USDT)
+                        </label>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 font-bold shrink-0">
+                          1st Edit Free
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={usernameChangeFee}
+                        onChange={(e) => setUsernameChangeFee(e.target.value)}
+                        className="w-full min-w-0 bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
+                        required
+                      />
+                    </div>
+                    <p className="text-[11px] text-[#a78bfa] leading-relaxed">
+                      1st edit is 100% Free Lifetime. Subsequent modifications deduct this USDT fee from wallet balance.
+                    </p>
+                  </div>
+
+                  <div className="bg-[#07090d] p-3.5 sm:p-4 rounded-xl border border-[#1f2737] flex flex-col justify-between gap-2 min-w-0">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                        <label className="text-xs text-[#e1e2eb] font-semibold">
+                          Official Support Email
+                        </label>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-[#9b8f7c] border border-[#272a31] font-bold shrink-0">
+                          User Portals
+                        </span>
+                      </div>
+                      <input
+                        type="email"
+                        value={supportEmail}
+                        onChange={(e) => setSupportEmail(e.target.value)}
+                        className="w-full min-w-0 bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white outline-none"
+                        required
+                      />
+                    </div>
+                    <p className="text-[11px] text-[#8b92a2] leading-relaxed">
+                      Displayed across Contact Us, Terms &amp; Conditions, and Privacy Policy pages.
                     </p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-[#07090d] p-3 rounded-xl border border-[#1f2737]">
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs text-[#8b92a2] font-semibold">
-                        Platform House Charge / Fee (%)
-                      </label>
-                      <span className="text-[10px] text-emerald-400 font-bold">Platform Maintenance</span>
-                    </div>
-                    <input
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={houseFeePercent}
-                      onChange={(e) => setHouseFeePercent(e.target.value)}
-                      className="w-full bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
-                      required
-                    />
-                    <p className="text-[10px] text-[#05d5aa] mt-1.5 leading-relaxed">
-                      📌 Deducted automatically during settlement to fund oracle and operational infrastructure.
-                    </p>
-                  </div>
-
-                  <div className="bg-[#07090d] p-3 rounded-xl border border-[#1f2737]">
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs text-[#8b92a2] font-semibold">
-                        Default Winner Pool Share (%)
-                      </label>
-                      <span className="text-[10px] text-amber-400 font-bold">Winner Allocation</span>
-                    </div>
-                    <input
-                      type="number"
-                      min="10"
-                      max="100"
-                      value={defaultWinnerSharePercent}
-                      onChange={(e) => setDefaultWinnerSharePercent(e.target.value)}
-                      className="w-full bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
-                      required
-                    />
-                    <p className="text-[10px] text-[#9b8f7c] mt-1.5 leading-relaxed">
-                      🏆 Percentage of total ticket pool disbursed to the verified winning combination.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-[#07090d] p-3 rounded-xl border border-[#1f2737]">
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs text-[#8b92a2] font-semibold">
-                        Username Change Fee (USDT)
-                      </label>
-                      <span className="text-[10px] text-purple-400 font-bold">1st Edit Free Lifetime</span>
-                    </div>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={usernameChangeFee}
-                      onChange={(e) => setUsernameChangeFee(e.target.value)}
-                      className="w-full bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
-                      required
-                    />
-                    <p className="text-[10px] text-[#a78bfa] mt-1.5 leading-relaxed">
-                      ⚡ 1st edit is 100% Free Lifetime. Subsequent modifications automatically deduct this USDT fee from user's wallet in the database.
-                    </p>
-                  </div>
-
-                  <div className="bg-[#07090d] p-3 rounded-xl border border-[#1f2737]">
-                    <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                      Official Support Email (Displayed across User Portals)
+                {/* Master Treasury TRC-20 Address */}
+                <div className="bg-[#07090d] p-3.5 sm:p-4 rounded-xl border border-[#1f2737] space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
+                    <label className="text-xs text-[#e1e2eb] font-semibold">
+                      Master Treasury TRC-20 Address (Disbursement Hot Wallet)
                     </label>
-                    <input
-                      type="email"
-                      value={supportEmail}
-                      onChange={(e) => setSupportEmail(e.target.value)}
-                      className="w-full bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white outline-none"
-                      required
-                    />
-                    <p className="text-[10px] text-[#64748b] mt-1.5 leading-relaxed">
-                      Dynamically loaded in Contact Us, Terms & Conditions, and Privacy Policy across portals.
-                    </p>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold shrink-0">
+                      TRON Network
+                    </span>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                    Master Treasury TRC-20 Address (Disbursement Hot Wallet):
-                  </label>
                   <input
                     type="text"
                     value={treasuryTrc20}
                     onChange={(e) => setTreasuryTrc20(e.target.value)}
-                    className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
+                    className="w-full min-w-0 bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
                     required
                   />
-                  <p className="text-[10px] text-[#64748b] mt-1">
+                  <p className="text-[11px] text-[#8b92a2] leading-relaxed">
                     All automated 24h withdrawals are signed and broadcast from this TRON smart contract address.
                   </p>
                 </div>
 
                 {/* Android APK Download URL Settings */}
-                <div className="bg-[#07090d] p-4 rounded-xl border border-[#1f2737] space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                    <label className="text-xs text-white font-bold flex items-center gap-2">
-                      <Download className="w-4 h-4 text-[#ffd700]" />
+                <div className="bg-[#07090d] p-3.5 sm:p-4 rounded-xl border border-[#1f2737] space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label className="text-xs text-white font-bold flex items-center gap-2 min-w-0">
+                      <Download className="w-4 h-4 text-[#ffd700] shrink-0" />
                       <span>Official Android App (APK) Download Source</span>
                     </label>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold self-start sm:self-auto">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold shrink-0">
                       Google Drive Auto Direct-Download
                     </span>
                   </div>
@@ -1748,20 +1981,19 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                     value={apkDownloadUrl}
                     onChange={(e) => setApkDownloadUrl(e.target.value)}
                     placeholder="https://drive.google.com/file/d/.../view?usp=sharing or /download/earnflow.apk"
-                    className="w-full bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2.5 text-xs text-white font-mono-numbers outline-none"
+                    className="w-full min-w-0 bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2.5 text-xs text-white font-mono-numbers outline-none"
                     required
                   />
 
-                  {/* Status & Helper Info */}
-                  <div className="space-y-2 pt-1 text-[11px]">
+                  <div className="space-y-2 text-[11px]">
                     {apkDownloadUrl?.includes('drive.google.com') ? (
                       <div className="p-2.5 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-emerald-300 space-y-1">
                         <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-400">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Google Drive Link Detected & Handled</span>
+                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                          <span>Google Drive Link Detected &amp; Handled</span>
                         </div>
-                        <p className="text-[10px] text-emerald-200/80">
-                          Users clicking "Download APK" will <strong>directly download the APK file</strong> without seeing Google Drive's web preview page.
+                        <p className="text-[10px] text-emerald-200/80 leading-relaxed">
+                          Users clicking &quot;Download APK&quot; directly download the APK without Google Drive web preview.
                         </p>
                         {getDirectDownloadUrl && (
                           <div className="text-[10px] font-mono-numbers text-emerald-400/90 break-all bg-black/40 p-1.5 rounded mt-1">
@@ -1771,11 +2003,11 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                       </div>
                     ) : (
                       <p className="text-[10px] text-[#9b8f7c] leading-relaxed">
-                        💡 <strong>How to use Google Drive:</strong> Upload your compiled APK to Google Drive &rarr; click Share &rarr; set to "Anyone with the link can view" &rarr; paste the link here. The platform will automatically convert it so users get an instant direct download!
+                        <strong>How to use Google Drive:</strong> Upload your compiled APK &rarr; Share &rarr; Anyone with the link &rarr; paste here for automatic direct APK download.
                       </p>
                     )}
 
-                    <div className="flex items-center gap-2 pt-1">
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
                       <a
                         href={getDirectDownloadUrl ? getDirectDownloadUrl(apkDownloadUrl) : apkDownloadUrl}
                         target="_blank"
@@ -1783,86 +2015,30 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141924] hover:bg-[#1f2738] border border-[#ffd700]/30 text-[#ffd700] text-xs font-bold transition-colors cursor-pointer"
                         title="Test whether the direct download link triggers properly"
                       >
-                        <Download className="w-3.5 h-3.5" />
+                        <Download className="w-3.5 h-3.5 shrink-0" />
                         <span>Test Direct Download Link</span>
                       </a>
-                      <span className="text-[10px] text-[#8b92a2]">
-                        (App download buttons are strictly hidden when browsing inside the Android App)
+                      <span className="text-[10px] text-[#8b92a2] leading-relaxed">
+                        (App download buttons are hidden when browsing inside the Android App)
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Results Retention Duration Setting */}
-                <div className="bg-[#07090d] p-4 rounded-xl border border-[#1f2737] space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                    <label className="text-xs text-white font-bold flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-[#ffd700]" />
-                      <span>Lottery Results Display Retention Period</span>
-                    </label>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold self-start sm:self-auto">
-                      Current: {resultsRetentionHours} Hour(s)
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-[#8b92a2] leading-relaxed">
-                    Determines how long ended lottery events remain visible under the homepage "Recent Draw Results" section before being automatically cleared from public display.
-                  </p>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
-                    {[
-                      { label: '15 Min', value: '0.25' },
-                      { label: '30 Min', value: '0.5' },
-                      { label: '1 Hour', value: '1' },
-                      { label: '2 Hours', value: '2' },
-                      { label: '6 Hours', value: '6' },
-                      { label: '12 Hours', value: '12' },
-                      { label: '24 Hours', value: '24' }
-                    ].map((preset) => (
-                      <button
-                        key={preset.value}
-                        type="button"
-                        onClick={() => setResultsRetentionHours(preset.value)}
-                        className={`p-2 rounded-xl text-center text-xs font-bold transition-all cursor-pointer border ${
-                          resultsRetentionHours === preset.value
-                            ? 'bg-amber-400 text-black border-amber-400 shadow-md font-black'
-                            : 'bg-[#141924] text-[#8b92a2] border-[#272a31] hover:text-white'
-                        }`}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="text-[11px] text-[#8b92a2]">Or custom duration (hours):</span>
-                    <input
-                      type="number"
-                      step="0.25"
-                      min="0.1"
-                      max="168"
-                      value={resultsRetentionHours}
-                      onChange={(e) => setResultsRetentionHours(e.target.value)}
-                      className="w-24 bg-[#0b0e14] border border-[#272a31] rounded-lg px-2.5 py-1 text-xs font-bold font-mono-numbers text-white outline-none focus:border-amber-400"
-                    />
-                    <span className="text-[11px] text-[#8b92a2]">hours</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-2">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
                   <button
                     type="submit"
                     disabled={isSavingSettings}
-                    className="py-3 px-8 rounded-xl btn-gold text-xs font-bold flex items-center gap-2 cursor-pointer shadow-lg shadow-[#f5c451]/20 disabled:opacity-50"
+                    className="w-full sm:w-auto justify-center py-3 px-6 sm:px-8 rounded-xl btn-gold text-xs font-bold flex items-center gap-2 cursor-pointer shadow-lg shadow-[#f5c451]/20 disabled:opacity-50"
                   >
                     {isSavingSettings ? (
                       <>
-                        <RefreshCw className="w-4 h-4 animate-spin text-black" />
+                        <RefreshCw className="w-4 h-4 animate-spin text-black shrink-0" />
                         <span>Syncing Across All User Panels...</span>
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="w-4 h-4 text-black" />
+                        <CheckCircle className="w-4 h-4 text-black shrink-0" />
                         <span>Save Platform Configuration</span>
                       </>
                     )}
@@ -1870,7 +2046,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
 
                   {lastSavedTime && (
                     <span className="text-[11px] font-mono-numbers text-emerald-400 font-semibold flex items-center gap-1.5 bg-emerald-500/10 px-3 py-2 rounded-xl border border-emerald-500/30 animate-in fade-in">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                       <span>Live Synced Across User Portals at {lastSavedTime}</span>
                     </span>
                   )}
@@ -1950,14 +2126,14 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                 ))}
               </div>
 
-              <div className="relative min-w-[240px]">
+              <div className="relative w-full sm:w-64 min-w-0">
                 <Search className="w-3.5 h-3.5 text-[#8b92a2] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={supportSearchQuery}
                   onChange={(e) => setSupportSearchQuery(e.target.value)}
                   placeholder="Search user, email, problem..."
-                  className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white outline-none"
+                  className="w-full min-w-0 bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white outline-none"
                 />
               </div>
             </div>
@@ -2196,12 +2372,12 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 self-stretch sm:self-auto shrink-0">
+              <div className="flex flex-wrap items-center gap-2.5 self-stretch md:self-auto shrink-0">
                 <button
                   type="button"
                   onClick={loadRewardsAnalytics}
                   disabled={loadingRewardsAnalytics}
-                  className="px-3.5 py-2.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-3.5 py-2.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   title="Refresh analytics and settings"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loadingRewardsAnalytics ? 'animate-spin text-amber-400' : ''}`} />
@@ -2212,7 +2388,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                   type="button"
                   onClick={handleSaveRewardSettings}
                   disabled={savingRewardSettings}
-                  className="px-5 py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-amber-500/20"
+                  className="flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-amber-500/20"
                 >
                   {savingRewardSettings ? (
                     <>
@@ -2305,7 +2481,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                     <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-1.5">
                       Reward Distribution Mode
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {[
                         { id: 'streak', label: '7-Day Streak', desc: 'Progression ladder' },
                         { id: 'random', label: 'Random Range', desc: 'Min to Max USDT' },
@@ -2449,7 +2625,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                     <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-1.5">
                       Missed-Day Streak Policy
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
                       <button
                         type="button"
                         onClick={() => setDailyCheckinSettings(prev => ({ ...prev, missed_day_policy: 'reset' }))}
@@ -2606,7 +2782,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
             auditData={auditVerifyModalData}
           />
         )}
-
+        </main>
       </div>
     </div>
   );

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useLottery } from '../context/LotteryContext';
-import { 
-  Dices, 
-  Sparkles, 
-  ShieldAlert, 
-  Save, 
-  RefreshCw, 
-  CheckCircle2, 
+import {
+  Dices,
+  Sparkles,
+  ShieldAlert,
+  Save,
+  RefreshCw,
+  CheckCircle2,
   AlertTriangle,
   Clock,
   Coins,
@@ -199,18 +199,18 @@ export default function SpinWheelManagement() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-150">
+    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-150 min-w-0">
       {/* Header */}
-      <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 sm:p-6 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-black shadow-md">
+      <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-4 sm:p-6 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-black shadow-md shrink-0">
             <Sparkles className="w-5 h-5" />
           </div>
-          <div>
-            <h2 className="font-display font-black text-lg sm:text-xl text-white">
+          <div className="min-w-0">
+            <h2 className="font-display font-black text-base sm:text-xl text-white">
               Daily Bonus Lucky Spin Wheel Governance
             </h2>
-            <p className="text-xs text-[#8b92a2]">
+            <p className="text-xs text-[#8b92a2] mt-0.5 leading-relaxed">
               Control daily wheel activations, payout segments (USDT TRC-20), probability distributions, and security audits
             </p>
           </div>
@@ -220,7 +220,7 @@ export default function SpinWheelManagement() {
           type="button"
           onClick={loadSpinWheelData}
           disabled={loadingData}
-          className="px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] flex items-center gap-2 self-start md:self-auto cursor-pointer"
+          className="px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] flex items-center gap-2 self-start md:self-auto cursor-pointer shrink-0"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loadingData ? 'animate-spin text-amber-400' : ''}`} />
           <span>Refresh Data</span>
@@ -228,22 +228,22 @@ export default function SpinWheelManagement() {
       </div>
 
       {/* CRITICAL AUDIT NOTICE & SUSPICIOUS CREDITS REPORT */}
-      <div className="bg-[#120e09] border border-amber-500/40 rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl relative overflow-hidden">
-        <div className="flex items-start gap-3">
+      <div className="bg-[#120e09] border border-amber-500/40 rounded-2xl p-4 sm:p-6 space-y-4 shadow-xl relative overflow-hidden">
+        <div className="flex flex-col xs:flex-row items-start gap-3">
           <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center shrink-0">
             <ShieldAlert className="w-5 h-5" />
           </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider">
-                Audited & Resolved: Historical Spin Wheel USDT Crediting Discrepancy
+          <div className="space-y-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-xs sm:text-sm font-bold text-amber-400 uppercase tracking-wider">
+                Audited &amp; Resolved: Historical Spin Wheel USDT Crediting Discrepancy
               </h3>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shrink-0">
                 FIXED IN STORED PROCEDURE
               </span>
             </div>
             <p className="text-xs text-[#d1d5db] leading-relaxed">
-              <strong>Root Cause:</strong> Legacy Flow Coin slice values had a <code>v_base_prize := 250.0</code> multiplier. 
+              <strong>Root Cause:</strong> Legacy Flow Coin slice values had a <code>v_base_prize := 250.0</code> multiplier.
               During currency migration, <code>credit_virtual_credits</code> credited 250.00 USDT instead of 0.25 USDT for slice 4.
             </p>
             <p className="text-xs text-amber-300/90 leading-relaxed">
@@ -303,7 +303,7 @@ export default function SpinWheelManagement() {
             Wheel Eligibility & Frequency Rules
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3.5 sm:gap-4">
             <div className="bg-[#141924] border border-[#272a31] rounded-xl p-4 flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold text-white block">Wheel Status</span>
@@ -381,9 +381,8 @@ export default function SpinWheelManagement() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className={`px-3 py-1 rounded-lg text-xs font-bold font-mono-numbers ${
-                isProbabilityValid ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/40'
-              }`}>
+              <span className={`px-3 py-1 rounded-lg text-xs font-bold font-mono-numbers ${isProbabilityValid ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/40'
+                }`}>
                 Total: {totalProbability.toFixed(1)}% / 100.0%
               </span>
 
@@ -399,9 +398,9 @@ export default function SpinWheelManagement() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {segments.map((seg, idx) => (
-              <div 
+              <div
                 key={seg.id}
                 className="bg-[#141924] border border-[#272a31] rounded-xl p-3.5 space-y-2 relative"
                 style={{ borderTop: `3px solid ${seg.color}` }}

@@ -34,8 +34,14 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules, onShowRe
 
   // Results Retention Setting from Admin Panel (Default: 1 hour)
   const retentionHours = useMemo(() => {
-    return Number(platformSettings?.resultsRetention?.retention_duration_hours || 1.0);
-  }, [platformSettings?.resultsRetention]);
+    const raw =
+      platformSettings?.resultsRetentionHours ??
+      platformSettings?.resultsRetention?.duration_hours ??
+      platformSettings?.resultsRetention?.retention_duration_hours ??
+      1.0;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1.0;
+  }, [platformSettings?.resultsRetentionHours, platformSettings?.resultsRetention]);
 
   // 1. Available Pool: Active and scheduled events (LIVE event first)
   const availableEvents = useMemo(() => {

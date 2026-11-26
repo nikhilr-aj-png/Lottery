@@ -22,14 +22,26 @@ import {
  * 5. Clicking "Show Result" or clicking the card opens that exact event in LotteryShowResultScreen.
  */
 export default function ResultsView() {
-  const { events, tickets } = useLottery();
+  const { events, tickets, platformSettings } = useLottery();
   const [statusFilter, setStatusFilter] = useState<'pending' | 'declared'>('pending');
   const [selectedShowResultEvent, setSelectedShowResultEvent] = useState<any>(null);
 
-  // Filter and deduplicate strictly to ended events
+  const retentionHours = useMemo(() => {
+    const raw =
+      platformSettings?.resultsRetentionHours ??
+      platformSettings?.resultsRetention?.duration_hours ??
+      platformSettings?.resultsRetention?.retention_duration_hours ??
+      1.0;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1.0;
+  }, [platformSettings?.resultsRetentionHours, platformSettings?.resultsRetention]);
+
+  // Filter and deduplicate strictly to ended events within global display period
   const endedEvents = useMemo(() => {
     const seenIds = new Set<string>();
     const list: any[] = [];
+    const now = Date.now();
+    const retentionMs = retentionHours * 3600 * 1000;
 
     (events || []).forEach((e: any) => {
       if (!e || !e.id || seenIds.has(e.id)) return;
@@ -38,10 +50,13 @@ export default function ResultsView() {
         e.status === 'result_pending' ||
         e.status === 'completed' ||
         Boolean(e.winningDigits) ||
-        (e.drawTime && new Date(e.drawTime).getTime() <= Date.now())
+        (e.drawTime && new Date(e.drawTime).getTime() <= now)
       );
 
       if (isConcludedOrPending) {
+        if (e.status === 'completed' && e.drawTime && (now - new Date(e.drawTime).getTime()) > retentionMs) {
+          return;
+        }
         seenIds.add(e.id);
         list.push(e);
       }
@@ -53,7 +68,7 @@ export default function ResultsView() {
       const timeB = b.drawTime ? new Date(b.drawTime).getTime() : 0;
       return timeB - timeA;
     });
-  }, [events]);
+  }, [events, retentionHours]);
 
   // Declared vs Pending strictly driven by official declaration state in backend
   const declaredEvents = useMemo(() => {

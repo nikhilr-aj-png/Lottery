@@ -1159,11 +1159,22 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       if (!error && data && data.length > 0) {
         setPlatformSettings(prev => {
           let merged = { ...prev };
+          const globalRow = data.find((row: any) => row.key === 'global' && row.value);
+          if (globalRow) {
+            merged = { ...merged, ...globalRow.value };
+          }
           data.forEach((row: any) => {
-            if (row.key === 'global' && row.value) {
-              merged = { ...merged, ...row.value };
-            } else if (row.key === 'results_retention' && row.value) {
-              merged.resultsRetentionHours = Number(row.value.duration_hours || 1);
+            if (row.key === 'results_retention' && row.value) {
+              const rawHours = row.value.duration_hours ?? row.value.retention_duration_hours;
+              const parsed = Number(rawHours);
+              if (Number.isFinite(parsed) && parsed > 0) {
+                merged.resultsRetentionHours = parsed;
+              }
+              merged.resultsRetention = {
+                ...row.value,
+                duration_hours: Number.isFinite(parsed) && parsed > 0 ? parsed : (merged.resultsRetentionHours || 1),
+                retention_duration_hours: Number.isFinite(parsed) && parsed > 0 ? parsed : (merged.resultsRetentionHours || 1)
+              };
             } else if (row.key === 'referral_settings' && row.value) {
               merged.referralSettings = { ...merged.referralSettings, ...row.value };
             } else if (row.key === 'spin_wheel_settings' && row.value) {
@@ -1193,6 +1204,14 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         usernameChangeFee: parseFloat(newSettings.usernameChangeFee !== undefined ? newSettings.usernameChangeFee : (platformSettings.usernameChangeFee ?? 5.0)),
         apkDownloadUrl: (newSettings.apkDownloadUrl !== undefined ? newSettings.apkDownloadUrl : (platformSettings.apkDownloadUrl || '/download/earnflow.apk')).trim(),
         resultsRetentionHours: Number(newSettings.resultsRetentionHours !== undefined ? newSettings.resultsRetentionHours : (platformSettings.resultsRetentionHours || 1)),
+        resultsRetention: newSettings.resultsRetentionHours !== undefined
+          ? {
+              ...(platformSettings.resultsRetention || {}),
+              duration_hours: Number(newSettings.resultsRetentionHours),
+              retention_duration_hours: Number(newSettings.resultsRetentionHours),
+              label: `${Number(newSettings.resultsRetentionHours)} hour(s)`
+            }
+          : platformSettings.resultsRetention,
         referralSettings: newSettings.referralSettings ? { ...platformSettings.referralSettings, ...newSettings.referralSettings } : platformSettings.referralSettings,
         spinWheelSettings: newSettings.spinWheelSettings ? { ...platformSettings.spinWheelSettings, ...newSettings.spinWheelSettings } : platformSettings.spinWheelSettings
       };
@@ -1216,13 +1235,22 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
       // Persist results retention
       if (newSettings.resultsRetentionHours !== undefined) {
-        await supabase
+        const hours = Number(newSettings.resultsRetentionHours);
+        const { error: retentionErr } = await supabase
           .from('platform_settings')
           .upsert({
             key: 'results_retention',
-            value: { duration_hours: Number(newSettings.resultsRetentionHours), label: `${newSettings.resultsRetentionHours} hour(s)` },
+            value: {
+              duration_hours: hours,
+              retention_duration_hours: hours,
+              default_option: hours >= 1 ? `${hours}_hour${hours === 1 ? '' : 's'}` : `${Math.round(hours * 60)}_min`,
+              label: `${hours} hour(s)`
+            },
             updated_at: new Date().toISOString()
           });
+        if (retentionErr) {
+          console.warn('Supabase results_retention upsert error:', retentionErr.message);
+        }
       }
 
       // Persist referral settings
@@ -1247,7 +1275,15 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           });
       }
 
-      showToast('Platform governance settings updated and synced across all user portals!', 'success');
+      const isRetentionOnly =
+        newSettings.resultsRetentionHours !== undefined &&
+        Object.keys(newSettings).length === 1;
+      showToast(
+        isRetentionOnly
+          ? 'Four-Digit Lottery global display period updated and synced!'
+          : 'Platform governance settings updated and synced across all user portals!',
+        'success'
+      );
       return { success: true, settings: updated };
     } catch (err: any) {
       console.error('adminUpdatePlatformSettings error:', err);

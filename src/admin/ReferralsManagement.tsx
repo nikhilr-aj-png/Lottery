@@ -124,18 +124,18 @@ export default function ReferralsManagement() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-150">
+    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-150 min-w-0">
       {/* Header */}
-      <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 sm:p-6 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-black shadow-md">
+      <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-4 sm:p-6 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-black shadow-md shrink-0">
             <Share2 className="w-5 h-5" />
           </div>
-          <div>
-            <h2 className="font-display font-black text-lg sm:text-xl text-white">
-              Affiliate & Referral Program Governance
+          <div className="min-w-0">
+            <h2 className="font-display font-black text-base sm:text-xl text-white">
+              Affiliate &amp; Referral Program Governance
             </h2>
-            <p className="text-xs text-[#8b92a2]">
+            <p className="text-xs text-[#8b92a2] mt-0.5 leading-relaxed">
               Manage invitation incentives, registration bonuses, commission rates, and audit referral payouts
             </p>
           </div>
@@ -145,7 +145,7 @@ export default function ReferralsManagement() {
           type="button"
           onClick={loadReferralData}
           disabled={loadingStats}
-          className="px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] flex items-center gap-2 self-start md:self-auto cursor-pointer"
+          className="px-4 py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] flex items-center gap-2 self-start md:self-auto cursor-pointer shrink-0"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loadingStats ? 'animate-spin text-amber-400' : ''}`} />
           <span>Refresh Data</span>
@@ -153,7 +153,7 @@ export default function ReferralsManagement() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
         <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 space-y-1">
           <div className="flex items-center justify-between text-xs text-[#8b92a2]">
             <span className="font-bold uppercase tracking-wider">Total Referred Players</span>
@@ -195,23 +195,23 @@ export default function ReferralsManagement() {
       </div>
 
       {/* Referral Settings Form */}
-      <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-5 sm:p-6 space-y-5 shadow-lg">
-        <div className="flex items-center justify-between border-b border-[#272a31] pb-3">
-          <div>
+      <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-4 sm:p-6 space-y-5 shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#272a31] pb-3">
+          <div className="min-w-0">
             <h3 className="font-display font-black text-sm sm:text-base text-white">
-              Referral Reward Rules & Commission Engine
+              Referral Reward Rules &amp; Commission Engine
             </h3>
             <p className="text-xs text-[#8b92a2]">
               All rewards are strictly paid in USDT and credited directly to user account balances
             </p>
           </div>
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 shrink-0">
             USDT TRC-20
           </span>
         </div>
 
         <form onSubmit={handleSaveSettings} className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Rule 1: Registration Bonus */}
             <div className="bg-[#141924] border border-[#272a31] rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between">
