@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import ProvablyFairModal from '../components/ProvablyFairModal';
 import GamesManagementSuperHub from './GamesManagementSuperHub';
@@ -111,6 +111,19 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
     typeof window !== 'undefined' ? window.innerWidth >= 768 && window.innerWidth < 1024 : false
   );
 
+  const mainScrollRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, []);
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
@@ -129,6 +142,9 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
   const switchAdminTab = (tab: string) => {
     setActiveAdminTab(tab);
     setIsMobileSidebarOpen(false);
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTop = 0;
+    }
     try {
       let targetPath = '/admin';
       if (tab === 'referrals') targetPath = '/admin/referrals';
@@ -612,9 +628,9 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
   };
 
   return (
-    <div className="min-h-screen bg-[#07090d] text-[#e1e2eb] flex flex-col font-sans overflow-x-clip">
+    <div className="fixed inset-0 h-dvh w-full bg-[#07090d] text-[#e1e2eb] flex flex-col font-sans overflow-hidden">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 h-14 md:h-16 bg-[#0d1117]/95 backdrop-blur-xl border-b border-amber-500/25 px-2.5 sm:px-4 md:px-6 flex items-center justify-between gap-2 min-w-0">
+      <header className="shrink-0 relative z-40 h-14 md:h-16 bg-[#0d1117]/95 backdrop-blur-xl border-b border-amber-500/25 px-2.5 sm:px-4 md:px-6 flex items-center justify-between gap-2 min-w-0">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {/* Mobile Drawer Hamburger (< md: 320px, 375px, 425px) */}
           <button
@@ -721,7 +737,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
               </button>
             </div>
 
-            <nav className="flex-1 overflow-y-auto no-scrollbar p-2.5 space-y-1">
+            <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-scrollbar p-2.5 space-y-1">
               {adminNavItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -785,16 +801,16 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
         </div>
       )}
 
-      {/* Workspace Body: Tablet/Laptop Sidebar + Main Content */}
-      <div className="flex-1 flex min-w-0 relative">
-        {/* Persistent Expandable/Collapsible Sidebar (md: 768px & lg: 1024px) */}
+      {/* Workspace Body: Fixed Tablet/Laptop Sidebar + Independently Scrollable Main Content */}
+      <div className="flex-1 min-h-0 flex min-w-0 overflow-hidden relative">
+        {/* Permanently Fixed Left Sidebar (md: 768px & lg: 1024px) */}
         <aside
           data-testid="admin-desktop-sidebar"
-          className={`hidden md:flex flex-col shrink-0 bg-[#0a0d13] border-r border-[#1f2737] sticky top-14 md:top-16 h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] transition-all duration-200 ${
+          className={`hidden md:flex flex-col fixed top-14 md:top-16 bottom-0 left-0 z-30 bg-[#0a0d13] border-r border-[#1f2737] transition-all duration-200 overflow-hidden ${
             isSidebarCollapsed ? 'w-[72px]' : 'w-60 lg:w-64'
           }`}
         >
-          <div className={`px-3 py-2.5 border-b border-[#1f2737]/80 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
+          <div className={`shrink-0 px-3 py-2.5 border-b border-[#1f2737]/80 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
             {!isSidebarCollapsed && (
               <span className="text-[10px] font-mono-numbers font-bold uppercase tracking-wider text-[#64748b]">
                 Admin Modules
@@ -805,7 +821,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
             </span>
           </div>
 
-          <nav className="flex-1 overflow-y-auto no-scrollbar p-2 space-y-1">
+          <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-scrollbar p-2 space-y-1">
             {adminNavItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -862,8 +878,16 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
           </nav>
         </aside>
 
-        {/* Main Admin Content Container */}
-        <main className="flex-1 min-w-0 w-full max-w-7xl mx-auto px-2.5 xs:px-3.5 sm:px-5 md:px-6 lg:px-7 py-3.5 sm:py-5 space-y-4 sm:space-y-6">
+        {/* Independent Scrollable Main Admin Content Container */}
+        <main
+          ref={mainScrollRef}
+          data-testid="admin-main-scroll"
+          aria-hidden={isMobileSidebarOpen || undefined}
+          className={`flex-1 min-w-0 w-full h-full overflow-x-hidden overscroll-contain transition-[padding] duration-200 ${
+            isMobileSidebarOpen ? 'overflow-hidden pointer-events-none select-none' : 'overflow-y-auto'
+          } ${isSidebarCollapsed ? 'md:pl-[72px]' : 'md:pl-60 lg:pl-64'}`}
+        >
+          <div className="w-full max-w-7xl mx-auto px-2.5 xs:px-3.5 sm:px-5 md:px-6 lg:px-7 py-3.5 sm:py-5 space-y-4 sm:space-y-6">
           {/* Mobile Active Section Context Pill (< md) */}
           <div className="md:hidden flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#0d1117] border border-[#272a31]">
             <div className="flex items-center gap-2 min-w-0">
@@ -2782,6 +2806,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
             auditData={auditVerifyModalData}
           />
         )}
+          </div>
         </main>
       </div>
     </div>
