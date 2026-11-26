@@ -884,7 +884,6 @@ function LotteryAppContent() {
                       }
                     }}
                     onOpenLotteryRules={() => setIsRulesModalOpen(true)}
-                    onShowResult={(evt) => setSelectedEventForModal(evt)}
                   />
                 )}
 

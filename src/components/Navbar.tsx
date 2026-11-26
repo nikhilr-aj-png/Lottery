@@ -146,12 +146,15 @@ export default function Navbar({
       {/* ======================================================== */}
       {/* 1. TOP HEADER                                            */}
       {/* ======================================================== */}
-      <header className={`sticky top-0 z-40 bg-[#0B0F19]/95 backdrop-blur-xl border-b border-[rgba(245,196,81,0.18)] ${isInGameRoom ? 'ef-room-navbar' : ''}`}>
+      <header
+        data-testid="site-header"
+        className={`sticky top-0 z-40 bg-[#0B0F19]/95 backdrop-blur-xl border-b border-[rgba(245,196,81,0.18)] ${isInGameRoom ? 'ef-room-navbar' : ''}`}
+      >
         <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2 max-[359px]:px-1.5 xs:px-3 sm:px-4 lg:px-6 xl:px-8">
-          <div className={`flex items-center justify-between gap-1 ${isInGameRoom ? 'ef-room-navbar-inner h-12 sm:h-14' : 'h-13 xs:h-14 sm:h-16'}`}>
+          <div className={`flex items-center justify-between gap-1.5 min-w-0 ${isInGameRoom ? 'ef-room-navbar-inner h-12 sm:h-14' : 'h-12 xs:h-13 sm:h-14'}`}>
 
             {/* LEFT: Sidebar Toggle & EarnFlow.in Branding */}
-            <div className="flex items-center gap-1.5 max-[359px]:gap-1 xs:gap-2 sm:gap-3 shrink-0 min-w-0">
+            <div className="flex items-center gap-1.5 max-[359px]:gap-1 xs:gap-2 sm:gap-2.5 shrink-0 min-w-0">
 
               {/* Sidebar Drawer Toggle (Mobile / Tablet / Desktop) */}
               <button
@@ -159,7 +162,7 @@ export default function Navbar({
                 onClick={onToggleSidebar}
                 aria-expanded={isSidebarExpanded}
                 data-sidebar-toggle="true"
-                className="w-8 h-8 max-[359px]:w-7 max-[359px]:h-7 xs:w-8.5 xs:h-8.5 sm:w-9.5 sm:h-9.5 rounded-xl max-[359px]:rounded-lg bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-amber-500/40 transition-colors cursor-pointer shrink-0 shadow-sm"
+                className="w-8 h-8 max-[359px]:w-7 max-[359px]:h-7 xs:w-8.5 xs:h-8.5 sm:w-9 sm:h-9 rounded-xl max-[359px]:rounded-lg bg-[#111827] hover:bg-[#151C2B] text-amber-400 hover:text-white flex items-center justify-center border border-[#1F2737] hover:border-amber-500/40 transition-colors cursor-pointer shrink-0 shadow-sm"
                 title="Toggle Casino Navigation"
                 aria-label="Toggle Casino Navigation"
               >
@@ -175,12 +178,12 @@ export default function Navbar({
                     handleNavClick('lotteries');
                   }
                 }}
-                className="flex items-center gap-1.5 max-[359px]:gap-1 xs:gap-2 sm:gap-2.5 cursor-pointer group shrink-0 select-none"
+                className="flex items-center gap-1.5 max-[359px]:gap-1 xs:gap-2 sm:gap-2.5 cursor-pointer group shrink-0 select-none min-w-0"
                 role="button"
                 tabIndex={0}
                 title="Return to EarnFlow.in Home Page"
               >
-                <div className="w-7 h-7 max-[359px]:w-6 max-[359px]:h-6 xs:w-8 xs:h-8 sm:w-9.5 sm:h-9.5 rounded-full p-0.5 shadow-[0_0_12px_rgba(245,196,81,0.3)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 max-[359px]:w-6 max-[359px]:h-6 xs:w-8 xs:h-8 sm:w-9 sm:h-9 rounded-full p-0.5 shadow-[0_0_12px_rgba(245,196,81,0.3)] group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shrink-0">
                   <img
                     src="/logo.png"
                     alt="EarnFlow.in"
@@ -189,7 +192,7 @@ export default function Navbar({
                 </div>
 
                 <div className="flex flex-col justify-center shrink-0">
-                  <span className="font-display font-extrabold text-[13px] max-[359px]:text-[11.5px] xs:text-base sm:text-lg lg:text-xl tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-tight whitespace-nowrap shrink-0">
+                  <span className="font-display font-extrabold text-[13px] max-[359px]:text-[11.5px] xs:text-[15px] sm:text-lg lg:text-xl tracking-tight text-white group-hover:text-[#ffd700] transition-colors leading-tight whitespace-nowrap shrink-0">
                     EarnFlow<span className="text-[#F5C451]">.in</span>
                   </span>
                   {/* Subtitle visible ONLY on xl (1280px+) where ample space exists */}
@@ -201,7 +204,7 @@ export default function Navbar({
             </div>
 
             {/* RIGHT: Desktop Controls (Wallet + Notifications + Profile) / Mobile Icons */}
-            <div className="ef-navbar-actions flex items-center gap-1 max-[359px]:gap-1 xs:gap-1.5 sm:gap-2.5 shrink-0">
+            <div className="ef-navbar-actions flex items-center gap-1 xs:gap-1.5 sm:gap-2 min-w-0 shrink">
 
               {/* Master Audio FX Toggle & Volume Popover (Mobile & Desktop) */}
               <div className="relative flex items-center" ref={volumeMenuRef}>
@@ -272,17 +275,18 @@ export default function Navbar({
 
               {isLoggedIn ? (
                 <>
-                  {/* USDT Balance Pill: Visible across all viewports */}
+                  {/* USDT Balance Pill: Visible across all viewports without overflow */}
                   <div
+                    data-testid="navbar-balance-pill"
                     onClick={() => handleNavClick('wallet')}
-                    title="Click to view USDT Wallet & 24h Payouts"
-                    className="flex cursor-pointer bg-[#10131A] hover:bg-[#151C2B] border border-emerald-500/30 hover:border-emerald-400 rounded-xl max-[359px]:rounded-lg px-2 max-[359px]:px-1.5 sm:px-3 py-1 sm:py-1.5 items-center gap-1 max-[359px]:gap-0.5 sm:gap-1.5 transition-all shadow-inner shrink-0"
+                    title={`${Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT — Click to open Wallet`}
+                    className="flex cursor-pointer bg-[#10131A] hover:bg-[#151C2B] border border-emerald-500/30 hover:border-emerald-400 rounded-xl max-[359px]:rounded-lg px-2 max-[359px]:px-1.5 sm:px-3 py-1 sm:py-1.5 items-center gap-1 max-[359px]:gap-0.5 sm:gap-1.5 transition-all shadow-inner min-w-0 max-w-[175px] sm:max-w-none shrink"
                   >
                     <Coins className="w-3 h-3 max-[359px]:w-2.5 max-[359px]:h-2.5 sm:w-3.5 sm:h-3.5 text-emerald-400 shrink-0" />
-                    <span className="font-mono-numbers font-bold text-[11px] max-[359px]:text-[10px] sm:text-sm text-emerald-400 whitespace-nowrap">
+                    <span className="font-mono-numbers font-bold text-[10px] sm:text-sm text-emerald-400 whitespace-nowrap truncate min-w-0">
                       {Number(wallet?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
-                    <span className="text-[9px] max-[359px]:text-[8px] sm:text-xs text-emerald-400 font-extrabold font-mono-numbers">
+                    <span className="text-[8.5px] sm:text-xs text-emerald-400 font-extrabold font-mono-numbers shrink-0">
                       USDT
                     </span>
                   </div>

@@ -32,12 +32,12 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
   return (
     <footer
       data-testid="site-footer"
-      className="shrink-0 w-full mt-auto border-t border-[#1F2737] bg-[#07090D] text-left pt-5 sm:pt-7 pb-24 md:pb-7 px-3 xs:px-4 sm:px-6 lg:px-8 select-none"
+      className="shrink-0 w-full mt-auto border-t border-[#1F2737] bg-[#07090D] text-left pt-4 sm:pt-6 pb-20 md:pb-6 px-3 xs:px-4 sm:px-6 lg:px-8 select-none box-border"
     >
-      <div className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
+      <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto space-y-3.5 sm:space-y-5">
         
         {/* 1. MAIN FOOTER GRID */}
-        <div className="grid grid-cols-2 lg:grid-cols-12 gap-x-3 gap-y-5 xs:gap-x-4 sm:gap-6 pb-5 sm:pb-6 border-b border-[#1F2737]">
+        <div className="grid grid-cols-2 lg:grid-cols-12 gap-x-3 gap-y-4 xs:gap-x-4 sm:gap-5 pb-4 sm:pb-5 border-b border-[#1F2737]">
           
           {/* Column 1: Brand & Overview */}
           <div className={`col-span-2 ${showAppSection ? 'lg:col-span-3 xl:col-span-4' : 'lg:col-span-6 xl:col-span-5'} space-y-2.5 sm:space-y-3.5 min-w-0`}>
