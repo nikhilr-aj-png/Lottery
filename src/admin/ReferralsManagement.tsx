@@ -69,7 +69,7 @@ export default function ReferralsManagement() {
       if (!refErr && refRows) {
         setReferralsList(refRows);
         const uniqueReferrers = new Set(refRows.map(r => r.referrer_id)).size;
-        const totalComm = refRows.reduce((acc, r) => acc + (parseFloat(r.total_commission_usdt) || 0), 0);
+        const totalComm = refRows.reduce((acc, r) => acc + (parseFloat(r.total_commission_earned ?? r.total_commission_usdt ?? 0) || 0), 0);
         setStats({
           totalReferrals: refRows.length,
           totalCommissionUsdt: totalComm,
@@ -371,10 +371,10 @@ export default function ReferralsManagement() {
 
         {activeTab === 'network' ? (
           referralsList.length > 0 ? (
-            <div className="overflow-x-auto">
+            <div className="max-h-[500px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#272a31]/80">
               <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-[#272a31] text-[#8b92a2] uppercase tracking-wider text-[10px]">
+                <thead className="sticky top-0 z-10 bg-[#0d1117] shadow-[0_1px_0_0_#272a31]">
+                  <tr className="text-[#8b92a2] uppercase tracking-wider text-[10px]">
                     <th className="py-2.5 px-3">Referrer ID</th>
                     <th className="py-2.5 px-3">Referred User ID</th>
                     <th className="py-2.5 px-3">Referral Code Used</th>
@@ -396,7 +396,7 @@ export default function ReferralsManagement() {
                         {ref.referral_code}
                       </td>
                       <td className="py-3 px-3 text-emerald-400 font-bold">
-                        +${parseFloat(ref.total_commission_usdt || 0).toFixed(2)} USDT
+                        +${parseFloat(ref.total_commission_earned ?? ref.total_commission_usdt ?? 0).toFixed(2)} USDT
                       </td>
                       <td className="py-3 px-3 text-[#8b92a2]">
                         {new Date(ref.created_at).toLocaleString()}
@@ -418,10 +418,10 @@ export default function ReferralsManagement() {
           )
         ) : (
           rewardsList.length > 0 ? (
-            <div className="overflow-x-auto">
+            <div className="max-h-[500px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#272a31]/80">
               <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-[#272a31] text-[#8b92a2] uppercase tracking-wider text-[10px]">
+                <thead className="sticky top-0 z-10 bg-[#0d1117] shadow-[0_1px_0_0_#272a31]">
+                  <tr className="text-[#8b92a2] uppercase tracking-wider text-[10px]">
                     <th className="py-2.5 px-3">Referrer ID</th>
                     <th className="py-2.5 px-3">Referred User ID</th>
                     <th className="py-2.5 px-3">Type</th>
@@ -445,10 +445,10 @@ export default function ReferralsManagement() {
                         </span>
                       </td>
                       <td className="py-3 px-3 text-emerald-400 font-bold">
-                        +${parseFloat(rew.reward_amount_usdt || 0).toFixed(2)} USDT
+                        +${parseFloat(rew.amount ?? rew.reward_amount_usdt ?? 0).toFixed(2)} USDT
                       </td>
                       <td className="py-3 px-3 text-[#8b92a2] font-sans truncate max-w-xs">
-                        {rew.description}
+                        {rew.details?.description || rew.description || 'Referral Reward'}
                       </td>
                       <td className="py-3 px-3 text-[#8b92a2]">
                         {new Date(rew.created_at).toLocaleString()}

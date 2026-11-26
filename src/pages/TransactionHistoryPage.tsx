@@ -275,10 +275,10 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
             <span className="text-[11px] font-mono-numbers text-purple-400 font-bold">USDT (TRC-20) Settlement</span>
           </div>
 
-          <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
+          <div className="max-h-[520px] sm:max-h-[540px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#272a31]/70">
             <table className="w-full min-w-[760px] text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
+              <thead className="sticky top-0 z-10 bg-[#0e131e]/95 backdrop-blur-md shadow-[0_1px_0_0_#272a31]">
+                <tr className="text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Tx ID</th>
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Transaction Type</th>
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
@@ -393,10 +393,10 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
             ))}
           </div>
 
-          <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
+          <div className="max-h-[520px] sm:max-h-[540px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#272a31]/70">
             <table className="w-full min-w-[640px] text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
+              <thead className="sticky top-0 z-10 bg-[#0e131e]/95 backdrop-blur-md shadow-[0_1px_0_0_#272a31]">
+                <tr className="text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Invoice / Order ID</th>
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Payment Asset</th>
@@ -528,10 +528,10 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
             <span className="text-[11px] font-mono-numbers">Automated 24h Payouts</span>
           </div>
 
-          <div className="overflow-x-auto -mx-3.5 xs:-mx-5 sm:mx-0 px-3.5 xs:px-5 sm:px-0">
+          <div className="max-h-[520px] sm:max-h-[540px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#272a31]/70">
             <table className="w-full min-w-[640px] text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#272a31] text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
+              <thead className="sticky top-0 z-10 bg-[#0e131e]/95 backdrop-blur-md shadow-[0_1px_0_0_#272a31]">
+                <tr className="text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Order ID</th>
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
                   <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Network</th>

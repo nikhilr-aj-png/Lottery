@@ -136,6 +136,7 @@ export default function RewardsView() {
     secondsRemaining: 0,
     availableReward: 0.10,
     currentStreak: 1,
+    highestStreak: 0,
     nextStreak: 2,
     nextRewardAmount: 0.15,
     checkinSettings: null
@@ -601,9 +602,16 @@ export default function RewardsView() {
                 <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase font-bold tracking-wider whitespace-nowrap shrink-0">
                   USDT (TRC-20)
                 </span>
-                <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 uppercase font-bold tracking-wider whitespace-nowrap shrink-0">
-                  Day {dailyRewardStatus.currentStreak || 1} of 7
-                </span>
+                <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                  <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 uppercase font-bold tracking-wider whitespace-nowrap shrink-0">
+                    Day {dailyRewardStatus.currentStreak || 1} of 7
+                  </span>
+                  {(dailyRewardStatus.highestStreak || 0) > 0 && (
+                    <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 uppercase font-bold tracking-wider whitespace-nowrap shrink-0">
+                      Best: {dailyRewardStatus.highestStreak}d
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-relaxed">

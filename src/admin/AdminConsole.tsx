@@ -52,10 +52,12 @@ import {
   Gift,
   Share2,
   Menu,
-  X
+  X,
+  Megaphone
 } from 'lucide-react';
 import ReferralsManagement from './ReferralsManagement';
 import SpinWheelManagement from './SpinWheelManagement';
+import MonthlyLeaderboardManagement from './MonthlyLeaderboardManagement';
 
 interface AdminConsoleProps {
   onLogout?: () => void;
@@ -95,12 +97,13 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
     getDirectDownloadUrl
   } = useLottery();
 
-  // Navigation tab: 'overview' | 'games-management' | 'pools' | 'games' | 'game-rounds' | 'withdrawals' | 'users' | 'winner-payouts' | 'support' | 'rewards-control' | 'referrals' | 'spin-wheel' | 'settings'
+  // Navigation tab: 'overview' | 'games-management' | 'pools' | 'games' | 'game-rounds' | 'withdrawals' | 'users' | 'winner-payouts' | 'support' | 'rewards-control' | 'referrals' | 'spin-wheel' | 'monthly-leaderboard' | 'settings'
   const [activeAdminTab, setActiveAdminTab] = useState(() => {
     if (typeof window !== 'undefined') {
       const p = window.location.pathname.toLowerCase();
       if (p.includes('/referrals') || window.location.search.includes('tab=referrals')) return 'referrals';
       if (p.includes('/spin-wheel') || window.location.search.includes('tab=spin-wheel')) return 'spin-wheel';
+      if (p.includes('/monthly-leaderboard') || window.location.search.includes('tab=monthly-leaderboard')) return 'monthly-leaderboard';
       if (p.includes('/settings') || window.location.search.includes('tab=settings')) return 'settings';
     }
     return 'overview';
@@ -149,6 +152,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       let targetPath = '/admin';
       if (tab === 'referrals') targetPath = '/admin/referrals';
       else if (tab === 'spin-wheel') targetPath = '/admin/spin-wheel';
+      else if (tab === 'monthly-leaderboard') targetPath = '/admin/monthly-leaderboard';
       else if (tab === 'settings') targetPath = '/admin/settings';
       window.history.replaceState(null, '', targetPath);
     } catch (e) {}
@@ -595,6 +599,13 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       icon: Dices,
       isActive: activeAdminTab === 'spin-wheel',
       onClick: () => switchAdminTab('spin-wheel')
+    },
+    {
+      id: 'monthly-leaderboard',
+      label: 'Monthly Leaderboard',
+      icon: Megaphone,
+      isActive: activeAdminTab === 'monthly-leaderboard',
+      onClick: () => switchAdminTab('monthly-leaderboard')
     },
     {
       id: 'rewards-control',
@@ -2089,6 +2100,11 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
         {/* TAB: DAILY BONUS SPIN WHEEL MANAGEMENT                         */}
         {/* ============================================================== */}
         {activeAdminTab === 'spin-wheel' && <SpinWheelManagement />}
+
+        {/* ============================================================== */}
+        {/* TAB: MONTHLY LEADERBOARD ANNOUNCEMENT & PRIZES                 */}
+        {/* ============================================================== */}
+        {activeAdminTab === 'monthly-leaderboard' && <MonthlyLeaderboardManagement />}
 
         {/* ============================================================== */}
         {/* TAB 7: SUPPORT & USER INQUIRIES                                */}

@@ -757,6 +757,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           secondsRemaining: Number(data.seconds_remaining || 0),
           availableReward: parseFloat(data.available_reward || 0.10),
           currentStreak: Number(data.current_streak || 1),
+          highestStreak: Number(data.highest_streak || 0),
           nextStreak: Number(data.next_streak || 2),
           nextRewardAmount: parseFloat(data.next_reward_amount || 0.15),
           bonusSettings: data.bonus_settings || null,

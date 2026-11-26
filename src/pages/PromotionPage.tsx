@@ -399,8 +399,73 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
         </div>
       </section>
 
+      {/* Referred Friends & Network Table from Supabase */}
+      <section className="rounded-2xl bg-[#0D121D] border border-[#1F2737] p-4 sm:p-7 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#1F2737]">
+          <h3 className="font-display font-bold text-base text-white">
+            Referred Friends &amp; Network
+          </h3>
+          <span className="text-xs font-mono-numbers text-[#94A3B8]">
+            {referrals.length} {referrals.length === 1 ? 'Referral' : 'Referrals'}
+          </span>
+        </div>
+
+        {referrals.length === 0 ? (
+          <div className="py-10 text-center space-y-2">
+            <Users className="w-8 h-8 text-[#475569] mx-auto" />
+            <p className="text-xs text-[#64748B]">
+              No referred friends joined yet. Share your link to track every invite and commission here!
+            </p>
+          </div>
+        ) : (
+          <div className="max-h-[480px] sm:max-h-[520px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#1F2737]">
+            <table className="w-full min-w-[540px] text-left text-xs">
+              <thead className="sticky top-0 z-10 bg-[#0D121D]/95 backdrop-blur-md shadow-[0_1px_0_0_#1F2737]">
+                <tr className="text-[#94A3B8] text-[10px] uppercase font-mono-numbers">
+                  <th className="py-2.5 px-3">Date</th>
+                  <th className="py-2.5 px-3">Referred User</th>
+                  <th className="py-2.5 px-3">Code Used</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3 text-right">Commission</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1F2737]">
+                {referrals.map((ref, idx) => (
+                  <tr key={ref.id || idx} className="hover:bg-[#141B29] transition-colors">
+                    <td className="py-3 px-3 text-[#94A3B8] font-mono-numbers whitespace-nowrap">
+                      {new Date(ref.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </td>
+                    <td className="py-3 px-3 font-mono-numbers text-white">
+                      {ref.referred_username ||
+                        (ref.referred_user_id
+                          ? `${String(ref.referred_user_id).slice(0, 8)}...`
+                          : 'Invited Player')}
+                    </td>
+                    <td className="py-3 px-3 font-mono-numbers text-amber-300 font-bold whitespace-nowrap">
+                      {ref.referral_code || referralCode || '—'}
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold text-[10px] uppercase">
+                        {ref.status || 'Active'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono-numbers font-bold text-[#05d5aa] whitespace-nowrap">
+                      +${Number(ref.total_commission_earned ?? ref.total_commission_usdt ?? 0).toFixed(2)} USDT
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
       {/* Referral History Table from Supabase */}
-      <section className="rounded-2xl bg-[#0D121D] border border-[#1F2737] p-5 sm:p-7 space-y-4">
+      <section className="rounded-2xl bg-[#0D121D] border border-[#1F2737] p-4 sm:p-7 space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-[#1F2737]">
           <h3 className="font-display font-bold text-base text-white">
             Referral Reward History
@@ -423,10 +488,10 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="text-[#94A3B8] border-b border-[#1F2737] text-[10px] uppercase font-mono-numbers">
+          <div className="max-h-[480px] sm:max-h-[520px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#1F2737]">
+            <table className="w-full min-w-[540px] text-left text-xs">
+              <thead className="sticky top-0 z-10 bg-[#0D121D]/95 backdrop-blur-md shadow-[0_1px_0_0_#1F2737]">
+                <tr className="text-[#94A3B8] text-[10px] uppercase font-mono-numbers">
                   <th className="py-2.5 px-3">Date</th>
                   <th className="py-2.5 px-3">Type</th>
                   <th className="py-2.5 px-3">Reward</th>
