@@ -22,7 +22,7 @@ const TIME_FILTERS = [
   { id: '7d', label: '1 Week', days: 7 },
   { id: '14d', label: '2 Weeks', days: 14 },
   { id: '21d', label: '3 Weeks', days: 21 },
-  { id: '28d', label: '4 Weeks (1 Month)', days: 28 }
+  { id: '28d', label: '4 Weeks', days: 28 }
 ] as const;
 
 type TimeFilterId = (typeof TIME_FILTERS)[number]['id'];
@@ -438,23 +438,7 @@ export default function LeaderboardView() {
   }, [fetchLeaderboard]);
 
   const activePeriodLabel =
-    TIME_FILTERS.find((tf) => tf.id === timeFilter)?.label || '4 Weeks (1 Month)';
-
-  const activePeriodShortLabel = useMemo(() => {
-    switch (timeFilter) {
-      case '24h':
-        return '24 Hours';
-      case '7d':
-        return '1 Week';
-      case '14d':
-        return '2 Weeks';
-      case '21d':
-        return '3 Weeks';
-      case '28d':
-      default:
-        return '1 Month';
-    }
-  }, [timeFilter]);
+    TIME_FILTERS.find((tf) => tf.id === timeFilter)?.label || '4 Weeks';
 
   const rewardByRank = useMemo(() => {
     const map = new Map<number, number>();
@@ -492,7 +476,7 @@ export default function LeaderboardView() {
                 data-testid="leaderboard-description-desktop"
                 className="hidden sm:block text-xs text-[#94A3B8] mt-0.5 leading-snug truncate"
               >
-                Top Ranked Players and USDT Winnings · {activePeriodShortLabel}
+                Top Ranked Players and USDT Winnings · {activePeriodLabel}
               </p>
             </div>
           </div>
@@ -517,15 +501,15 @@ export default function LeaderboardView() {
           data-testid="leaderboard-description-mobile"
           className="relative z-10 sm:hidden text-[10px] xs:text-[11px] text-[#94A3B8] mt-2 leading-tight whitespace-nowrap truncate"
         >
-          Top Ranked Players and USDT Winnings · {activePeriodShortLabel}
+          Top Ranked Players and USDT Winnings · {activePeriodLabel}
         </p>
       </div>
 
-      {/* 5 Compact Time-Period Filters */}
+      {/* 5 Single-Row Time-Period Filters */}
       <div
         role="tablist"
         aria-label="Leaderboard Time Period"
-        className="flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-start gap-1 sm:gap-1.5 bg-[#111827] p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-[#1F2737]"
+        className="grid grid-cols-5 sm:flex sm:items-center sm:justify-start gap-1 sm:gap-1.5 bg-[#111827] p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-[#1F2737]"
       >
         {TIME_FILTERS.map((tf) => {
           const isSelected = timeFilter === tf.id;
@@ -535,11 +519,12 @@ export default function LeaderboardView() {
               type="button"
               role="tab"
               aria-selected={isSelected}
+              aria-label={tf.label}
               onClick={() => {
                 playClick();
                 setTimeFilter(tf.id);
               }}
-              className={`px-2 py-1 xs:px-2.5 xs:py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10.5px] xs:text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+              className={`w-full sm:w-auto px-0.5 xs:px-1.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[9.5px] xs:text-[10.5px] sm:text-xs font-bold text-center whitespace-nowrap overflow-hidden transition-all cursor-pointer ${
                 isSelected
                   ? 'bg-amber-400 text-black shadow-md shadow-amber-500/20 font-black'
                   : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
