@@ -30,17 +30,20 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
   const showAppSection = (!isNativeApp && !isInstalled) && (Boolean(apkDirectDownloadUrl) || isInstallable);
 
   return (
-    <footer className="shrink-0 w-full mt-auto border-t border-[#1F2737] bg-[#07090D] text-left pt-7 pb-16 md:pb-7 px-3 xs:px-4 sm:px-6 lg:px-8 select-none">
-      <div className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto space-y-6">
+    <footer
+      data-testid="site-footer"
+      className="shrink-0 w-full mt-auto border-t border-[#1F2737] bg-[#07090D] text-left pt-5 sm:pt-7 pb-24 md:pb-7 px-3 xs:px-4 sm:px-6 lg:px-8 select-none"
+    >
+      <div className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
         
         {/* 1. MAIN FOOTER GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 lg:gap-8 pb-6 border-b border-[#1F2737]">
+        <div className="grid grid-cols-2 lg:grid-cols-12 gap-x-3 gap-y-5 xs:gap-x-4 sm:gap-6 pb-5 sm:pb-6 border-b border-[#1F2737]">
           
           {/* Column 1: Brand & Overview */}
-          <div className={`${showAppSection ? 'lg:col-span-4' : 'lg:col-span-5'} space-y-3.5`}>
+          <div className={`col-span-2 ${showAppSection ? 'lg:col-span-3 xl:col-span-4' : 'lg:col-span-6 xl:col-span-5'} space-y-2.5 sm:space-y-3.5 min-w-0`}>
             <div 
               onClick={onGoHome}
-              className="flex items-center gap-2.5 cursor-pointer group select-none inline-flex"
+              className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group select-none inline-flex"
               role="button"
               tabIndex={0}
               title="Return to EarnFlow Home Page"
@@ -55,11 +58,11 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
               </span>
             </div>
 
-            <p className="text-xs text-[#94A3B8] leading-relaxed max-w-md">
+            <p className="text-[11px] xs:text-xs text-[#94A3B8] leading-relaxed max-w-md">
               EarnFlow.in is an online Four-Digit Lottery platform offering transparent 0000–9999 lucky draws with instant USDT (TRC-20) wallet settlements and 24-hour payouts.
             </p>
 
-            <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono-numbers text-[#94A3B8] pt-1">
+            <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono-numbers text-[#94A3B8] pt-0.5">
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold text-[10px]">
                 USDT TRC-20
               </span>
@@ -72,17 +75,17 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
             </div>
           </div>
 
-          {/* Column 2: Information Pages */}
-          <div className="lg:col-span-3 space-y-2.5">
-            <h4 className="font-display font-bold text-xs uppercase tracking-wider text-white">
+          {/* Row 1 Left on Mobile (50%) | Col 2 on Desktop: Information Pages */}
+          <div data-testid="footer-col-info" className="col-span-1 lg:col-span-3 space-y-2 sm:space-y-2.5 min-w-0">
+            <h4 className="font-display font-bold text-[11px] xs:text-xs uppercase tracking-wider text-white">
               Information
             </h4>
-            <ul className="space-y-2 text-xs text-[#94A3B8]">
+            <ul className="space-y-1.5 sm:space-y-2 text-[11px] xs:text-xs text-[#94A3B8] leading-snug">
               <li>
                 <a 
                   href="/how-it-works"
                   onClick={(e) => handleLinkClick(e, 'how-it-works', '/how-it-works')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
+                  className="hover:text-amber-400 active:text-amber-300 transition-colors cursor-pointer block break-words"
                 >
                   How It Works
                 </a>
@@ -91,7 +94,7 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
                 <a 
                   href="/lottery-rules"
                   onClick={(e) => handleLinkClick(e, 'rules', '/lottery-rules')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
+                  className="hover:text-amber-400 active:text-amber-300 transition-colors cursor-pointer block break-words"
                 >
                   Lottery Rules &amp; Prize Distribution
                 </a>
@@ -100,7 +103,7 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
                 <a 
                   href="/faq"
                   onClick={(e) => handleLinkClick(e, 'faq', '/faq')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
+                  className="hover:text-amber-400 active:text-amber-300 transition-colors cursor-pointer block break-words"
                 >
                   Frequently Asked Questions
                 </a>
@@ -108,17 +111,17 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
             </ul>
           </div>
 
-          {/* Column 3: Support & Legal */}
-          <div className={`${showAppSection ? 'lg:col-span-3' : 'lg:col-span-4'} space-y-2.5`}>
-            <h4 className="font-display font-bold text-xs uppercase tracking-wider text-white">
+          {/* Row 1 Right on Mobile (50%) | Col 3 on Desktop: Support & Legal */}
+          <div data-testid="footer-col-legal" className={`col-span-1 ${showAppSection ? 'lg:col-span-3' : 'lg:col-span-3 xl:col-span-4'} space-y-2 sm:space-y-2.5 min-w-0`}>
+            <h4 className="font-display font-bold text-[11px] xs:text-xs uppercase tracking-wider text-white">
               Support &amp; Legal
             </h4>
-            <ul className="space-y-2 text-xs text-[#94A3B8]">
+            <ul className="space-y-1.5 sm:space-y-2 text-[11px] xs:text-xs text-[#94A3B8] leading-snug">
               <li>
                 <a 
                   href="/responsible-gaming"
                   onClick={(e) => handleLinkClick(e, 'responsible-gaming', '/responsible-gaming')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
+                  className="hover:text-amber-400 active:text-amber-300 transition-colors cursor-pointer block break-words"
                 >
                   Responsible Gaming
                 </a>
@@ -127,7 +130,7 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
                 <a 
                   href="/terms-and-conditions"
                   onClick={(e) => handleLinkClick(e, 'terms', '/terms-and-conditions')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
+                  className="hover:text-amber-400 active:text-amber-300 transition-colors cursor-pointer block break-words"
                 >
                   Terms &amp; Conditions
                 </a>
@@ -136,7 +139,7 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
                 <a 
                   href="/contact-support"
                   onClick={(e) => handleLinkClick(e, 'contact', '/contact-support')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
+                  className="hover:text-amber-400 active:text-amber-300 transition-colors cursor-pointer block break-words"
                 >
                   Contact &amp; Support
                 </a>
@@ -145,7 +148,7 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
                 <a 
                   href="/privacy-policy"
                   onClick={(e) => handleLinkClick(e, 'privacy', '/privacy-policy')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
+                  className="hover:text-amber-400 active:text-amber-300 transition-colors cursor-pointer block break-words"
                 >
                   Privacy Policy
                 </a>
@@ -153,36 +156,42 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
             </ul>
           </div>
 
-          {/* Column 4: App & Mobile Installation (if configured & not installed) */}
+          {/* Row 2 & Row 3 on Mobile (Centered + 50/50 Buttons) | Col 4 on Desktop: App & Mobile */}
           {showAppSection && (
-            <div className="lg:col-span-2 space-y-2.5">
-              <h4 className="font-display font-bold text-xs uppercase tracking-wider text-white">
-                App &amp; Mobile
-              </h4>
-              <p className="text-[11px] text-[#94A3B8] leading-tight">
-                Play in full-screen with instant one-tap draws.
-              </p>
-              <div className="flex flex-col gap-2 pt-1">
+            <div data-testid="footer-col-app" className="col-span-2 lg:col-span-3 xl:col-span-2 space-y-2.5 pt-1 lg:pt-0 text-center lg:text-left min-w-0">
+              <div className="space-y-1">
+                <h4 className="font-display font-bold text-xs uppercase tracking-wider text-white">
+                  App &amp; Mobile
+                </h4>
+                <p className="text-[11px] text-[#94A3B8] leading-snug max-w-xs mx-auto lg:mx-0">
+                  Play in full-screen with instant one-tap draws.
+                </p>
+              </div>
+
+              <div
+                data-testid="footer-app-buttons"
+                className={`grid ${apkDirectDownloadUrl ? 'grid-cols-2' : 'grid-cols-1 max-w-[200px]'} lg:grid-cols-1 gap-2 xs:gap-2.5 pt-0.5 max-w-md mx-auto lg:mx-0 w-full`}
+              >
                 {apkDirectDownloadUrl && (
                   <a
                     href={apkDirectDownloadUrl}
                     download="earnflow.apk"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold transition-colors cursor-pointer"
+                    className="w-full min-h-[38px] inline-flex items-center justify-center gap-1.5 px-2 xs:px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 active:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 text-[11px] xs:text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
                     title="Direct Android APK Download"
                   >
-                    <Download className="w-3.5 h-3.5" />
+                    <Download className="w-3.5 h-3.5 shrink-0" />
                     <span>Download APK</span>
                   </a>
                 )}
                 <button
                   type="button"
                   onClick={triggerInstall}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-bold transition-colors cursor-pointer"
+                  className="w-full min-h-[38px] inline-flex items-center justify-center gap-1.5 px-2 xs:px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 active:bg-amber-500/30 border border-amber-500/30 text-amber-300 text-[11px] xs:text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
                   title="Install EarnFlow Web App (PWA)"
                 >
-                  <Smartphone className="w-3.5 h-3.5" />
+                  <Smartphone className="w-3.5 h-3.5 shrink-0" />
                   <span>Install App</span>
                 </button>
               </div>
@@ -192,11 +201,11 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
         </div>
 
         {/* 2. COPYRIGHT & COMPLIANCE BAR */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 text-[11px] text-[#94A3B8]">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left text-[11px] text-[#94A3B8]">
           <div>
             © 2026 EarnFlow.in. All rights reserved. Online Four-Digit Lottery Platform.
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <span>18+ Play Responsibly</span>
             <span>•</span>
             <span>USDT TRC-20 Settlements</span>
