@@ -3890,6 +3890,8 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     <LotteryContext.Provider
       value={{
         wallet,
+        setWallet,
+        fetchWallet,
         user,
         profile,
         authLoading,

@@ -3,36 +3,35 @@
  * REWARDS, VIP LOYALTY & DAILY LUCKY WHEEL — EARNFLOW.IN
  * ============================================================================
  * Integrates:
- * 1. Interactive 8-Segment SVG Daily Lucky Wheel with physical spin physics & audio
- * 2. Real-time VIP Loyalty Progression Card (Bronze -> Obsidian) with XP tracking
- * 3. 7-Day Consecutive Login Streak Faucet
+ * 1. Compact VIP Loyalty Progression Card (Bronze -> Obsidian) with XP tracking
+ * 2. Interactive 8-Segment SVG Daily Lucky Wheel with physical spin physics & audio
+ * 3. Seven-Day Consecutive Login Streak Check-In Faucet (Cards above Claim button)
  * 4. Milestone Achievements tracking
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useLottery } from '../context/LotteryContext';
 import { useSoundFX } from '../hooks/useSoundFX';
-import { 
-  Gift, 
-  Sparkles, 
-  Calendar, 
-  Trophy, 
-  Coins, 
-  CheckCircle2, 
-  Clock, 
-  Star, 
-  Flame, 
-  ShieldCheck,
-  ChevronRight,
+import {
+  Gift,
+  Sparkles,
+  Calendar,
+  Trophy,
+  Coins,
+  CheckCircle2,
+  Clock,
+  Star,
+  Flame,
   Zap,
-  Award,
   Crown,
-  Play,
   RotateCcw,
-  Percent,
-  Layers,
-  ArrowUpRight
+  Lock,
+  Gem,
+  Dices,
+  Compass,
+  Award,
+  ShieldCheck
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -47,15 +46,7 @@ const WHEEL_SLICES = [
   { index: 7, amount: 5.00, label: '5.00 USDT', color: '#B45309', textColor: '#FFFBEB', border: '#F59E0B', isJackpot: true }
 ];
 
-const STREAK_DAYS = [
-  { day: 1, amount: 0.10, label: 'Day 1' },
-  { day: 2, amount: 0.15, label: 'Day 2' },
-  { day: 3, amount: 0.20, label: 'Day 3' },
-  { day: 4, amount: 0.25, label: 'Day 4' },
-  { day: 5, amount: 0.35, label: 'Day 5' },
-  { day: 6, amount: 0.50, label: 'Day 6' },
-  { day: 7, amount: 1.00, label: 'Day 7 Jackpot', isJackpot: true }
-];
+const DEFAULT_STREAK_REWARDS = [0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 1.00];
 
 const ACHIEVEMENTS = [
   {
@@ -65,7 +56,7 @@ const ACHIEVEMENTS = [
     reward: 0.5,
     progress: 0,
     unlocked: false,
-    icon: '🎲'
+    icon: 'dice'
   },
   {
     id: 'high_roller',
@@ -74,7 +65,7 @@ const ACHIEVEMENTS = [
     reward: 1.0,
     progress: 0,
     unlocked: false,
-    icon: '👑'
+    icon: 'crown'
   },
   {
     id: 'lucky_streak',
@@ -83,7 +74,7 @@ const ACHIEVEMENTS = [
     reward: 1.5,
     progress: 0,
     unlocked: false,
-    icon: '⚡'
+    icon: 'zap'
   },
   {
     id: 'games_veteran',
@@ -92,7 +83,7 @@ const ACHIEVEMENTS = [
     reward: 2.0,
     progress: 0,
     unlocked: false,
-    icon: '🌟'
+    icon: 'compass'
   },
   {
     id: 'century_club',
@@ -101,24 +92,50 @@ const ACHIEVEMENTS = [
     reward: 5.0,
     progress: 0,
     unlocked: false,
-    icon: '💎'
+    icon: 'gem'
   }
 ];
 
+function renderAchievementIcon(iconKey: string, state: 'claimed' | 'completed' | 'in_progress' | 'locked') {
+  const colorClass =
+    state === 'claimed'
+      ? 'text-emerald-400'
+      : state === 'completed'
+        ? 'text-amber-300'
+        : state === 'in_progress'
+          ? 'text-amber-400'
+          : 'text-[#94A3B8]';
+
+  switch (iconKey) {
+    case 'dice':
+      return <Dices className={`w-4.5 h-4.5 sm:w-5 sm:h-5 ${colorClass}`} />;
+    case 'crown':
+      return <Crown className={`w-4.5 h-4.5 sm:w-5 sm:h-5 ${colorClass}`} />;
+    case 'zap':
+      return <Zap className={`w-4.5 h-4.5 sm:w-5 sm:h-5 ${colorClass}`} />;
+    case 'compass':
+      return <Compass className={`w-4.5 h-4.5 sm:w-5 sm:h-5 ${colorClass}`} />;
+    case 'gem':
+      return <Gem className={`w-4.5 h-4.5 sm:w-5 sm:h-5 ${colorClass}`} />;
+    default:
+      return <Star className={`w-4.5 h-4.5 sm:w-5 sm:h-5 ${colorClass}`} />;
+  }
+}
+
 export default function RewardsView() {
-  const { 
-    wallet, 
-    setWallet, 
-    user, 
-    claimDailyBonus, 
+  const {
+    wallet,
+    setWallet,
+    user,
+    claimDailyBonus,
     claimDailyFloReward,
     getDailyFloRewardStatus,
-    showToast, 
-    setIsAuthModalOpen, 
-    fetchWalletLedger, 
-    setActiveTab 
+    showToast,
+    setIsAuthModalOpen,
+    fetchWalletLedger,
+    platformSettings
   } = useLottery();
-  const { soundFX, playClick, playRouletteSpin, playDialTick, playWinFanfare } = useSoundFX();
+  const { playClick, playRouletteSpin, playDialTick, playWinFanfare } = useSoundFX();
 
   // VIP State
   const [vipData, setVipData] = useState<any>(null);
@@ -142,10 +159,9 @@ export default function RewardsView() {
     checkinSettings: null
   });
   const [isClaimingStreak, setIsClaimingStreak] = useState(false);
-  const [isClaimingDaily, setIsClaimingDaily] = useState(false);
 
   // Achievements
-  const [claimedAchievements, setClaimedAchievements] = useState<any[]>([]);
+  const [claimedAchievements, setClaimedAchievements] = useState<string[]>([]);
 
   // Fetch Unified Daily Streak Status from Database
   const refreshDailyRewardStatus = async () => {
@@ -163,7 +179,7 @@ export default function RewardsView() {
   useEffect(() => {
     if (dailyRewardStatus.secondsRemaining <= 0) return;
     const interval = setInterval(() => {
-      setDailyRewardStatus(prev => {
+      setDailyRewardStatus((prev: any) => {
         if (prev.secondsRemaining <= 1) {
           refreshDailyRewardStatus();
           return { ...prev, canClaim: true, secondsRemaining: 0 };
@@ -245,12 +261,35 @@ export default function RewardsView() {
   }, [wheelCooldownSeconds]);
 
   // Format seconds to HH:MM:SS
-  const formatCooldown = (secs) => {
-    const h = Math.floor(secs / 3600);
-    const m = Math.floor((secs % 3600) / 60);
-    const s = secs % 60;
+  const formatCooldown = (secs: number) => {
+    const safeSecs = Math.max(0, Math.floor(Number(secs) || 0));
+    const h = Math.floor(safeSecs / 3600);
+    const m = Math.floor((safeSecs % 3600) / 60);
+    const s = safeSecs % 60;
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
+
+  // Sync wheel segments with admin configuration when available, keeping static fallback
+  const wheelSlices = useMemo(() => {
+    const cfgSegments = platformSettings?.spinWheelSettings?.segments;
+    if (!Array.isArray(cfgSegments) || cfgSegments.length !== 8) {
+      return WHEEL_SLICES;
+    }
+    return WHEEL_SLICES.map((fallback, idx) => {
+      const match = cfgSegments.find((s: any) => Number(s.index) === idx) ?? cfgSegments[idx];
+      if (!match) return fallback;
+      const amount = Number(match.amount ?? fallback.amount);
+      return {
+        ...fallback,
+        index: idx,
+        amount,
+        label: match.label || `${amount.toFixed(2)} USDT`,
+        color: match.color || fallback.color,
+        textColor: match.textColor || fallback.textColor,
+        isJackpot: idx === WHEEL_SLICES.length - 1 || amount >= 5
+      };
+    });
+  }, [platformSettings?.spinWheelSettings?.segments]);
 
   // Spin the Lucky Wheel
   const handleSpinWheel = async () => {
@@ -323,39 +362,23 @@ export default function RewardsView() {
           colors: ['#ffd700', '#f5c451', '#22c55e', '#a855f7']
         });
 
-        showToast(`🎉 You won ${data.final_prize} USDT on the Lucky Wheel!`, 'success');
+        showToast(`🎉 You won ${Number(data.final_prize).toFixed(2)} USDT on the Lucky Wheel!`, 'success');
 
-        if (data.new_balance !== undefined) {
-          setWallet(prev => ({ ...prev, balance: parseFloat(data.new_balance) }));
+        if (data.new_balance !== undefined && typeof setWallet === 'function') {
+          setWallet((prev: any) => ({ ...prev, balance: parseFloat(data.new_balance) }));
         }
         if (fetchWalletLedger) fetchWalletLedger();
         fetchVipStatus();
       }, 3800);
-
-    } catch (err) {
+    } catch (err: any) {
       console.error('handleSpinWheel error:', err);
       showToast(err.message || 'Error spinning wheel', 'error');
       setIsSpinningWheel(false);
     }
   };
 
-  // Claim 24h Daily Bonus
-  const handleClaimDaily = async () => {
-    if (isClaimingDaily) return;
-    setIsClaimingDaily(true);
-    playClick();
-
-    try {
-      const res = await claimDailyBonus();
-      if (res?.success) {
-        playWinFanfare('standard');
-      }
-    } catch (_) {}
-    setIsClaimingDaily(false);
-  };
-
   // Claim Achievement
-  const handleClaimAchievement = (ach) => {
+  const handleClaimAchievement = (ach: (typeof ACHIEVEMENTS)[number]) => {
     if (claimedAchievements.includes(ach.id) || !ach.unlocked) return;
     playClick();
     setClaimedAchievements(prev => [...prev, ach.id]);
@@ -369,485 +392,877 @@ export default function RewardsView() {
         origin: { y: 0.6 },
         colors: ['#F5C451', '#22C55E']
       });
-    } catch (_) {}
+    } catch (_) {
+      // Ignore confetti environment errors
+    }
   };
 
-  const getVipBadge = (tier) => {
+  const getVipBadge = (tier: string) => {
     switch ((tier || '').toLowerCase()) {
-      case 'obsidian': return { label: 'Obsidian VIP', color: 'from-purple-900 via-indigo-950 to-purple-900 border-purple-400 text-purple-200', icon: '👑', shadow: 'shadow-purple-500/30' };
-      case 'diamond': return { label: 'Diamond VIP', color: 'from-cyan-950 via-blue-950 to-cyan-950 border-cyan-400 text-cyan-200', icon: '💎', shadow: 'shadow-cyan-500/30' };
-      case 'platinum': return { label: 'Platinum VIP', color: 'from-slate-800 via-zinc-900 to-slate-800 border-slate-300 text-slate-100', icon: '🏆', shadow: 'shadow-slate-400/20' };
-      case 'gold': return { label: 'Gold VIP', color: 'from-amber-950 via-yellow-950 to-amber-950 border-amber-400 text-amber-200', icon: '⭐', shadow: 'shadow-amber-500/30' };
-      case 'silver': return { label: 'Silver VIP', color: 'from-zinc-800 via-slate-900 to-zinc-800 border-zinc-400 text-zinc-200', icon: '🥈', shadow: 'shadow-zinc-400/20' };
-      default: return { label: 'Bronze VIP', color: 'from-[#111827] via-[#151C2B] to-[#111827] border-amber-600/40 text-amber-300', icon: '🥉', shadow: 'shadow-amber-700/20' };
+      case 'obsidian':
+        return {
+          label: 'Obsidian VIP',
+          gradient: 'from-[#1a102b] via-[#121626] to-[#111827]',
+          border: 'border-purple-400/50',
+          badgeBg: 'bg-purple-500/15 border-purple-400/40 text-purple-200',
+          accentText: 'text-purple-300',
+          icon: '👑'
+        };
+      case 'diamond':
+        return {
+          label: 'Diamond VIP',
+          gradient: 'from-[#0c2233] via-[#111827] to-[#0f172a]',
+          border: 'border-cyan-400/50',
+          badgeBg: 'bg-cyan-500/15 border-cyan-400/40 text-cyan-200',
+          accentText: 'text-cyan-300',
+          icon: '💎'
+        };
+      case 'platinum':
+        return {
+          label: 'Platinum VIP',
+          gradient: 'from-[#1b2434] via-[#111827] to-[#131a27]',
+          border: 'border-slate-300/45',
+          badgeBg: 'bg-slate-400/15 border-slate-300/40 text-slate-100',
+          accentText: 'text-slate-200',
+          icon: '🏆'
+        };
+      case 'gold':
+        return {
+          label: 'Gold VIP',
+          gradient: 'from-[#281e0a] via-[#141926] to-[#111827]',
+          border: 'border-amber-400/55',
+          badgeBg: 'bg-amber-500/15 border-amber-400/40 text-amber-200',
+          accentText: 'text-amber-300',
+          icon: '⭐'
+        };
+      case 'silver':
+        return {
+          label: 'Silver VIP',
+          gradient: 'from-[#1e2636] via-[#131a29] to-[#0f1623]',
+          border: 'border-slate-300/40',
+          badgeBg: 'bg-slate-300/15 border-slate-300/35 text-slate-100',
+          accentText: 'text-slate-200',
+          icon: '🥈'
+        };
+      default:
+        return {
+          label: 'Bronze VIP',
+          gradient: 'from-[#1c1712] via-[#131926] to-[#111827]',
+          border: 'border-amber-500/35',
+          badgeBg: 'bg-amber-500/15 border-amber-500/35 text-amber-200',
+          accentText: 'text-amber-300',
+          icon: '🥉'
+        };
     }
   };
 
   const vipTheme = getVipBadge(vipData?.current_tier);
+  const progressPct = Math.max(0, Math.min(100, Number(vipData?.progress_pct ?? 0)));
+  const xpPoints = Number(vipData?.xp_points || 0);
+  const targetXp = Number(vipData?.target_xp || 1000);
+  const totalWagered = Number(vipData?.total_wagered || 0);
+  const faucetMultiplier = Number(vipData?.faucet_multiplier || 1.0);
+  const wheelBonusPct = Math.round((faucetMultiplier - 1.0) * 100);
+
+  // Seven-Day Check-In derived status values (exact backend values preserved)
+  const currentDayNum = Math.max(1, Math.min(7, Number(dailyRewardStatus.currentStreak || 1)));
+  const canClaimToday = Boolean(dailyRewardStatus.canClaim);
+  const completedDaysCount = canClaimToday ? currentDayNum - 1 : currentDayNum;
+  const remainingDaysCount = Math.max(0, 7 - completedDaysCount);
+  const nextStreakDay = Number(dailyRewardStatus.nextStreak || ((currentDayNum % 7) + 1));
+  const todayRewardAmount = Number(
+    dailyRewardStatus.availableReward ??
+      dailyRewardStatus.checkinSettings?.streak_rewards?.[`day${currentDayNum}`] ??
+      DEFAULT_STREAK_REWARDS[currentDayNum - 1]
+  );
+  const nextRewardAmount = Number(
+    dailyRewardStatus.nextRewardAmount ??
+      dailyRewardStatus.checkinSettings?.streak_rewards?.[`day${nextStreakDay}`] ??
+      DEFAULT_STREAK_REWARDS[nextStreakDay - 1]
+  );
+
+  // Milestone summary calculations
+  const completedMilestonesCount = ACHIEVEMENTS.filter(
+    (ach) => ach.unlocked || claimedAchievements.includes(ach.id)
+  ).length;
+  const totalMilestonesPool = ACHIEVEMENTS.reduce((sum, ach) => sum + ach.reward, 0);
+  const minWheelSlice = Math.min(...wheelSlices.map((s) => Number(s.amount)));
+  const maxWheelSlice = Math.max(...wheelSlices.map((s) => Number(s.amount)));
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 text-left">
-
-      {/* 1. VIP LOYALTY PROGRESSION CARD */}
-      <div className={`rounded-3xl bg-gradient-to-r ${vipTheme.color} border p-4 sm:p-7 shadow-xl ${vipTheme.shadow} transition-all`}>
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-          
-          <div className="space-y-3 max-w-xl">
-            <div className="flex items-center gap-2.5">
-              <span className="text-3xl">{vipTheme.icon}</span>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="font-display font-black text-lg sm:text-xl text-white tracking-tight">
-                    {vipTheme.label}
-                  </h2>
-                  <span className="px-2 py-0.5 rounded-full bg-white/10 text-white font-mono text-[10px] font-bold uppercase tracking-wider">
-                    Level {vipData?.tier_level || 1}
-                  </span>
+    <div
+      data-testid="daily-bonus-view"
+      className="w-full max-w-6xl mx-auto space-y-3.5 sm:space-y-5 text-left box-border overflow-x-clip pb-3"
+    >
+      {/* ==================================================================
+          1. COMPACT VIP MEMBERSHIP & PROGRESS CARD
+      ================================================================== */}
+      <section
+        data-testid="vip-progress-card"
+        aria-label="VIP Membership Status and Progress"
+        className={`rounded-2xl sm:rounded-3xl bg-gradient-to-br ${vipTheme.gradient} border ${vipTheme.border} p-3.5 sm:p-5 lg:p-6 shadow-xl transition-all box-border overflow-hidden`}
+      >
+        <div className="flex flex-col lg:grid lg:grid-cols-12 lg:items-center gap-3 sm:gap-4 lg:gap-5">
+          {/* Left: Tier Identity + Progress Bar */}
+          <div className="lg:col-span-7 space-y-2.5 min-w-0">
+            {/* Top Header Row: Badge + Name + Level + Aligned Progress % */}
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
+                <div
+                  aria-hidden="true"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#0B0F19]/85 border border-white/15 flex items-center justify-center text-lg sm:text-xl shadow-inner shrink-0"
+                >
+                  {vipTheme.icon}
                 </div>
-                <p className="text-xs text-[#CBD5E1]">
-                  Every 1 USDT wagered earns 10 XP points. Higher tiers unlock higher faucet multipliers!
-                </p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                    <h2 className="font-display font-extrabold text-sm sm:text-base lg:text-lg text-white tracking-tight leading-tight whitespace-nowrap">
+                      {vipTheme.label}
+                    </h2>
+                    <span className="px-1.5 sm:px-2 py-0.5 rounded-md bg-white/10 border border-white/10 text-white font-mono-numbers text-[10px] font-bold uppercase tracking-wide whitespace-nowrap shrink-0">
+                      Lv.{vipData?.tier_level || 1}
+                    </span>
+                  </div>
+                  <p className="text-[10.5px] sm:text-xs text-[#CBD5E1] leading-snug truncate mt-0.5">
+                    {vipData?.next_tier === 'Max Tier'
+                      ? 'Max VIP tier · 1 USDT = 10 XP'
+                      : `Next: ${vipData?.next_tier || 'Silver'} · 1 USDT = 10 XP`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress Percentage Pill cleanly aligned on top row */}
+              <div className="shrink-0 flex flex-col items-end justify-center px-2.5 py-1 rounded-xl bg-[#0B0F19]/85 border border-white/10">
+                <span className="text-[9px] uppercase tracking-wider font-bold text-[#94A3B8] leading-none whitespace-nowrap">
+                  Progress
+                </span>
+                <span
+                  data-testid="vip-progress-pct"
+                  className="font-mono-numbers font-black text-xs sm:text-sm text-amber-300 leading-tight mt-0.5 whitespace-nowrap"
+                >
+                  {vipLoading && !vipData ? '—' : `${progressPct}%`}
+                </span>
               </div>
             </div>
 
-            {/* XP Progress Bar */}
-            <div className="space-y-1.5 pt-1">
-              <div className="flex items-center justify-between text-[11px] font-mono-numbers font-bold">
-                <span className="text-amber-300">{Number(vipData?.xp_points || 0).toLocaleString()} XP</span>
-                <span className="text-white/70">
-                  Target: {Number(vipData?.target_xp || 1000).toLocaleString()} XP ({vipData?.next_tier || 'Silver'})
-                </span>
-              </div>
-              <div className="w-full h-3 bg-[#0B0F19]/80 rounded-full overflow-hidden p-0.5 border border-white/10 shadow-inner">
-                <div 
-                  className="h-full rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 transition-all duration-500 shadow-sm"
-                  style={{ width: `${Math.max(4, Math.min(100, vipData?.progress_pct || 10))}%` }}
+            {/* Clean Progress Bar & Single Compact Stats Line */}
+            <div className="space-y-1.5 min-w-0">
+              <div
+                role="progressbar"
+                aria-valuenow={progressPct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`${vipTheme.label} XP progress`}
+                className="w-full h-2 sm:h-2.5 bg-[#0B0F19]/90 rounded-full overflow-hidden border border-white/10"
+              >
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 transition-all duration-500"
+                  style={{ width: `${progressPct > 0 ? Math.max(3, progressPct) : 0}%` }}
                 />
               </div>
-              <div className="flex items-center justify-between text-[10px] text-[#94A3B8]">
-                <span>Progress: {vipData?.progress_pct || 0}%</span>
-                <span>Wagered: {Number(vipData?.total_wagered || 0).toLocaleString()} USDT</span>
+
+              <div className="flex items-center justify-between gap-2 text-[10px] sm:text-[11px] font-mono-numbers">
+                <span className="text-[#CBD5E1] truncate">
+                  <strong className="text-amber-300 font-bold">{xpPoints.toLocaleString()}</strong>
+                  <span className="text-[#94A3B8]"> / {targetXp.toLocaleString()} XP</span>
+                </span>
+                <span className="text-[#94A3B8] whitespace-nowrap shrink-0">
+                  Wagered: <strong className="text-white">{totalWagered.toLocaleString()} USDT</strong>
+                </span>
               </div>
             </div>
           </div>
 
-          {/* VIP Perks Summary Pill Box */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 w-full lg:w-auto">
-            <div className="p-3 rounded-2xl bg-[#0B0F19]/90 border border-white/10 text-center">
-              <span className="text-[10px] text-[#94A3B8] uppercase block font-bold">Faucet Multiplier</span>
-              <span className="text-base font-black font-mono-numbers text-amber-300">
-                {vipData?.faucet_multiplier || 1.0}x
+          {/* Right: Always 3-Column Compact Perks Strip */}
+          <div className="lg:col-span-5 grid grid-cols-3 gap-1.5 sm:gap-2.5 min-w-0">
+            <div className="px-1.5 py-2 sm:p-3 rounded-xl bg-[#0B0F19]/85 border border-white/10 text-center min-w-0">
+              <span className="text-[9px] sm:text-[10px] text-[#94A3B8] uppercase tracking-tight sm:tracking-wider block font-bold whitespace-nowrap">
+                Multiplier
+              </span>
+              <span className="text-xs sm:text-sm font-black font-mono-numbers text-amber-300 block mt-0.5 whitespace-nowrap">
+                {faucetMultiplier}x
               </span>
             </div>
 
-            <div className="p-3 rounded-2xl bg-[#0B0F19]/90 border border-white/10 text-center">
-              <span className="text-[10px] text-[#94A3B8] uppercase block font-bold">Wheel Bonus</span>
-              <span className="text-base font-black font-mono-numbers text-emerald-400">
-                +{Math.round(((vipData?.faucet_multiplier || 1.0) - 1.0) * 100)}%
+            <div className="px-1.5 py-2 sm:p-3 rounded-xl bg-[#0B0F19]/85 border border-white/10 text-center min-w-0">
+              <span className="text-[9px] sm:text-[10px] text-[#94A3B8] uppercase tracking-tight sm:tracking-wider block font-bold whitespace-nowrap">
+                Spin Bonus
+              </span>
+              <span className="text-xs sm:text-sm font-black font-mono-numbers text-emerald-400 block mt-0.5 whitespace-nowrap">
+                +{wheelBonusPct}%
               </span>
             </div>
 
-            <div className="p-3 rounded-2xl bg-[#0B0F19]/90 border border-white/10 text-center col-span-2 sm:col-span-1">
-              <span className="text-[10px] text-[#94A3B8] uppercase block font-bold">Chat Badge</span>
-              <span className="text-xs font-black text-purple-300 flex items-center justify-center gap-1 mt-0.5">
-                {vipTheme.icon} {vipData?.current_tier || 'Bronze'}
+            <div className="px-1.5 py-2 sm:p-3 rounded-xl bg-[#0B0F19]/85 border border-white/10 text-center min-w-0">
+              <span className="text-[9px] sm:text-[10px] text-[#94A3B8] uppercase tracking-tight sm:tracking-wider block font-bold whitespace-nowrap">
+                Chat Badge
+              </span>
+              <span className={`text-[11px] sm:text-xs font-black ${vipTheme.accentText} flex items-center justify-center gap-1 mt-0.5 truncate`}>
+                <span aria-hidden="true">{vipTheme.icon}</span>
+                <span className="truncate">{vipData?.current_tier || 'Bronze'}</span>
               </span>
             </div>
           </div>
-
         </div>
-      </div>
+      </section>
 
-      {/* 2. INTERACTIVE DAILY LUCKY WHEEL MINI-GAME */}
-      <div className="rounded-3xl bg-[#111827] border border-[#1F2737] p-4 sm:p-8 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+      {/* ==================================================================
+          2. DAILY SPIN WHEEL SECTION
+      ================================================================== */}
+      <section
+        data-testid="daily-spin-card"
+        aria-label="Daily Spin Wheel"
+        className="rounded-2xl sm:rounded-3xl bg-[#111827] border border-[#1F2737] p-3.5 sm:p-5 lg:p-6 shadow-xl relative overflow-hidden box-border"
+      >
+        <div className="absolute -top-12 -right-12 w-56 h-56 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
-          
-          {/* Wheel Graphic */}
-          <div className="relative flex flex-col items-center shrink-0">
-            {/* Top Indicator Arrow */}
-            <div className="absolute -top-3 z-30 drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]">
-              <div className="w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[22px] border-t-amber-400 filter drop-shadow" />
+        {/* Section Heading & Compact USDT Reward Info at the Top */}
+        <div
+          data-testid="daily-spin-header"
+          className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 sm:pb-4 border-b border-[#1F2737]"
+        >
+          <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
+              <Sparkles className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-amber-400" />
             </div>
-
-            {/* Rotating SVG Wheel */}
-            <div 
-              className="w-64 h-64 xs:w-72 xs:h-72 sm:w-80 sm:h-80 rounded-full border-4 border-amber-400/80 shadow-[0_0_35px_rgba(245,196,81,0.25)] p-1 bg-[#0B0F19]"
-            >
-              <svg 
-                viewBox="0 0 300 300" 
-                className="w-full h-full transform transition-transform duration-[3800ms] ease-[cubic-bezier(0.15,0.85,0.25,1)]"
-                style={{ transform: `rotate(${wheelRotation}deg)` }}
-              >
-                {/* 8 Slices */}
-                {WHEEL_SLICES.map((s, idx) => {
-                  const angle = 360 / 8; // 45 deg
-                  const startAngle = idx * angle;
-                  const endAngle = startAngle + angle;
-                  
-                  // Convert polar to cartesian
-                  const radStart = (startAngle - 90) * (Math.PI / 180);
-                  const radEnd = (endAngle - 90) * (Math.PI / 180);
-                  const x1 = 150 + 140 * Math.cos(radStart);
-                  const y1 = 150 + 140 * Math.sin(radStart);
-                  const x2 = 150 + 140 * Math.cos(radEnd);
-                  const y2 = 150 + 140 * Math.sin(radEnd);
-
-                  // Text rotation angle
-                  const midAngle = startAngle + angle / 2;
-                  const textRad = (midAngle - 90) * (Math.PI / 180);
-                  const tx = 150 + 95 * Math.cos(textRad);
-                  const ty = 150 + 95 * Math.sin(textRad);
-
-                  return (
-                    <g key={s.index}>
-                      <path
-                        d={`M 150 150 L ${x1} ${y1} A 140 140 0 0 1 ${x2} ${y2} Z`}
-                        fill={s.color}
-                        stroke="#111827"
-                        strokeWidth="2.5"
-                      />
-                      <text
-                        x={tx}
-                        y={ty}
-                        fill={s.textColor}
-                        fontSize="12"
-                        fontWeight="900"
-                        fontFamily="monospace"
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        transform={`rotate(${midAngle + 90}, ${tx}, ${ty})`}
-                      >
-                        {s.label}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                {/* Center Hub */}
-                <circle cx="150" cy="150" r="32" fill="#0B0F19" stroke="#A855F7" strokeWidth="4" />
-                <circle cx="150" cy="150" r="22" fill="#A855F7" />
-                <text x="150" y="150" fill="#FFFFFF" fontSize="12" fontWeight="900" textAnchor="middle" dominantBaseline="central">
-                  USDT
-                </text>
-              </svg>
+            <div className="min-w-0">
+              <h2 className="font-display font-extrabold text-sm sm:text-base lg:text-lg text-white leading-tight">
+                Daily Spin Wheel
+              </h2>
+              <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-snug mt-0.5">
+                Spin &amp; Win USDT every day · 1 free spin every 24 hours
+              </p>
             </div>
           </div>
 
-          {/* Wheel Action & Information */}
-          <div className="space-y-4 max-w-lg text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-mono font-bold">
-              <Gift className="w-3.5 h-3.5 text-purple-400" />
-              <span>FREE 24-HOUR DAILY FAUCET SPIN</span>
-            </div>
+          <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] sm:text-[11px] font-mono-numbers font-bold whitespace-nowrap">
+              <Coins className="w-3 h-3 text-amber-400 shrink-0" />
+              {minWheelSlice.toFixed(2)}–{maxWheelSlice.toFixed(2)} USDT
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] sm:text-[11px] font-mono-numbers font-bold whitespace-nowrap">
+              VIP Bonus: {faucetMultiplier}x
+            </span>
+          </div>
+        </div>
 
-            <h2 className="font-display font-black text-2xl text-white">
-              Spin & Win USDT Every Day
-            </h2>
-
-            <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
-              Every registered player gets 1 guaranteed free spin every 24 hours. Your VIP status multiplies your win by up to <strong className="text-purple-300">{vipData?.faucet_multiplier || 1.0}x</strong>!
-            </p>
-
-            {recentPrize && (
-              <div className="p-3.5 rounded-2xl bg-purple-500/15 border border-purple-400/50 text-xs font-mono animate-in zoom-in-95 duration-200">
-                <span className="text-purple-300 font-bold block text-sm">
-                  🎉 You won {recentPrize.final_prize} USDT!
-                </span>
-                <span className="text-[11px] text-[#94A3B8]">
-                  Base Prize: {recentPrize.base_prize} USDT · VIP Multiplier: {recentPrize.vip_multiplier}x
-                </span>
-              </div>
-            )}
-
-            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-              <button
-                onClick={handleSpinWheel}
-                disabled={isSpinningWheel || wheelCooldownSeconds > 0}
-                className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl font-black text-sm flex items-center justify-center gap-2.5 shadow-xl transition-all cursor-pointer ${
-                  isSpinningWheel
-                    ? 'bg-amber-500/30 text-amber-200 cursor-not-allowed'
-                    : wheelCooldownSeconds > 0
-                    ? 'bg-[#151C2B] text-[#94A3B8] border border-[#2D3545] cursor-not-allowed'
-                    : 'btn-gold text-black shadow-amber-500/30 hover:scale-105'
-                }`}
+        {/* Grouped Wheel + Directly Attached Spin Button below it */}
+        <div className="relative z-10 pt-4 sm:pt-5 grid grid-cols-1 lg:grid-cols-12 lg:items-center gap-4 lg:gap-6">
+          {/* Primary Wheel & Action Stage (Always vertical: Wheel -> Result -> Spin Button) */}
+          <div
+            data-testid="spin-wheel-group"
+            className="lg:col-span-7 flex flex-col items-center w-full"
+          >
+            <div className="w-full max-w-[390px] mx-auto rounded-2xl bg-[#0B0F19]/90 border border-[#1F2737] p-3.5 sm:p-5 flex flex-col items-center gap-3.5 shadow-inner">
+              {/* Circular SVG Wheel */}
+              <div
+                data-testid="daily-spin-wheel-wrapper"
+                className="relative flex flex-col items-center justify-center pt-2 shrink-0"
               >
-                <Sparkles className={`w-4 h-4 ${isSpinningWheel ? 'animate-spin' : ''}`} />
-                <span>{isSpinningWheel ? 'Spinning Wheel...' : wheelCooldownSeconds > 0 ? `Next Spin in ${formatCooldown(wheelCooldownSeconds)}` : 'SPIN WHEEL NOW'}</span>
-              </button>
+                {/* Top Pointer Arrow */}
+                <div className="absolute -top-0.5 z-30 drop-shadow-[0_3px_6px_rgba(0,0,0,0.85)]">
+                  <div className="w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[18px] border-t-amber-400" />
+                </div>
 
-              {wheelCooldownSeconds > 0 && (
-                <div className="text-xs font-mono-numbers text-[#94A3B8] flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Resets in {formatCooldown(wheelCooldownSeconds)}</span>
+                {/* Rotating Wheel */}
+                <div className="w-52 h-52 xs:w-60 xs:h-60 sm:w-68 sm:h-68 rounded-full border-4 border-amber-400/80 shadow-[0_0_24px_rgba(245,196,81,0.18)] p-1 bg-[#0B0F19]">
+                  <svg
+                    viewBox="0 0 300 300"
+                    className="w-full h-full transform transition-transform duration-[3800ms] ease-[cubic-bezier(0.15,0.85,0.25,1)]"
+                    style={{ transform: `rotate(${wheelRotation}deg)` }}
+                  >
+                    {wheelSlices.map((s, idx) => {
+                      const angle = 360 / 8; // 45 deg
+                      const startAngle = idx * angle;
+                      const endAngle = startAngle + angle;
+
+                      const radStart = (startAngle - 90) * (Math.PI / 180);
+                      const radEnd = (endAngle - 90) * (Math.PI / 180);
+                      const x1 = 150 + 140 * Math.cos(radStart);
+                      const y1 = 150 + 140 * Math.sin(radStart);
+                      const x2 = 150 + 140 * Math.cos(radEnd);
+                      const y2 = 150 + 140 * Math.sin(radEnd);
+
+                      const midAngle = startAngle + angle / 2;
+                      const textRad = (midAngle - 90) * (Math.PI / 180);
+                      const tx = 150 + 95 * Math.cos(textRad);
+                      const ty = 150 + 95 * Math.sin(textRad);
+
+                      return (
+                        <g key={s.index}>
+                          <path
+                            d={`M 150 150 L ${x1} ${y1} A 140 140 0 0 1 ${x2} ${y2} Z`}
+                            fill={s.color}
+                            stroke="#111827"
+                            strokeWidth="2.5"
+                          />
+                          <text
+                            x={tx}
+                            y={ty}
+                            fill={s.textColor}
+                            fontSize="12"
+                            fontWeight="900"
+                            fontFamily="monospace"
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                            transform={`rotate(${midAngle + 90}, ${tx}, ${ty})`}
+                          >
+                            {s.label}
+                          </text>
+                        </g>
+                      );
+                    })}
+
+                    {/* Center Hub */}
+                    <circle cx="150" cy="150" r="32" fill="#0B0F19" stroke="#F5C451" strokeWidth="3.5" />
+                    <circle cx="150" cy="150" r="22" fill="#F5C451" />
+                    <text
+                      x="150"
+                      y="150"
+                      fill="#0B0F19"
+                      fontSize="11"
+                      fontWeight="900"
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                    >
+                      USDT
+                    </text>
+                  </svg>
+                </div>
+              </div>
+
+              {/* Recent Spin Result Banner (Between Wheel and Button when won) */}
+              {recentPrize && (
+                <div className="w-full px-3 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/35 text-center animate-in zoom-in-95 duration-200">
+                  <span className="text-emerald-300 font-bold font-mono-numbers block text-xs sm:text-sm">
+                    🎉 +{Number(recentPrize.final_prize).toFixed(2)} USDT Credited to Wallet!
+                  </span>
+                  <span className="text-[10.5px] text-[#94A3B8] font-mono-numbers block mt-0.5">
+                    Slice #{Number(recentPrize.slice_index ?? 0) + 1} · VIP {faucetMultiplier}x Applied
+                  </span>
                 </div>
               )}
-            </div>
-          </div>
 
-        </div>
-      </div>
-
-      {/* 3. UNIFIED 7-DAY STREAK & DAILY BONUS CLAIM */}
-      <div className="rounded-3xl bg-[#111827] border border-[#1F2737] p-3.5 sm:p-7 space-y-4 sm:space-y-5 shadow-2xl relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 border-b border-[#1F2737]">
-          <div className="space-y-1.5 min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-display font-extrabold text-base sm:text-xl text-white flex items-center gap-2 whitespace-nowrap shrink-0">
-                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
-                <span className="whitespace-nowrap">Seven-Day Check-In</span>
-              </h2>
-              <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-                <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase font-bold tracking-wider whitespace-nowrap shrink-0">
-                  USDT (TRC-20)
-                </span>
-                <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                  <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 uppercase font-bold tracking-wider whitespace-nowrap shrink-0">
-                    Day {dailyRewardStatus.currentStreak || 1} of 7
-                  </span>
-                  {(dailyRewardStatus.highestStreak || 0) > 0 && (
-                    <span className="text-[10px] font-mono-numbers px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 uppercase font-bold tracking-wider whitespace-nowrap shrink-0">
-                      Best: {dailyRewardStatus.highestStreak}d
-                    </span>
+              {/* Spin Action Button Directly Below Wheel */}
+              <div className="w-full space-y-2 pt-0.5">
+                <button
+                  type="button"
+                  data-testid="daily-spin-button"
+                  onClick={handleSpinWheel}
+                  disabled={isSpinningWheel || wheelCooldownSeconds > 0}
+                  className={`w-full min-h-[44px] px-5 py-2.5 rounded-xl font-display font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all ${
+                    isSpinningWheel
+                      ? 'bg-amber-500/25 text-amber-200 border border-amber-400/40 cursor-not-allowed'
+                      : wheelCooldownSeconds > 0
+                        ? 'bg-[#151C2B] text-[#94A3B8] border border-[#2D3545] cursor-not-allowed'
+                        : 'btn-gold text-black shadow-lg shadow-amber-500/20 cursor-pointer'
+                  }`}
+                >
+                  {isSpinningWheel ? (
+                    <>
+                      <Sparkles className="w-4 h-4 animate-spin shrink-0" />
+                      <span>Spinning Wheel...</span>
+                    </>
+                  ) : wheelCooldownSeconds > 0 ? (
+                    <>
+                      <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span className="font-mono-numbers">Next Spin in {formatCooldown(wheelCooldownSeconds)}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 shrink-0" />
+                      <span>SPIN WHEEL NOW</span>
+                    </>
                   )}
+                </button>
+
+                <div className="flex items-center justify-between gap-2 text-[10.5px] text-[#94A3B8] px-0.5">
+                  <span className="flex items-center gap-1 truncate">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    Instant USDT wallet credit
+                  </span>
+                  <span className="font-mono-numbers text-amber-300 font-semibold whitespace-nowrap shrink-0">
+                    {wheelCooldownSeconds > 0 ? 'Cooldown 24h' : 'Ready to Spin'}
+                  </span>
                 </div>
               </div>
             </div>
-            <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-relaxed">
-              {dailyRewardStatus.canClaim
-                ? `Ready to claim! Available today: +${(dailyRewardStatus.availableReward || 0.10).toFixed(2)} USDT.`
-                : `Reward claimed for today! Day ${dailyRewardStatus.nextStreak || 2} reward (+${(dailyRewardStatus.nextRewardAmount || 0.15).toFixed(2)} USDT) unlocks in ${formatCooldown(dailyRewardStatus.secondsRemaining)}.`
-              }
-            </p>
           </div>
 
-          {/* Unified Authoritative Claim Button */}
-          <button
-            onClick={handleClaimDailyStreak}
-            disabled={!dailyRewardStatus.canClaim || isClaimingStreak}
-            className={`w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-              dailyRewardStatus.canClaim
-                ? 'btn-gold shadow-amber-500/30 hover:scale-105 active:scale-95'
-                : 'bg-[#151C2B] text-[#94A3B8] border border-[#2D3545] cursor-not-allowed shadow-none'
-            }`}
-          >
-            {isClaimingStreak ? (
-              <>
-                <RotateCcw className="w-4 h-4 animate-spin text-amber-300 shrink-0" />
-                <span className="whitespace-nowrap">Crediting Wallet...</span>
-              </>
-            ) : dailyRewardStatus.canClaim ? (
-              <>
-                <Gift className="w-4 h-4 text-black animate-bounce shrink-0" />
-                <span className="whitespace-nowrap">Claim Day {dailyRewardStatus.currentStreak || 1} (+{(dailyRewardStatus.availableReward || 0.10).toFixed(2)} USDT)</span>
-              </>
-            ) : (
-              <>
-                <Clock className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="whitespace-nowrap">Claimed (Unlocks in {formatCooldown(dailyRewardStatus.secondsRemaining)})</span>
-              </>
+          {/* Prize Tiers & Info Panel (Side column on Desktop, compact horizontal summary on Mobile) */}
+          <div className="lg:col-span-5 rounded-2xl bg-[#0B0F19]/80 border border-[#1F2737] p-3.5 sm:p-4 space-y-3 min-w-0">
+            <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#1F2737]">
+              <span className="font-display font-bold text-xs sm:text-sm text-white">
+                Wheel USDT Prize Tiers
+              </span>
+              <span className="text-[10px] font-mono-numbers font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/25 whitespace-nowrap">
+                Top Prize: {maxWheelSlice.toFixed(2)} USDT
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-1.5 sm:gap-2">
+              {wheelSlices.map((slice) => (
+                <div
+                  key={slice.index}
+                  className={`px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-xl border text-center lg:text-left lg:flex lg:items-center lg:justify-between min-w-0 ${
+                    slice.isJackpot
+                      ? 'bg-amber-500/10 border-amber-400/45 text-amber-200'
+                      : 'bg-[#111827] border-[#1F2737] text-[#E2E8F0]'
+                  }`}
+                >
+                  <span className="text-[9.5px] sm:text-[10px] text-[#94A3B8] font-mono-numbers hidden lg:inline">
+                    Slice #{slice.index + 1}
+                  </span>
+                  <span className="font-mono-numbers font-bold text-[10.5px] sm:text-xs whitespace-nowrap block truncate">
+                    {slice.amount.toFixed(2)} USDT
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-[10.5px] sm:text-[11px] text-[#94A3B8] leading-snug pt-0.5">
+              Every verified player receives 1 guaranteed spin every 24 hours. Rewards are logged immediately in Transaction History.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================================================================
+          3. SEVEN-DAY CHECK-IN SECTION (Cards above Claim Button)
+      ================================================================== */}
+      <section
+        data-testid="daily-checkin-card"
+        aria-label="Seven-Day Check-In Rewards"
+        className="rounded-2xl sm:rounded-3xl bg-[#111827] border border-[#1F2737] p-3.5 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 shadow-xl relative overflow-hidden box-border"
+      >
+        {/* Top Heading + Current Streak & Eligibility Status (NO Claim Button Here) */}
+        <div
+          data-testid="checkin-header"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 sm:pb-4 border-b border-[#1F2737]"
+        >
+          <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
+              <Calendar className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-amber-400" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="font-display font-extrabold text-sm sm:text-base lg:text-lg text-white leading-tight whitespace-nowrap">
+                  Seven-Day Check-In
+                </h2>
+                <span className="text-[9.5px] font-mono-numbers px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/35 uppercase font-bold tracking-wider whitespace-nowrap">
+                  USDT TRC-20
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-snug mt-0.5">
+                {canClaimToday
+                  ? `Day ${currentDayNum} ready to claim (+${todayRewardAmount.toFixed(2)} USDT) · Next: Day ${nextStreakDay} (+${nextRewardAmount.toFixed(2)} USDT)`
+                  : `Today claimed · Day ${nextStreakDay} (+${nextRewardAmount.toFixed(2)} USDT) unlocks in ${formatCooldown(dailyRewardStatus.secondsRemaining)}`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+            <span
+              data-testid="checkin-streak-badge"
+              className={`text-[10px] sm:text-[11px] font-mono-numbers px-2.5 py-1 rounded-full border font-bold whitespace-nowrap ${
+                canClaimToday
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
+                  : 'bg-[#0B0F19] text-[#CBD5E1] border-[#2D3545]'
+              }`}
+            >
+              Streak: Day {currentDayNum} / 7
+            </span>
+            <span className="text-[10px] sm:text-[11px] font-mono-numbers px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold whitespace-nowrap">
+              {remainingDaysCount} {remainingDaysCount === 1 ? 'Day' : 'Days'} Left
+            </span>
+            {(dailyRewardStatus.highestStreak || 0) > 0 && (
+              <span className="text-[10px] sm:text-[11px] font-mono-numbers px-2.5 py-1 rounded-full bg-[#0B0F19] text-[#94A3B8] border border-[#1F2737] font-bold whitespace-nowrap">
+                Best: {dailyRewardStatus.highestStreak}d
+              </span>
             )}
-          </button>
+          </div>
         </div>
 
-        {/* 7 Day Blocks Grid:
-            Mobile: 3 columns (Days 1-6 in 2 symmetrical rows of 3, Day 7 Jackpot spanning 3 columns).
-            Tablet: sm:grid-cols-4.
-            Desktop: lg:grid-cols-7 (1 row of 7). */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 xs:gap-2 sm:gap-3 pt-1">
+        {/* Chronological 7-Day Reward Cards Grid */}
+        <div
+          data-testid="checkin-days-grid"
+          className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-2.5"
+        >
           {[1, 2, 3, 4, 5, 6, 7].map((day) => {
-            const currentDayNum = dailyRewardStatus.currentStreak || 1;
-            const isCompleted = day < currentDayNum || (!dailyRewardStatus.canClaim && day === currentDayNum);
-            const isCurrent = day === currentDayNum && dailyRewardStatus.canClaim;
-            const defaultRewards = [0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 1.00];
-            const rewardVal = dailyRewardStatus.checkinSettings?.streak_rewards?.[`day${day}`] !== undefined 
-              ? Number(dailyRewardStatus.checkinSettings.streak_rewards[`day${day}`]) 
-              : defaultRewards[day - 1];
+            const isCompleted = day < currentDayNum || (!canClaimToday && day === currentDayNum);
+            const isCurrent = day === currentDayNum && canClaimToday;
+            const rewardVal =
+              dailyRewardStatus.checkinSettings?.streak_rewards?.[`day${day}`] !== undefined
+                ? Number(dailyRewardStatus.checkinSettings.streak_rewards[`day${day}`])
+                : DEFAULT_STREAK_REWARDS[day - 1];
             const isJackpot = day === 7;
+            const statusText = isCompleted ? 'Claimed' : isCurrent ? 'Available' : 'Locked';
 
             return (
               <div
                 key={day}
-                className={`rounded-2xl border transition-all ${
-                  isJackpot ? 'col-span-3 sm:col-span-1' : 'col-span-1'
+                data-testid={`checkin-day-${day}`}
+                className={`rounded-2xl border p-2.5 sm:p-3 flex flex-col justify-between gap-2 min-w-0 transition-all box-border ${
+                  isJackpot ? 'col-span-2 xs:col-span-3 sm:col-span-2 lg:col-span-1' : 'col-span-1'
                 } ${
                   isCurrent
-                    ? 'bg-gradient-to-b from-amber-500/20 to-amber-950/40 border-amber-400 shadow-[0_0_20px_rgba(245,196,81,0.25)]'
+                    ? 'bg-gradient-to-b from-amber-500/20 via-amber-500/10 to-[#0B0F19] border-amber-400 shadow-lg shadow-amber-500/10'
                     : isCompleted
-                    ? 'bg-[#0B0F19]/90 border-emerald-500/40 text-emerald-300'
-                    : isJackpot
-                    ? 'bg-gradient-to-r sm:bg-gradient-to-b from-purple-950/40 via-[#151C2B] to-purple-950/40 border-purple-500/40 text-purple-300'
-                    : 'bg-[#0B0F19] border-[#1F2737] text-[#94A3B8] opacity-75'
-                } ${
-                  isJackpot
-                    ? 'p-2.5 sm:p-4'
-                    : 'p-2 sm:p-4 flex flex-col items-center text-center justify-between'
+                      ? 'bg-[#0B0F19]/90 border-emerald-500/40'
+                      : isJackpot
+                        ? 'bg-gradient-to-br from-purple-950/35 via-[#0B0F19] to-[#111827] border-purple-500/35'
+                        : 'bg-[#0B0F19] border-[#1F2737] opacity-85'
                 }`}
               >
                 {isJackpot ? (
                   <>
-                    {/* Mobile Day 7 Horizontal Highlight Banner */}
-                    <div className="flex sm:hidden items-center justify-between gap-2.5 w-full">
-                      <div className="flex items-center gap-2">
-                        <div className="text-2xl shrink-0">💎</div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono-numbers font-bold text-xs text-purple-200 whitespace-nowrap">Day 7</span>
+                    {/* Mobile / Small Tablet Horizontal Jackpot Banner */}
+                    <div className="flex lg:hidden items-center justify-between gap-2.5 w-full min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-400/35 flex items-center justify-center shrink-0">
+                          <Gem className="w-4.5 h-4.5 text-purple-300" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono-numbers font-bold text-xs text-white whitespace-nowrap">
+                              Day 7
+                            </span>
                             <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30 whitespace-nowrap">
-                              Grand Jackpot
+                              Jackpot
                             </span>
                           </div>
-                          <span className="text-[10px] text-white/50 block font-mono-numbers whitespace-nowrap">
-                            ≈ ${rewardVal.toFixed(2)} USDT
+                          <span className="text-[10px] text-[#94A3B8] font-mono-numbers block truncate mt-0.5">
+                            USDT Bonus · TRC-20
                           </span>
                         </div>
                       </div>
+
                       <div className="text-right shrink-0">
-                        <span className={`font-mono-numbers font-black text-xs xs:text-sm block whitespace-nowrap ${
-                          isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-purple-300'
-                        }`}>
+                        <span
+                          className={`font-mono-numbers font-black text-xs sm:text-sm block whitespace-nowrap ${
+                            isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-purple-200'
+                          }`}
+                        >
                           +{rewardVal.toFixed(2)} USDT
                         </span>
-                        <span className="text-[9px] uppercase tracking-wider block opacity-80 font-bold whitespace-nowrap">
-                          {isCompleted ? 'Claimed' : isCurrent ? 'Available' : 'Locked'}
+                        <span
+                          className={`inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider whitespace-nowrap ${
+                            isCompleted
+                              ? 'bg-emerald-500/15 text-emerald-300'
+                              : isCurrent
+                                ? 'bg-amber-400/20 text-amber-300'
+                                : 'bg-[#151C2B] text-[#94A3B8]'
+                          }`}
+                        >
+                          {isCompleted ? (
+                            <CheckCircle2 className="w-2.5 h-2.5 shrink-0" />
+                          ) : isCurrent ? (
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                          ) : (
+                            <Lock className="w-2.5 h-2.5 shrink-0" />
+                          )}
+                          {statusText}
                         </span>
                       </div>
                     </div>
 
-                    {/* Tablet & Desktop Day 7 Standard Vertical Card */}
-                    <div className="hidden sm:flex flex-col items-center text-center justify-between h-full">
-                      <div className="w-full flex items-center justify-between text-[10px] font-mono-numbers font-bold mb-2">
-                        <span className="whitespace-nowrap">Day 7</span>
+                    {/* Desktop Single-Row Card 7 */}
+                    <div className="hidden lg:flex flex-col items-center text-center justify-between h-full gap-1.5">
+                      <div className="w-full flex items-center justify-between text-[10px] font-mono-numbers font-bold">
+                        <span className="text-white whitespace-nowrap">Day 7</span>
                         {isCompleted ? (
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                         ) : isCurrent ? (
                           <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
                         ) : (
-                          <Clock className="w-3 h-3 text-[#64748B] shrink-0" />
+                          <Lock className="w-3 h-3 text-[#64748B] shrink-0" />
                         )}
                       </div>
 
-                      <div className="text-3xl my-2">💎</div>
+                      <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-400/35 flex items-center justify-center my-0.5">
+                        <Gem className="w-4.5 h-4.5 text-purple-300" />
+                      </div>
 
-                      <div className="w-full pt-1">
-                        <span className={`font-mono-numbers font-black text-sm block whitespace-nowrap ${
-                          isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-purple-300'
-                        }`}>
+                      <div className="w-full space-y-1">
+                        <span
+                          className={`font-mono-numbers font-black text-xs block whitespace-nowrap ${
+                            isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-purple-200'
+                          }`}
+                        >
                           +{rewardVal.toFixed(2)} USDT
                         </span>
-                        <span className="text-[10px] text-white/50 font-mono-numbers block mt-0.5 whitespace-nowrap">
-                          TRC-20 Bonus
+                        <span className="text-[9.5px] text-[#94A3B8] font-mono-numbers block whitespace-nowrap">
+                          USDT Jackpot
                         </span>
-                        <span className="text-[9px] uppercase tracking-wider block opacity-80 mt-1 font-bold whitespace-nowrap">
-                          {isCompleted ? 'Claimed' : isCurrent ? 'Available' : 'Jackpot'}
+                        <span
+                          className={`inline-block w-full py-0.5 rounded text-[9px] uppercase tracking-wider font-bold whitespace-nowrap ${
+                            isCompleted
+                              ? 'bg-emerald-500/15 text-emerald-300'
+                              : isCurrent
+                                ? 'bg-amber-400/20 text-amber-300'
+                                : 'bg-[#151C2B] text-[#94A3B8]'
+                          }`}
+                        >
+                          {statusText}
                         </span>
                       </div>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="w-full flex items-center justify-between text-[10px] font-mono-numbers font-bold mb-1 sm:mb-2">
-                      <span className="whitespace-nowrap">Day {day}</span>
+                    {/* Days 1-6 Uniform Card Layout */}
+                    <div className="w-full flex items-center justify-between gap-1 text-[10px] font-mono-numbers font-bold">
+                      <span className={isCurrent ? 'text-amber-300' : 'text-white'}>Day {day}</span>
                       {isCompleted ? (
-                        <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400 shrink-0" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                       ) : isCurrent ? (
-                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                        <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
                       ) : (
-                        <Clock className="w-3 h-3 text-[#64748B] shrink-0" />
+                        <Lock className="w-3 h-3 text-[#64748B] shrink-0" />
                       )}
                     </div>
 
-                    <div className="text-xl sm:text-3xl my-1 sm:my-2">🪙</div>
-
-                    <div className="w-full pt-0.5 sm:pt-1">
-                      <span className={`font-mono-numbers font-black text-[11px] sm:text-sm block whitespace-nowrap ${
-                        isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-white'
-                      }`}>
-                        +{rewardVal.toFixed(2)} USDT
-                      </span>
-                      <span className="text-[9px] sm:text-[10px] text-white/50 font-mono-numbers block mt-0.5 whitespace-nowrap">
-                        TRC-20 Bonus
-                      </span>
-                      <span className="text-[8px] sm:text-[9px] uppercase tracking-wider block opacity-80 mt-0.5 sm:mt-1 font-bold whitespace-nowrap">
-                        {isCompleted ? 'Claimed' : isCurrent ? 'Available' : 'Locked'}
-                      </span>
+                    <div className="flex xs:flex-col items-center xs:text-center gap-2 xs:gap-1.5 min-w-0">
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+                          isCurrent
+                            ? 'bg-amber-500/20 border-amber-400/40 text-amber-300'
+                            : isCompleted
+                              ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-400'
+                              : 'bg-[#151C2B] border-[#1F2737] text-[#94A3B8]'
+                        }`}
+                      >
+                        <Coins className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1 xs:w-full">
+                        <span
+                          className={`font-mono-numbers font-black text-[11.5px] sm:text-xs block whitespace-nowrap ${
+                            isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-white'
+                          }`}
+                        >
+                          +{rewardVal.toFixed(2)} USDT
+                        </span>
+                        <span className="text-[9.5px] text-[#94A3B8] font-mono-numbers block truncate mt-0.5">
+                          USDT Bonus
+                        </span>
+                      </div>
                     </div>
+
+                    <span
+                      className={`block w-full text-center py-0.5 rounded text-[9px] uppercase tracking-wider font-bold whitespace-nowrap ${
+                        isCompleted
+                          ? 'bg-emerald-500/15 text-emerald-300'
+                          : isCurrent
+                            ? 'bg-amber-400/20 text-amber-300'
+                            : 'bg-[#151C2B] text-[#94A3B8]'
+                      }`}
+                    >
+                      {statusText}
+                    </span>
                   </>
                 )}
               </div>
             );
           })}
         </div>
-      </div>
 
-      {/* 4. ACHIEVEMENTS & MILESTONES */}
-      <div className="rounded-3xl bg-[#111827] border border-[#1F2737] p-4 sm:p-6 space-y-4 shadow-xl">
-        <div className="pb-3 border-b border-[#1F2737]">
-          <h2 className="font-display font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-amber-400 shrink-0" />
-            <span>Milestone Achievements</span>
-          </h2>
-          <p className="text-xs text-[#94A3B8]">
-            Complete gaming milestones to unlock bonus USDT rewards.
-          </p>
+        {/* Bottom Check-In Footer & Claim Button (Always BELOW the 7-day cards) */}
+        <div
+          data-testid="checkin-footer"
+          className="pt-3 sm:pt-3.5 border-t border-[#1F2737] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        >
+          <div className="space-y-0.5 min-w-0">
+            <div className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 flex-wrap">
+              <Flame className={`w-4 h-4 shrink-0 ${canClaimToday ? 'text-amber-400' : 'text-emerald-400'}`} />
+              <span>
+                {canClaimToday
+                  ? `Available Today: Day ${currentDayNum} (+${todayRewardAmount.toFixed(2)} USDT)`
+                  : `Day ${currentDayNum} Claimed · Cooldown ${formatCooldown(dailyRewardStatus.secondsRemaining)}`}
+              </span>
+            </div>
+            <p className="text-[11px] text-[#94A3B8] font-mono-numbers">
+              Next: Day {nextStreakDay} (+{nextRewardAmount.toFixed(2)} USDT) · {remainingDaysCount}{' '}
+              {remainingDaysCount === 1 ? 'day' : 'days'} remaining in 7-day cycle
+            </p>
+          </div>
+
+          <button
+            type="button"
+            data-testid="checkin-claim-button"
+            onClick={handleClaimDailyStreak}
+            disabled={!canClaimToday || isClaimingStreak}
+            className={`w-full sm:w-auto min-h-[44px] px-5 sm:px-6 rounded-xl text-xs sm:text-sm font-display font-black flex items-center justify-center gap-2 transition-all whitespace-nowrap shrink-0 ${
+              canClaimToday
+                ? 'btn-gold text-black shadow-lg shadow-amber-500/20 cursor-pointer'
+                : 'bg-[#151C2B] text-[#94A3B8] border border-[#2D3545] cursor-not-allowed shadow-none'
+            }`}
+          >
+            {isClaimingStreak ? (
+              <>
+                <RotateCcw className="w-4 h-4 animate-spin text-black shrink-0" />
+                <span>Crediting Wallet...</span>
+              </>
+            ) : canClaimToday ? (
+              <>
+                <Gift className="w-4 h-4 text-black shrink-0" />
+                <span>Claim Day {currentDayNum} (+{todayRewardAmount.toFixed(2)} USDT)</span>
+              </>
+            ) : (
+              <>
+                <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Claimed · {formatCooldown(dailyRewardStatus.secondsRemaining)}</span>
+              </>
+            )}
+          </button>
+        </div>
+      </section>
+
+      {/* ==================================================================
+          4. MILESTONE ACHIEVEMENTS SECTION
+      ================================================================== */}
+      <section
+        data-testid="milestones-card"
+        aria-label="Milestone Achievements"
+        className="rounded-2xl sm:rounded-3xl bg-[#111827] border border-[#1F2737] p-3.5 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 shadow-xl box-border"
+      >
+        <div
+          data-testid="milestones-header"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 sm:pb-4 border-b border-[#1F2737]"
+        >
+          <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
+              <Trophy className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-amber-400" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="font-display font-extrabold text-sm sm:text-base lg:text-lg text-white leading-tight">
+                Milestone Achievements
+              </h2>
+              <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-snug mt-0.5">
+                Complete platform milestones to unlock bonus USDT rewards
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] sm:text-[11px] font-mono-numbers font-bold whitespace-nowrap">
+              <Award className="w-3 h-3 shrink-0" />
+              {completedMilestonesCount} / {ACHIEVEMENTS.length} Completed
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] sm:text-[11px] font-mono-numbers font-bold whitespace-nowrap">
+              +{totalMilestonesPool.toFixed(2)} USDT Total
+            </span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 pt-1">
-          {ACHIEVEMENTS.map((ach) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3.5">
+          {ACHIEVEMENTS.map((ach, idx) => {
             const isClaimed = claimedAchievements.includes(ach.id);
+            const isOddTrailing = idx === ACHIEVEMENTS.length - 1 && ACHIEVEMENTS.length % 2 === 1;
+            const achState: 'claimed' | 'completed' | 'in_progress' | 'locked' = isClaimed
+              ? 'claimed'
+              : ach.unlocked
+                ? 'completed'
+                : ach.progress > 0
+                  ? 'in_progress'
+                  : 'locked';
+
+            const statusBadge =
+              achState === 'claimed'
+                ? { label: 'Claimed', cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35' }
+                : achState === 'completed'
+                  ? { label: 'Completed', cls: 'bg-amber-400/20 text-amber-300 border-amber-400/45' }
+                  : achState === 'in_progress'
+                    ? { label: 'In Progress', cls: 'bg-amber-500/15 text-amber-300 border-amber-500/30' }
+                    : { label: 'Locked', cls: 'bg-[#151C2B] text-[#94A3B8] border-[#263145]' };
+
+            const cardFrameClass =
+              achState === 'claimed'
+                ? 'bg-gradient-to-br from-emerald-950/20 via-[#0B0F19] to-[#0B0F19] border-emerald-500/40'
+                : achState === 'completed'
+                  ? 'bg-gradient-to-br from-amber-500/15 via-[#0B0F19] to-[#0B0F19] border-amber-400/60'
+                  : achState === 'in_progress'
+                    ? 'bg-[#0B0F19] border-amber-500/30'
+                    : 'bg-[#0B0F19] border-[#1F2737]';
 
             return (
               <div
                 key={ach.id}
-                className="rounded-2xl bg-[#0B0F19] border border-[#1F2737] p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:border-purple-500/30 transition-all shadow-md"
+                data-testid={`milestone-item-${ach.id}`}
+                className={`rounded-2xl border p-3 sm:p-4 flex flex-col justify-between gap-2.5 transition-all min-w-0 box-border ${
+                  isOddTrailing ? 'md:col-span-2' : ''
+                } ${cardFrameClass}`}
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#151C2B] border border-[#2A374A] flex items-center justify-center text-xl sm:text-2xl shadow-inner shrink-0">
-                    {ach.icon}
+                {/* Top Info Row: Icon + Title + Status & USDT Reward */}
+                <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                  <div
+                    className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${
+                      achState === 'claimed'
+                        ? 'bg-emerald-500/15 border-emerald-500/35'
+                        : achState === 'completed' || achState === 'in_progress'
+                          ? 'bg-amber-500/15 border-amber-500/35'
+                          : 'bg-[#151C2B] border-[#253045]'
+                    }`}
+                  >
+                    {renderAchievementIcon(ach.icon, achState)}
                   </div>
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                      <h3 className="font-display font-bold text-xs sm:text-sm text-white truncate">
+
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 min-w-0">
+                      <h3 className="font-display font-bold text-xs sm:text-sm text-white leading-snug">
                         {ach.title}
                       </h3>
-                      <span className="text-[10px] font-mono-numbers px-1.5 sm:px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-300 font-bold whitespace-nowrap shrink-0">
-                        +{ach.reward} USDT
+                      <span className="font-mono-numbers font-black text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 whitespace-nowrap shrink-0">
+                        +{ach.reward.toFixed(2)} USDT
                       </span>
                     </div>
-                    <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-snug line-clamp-2">
+
+                    <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-snug">
                       {ach.description}
                     </p>
-
-                    {/* Progress Bar */}
-                    <div className="w-full sm:w-36 h-1.5 bg-[#1F2737] rounded-full overflow-hidden mt-1">
-                      <div 
-                        className={`h-full rounded-full transition-all ${ach.unlocked ? 'bg-emerald-400' : 'bg-amber-400'}`}
-                        style={{ width: `${ach.progress}%` }}
-                      />
-                    </div>
                   </div>
                 </div>
 
-                <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t border-[#1F2737]/60 sm:border-0 shrink-0">
-                  <span className="text-[10px] font-mono-numbers text-[#64748B] sm:hidden">
-                    Progress: {ach.progress}%
-                  </span>
+                {/* Bottom Progress & State Action Bar */}
+                <div className="flex items-center justify-between gap-2.5 pt-2 border-t border-[#1F2737]/70 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="flex-1 h-1.5 bg-[#151C2B] rounded-full overflow-hidden border border-[#1F2737]">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          achState === 'claimed'
+                            ? 'bg-emerald-400'
+                            : achState === 'completed'
+                              ? 'bg-amber-400'
+                              : 'bg-amber-400/80'
+                        }`}
+                        style={{ width: `${Math.max(0, Math.min(100, ach.progress))}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-mono-numbers font-bold text-[#94A3B8] whitespace-nowrap shrink-0">
+                      {ach.progress}%
+                    </span>
+                  </div>
+
                   {isClaimed ? (
-                    <span className="text-xs font-mono-numbers text-emerald-400 font-bold flex items-center gap-1 whitespace-nowrap">
-                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-mono-numbers font-bold whitespace-nowrap shrink-0 ${statusBadge.cls}`}
+                    >
+                      <CheckCircle2 className="w-3 h-3 shrink-0" />
                       Claimed
                     </span>
                   ) : ach.unlocked ? (
                     <button
+                      type="button"
                       onClick={() => handleClaimAchievement(ach)}
-                      className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-black font-extrabold text-xs shadow-md shadow-emerald-500/20 cursor-pointer whitespace-nowrap active:scale-95 transition-transform"
+                      className="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-black font-display font-extrabold text-[11px] shadow-md shadow-emerald-500/20 cursor-pointer whitespace-nowrap active:scale-95 transition-transform shrink-0"
                     >
-                      Claim
+                      Claim +{ach.reward.toFixed(2)}
                     </button>
                   ) : (
-                    <span className="text-xs font-mono-numbers text-[#64748B] hidden sm:inline whitespace-nowrap">
-                      {ach.progress}%
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-mono-numbers font-bold whitespace-nowrap shrink-0 ${statusBadge.cls}`}
+                    >
+                      {achState === 'locked' && <Lock className="w-2.5 h-2.5 shrink-0" />}
+                      {statusBadge.label}
                     </span>
                   )}
                 </div>
@@ -855,8 +1270,7 @@ export default function RewardsView() {
             );
           })}
         </div>
-      </div>
-
+      </section>
     </div>
   );
 }
