@@ -440,6 +440,22 @@ export default function LeaderboardView() {
   const activePeriodLabel =
     TIME_FILTERS.find((tf) => tf.id === timeFilter)?.label || '4 Weeks (1 Month)';
 
+  const activePeriodShortLabel = useMemo(() => {
+    switch (timeFilter) {
+      case '24h':
+        return '24 Hours';
+      case '7d':
+        return '1 Week';
+      case '14d':
+        return '2 Weeks';
+      case '21d':
+        return '3 Weeks';
+      case '28d':
+      default:
+        return '1 Month';
+    }
+  }, [timeFilter]);
+
   const rewardByRank = useMemo(() => {
     const map = new Map<number, number>();
     if (monthlyAnnouncement?.is_published && Array.isArray(monthlyAnnouncement.prizes)) {
@@ -455,50 +471,61 @@ export default function LeaderboardView() {
   }, [monthlyAnnouncement]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-2 xs:px-3 sm:px-4 py-3 sm:py-6 space-y-4 sm:space-y-6 text-left">
-      {/* Header */}
-      <div className="relative rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#111827] via-[#151C2B] to-[#111827] border border-[#1F2737] p-4 sm:p-6 overflow-hidden shadow-xl">
+    <div className="w-full max-w-5xl mx-auto px-2 xs:px-3 sm:px-4 py-3 sm:py-6 space-y-3 sm:space-y-5 text-left">
+      {/* Compact Single-Row Header */}
+      <div className="relative rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#111827] via-[#151C2B] to-[#111827] border border-[#1F2737] p-3 xs:p-3.5 sm:p-6 overflow-hidden shadow-xl">
         <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-400 shrink-0 shadow-[0_0_20px_rgba(245,196,81,0.18)]">
-              <Trophy className="w-5 h-5 sm:w-6 sm:h-6" />
+        <div className="relative z-10 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 xs:gap-2.5 sm:gap-3.5 min-w-0">
+            <div className="w-8 h-8 xs:w-9 xs:h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-400 shrink-0 shadow-[0_0_20px_rgba(245,196,81,0.18)]">
+              <Trophy className="w-4 h-4 xs:w-4.5 xs:h-4.5 sm:w-6 sm:h-6" />
             </div>
             <div className="min-w-0">
-              <h1 className="font-display font-black text-lg sm:text-2xl text-white tracking-tight">
+              <h1
+                data-testid="leaderboard-heading"
+                className="font-display font-black text-base xs:text-lg sm:text-2xl text-white tracking-tight truncate leading-tight"
+              >
                 Leaderboard
               </h1>
-              <p className="text-[11px] sm:text-xs text-[#94A3B8] mt-0.5 leading-snug">
-                Top ranked players and USDT winnings · {activePeriodLabel}
-                {monthlyAnnouncement?.is_published && monthlyAnnouncement.month_label
-                  ? ` · ${monthlyAnnouncement.month_label} Rewards Active`
-                  : ''}
+              <p
+                data-testid="leaderboard-description-desktop"
+                className="hidden sm:block text-xs text-[#94A3B8] mt-0.5 leading-snug truncate"
+              >
+                Top Ranked Players and USDT Winnings · {activePeriodShortLabel}
               </p>
             </div>
           </div>
 
           <button
             type="button"
+            data-testid="leaderboard-sync-btn"
             onClick={() => {
               playClick();
               setIsRefreshing(true);
               fetchLeaderboard(false);
             }}
-            className="self-start sm:self-auto px-3.5 py-2 rounded-xl bg-[#0B0F19] hover:bg-[#151C2B] border border-[#1F2737] hover:border-amber-400/50 text-amber-400 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-sm transition-all shrink-0"
+            className="px-2.5 py-1.5 xs:px-3 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl bg-[#0B0F19] hover:bg-[#151C2B] border border-[#1F2737] hover:border-amber-400/50 text-amber-400 text-[11px] sm:text-xs font-bold inline-flex items-center gap-1 sm:gap-1.5 cursor-pointer shadow-sm transition-all whitespace-nowrap shrink-0"
             title="Refresh leaderboard"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
             <span>Sync</span>
           </button>
         </div>
+
+        <p
+          data-testid="leaderboard-description-mobile"
+          className="relative z-10 sm:hidden text-[10px] xs:text-[11px] text-[#94A3B8] mt-2 leading-tight whitespace-nowrap truncate"
+        >
+          Top Ranked Players and USDT Winnings · {activePeriodShortLabel}
+        </p>
       </div>
 
-      {/* 5 Time-Period Filters */}
+      {/* 5 Compact Time-Period Filters */}
       <div
         role="tablist"
         aria-label="Leaderboard Time Period"
-        className="flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-start gap-1.5 bg-[#111827] p-1.5 rounded-2xl border border-[#1F2737]"
+        className="flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-start gap-1 sm:gap-1.5 bg-[#111827] p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-[#1F2737]"
       >
         {TIME_FILTERS.map((tf) => {
           const isSelected = timeFilter === tf.id;
@@ -512,7 +539,7 @@ export default function LeaderboardView() {
                 playClick();
                 setTimeFilter(tf.id);
               }}
-              className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+              className={`px-2 py-1 xs:px-2.5 xs:py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10.5px] xs:text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
                 isSelected
                   ? 'bg-amber-400 text-black shadow-md shadow-amber-500/20 font-black'
                   : 'text-[#94A3B8] hover:text-white hover:bg-white/5'
@@ -530,17 +557,19 @@ export default function LeaderboardView() {
           data-testid="leaderboard-scroll-container"
           className="max-h-[540px] sm:max-h-[580px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain"
         >
-          <table className="w-full min-w-[420px] sm:min-w-full text-left">
-            <thead className="sticky top-0 z-10 bg-[#0B0F19] text-[#94A3B8] font-mono-numbers uppercase text-[10px] sm:text-xs tracking-wider shadow-[0_1px_0_0_#1F2737]">
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 z-10 bg-[#0B0F19] text-[#94A3B8] font-mono-numbers uppercase text-[9px] xs:text-[10px] sm:text-xs tracking-wider shadow-[0_1px_0_0_#1F2737]">
               <tr>
-                <th className="py-3 px-2.5 xs:px-3.5 sm:px-5 w-14 xs:w-16 sm:w-24 whitespace-nowrap">
+                <th className="w-[1%] py-2.5 sm:py-3 pl-2 pr-1.5 xs:px-3 sm:px-5 whitespace-nowrap">
                   Rank
                 </th>
-                <th className="py-3 px-2 xs:px-3.5 sm:px-5 whitespace-nowrap">Username</th>
-                <th className="py-3 px-2 xs:px-3.5 sm:px-5 text-right whitespace-nowrap">
+                <th className="py-2.5 sm:py-3 px-1 xs:px-2.5 sm:px-5 whitespace-nowrap">
+                  Username
+                </th>
+                <th className="w-[1%] py-2.5 sm:py-3 px-1.5 xs:px-2.5 sm:px-5 text-right whitespace-nowrap">
                   Reward
                 </th>
-                <th className="py-3 px-2.5 xs:px-3.5 sm:px-5 text-right whitespace-nowrap">
+                <th className="w-[1%] py-2.5 sm:py-3 pl-1.5 pr-2 xs:px-3 sm:px-5 text-right whitespace-nowrap">
                   Total Won
                 </th>
               </tr>
@@ -588,30 +617,30 @@ export default function LeaderboardView() {
                       }`}
                     >
                       {/* 1. Rank */}
-                      <td className="py-3 px-2.5 xs:px-3.5 sm:px-5 whitespace-nowrap">
+                      <td className="w-[1%] py-2.5 sm:py-3 pl-2 pr-1.5 xs:px-3 sm:px-5 whitespace-nowrap">
                         {isTop1 ? (
-                          <span className="inline-flex items-center justify-center min-w-[30px] h-7 sm:min-w-[36px] sm:h-8 px-2 rounded-full bg-amber-400 text-black font-black text-[11px] sm:text-xs shadow-md shadow-amber-500/25">
+                          <span className="inline-flex items-center justify-center min-w-[26px] h-6 xs:min-w-[30px] xs:h-7 sm:min-w-[36px] sm:h-8 px-1.5 sm:px-2 rounded-full bg-amber-400 text-black font-black text-[10px] xs:text-[11px] sm:text-xs shadow-md shadow-amber-500/25">
                             <Crown className="w-3 h-3 mr-0.5 hidden sm:inline shrink-0" />#1
                           </span>
                         ) : isTop2 ? (
-                          <span className="inline-flex items-center justify-center min-w-[30px] h-7 sm:min-w-[36px] sm:h-8 px-2 rounded-full bg-slate-300 text-black font-black text-[11px] sm:text-xs shadow-md">
+                          <span className="inline-flex items-center justify-center min-w-[26px] h-6 xs:min-w-[30px] xs:h-7 sm:min-w-[36px] sm:h-8 px-1.5 sm:px-2 rounded-full bg-slate-300 text-black font-black text-[10px] xs:text-[11px] sm:text-xs shadow-md">
                             #2
                           </span>
                         ) : isTop3 ? (
-                          <span className="inline-flex items-center justify-center min-w-[30px] h-7 sm:min-w-[36px] sm:h-8 px-2 rounded-full bg-amber-600 text-white font-black text-[11px] sm:text-xs shadow-md">
+                          <span className="inline-flex items-center justify-center min-w-[26px] h-6 xs:min-w-[30px] xs:h-7 sm:min-w-[36px] sm:h-8 px-1.5 sm:px-2 rounded-full bg-amber-600 text-white font-black text-[10px] xs:text-[11px] sm:text-xs shadow-md">
                             #3
                           </span>
                         ) : (
-                          <span className="inline-flex items-center justify-center min-w-[30px] h-7 sm:min-w-[36px] sm:h-8 px-1.5 text-[#94A3B8] font-mono-numbers font-bold text-[11px] sm:text-sm">
+                          <span className="inline-flex items-center justify-center min-w-[26px] h-6 xs:min-w-[30px] xs:h-7 sm:min-w-[36px] sm:h-8 px-1 text-[#94A3B8] font-mono-numbers font-bold text-[10.5px] xs:text-[11px] sm:text-sm">
                             #{player.rank}
                           </span>
                         )}
                       </td>
 
                       {/* 2. Username */}
-                      <td className="py-3 px-2 xs:px-3.5 sm:px-5 min-w-0 max-w-[125px] xs:max-w-[160px] sm:max-w-[240px] md:max-w-none">
+                      <td className="max-w-0 w-full py-2.5 sm:py-3 px-1 xs:px-2.5 sm:px-5">
                         <span
-                          className={`font-display font-bold truncate block whitespace-nowrap text-[12px] sm:text-sm ${
+                          className={`font-display font-bold truncate block whitespace-nowrap text-[11px] xs:text-xs sm:text-sm ${
                             isTop1 ? 'text-amber-300' : 'text-white'
                           }`}
                           title={player.username}
@@ -623,7 +652,7 @@ export default function LeaderboardView() {
                       {/* 3. Reward (Inline directly between Username & Total Won) */}
                       <td
                         data-testid={`leaderboard-reward-cell-${player.rank}`}
-                        className="py-3 px-2 xs:px-3.5 sm:px-5 text-right whitespace-nowrap font-mono-numbers text-[11px] xs:text-xs sm:text-sm"
+                        className="w-[1%] py-2.5 sm:py-3 px-1.5 xs:px-2.5 sm:px-5 text-right whitespace-nowrap font-mono-numbers text-[10.5px] xs:text-xs sm:text-sm"
                       >
                         {assignedReward > 0 ? (
                           <>
@@ -633,7 +662,7 @@ export default function LeaderboardView() {
                                 maximumFractionDigits: 2
                               })}
                             </span>{' '}
-                            <span className="text-[9.5px] sm:text-xs font-bold text-amber-400/85">
+                            <span className="text-[8.5px] xs:text-[9.5px] sm:text-xs font-bold text-amber-400/85">
                               USDT
                             </span>
                           </>
@@ -642,8 +671,8 @@ export default function LeaderboardView() {
                         )}
                       </td>
 
-                      {/* 4. Total Won (USDT) */}
-                      <td className="py-3 px-2.5 xs:px-3.5 sm:px-5 text-right whitespace-nowrap font-mono-numbers text-[11px] xs:text-xs sm:text-sm">
+                      {/* 4. Total Won */}
+                      <td className="w-[1%] py-2.5 sm:py-3 pl-1.5 pr-2 xs:px-3 sm:px-5 text-right whitespace-nowrap font-mono-numbers text-[10.5px] xs:text-xs sm:text-sm">
                         <span
                           className={`font-black ${
                             isTop1 ? 'text-amber-300' : 'text-emerald-400'
@@ -654,7 +683,7 @@ export default function LeaderboardView() {
                             maximumFractionDigits: 2
                           })}
                         </span>{' '}
-                        <span className="text-[9.5px] sm:text-xs font-bold text-emerald-400/85">
+                        <span className="text-[8.5px] xs:text-[9.5px] sm:text-xs font-bold text-emerald-400/85">
                           USDT
                         </span>
                       </td>
