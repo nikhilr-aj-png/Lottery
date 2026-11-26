@@ -306,13 +306,22 @@ function LotteryAppContent() {
     const onTx = isTransactionHistoryRoute(path);
     setIsTransactionRoute(onTx);
     const clean = path.toLowerCase().split('?')[0].split('#')[0].replace(/\/+$/, '');
+    const queryStr = path.includes('?') ? path.split('?')[1].split('#')[0] : '';
+    const queryTab = new URLSearchParams(queryStr).get('tab')?.toLowerCase() || '';
 
     if (onTx) {
       setActiveTab('transactions', false);
       document.title = 'Transaction History · EarnFlow.in';
+    } else if (clean === '/leaderboard' || ( (clean === '' || clean === '/') && queryTab === 'leaderboard')) {
+      setActiveTab('leaderboard', false);
+      document.title = 'Leaderboard · EarnFlow.in';
     } else if (clean === '' || clean === '/') {
-      setActiveTab('lotteries', false);
-      document.title = 'EarnFlow - Four Digit Lottery | Online USDT 4-Digit Lucky Draw';
+      if (queryTab) {
+        setActiveTab(queryTab, false);
+      } else {
+        setActiveTab('lotteries', false);
+        document.title = 'EarnFlow - Four Digit Lottery | Online USDT 4-Digit Lucky Draw';
+      }
     } else if (clean === '/profile') {
       setActiveTab('profile', false);
       document.title = 'Player Profile · EarnFlow.in';
@@ -406,7 +415,7 @@ function LotteryAppContent() {
       'disclaimer': '/disclaimer',
       'rewards': '/daily-bonus',
       'daily-bonus': '/daily-bonus',
-      'leaderboard': '/?tab=leaderboard'
+      'leaderboard': '/leaderboard'
     };
 
     const targetUrl = tabRouteMap[tab] || `/?tab=${tab}`;
@@ -533,6 +542,9 @@ function LotteryAppContent() {
       } else if (cleanPath === '/disclaimer' || search.get('tab') === 'disclaimer') {
         setActiveTab('disclaimer', false);
         document.title = 'Disclaimer · EarnFlow.in';
+      } else if (cleanPath === '/leaderboard' || window.location.hash === '#leaderboard' || search.get('tab') === 'leaderboard') {
+        setActiveTab('leaderboard', false);
+        document.title = 'Leaderboard · EarnFlow.in';
       } else if (!gr && (cleanPath === '/' || cleanPath === '' || cleanPath === '/profile' || cleanPath === '/wallet')) {
         const tab = search.get('tab') || (cleanPath === '/profile' ? 'profile' : cleanPath === '/wallet' ? 'wallet' : null);
         if (tab) {

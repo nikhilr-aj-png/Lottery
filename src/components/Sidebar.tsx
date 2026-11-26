@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import {
   Trophy,
+  Award,
   Wallet,
   LayoutGrid,
   History,
@@ -80,7 +81,8 @@ export default function Sidebar({
       title: 'Lottery',
       items: [
         { id: 'lotteries', label: 'Home', icon: LayoutGrid, isLobby: true },
-        { id: 'results', label: 'Results', icon: Trophy }
+        { id: 'results', label: 'Results', icon: Trophy },
+        { id: 'leaderboard', label: 'Leaderboard', icon: Award }
       ]
     },
     {
@@ -120,7 +122,7 @@ export default function Sidebar({
       {/* Single Three-Line Hamburger Menu Button at Top of Sidebar during Immersive Gameplay */}
       {inGameMode && (
         <div
-          className={`shrink-0 pb-1.5 sm:pb-2 mb-1 sm:mb-1.5 border-b border-[#1F2737] flex items-center ${
+          className={`shrink-0 pb-1 sm:pb-1.5 lg:pb-2 mb-1 lg:mb-1.5 border-b border-[#1F2737] flex items-center ${
             isCollapsed ? 'justify-center' : 'gap-2.5 px-1'
           }`}
         >
@@ -131,7 +133,7 @@ export default function Sidebar({
             aria-expanded={!isCollapsed}
             aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
             title={isCollapsed ? 'Expand Menu' : 'Collapse Menu'}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#111827] hover:bg-[#1B2438] text-white hover:text-[#FBBF24] border border-[#1F2737] hover:border-amber-500/40 flex items-center justify-center cursor-pointer transition-colors shrink-0 shadow-sm"
+            className="w-7.5 h-7.5 sm:w-8 sm:h-8 lg:w-9 lg:h-9 rounded-xl bg-[#111827] hover:bg-[#1B2438] text-white hover:text-[#FBBF24] border border-[#1F2737] hover:border-amber-500/40 flex items-center justify-center cursor-pointer transition-colors shrink-0 shadow-sm"
           >
             <Menu className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </button>
@@ -152,15 +154,15 @@ export default function Sidebar({
       {/* Navigation Sections — Scrollable Menu Items Area */}
       <div
         className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar pr-0.5 overscroll-contain ${
-          inGameMode ? 'space-y-1 sm:space-y-1.5 lg:space-y-2' : 'space-y-2'
+          inGameMode ? 'space-y-0.5 lg:space-y-2' : 'space-y-2'
         }`}
       >
         {navSections.map((sec, secIdx) => (
           <div key={secIdx} className="space-y-0.5">
             {sec.title ? (
-              <div className={`${inGameMode ? 'h-3.5 sm:h-4 lg:h-5' : 'h-5'} flex items-center px-2 overflow-hidden`}>
+              <div className={`${inGameMode ? 'h-3 sm:h-3.5 lg:h-5' : 'h-5'} flex items-center px-2 overflow-hidden`}>
                 {!isCollapsed ? (
-                  <span className="text-[8.5px] sm:text-[9.5px] lg:text-[10px] font-mono-numbers font-bold uppercase tracking-wider text-[#94A3B8] truncate transition-opacity duration-200">
+                  <span className="text-[8.5px] sm:text-[9px] lg:text-[10px] font-mono-numbers font-bold uppercase tracking-wider text-[#94A3B8] truncate transition-opacity duration-200">
                     {sec.title}
                   </span>
                 ) : (
@@ -178,8 +180,8 @@ export default function Sidebar({
                     key={item.id}
                     type="button"
                     onClick={() => handleItemClick(item)}
-                    className={`w-full flex items-center gap-2 sm:gap-2.5 rounded-xl text-[11px] sm:text-xs font-semibold transition-colors duration-150 cursor-pointer group overflow-hidden ${
-                      inGameMode ? 'h-7 sm:h-8 lg:h-11' : 'h-11'
+                    className={`w-full flex items-center gap-2 sm:gap-2.5 rounded-lg lg:rounded-xl text-[10.5px] sm:text-[11px] lg:text-xs font-semibold transition-colors duration-150 cursor-pointer group overflow-hidden ${
+                      inGameMode ? 'h-6 sm:h-6.5 lg:h-11' : 'h-11'
                     } ${
                       isCollapsed ? 'justify-center px-0' : 'justify-between px-2 sm:px-2.5'
                     } ${
@@ -223,13 +225,13 @@ export default function Sidebar({
       </div>
 
       {/* Bottom Balance Widget */}
-      <div className={`shrink-0 mt-auto border-t border-[#1F2737] bg-[#0B0F19] z-20 ${inGameMode ? 'pt-1.5 sm:pt-2' : 'pt-2'}`}>
+      <div className={`shrink-0 mt-auto border-t border-[#1F2737] bg-[#0B0F19] z-20 ${inGameMode ? 'pt-1 sm:pt-1.5 lg:pt-2' : 'pt-2'}`}>
         {!isCollapsed ? (
           <button
             type="button"
             onClick={() => onSelectTab && onSelectTab('wallet')}
             className={`w-full text-left bg-[#111827] hover:bg-[#161F33] border border-[#1F2737] transition-colors cursor-pointer ${
-              inGameMode ? 'p-1.5 sm:p-2 lg:p-2.5 rounded-xl lg:rounded-2xl' : 'p-2.5 rounded-2xl'
+              inGameMode ? 'px-2 py-1 sm:py-1.5 lg:p-2.5 rounded-xl lg:rounded-2xl' : 'p-2.5 rounded-2xl'
             }`}
           >
             <span className="text-[8px] sm:text-[8.5px] lg:text-[9px] uppercase font-bold text-[#94A3B8] block truncate">
