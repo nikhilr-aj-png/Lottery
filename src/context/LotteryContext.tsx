@@ -998,28 +998,56 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from('winner_payouts')
         .select('*')
+        .or('is_deleted.is.null,is_deleted.eq.false')
         .order('created_at', { ascending: false });
 
       if (!error && Array.isArray(data)) {
-        const mapped = data.map(row => ({
-          id: row.id,
-          eventId: row.event_id,
-          eventTitle: row.event_title,
-          ticketId: row.ticket_id,
-          winnerAddress: row.winner_address,
-          winnerUsername: row.winner_username,
-          winningDigits: row.winning_digits,
-          ticketsSold: Number(row.tickets_sold || 0),
-          ticketPrice: Number(row.ticket_price || 0),
-          totalPoolCollected: Number(row.total_pool_collected || 0),
-          winnerSharePercent: Number(row.winner_share_percent || 90),
-          calculatedAmount: Number(row.calculated_amount || 0),
-          payoutAmount: Number(row.payout_amount || row.calculated_amount || 0),
-          status: row.status || 'pending_approval',
-          txHash: row.tx_hash,
-          approvedAt: row.approved_at,
-          createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now()
-        }));
+        const mapped = data.map((row: any) => {
+          const rawStatus = String(row.status || 'pending_approval').toLowerCase();
+          const normalizedStatus =
+            rawStatus === 'paid'
+              ? 'completed'
+              : rawStatus === 'rejected'
+              ? 'cancelled'
+              : rawStatus;
+
+          return {
+            id: row.id,
+            eventId: row.event_id,
+            eventTitle: row.event_title,
+            ticketId: row.ticket_id,
+            userId: row.user_id || null,
+            winnerAddress: row.winner_address,
+            winnerUsername: row.winner_username,
+            winningDigits: row.winning_digits,
+            ticketsSold: Number(row.tickets_sold || 0),
+            ticketPrice: Number(row.ticket_price || 0),
+            totalPoolCollected: Number(row.total_pool_collected || 0),
+            winnerSharePercent: Number(row.winner_share_percent || 90),
+            calculatedAmount: Number(row.calculated_amount || 0),
+            payoutAmount: Number(row.payout_amount ?? row.calculated_amount ?? 0),
+            maxAllowedAmount: row.max_allowed_amount != null ? Number(row.max_allowed_amount) : null,
+            payoutType:
+              row.payout_type ||
+              (row.competition_month
+                ? 'monthly_leaderboard'
+                : row.ticket_id === 'MANUAL' || row.event_id === 'manual-reward'
+                ? 'manual_grant'
+                : 'lottery_win'),
+            competitionMonth: row.competition_month || null,
+            leaderboardRank: row.leaderboard_rank != null ? Number(row.leaderboard_rank) : row.position != null ? Number(row.position) : null,
+            payoutReference: row.payout_reference || row.id,
+            manualAdjustmentReason: row.manual_adjustment_reason || null,
+            failureReason: row.failure_reason || null,
+            cancellationReason: row.cancellation_reason || null,
+            notes: row.notes || null,
+            position: row.position != null ? Number(row.position) : 1,
+            status: normalizedStatus,
+            txHash: row.tx_hash,
+            approvedAt: row.approved_at,
+            createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now()
+          };
+        });
         setWinnerPayouts(mapped);
       }
     } catch (err) {
@@ -2170,27 +2198,6 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           username: t.username || `@${(t.user_address || '').slice(0, 6) || 'player'}`
         }));
         setTickets(mappedTickets);
-
-        // Derive/sync winner payouts from winning tickets in database
-        const winningTkts = mappedTickets.filter(t => t.status === 'won');
-        const derivedPayouts = winningTkts.map((wt, idx) => ({
-          id: `WP-${wt.id}`,
-          eventId: wt.eventId,
-          eventTitle: wt.eventTitle,
-          ticketId: wt.id,
-          winnerAddress: wt.userAddress || wallet.address,
-          winnerUsername: wt.username,
-          winningDigits: wt.ticketNumber,
-          ticketsSold: 0,
-          ticketPrice: wt.price,
-          totalPoolCollected: wt.wonAmount,
-          winnerSharePercent: 90,
-          calculatedAmount: wt.wonAmount,
-          payoutAmount: wt.wonAmount,
-          status: wt.claimed ? 'completed' : 'pending_approval',
-          createdAt: wt.purchaseTime
-        }));
-        setWinnerPayouts(derivedPayouts);
       }
     } catch (err) {
       console.error('fetchTickets error:', err);
@@ -2790,6 +2797,10 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         }
         return { success: true, ...rpcData };
       }
+      if (rpcData && rpcData.success === false && rpcData.error) {
+        showToast(rpcData.error, 'error');
+        return { success: false, error: rpcData.error };
+      }
       if (rpcError) {
         console.warn('finalize_lottery_draw_secure RPC error, falling back to client simulation:', rpcError);
       }
@@ -2818,10 +2829,10 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     const selectedWinnerTicketIds = new Set(winningTickets.map(t => t.id));
     const finalWinnerCount = winningTickets.length;
 
-    // Calculate pool collection & equal winner share % (Distributed only if valid winning tickets exist!)
-    const totalPoolCollected = event.ticketsSold > 0 
-      ? (event.ticketsSold * event.ticketPrice) 
-      : event.poolPrize;
+    // Calculate pool collection strictly from eligible sold ticket collections
+    const totalPoolCollected = event.ticketsSold > 0
+      ? Number((event.ticketsSold * event.ticketPrice).toFixed(2))
+      : 0;
     const winnerSharePct = event.winnerSharePercent || 90;
     const totalWinnerPool = parseFloat(((totalPoolCollected * winnerSharePct) / 100).toFixed(2));
     const perWinnerCalculated = finalWinnerCount > 0 
@@ -2973,55 +2984,68 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
   executeDrawRef.current = executeDraw;
 
-  // Admin Actions: Approve Winner Payout and Add USDT to Wallet
-  const adminApproveWinnerPayout = async (payoutId, editedAmount = null) => {
+  // Admin Actions: Approve Winner Payout (Lottery or Monthly Leaderboard) and Credit Wallet Atomically
+  const adminApproveWinnerPayout = async (
+    payoutId: string,
+    editedAmount: any = null,
+    adjustmentReason: string | null = null
+  ) => {
     const payout = winnerPayouts.find(p => p.id === payoutId);
-    if (!payout) return { success: false, message: 'Payout not found' };
+    if (!payout) {
+      showToast('Payout record not found in queue.', 'error');
+      return { success: false, error: 'Payout record not found' };
+    }
 
-    const finalAmount = (editedAmount !== null && !isNaN(editedAmount) && editedAmount > 0)
-      ? parseFloat(editedAmount)
-      : payout.payoutAmount;
+    if (payout.status === 'completed' || payout.status === 'paid') {
+      showToast('This payout is already completed and cannot be credited twice.', 'info');
+      return { success: false, error: 'Payout already completed' };
+    }
+
+    if (payout.status === 'cancelled') {
+      showToast('Cancelled payouts cannot be approved.', 'error');
+      return { success: false, error: 'Payout is cancelled' };
+    }
+
+    const rawParsed =
+      editedAmount !== null && editedAmount !== undefined && String(editedAmount).trim() !== ''
+        ? parseFloat(String(editedAmount))
+        : Number(payout.payoutAmount);
+
+    const finalAmount = Number.isFinite(rawParsed) ? Math.round(rawParsed * 100) / 100 : 0;
+
+    if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
+      showToast('Disbursal amount must be greater than 0.00 USDT. Zero-sale or zero-amount payouts cannot be approved.', 'error');
+      return { success: false, error: 'Amount must be greater than 0.00 USDT' };
+    }
+
+    if (payout.maxAllowedAmount != null && payout.maxAllowedAmount > 0 && finalAmount > payout.maxAllowedAmount) {
+      const msg = `Adjusted amount (${finalAmount.toFixed(2)} USDT) exceeds the authorized pool cap (${Number(payout.maxAllowedAmount).toFixed(2)} USDT).`;
+      showToast(msg, 'error');
+      return { success: false, error: msg };
+    }
 
     try {
-      const mockTx = `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-
-      // Execute atomic disbursement RPC in PostgreSQL with ledger audit
       const { data: rpcRes, error: rpcErr } = await supabase.rpc('admin_disburse_winner_secure', {
         p_payout_id: payoutId,
         p_final_amount: finalAmount,
-        p_tx_hash: mockTx
+        p_tx_hash: null,
+        p_adjustment_reason: adjustmentReason
       });
 
       if (rpcErr) throw rpcErr;
-      if (rpcRes && !rpcRes.success) throw new Error(rpcRes.error || 'Disbursement failed');
-
-      const winnerAddr = payout.winnerAddress || wallet.address;
-
-      // Update local winnerPayouts state
-      setWinnerPayouts(prev => prev.map(p => {
-        if (p.id === payoutId) {
-          return {
-            ...p,
-            payoutAmount: finalAmount,
-            status: 'completed',
-            approvedAt: Date.now(),
-            txHash: mockTx
-          };
-        }
-        return p;
-      }));
-
-      // Refresh wallet & ledger
-      if (wallet.address === winnerAddr) {
-        if (rpcRes.new_balance !== undefined) {
-          setWallet(prev => ({
-            ...prev,
-            balance: parseFloat(rpcRes.new_balance),
-            lifetimeWon: parseFloat((Number(prev.lifetimeWon || 0) + finalAmount).toFixed(2))
-          }));
-        }
-        await fetchWalletLedger();
+      if (!rpcRes || !rpcRes.success) {
+        await fetchWinnerPayouts();
+        const errMsg = rpcRes?.error || 'Disbursement verification failed.';
+        showToast(errMsg, 'error');
+        return { success: false, error: errMsg, status: rpcRes?.status };
       }
+
+      await Promise.all([
+        fetchWinnerPayouts(),
+        fetchTickets(),
+        fetchWalletLedger(),
+        fetchWallet(wallet.address)
+      ]);
 
       confetti({
         particleCount: 160,
@@ -3030,96 +3054,198 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         colors: ['#05d5aa', '#ffd700', '#00f2fe', '#ffffff']
       });
 
-      showToast(`Approved! Added ${finalAmount.toFixed(2)} USDT directly to winner's wallet & recorded in ledger ✅`, 'success');
-      return { success: true };
-    } catch (err) {
+      const typeLabel =
+        payout.payoutType === 'monthly_leaderboard'
+          ? `Monthly Leaderboard Rank #${payout.leaderboardRank || payout.position || 1}`
+          : 'Winner Payout';
+      showToast(`Approved ${typeLabel}! Credited +${finalAmount.toFixed(2)} USDT to player wallet & ledger.`, 'success');
+      return { success: true, data: rpcRes };
+    } catch (err: any) {
       console.error('adminApproveWinnerPayout error:', err);
-      showToast('Error approving winner payout: ' + err.message, 'error');
-      return { success: false, error: err.message };
+      await fetchWinnerPayouts();
+      const errMsg = err?.message || 'Error approving payout.';
+      showToast('Error approving payout: ' + errMsg, 'error');
+      return { success: false, error: errMsg };
     }
   };
 
-  const adminRejectWinnerPayout = async (payoutId) => {
+  const adminCancelOrDeleteWinnerPayout = async (
+    payoutId: string,
+    mode: 'cancel' | 'delete' = 'cancel',
+    reason: string = ''
+  ) => {
+    const payout = winnerPayouts.find(p => p.id === payoutId);
+    if (payout && (payout.status === 'completed' || payout.status === 'paid')) {
+      const msg = 'Completed payouts cannot be deleted or cancelled. Ledger history is protected.';
+      showToast(msg, 'error');
+      return { success: false, error: msg };
+    }
+
     try {
-      setWinnerPayouts(prev => prev.map(p => {
-        if (p.id === payoutId) {
-          return { ...p, status: 'rejected' };
-        }
-        return p;
-      }));
-      await supabase.from('winner_payouts').update({ status: 'rejected' }).eq('id', payoutId);
-      showToast('Winner payout rejected / on hold', 'info');
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('admin_cancel_or_delete_payout_secure', {
+        p_payout_id: payoutId,
+        p_mode: mode,
+        p_reason: reason || null
+      });
+
+      if (rpcErr) throw rpcErr;
+      if (!rpcRes || !rpcRes.success) {
+        const msg = rpcRes?.error || 'Action failed.';
+        showToast(msg, 'error');
+        return { success: false, error: msg };
+      }
+
+      await fetchWinnerPayouts();
+      showToast(
+        mode === 'delete'
+          ? 'Payout archived & cancelled cleanly (audit log preserved).'
+          : 'Payout cancelled with audit trail.',
+        'info'
+      );
       return { success: true };
-    } catch (err) {
-      console.error('adminRejectWinnerPayout error:', err);
-      return { success: false, error: err.message };
+    } catch (err: any) {
+      console.error('adminCancelOrDeleteWinnerPayout error:', err);
+      const msg = err?.message || 'Failed to cancel/archive payout.';
+      showToast(msg, 'error');
+      return { success: false, error: msg };
     }
   };
 
-  const adminAddManualWinnerCredit = async (targetUsernameOrAddress, amount, note = 'Special Seasonal Reward') => {
-    const cleanAmount = parseFloat(amount);
-    if (isNaN(cleanAmount) || cleanAmount <= 0) {
-      showToast('Please enter a valid USDT amount', 'error');
+  const adminRejectWinnerPayout = async (payoutId: string, reason: string = '') => {
+    return adminCancelOrDeleteWinnerPayout(payoutId, 'cancel', reason || 'Cancelled by Administrator');
+  };
+
+  const adminFinalizeMonthlyLeaderboard = async (monthKey: string, forceEarly: boolean = false) => {
+    try {
+      const { data, error } = await supabase.rpc('finalize_monthly_leaderboard_competition', {
+        p_month_key: monthKey,
+        p_force: forceEarly
+      });
+      if (error) throw error;
+      if (!data?.success) {
+        const msg = data?.error || 'Unable to finalize monthly leaderboard.';
+        showToast(msg, 'error');
+        return { success: false, error: msg };
+      }
+      await fetchWinnerPayouts();
+      showToast(
+        `Finalized ${data.month_label || monthKey}: queued ${data.created_count || 0} leaderboard reward payout(s) for approval.`,
+        'success'
+      );
+      return { success: true, ...data };
+    } catch (err: any) {
+      const msg = err?.message || 'Monthly leaderboard finalization failed.';
+      showToast(msg, 'error');
+      return { success: false, error: msg };
+    }
+  };
+
+  const adminAddManualWinnerCredit = async (targetUsernameOrAddress: string, amount: any, note = 'Special Seasonal Reward') => {
+    const cleanAmount = Math.round((parseFloat(amount) || 0) * 100) / 100;
+    if (!Number.isFinite(cleanAmount) || cleanAmount <= 0) {
+      showToast('Please enter a valid USDT amount greater than zero.', 'error');
       return { success: false };
     }
 
-    const mockTx = `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-    const newPayout = {
-      id: `WP-MANUAL-${Date.now()}`,
-      eventId: 'manual-reward',
-      eventTitle: note || 'Admin Manual USDT Reward',
-      ticketId: 'MANUAL',
-      winnerAddress: targetUsernameOrAddress || wallet.address,
-      winnerUsername: targetUsernameOrAddress || 'Direct Player',
-      winningDigits: '—',
-      ticketsSold: 0,
-      ticketPrice: 0,
-      totalPoolCollected: cleanAmount,
-      winnerSharePercent: 100,
-      calculatedAmount: cleanAmount,
-      payoutAmount: cleanAmount,
-      status: 'completed',
-      approvedAt: Date.now(),
-      txHash: mockTx
-    };
-
-    setWinnerPayouts(prev => [newPayout, ...prev]);
+    const cleanedTarget = String(targetUsernameOrAddress || '').trim();
+    const cleanedHandle = cleanedTarget.replace(/^@+/, '').toLowerCase();
 
     try {
-      await supabase.from('winner_payouts').insert({
-        id: newPayout.id,
-        event_id: newPayout.eventId,
-        event_title: newPayout.eventTitle,
-        ticket_id: newPayout.ticketId,
-        winner_address: newPayout.winnerAddress,
-        winner_username: newPayout.winnerUsername,
-        winning_digits: newPayout.winningDigits,
+      // Resolve target user accurately from profiles / lottery_wallets before inserting or crediting
+      let targetUserId: string | null = null;
+      let targetAddr: string | null = null;
+      let targetDisplayName: string = cleanedTarget || 'Direct Player';
+
+      if (cleanedTarget.startsWith('0x') || cleanedTarget.startsWith('T')) {
+        targetAddr = cleanedTarget;
+        const { data: profByAddr } = await supabase
+          .from('profiles')
+          .select('id, username, trc20_address')
+          .ilike('trc20_address', cleanedTarget)
+          .limit(1)
+          .maybeSingle();
+        if (profByAddr) {
+          targetUserId = profByAddr.id;
+          targetDisplayName = profByAddr.username || targetDisplayName;
+        }
+      } else if (cleanedHandle) {
+        const { data: profByName } = await supabase
+          .from('profiles')
+          .select('id, username, trc20_address')
+          .ilike('username', cleanedHandle)
+          .limit(1)
+          .maybeSingle();
+        if (profByName) {
+          targetUserId = profByName.id;
+          targetAddr = profByName.trc20_address || null;
+          targetDisplayName = profByName.username || targetDisplayName;
+        }
+      }
+
+      if (!targetUserId && !targetAddr) {
+        showToast(`Recipient '${cleanedTarget}' not found. Select a registered @username or valid TRC-20 address.`, 'error');
+        return { success: false, error: 'Recipient not found' };
+      }
+
+      if (!targetAddr && targetUserId) {
+        const { data: walletRow } = await supabase
+          .from('lottery_wallets')
+          .select('address')
+          .eq('user_id', targetUserId)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        targetAddr = walletRow?.address || null;
+      }
+
+      const payoutId = `WP-MANUAL-${Date.now()}`;
+      const { error: insertErr } = await supabase.from('winner_payouts').insert({
+        id: payoutId,
+        event_id: 'manual-reward',
+        event_title: note || 'Admin Manual USDT Reward',
+        ticket_id: 'MANUAL',
+        user_id: targetUserId,
+        winner_address: targetAddr || '',
+        winner_username: targetDisplayName,
+        winning_digits: '—',
         tickets_sold: 0,
         ticket_price: 0,
         total_pool_collected: cleanAmount,
         winner_share_percent: 100,
         calculated_amount: cleanAmount,
         payout_amount: cleanAmount,
-        status: 'completed',
-        tx_hash: mockTx,
-        approved_at: new Date().toISOString()
+        max_allowed_amount: cleanAmount,
+        payout_type: 'manual_grant',
+        payout_reference: payoutId,
+        currency: 'USDT',
+        status: 'pending_approval'
       });
 
-      const targetAddr = newPayout.winnerAddress;
-      
-      // Credit wallet and write to wallet_ledger via atomic RPC
-      await creditCredits(cleanAmount, 'admin_adjustment', newPayout.id, note || 'Admin Manual USDT Grant');
+      if (insertErr) throw insertErr;
 
-      if (wallet.address === targetAddr) {
-        await fetchWalletLedger();
-      }
+      const { data: disburseRes, error: disburseErr } = await supabase.rpc('admin_disburse_winner_secure', {
+        p_payout_id: payoutId,
+        p_final_amount: cleanAmount,
+        p_tx_hash: null,
+        p_adjustment_reason: 'Direct manual Super Admin/Admin USDT grant'
+      });
 
-      showToast(`Successfully added ${cleanAmount.toFixed(2)} USDT to player wallet & recorded in ledger!`, 'success');
+      if (disburseErr) throw disburseErr;
+      if (!disburseRes?.success) throw new Error(disburseRes?.error || 'Manual disbursement failed');
+
+      await Promise.all([
+        fetchWinnerPayouts(),
+        fetchWalletLedger(),
+        fetchWallet(wallet.address)
+      ]);
+
+      showToast(`Credited +${cleanAmount.toFixed(2)} USDT to ${targetDisplayName}'s wallet & recorded in ledger!`, 'success');
       return { success: true };
-    } catch (err) {
+    } catch (err: any) {
       console.error('adminAddManualWinnerCredit error:', err);
-      showToast('Error crediting winner: ' + err.message, 'error');
-      return { success: false, error: err.message };
+      await fetchWinnerPayouts();
+      showToast('Error crediting winner: ' + (err?.message || 'Unexpected failure'), 'error');
+      return { success: false, error: err?.message };
     }
   };
 
@@ -3835,8 +3961,11 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         adminUpdateUserRole,
         adminDeleteUser,
         winnerPayouts,
+        fetchWinnerPayouts,
         adminApproveWinnerPayout,
         adminRejectWinnerPayout,
+        adminCancelOrDeleteWinnerPayout,
+        adminFinalizeMonthlyLeaderboard,
         adminAddManualWinnerCredit,
         supportTickets,
         fetchSupportTickets,

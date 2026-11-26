@@ -28,8 +28,15 @@ interface MonthAnnouncementRecord {
   description?: string;
   prizes?: Array<{ rank: number; reward_usdt: number }>;
   is_published?: boolean;
+  finalized?: boolean;
+  finalized_at?: string;
+  finalized_winners_count?: number;
   updated_at?: string;
   published_at?: string;
+}
+
+interface MonthlyLeaderboardManagementProps {
+  onGoToWinnerPayouts?: () => void;
 }
 
 const getCurrentMonthKey = (): string => {
@@ -54,8 +61,10 @@ const createEmptyTiers = (): PrizeTier[] =>
     reward_usdt: '0.00'
   }));
 
-export default function MonthlyLeaderboardManagement() {
-  const { showToast } = useLottery();
+export default function MonthlyLeaderboardManagement({
+  onGoToWinnerPayouts
+}: MonthlyLeaderboardManagementProps = {}) {
+  const { showToast, adminFinalizeMonthlyLeaderboard } = useLottery() as any;
 
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonthKey);
   const [savedMonths, setSavedMonths] = useState<Record<string, MonthAnnouncementRecord>>({});
@@ -67,6 +76,8 @@ export default function MonthlyLeaderboardManagement() {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const populateMonthForm = (
@@ -274,6 +285,23 @@ export default function MonthlyLeaderboardManagement() {
   const isSelectedCurrentlyPublished = Boolean(
     publishedRecord?.is_published && publishedRecord.month_key === selectedMonth
   );
+  const selectedSaved = savedMonths[selectedMonth];
+  const isSelectedFinalized = Boolean(selectedSaved?.finalized);
+  const isMonthElapsed = selectedMonth < getCurrentMonthKey();
+
+  const handleFinalizeCompetition = async () => {
+    if (finalizing) return;
+    setFinalizing(true);
+    try {
+      const res = await adminFinalizeMonthlyLeaderboard(selectedMonth, !isMonthElapsed);
+      if (res?.success) {
+        setShowFinalizeConfirm(false);
+        await loadConfig(selectedMonth);
+      }
+    } finally {
+      setFinalizing(false);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
@@ -521,6 +549,100 @@ export default function MonthlyLeaderboardManagement() {
               </button>
             )}
           </div>
+
+          {/* Competition Finalization & Payout Generation Bar */}
+          <div className="mt-2 p-4 rounded-2xl bg-[#07090d] border border-purple-500/30 space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-purple-300 shrink-0" />
+                  <span className="text-xs font-bold text-white">
+                    Monthly Competition Finalization &amp; Payout Generation
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#94A3B8] leading-relaxed">
+                  {isSelectedFinalized
+                    ? `Finalized cleanly (${selectedSaved?.finalized_winners_count ?? 0} payout record(s) queued). Scheduled pg_cron automatically settles completed months at month-end.`
+                    : isMonthElapsed
+                    ? `${formatMonthLabel(selectedMonth)} has ended. pg_cron runs hourly auto-finalization, or you can finalize and queue Top-10 payouts immediately.`
+                    : `${formatMonthLabel(selectedMonth)} is active. Auto-finalization triggers automatically at UTC month-end via pg_cron once the competition closes.`}
+                </p>
+              </div>
+
+              {isSelectedFinalized ? (
+                <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono-numbers font-bold text-emerald-300 uppercase shrink-0">
+                  Finalized
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-[10px] font-mono-numbers font-bold text-purple-300 uppercase shrink-0">
+                  {isMonthElapsed ? 'Ready to Finalize' : 'Auto at Month-End'}
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              {!isSelectedFinalized && (
+                <button
+                  type="button"
+                  onClick={() => setShowFinalizeConfirm(true)}
+                  disabled={finalizing || loading || Boolean(authError) || !selectedSaved}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600/25 hover:bg-purple-600/40 border border-purple-500/40 text-xs font-bold text-purple-200 transition-colors cursor-pointer disabled:opacity-45"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Finalize {formatMonthLabel(selectedMonth)} &amp; Queue Payouts
+                </button>
+              )}
+
+              {onGoToWinnerPayouts && (
+                <button
+                  type="button"
+                  onClick={onGoToWinnerPayouts}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#111827] border border-[#272a31] hover:border-amber-500/40 text-xs font-bold text-amber-300 transition-colors cursor-pointer"
+                >
+                  Review &amp; Approve Payouts →
+                </button>
+              )}
+            </div>
+          </div>
+
+          {showFinalizeConfirm && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
+              role="dialog"
+              aria-modal="true"
+            >
+              <div className="w-full max-w-md rounded-2xl bg-[#0d1117] border border-purple-500/40 p-5 space-y-4 shadow-2xl">
+                <div className="space-y-1">
+                  <h4 className="font-display font-bold text-base text-white">
+                    Finalize {formatMonthLabel(selectedMonth)} Leaderboard?
+                  </h4>
+                  <p className="text-xs text-[#94A3B8] leading-relaxed">
+                    {isMonthElapsed
+                      ? 'This will rank Top 10 eligible winners using win-rate rules and create individual Pending Approval reward payouts in Winner Payouts (Add USDT).'
+                      : 'Warning: This competition month has not closed yet. Finalizing early will immediately lock and generate Top-10 Pending Approval payouts using standings so far.'}
+                  </p>
+                </div>
+                <div className="flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowFinalizeConfirm(false)}
+                    disabled={finalizing}
+                    className="px-4 py-2 rounded-xl bg-[#111827] border border-[#272a31] text-xs font-bold text-white cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFinalizeCompetition}
+                    disabled={finalizing}
+                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white cursor-pointer disabled:opacity-50"
+                  >
+                    {finalizing ? 'Finalizing...' : 'Confirm Finalization'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right: User Panel Preview & Saved Months */}

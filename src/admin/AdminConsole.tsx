@@ -58,6 +58,7 @@ import {
 import ReferralsManagement from './ReferralsManagement';
 import SpinWheelManagement from './SpinWheelManagement';
 import MonthlyLeaderboardManagement from './MonthlyLeaderboardManagement';
+import WinnerPayoutsManagement from './WinnerPayoutsManagement';
 
 interface AdminConsoleProps {
   onLogout?: () => void;
@@ -104,6 +105,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       if (p.includes('/referrals') || window.location.search.includes('tab=referrals')) return 'referrals';
       if (p.includes('/spin-wheel') || window.location.search.includes('tab=spin-wheel')) return 'spin-wheel';
       if (p.includes('/monthly-leaderboard') || window.location.search.includes('tab=monthly-leaderboard')) return 'monthly-leaderboard';
+      if (p.includes('/winner-payouts') || window.location.search.includes('tab=winner-payouts')) return 'winner-payouts';
       if (p.includes('/settings') || window.location.search.includes('tab=settings')) return 'settings';
     }
     return 'overview';
@@ -153,6 +155,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       if (tab === 'referrals') targetPath = '/admin/referrals';
       else if (tab === 'spin-wheel') targetPath = '/admin/spin-wheel';
       else if (tab === 'monthly-leaderboard') targetPath = '/admin/monthly-leaderboard';
+      else if (tab === 'winner-payouts') targetPath = '/admin/winner-payouts';
       else if (tab === 'settings') targetPath = '/admin/settings';
       window.history.replaceState(null, '', targetPath);
     } catch (e) {}
@@ -513,7 +516,9 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
 
   const pendingSupportCount = supportTickets.filter(t => t.status === 'pending').length;
 
-  const pendingWinnerApprovalCount = winnerPayouts.filter(p => p.status === 'pending_approval').length;
+  const pendingWinnerApprovalCount = winnerPayouts.filter(
+    p => p.status === 'pending_approval' || p.status === 'failed'
+  ).length;
 
   const adminNavItems = [
     {
@@ -571,7 +576,10 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       badge: pendingWinnerApprovalCount > 0 ? String(pendingWinnerApprovalCount) : undefined,
       badgeTone: 'emerald-solid',
       compactCount: pendingWinnerApprovalCount > 0 ? pendingWinnerApprovalCount : null,
-      onClick: () => switchAdminTab('winner-payouts')
+      onClick: () => {
+        switchAdminTab('winner-payouts');
+        if (usersList.length === 0) loadUsers();
+      }
     },
     {
       id: 'support',
@@ -1445,367 +1453,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
         {/* TAB: WINNER PAYOUTS (ADD USDT)                                */}
         {/* ============================================================== */}
         {activeAdminTab === 'winner-payouts' && (
-          <div className="space-y-6 animate-in fade-in duration-150">
-            {/* Header info & filters */}
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 bg-[#0d1117] p-5 rounded-2xl border border-[#272a31]">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-amber-400" />
-                  <h3 className="font-display font-bold text-base text-white">
-                    Winner Payouts & Automated Disbursal Console (Add USDT)
-                  </h3>
-                </div>
-                <p className="text-xs text-[#9b8f7c] mt-0.5">
-                  Audit winning pool collections, adjust winner payout shares on the fly, and approve USDT disbursals directly into player wallets.
-                </p>
-              </div>
-
-              {/* Status Filter buttons */}
-              <div className="flex items-center gap-1.5 bg-[#07090d] p-1 rounded-xl border border-[#1f2737]">
-                <button
-                  onClick={() => setPayoutFilter('all')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
-                    payoutFilter === 'all' ? 'bg-amber-500 text-black' : 'text-[#8b92a2] hover:text-white'
-                  }`}
-                >
-                  All ({winnerPayouts.length})
-                </button>
-                <button
-                  onClick={() => setPayoutFilter('pending')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
-                    payoutFilter === 'pending' ? 'bg-amber-500 text-black' : 'text-[#8b92a2] hover:text-white'
-                  }`}
-                >
-                  Pending ({winnerPayouts.filter(p => p.status === 'pending_approval').length})
-                </button>
-                <button
-                  onClick={() => setPayoutFilter('completed')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
-                    payoutFilter === 'completed' ? 'bg-amber-500 text-black' : 'text-[#8b92a2] hover:text-white'
-                  }`}
-                >
-                  Completed ({winnerPayouts.filter(p => p.status === 'completed').length})
-                </button>
-              </div>
-            </div>
-
-            {/* Quick Metrics Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-4 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-950/40 border border-[#05d5aa]/30 flex items-center justify-center shrink-0">
-                  <Award className="w-6 h-6 text-[#05d5aa]" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-[#8b92a2] font-semibold">Total Disbursed to Winners</p>
-                  <p className="text-xl font-mono-numbers font-black text-white">
-                    +{winnerPayouts.filter(p => p.status === 'completed').reduce((sum, p) => sum + (p.payoutAmount || 0), 0).toLocaleString()} <span className="text-xs text-[#05d5aa]">USDT</span>
-                  </p>
-                  <p className="text-[10px] text-[#05d5aa]">
-                    {winnerPayouts.filter(p => p.status === 'completed').length} Successful Disbursals
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-[#0d1117] border border-amber-500/30 rounded-2xl p-4 flex items-center gap-4 bg-gradient-to-br from-[#0d1117] to-amber-950/20">
-                <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
-                  <Clock className="w-6 h-6 text-amber-400" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-amber-300 font-semibold">Awaiting Approval & Disbursal</p>
-                  <p className="text-xl font-mono-numbers font-black text-amber-400">
-                    {winnerPayouts.filter(p => p.status === 'pending_approval').reduce((sum, p) => {
-                      const amt = editedPayoutAmounts[p.id] !== undefined ? parseFloat(editedPayoutAmounts[p.id]) || 0 : (p.payoutAmount || 0);
-                      return sum + amt;
-                    }, 0).toLocaleString()} <span className="text-xs text-amber-300">USDT</span>
-                  </p>
-                  <p className="text-[10px] text-amber-400 font-bold">
-                    {winnerPayouts.filter(p => p.status === 'pending_approval').length} Draws in 24h Queue
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl p-4 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-cyan-950/40 border border-[#00f2fe]/30 flex items-center justify-center shrink-0">
-                  <Coins className="w-6 h-6 text-[#00f2fe]" />
-                </div>
-                <div>
-                  <p className="text-[11px] text-[#8b92a2] font-semibold">Disbursal Mode</p>
-                  <p className="text-base font-bold text-white">Direct Wallet Settlement</p>
-                  <p className="text-[10px] text-[#64748b]">TRC-20 & Platform Balance Instant Credit</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Direct Winner Add USDT Form */}
-            <div className="bg-[#0d1117] border border-amber-500/20 rounded-2xl p-5 shadow-lg space-y-4">
-              <div className="flex items-center gap-2.5 pb-3 border-b border-[#1f2737]">
-                <PlusCircle className="w-5 h-5 text-amber-400" />
-                <div>
-                  <h4 className="font-display font-bold text-sm text-white">
-                    Winner Add USDT (Direct Manual Disbursal)
-                  </h4>
-                  <p className="text-[11px] text-[#9b8f7c]">
-                    Credit custom USDT directly to any player's wallet balance (VIP prizes, promotional rewards, festive giveaways)
-                  </p>
-                </div>
-              </div>
-
-              <form onSubmit={handleManualCreditSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5 items-end">
-                <div>
-                  <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                    Select Player / Target Address:
-                  </label>
-                  <input
-                    type="text"
-                    list="users-datalist"
-                    value={manualWinnerUser}
-                    onChange={(e) => setManualWinnerUser(e.target.value)}
-                    placeholder="e.g. @LuckyWinner or TRC-20 address"
-                    className="w-full bg-[#07090d] border border-[#272a31] focus:border-amber-400 rounded-xl px-3 py-2 text-xs text-white outline-none"
-                    required
-                  />
-                  <datalist id="users-datalist">
-                    {usersList.map(u => (
-                      <option key={u.id} value={`@${u.username || u.email?.split('@')[0]}`}>
-                        {u.email} ({u.trc20_address ? `${u.trc20_address.slice(0, 8)}...` : 'TRC-20'})
-                      </option>
-                    ))}
-                  </datalist>
-                </div>
-
-                <div>
-                  <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                    USDT Amount to Disburse:
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.1"
-                      value={manualWinnerAmount}
-                      onChange={(e) => setManualWinnerAmount(e.target.value)}
-                      placeholder="e.g. 500"
-                      className="w-full bg-[#07090d] border border-[#272a31] focus:border-amber-400 rounded-xl pl-3 pr-14 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
-                      required
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-amber-400 font-bold">
-                      USDT
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs text-[#8b92a2] font-semibold mb-1">
-                    Disbursal Reason / Note:
-                  </label>
-                  <input
-                    type="text"
-                    value={manualWinnerNote}
-                    onChange={(e) => setManualWinnerNote(e.target.value)}
-                    placeholder="e.g. Diwali Bumper Special Draw Reward"
-                    className="w-full bg-[#07090d] border border-[#272a31] focus:border-amber-400 rounded-xl px-3 py-2 text-xs text-white outline-none"
-                  />
-                </div>
-
-                <div>
-                  <button
-                    type="submit"
-                    className="w-full py-2 px-4 rounded-xl btn-gold text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    <span>+ Disburse USDT to Wallet</span>
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Winner Payouts Queue Table */}
-            <div className="bg-[#0d1117] border border-[#272a31] rounded-2xl overflow-hidden shadow-lg">
-              <div className="p-4 border-b border-[#1f2737] flex items-center justify-between">
-                <div>
-                  <h4 className="font-display font-bold text-sm text-white flex items-center gap-2">
-                    <span>Draw Payout Queue & Audit</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                      Editable Disbursals
-                    </span>
-                  </h4>
-                  <p className="text-[11px] text-[#9b8f7c]">
-                    Shows calculated winner shares from ticket collections. You can fine-tune the amount before clicking Approve.
-                  </p>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto no-scrollbar">
-                <table className="w-full min-w-[760px] text-left text-xs">
-                  <thead className="bg-[#07090d] text-[#8b92a2] uppercase text-[10px] tracking-wider border-b border-[#1f2737]">
-                    <tr>
-                      <th className="py-3.5 px-4">Payout ID & Event</th>
-                      <th className="py-3.5 px-4">Winner Details</th>
-                      <th className="py-3.5 px-4">Winning Digits</th>
-                      <th className="py-3.5 px-4">Pool & Share %</th>
-                      <th className="py-3.5 px-4">Disbursal Amount (USDT)</th>
-                      <th className="py-3.5 px-4">Status</th>
-                      <th className="py-3.5 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#1f2737]">
-                    {filteredWinnerPayouts.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="py-12 text-center text-[#64748b]">
-                          <Trophy className="w-8 h-8 text-[#272a31] mx-auto mb-2" />
-                          <p className="text-xs">No winner payouts found for current filter.</p>
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredWinnerPayouts.map((p) => {
-                        const isPending = p.status === 'pending_approval';
-                        const currentEditVal = editedPayoutAmounts[p.id] !== undefined 
-                          ? editedPayoutAmounts[p.id] 
-                          : p.payoutAmount;
-
-                        return (
-                          <tr key={p.id} className="hover:bg-white/2 transition-colors">
-                            <td className="py-3.5 px-4">
-                              <div className="font-mono-numbers text-xs font-bold text-white">
-                                {p.id}
-                              </div>
-                              <div className="text-[11px] text-amber-400 font-medium truncate max-w-[180px]">
-                                {p.eventTitle}
-                              </div>
-                              <div className="text-[10px] text-[#64748b]">
-                                {new Date(p.createdAt || p.approvedAt || Date.now()).toLocaleDateString()}
-                              </div>
-                            </td>
-
-                            <td className="py-3.5 px-4">
-                              <div className="font-semibold text-white">
-                                @{p.winnerUsername || 'LuckyPlayer'}
-                              </div>
-                              <div className="flex items-center gap-1 text-[11px] font-mono-numbers text-[#8b92a2]">
-                                <span>{p.winnerAddress ? `${p.winnerAddress.slice(0, 6)}...${p.winnerAddress.slice(-4)}` : 'TRC-20 Wallet'}</span>
-                                {p.winnerAddress && (
-                                  <button
-                                    onClick={() => handleCopy(p.winnerAddress, `p-addr-${p.id}`)}
-                                    className="p-0.5 hover:text-white cursor-pointer"
-                                    title="Copy address"
-                                  >
-                                    {copiedId === `p-addr-${p.id}` ? <Check className="w-3 h-3 text-[#05d5aa]" /> : <Copy className="w-3 h-3" />}
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-
-                            <td className="py-3.5 px-4">
-                              <div className="inline-block px-2.5 py-1 rounded-lg bg-[#07090d] border border-amber-500/40 text-amber-400 font-mono-numbers font-black text-sm tracking-widest shadow-inner">
-                                {p.winningDigits}
-                              </div>
-                              {p.ticketId && p.ticketId !== 'MANUAL' && (
-                                <div className="text-[10px] text-[#64748b] mt-0.5">
-                                  Tkt: {p.ticketId}
-                                </div>
-                              )}
-                            </td>
-
-                            <td className="py-3.5 px-4">
-                              <div className="text-white font-mono-numbers">
-                                {p.ticketsSold || 0} tickets sold
-                              </div>
-                              <div className="text-[11px] text-[#8b92a2]">
-                                Pool: <span className="text-white font-bold">{p.totalPoolCollected?.toLocaleString()} USDT</span>
-                              </div>
-                              <div className="text-[10px] text-amber-400 font-bold">
-                                Winner Share: {p.winnerSharePercent || 90}%
-                              </div>
-                            </td>
-
-                            <td className="py-3.5 px-4">
-                              {isPending ? (
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <input
-                                      type="number"
-                                      step="0.01"
-                                      value={currentEditVal}
-                                      onChange={(e) => setEditedPayoutAmounts(prev => ({
-                                        ...prev,
-                                        [p.id]: e.target.value
-                                      }))}
-                                      className="w-28 bg-[#07090d] border border-amber-500/50 focus:border-[#ffd700] rounded-lg px-2 py-1 text-xs text-white font-mono-numbers font-bold outline-none"
-                                    />
-                                    <span className="text-xs font-bold text-amber-400">USDT</span>
-                                  </div>
-                                  <div className="text-[9px] text-[#8b92a2]">
-                                    Calc: {p.calculatedAmount?.toLocaleString()} USDT
-                                  </div>
-                                </div>
-                              ) : (
-                                <div>
-                                  <div className="font-mono-numbers font-black text-sm text-[#05d5aa]">
-                                    +{p.payoutAmount?.toLocaleString()} USDT
-                                  </div>
-                                  {p.txHash && (
-                                    <div className="text-[9px] font-mono-numbers text-[#64748b] truncate max-w-[120px]">
-                                      Tx: {p.txHash.slice(0, 10)}...
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </td>
-
-                            <td className="py-3.5 px-4">
-                              {isPending ? (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1 w-fit animate-pulse">
-                                  <Clock className="w-3 h-3" />
-                                  <span>Pending Approval</span>
-                                </span>
-                              ) : p.status === 'completed' ? (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-950/60 text-[#05d5aa] border border-[#05d5aa]/30 flex items-center gap-1 w-fit">
-                                  <CheckCircle className="w-3 h-3" />
-                                  <span>Added to Wallet</span>
-                                </span>
-                              ) : (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-950/40 text-red-400 border border-red-500/30 flex items-center gap-1 w-fit">
-                                  <XCircle className="w-3 h-3" />
-                                  <span>Rejected</span>
-                                </span>
-                              )}
-                            </td>
-
-                            <td className="py-3.5 px-4 text-right">
-                              {isPending ? (
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <button
-                                    onClick={() => handleApprovePayout(p.id)}
-                                    className="px-3 py-1.5 rounded-xl btn-gold text-xs font-bold flex items-center gap-1 cursor-pointer shadow-md"
-                                    title="Disburse and add to winner wallet balance"
-                                  >
-                                    <CheckCircle className="w-3.5 h-3.5" />
-                                    <span>Approve & Add (Done)</span>
-                                  </button>
-
-                                  <button
-                                    onClick={() => adminRejectWinnerPayout(p.id)}
-                                    className="p-1.5 rounded-xl bg-red-950/30 hover:bg-red-950/80 border border-red-500/30 text-red-400 cursor-pointer"
-                                    title="Reject or Hold Payout"
-                                  >
-                                    <XCircle className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              ) : (
-                                <span className="text-[10px] text-[#64748b] font-mono-numbers">
-                                  Settled
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          <WinnerPayoutsManagement usersList={usersList} />
         )}
 
         {/* ============================================================== */}
@@ -2104,7 +1752,14 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
         {/* ============================================================== */}
         {/* TAB: MONTHLY LEADERBOARD ANNOUNCEMENT & PRIZES                 */}
         {/* ============================================================== */}
-        {activeAdminTab === 'monthly-leaderboard' && <MonthlyLeaderboardManagement />}
+        {activeAdminTab === 'monthly-leaderboard' && (
+          <MonthlyLeaderboardManagement
+            onGoToWinnerPayouts={() => {
+              switchAdminTab('winner-payouts');
+              if (usersList.length === 0) loadUsers();
+            }}
+          />
+        )}
 
         {/* ============================================================== */}
         {/* TAB 7: SUPPORT & USER INQUIRIES                                */}
