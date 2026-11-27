@@ -1,27 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useLottery } from '../context/LotteryContext';
-import WithdrawalProofModal from './WithdrawalProofModal';
-import { 
-  Wallet, 
-  ArrowDownLeft, 
-  ArrowUpRight, 
-  Clock, 
-  Copy, 
-  Check, 
-  ShieldCheck, 
-  ExternalLink, 
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Clock,
+  Copy,
+  Check,
+  ShieldCheck,
+  ExternalLink,
   AlertCircle,
-  QrCode,
   DollarSign,
-  CreditCard,
   RefreshCw,
   Coins,
   CheckCircle2,
-  FileCheck,
-  XCircle,
   X,
-  Gift,
-  Sparkles,
   History
 } from 'lucide-react';
 
@@ -35,114 +27,148 @@ const PAYMENT_CURRENCIES = [
   { id: 'ltc', name: 'Litecoin (LTC)', symbol: 'LTC', network: 'Litecoin' }
 ];
 
+const QUICK_DEPOSIT_AMOUNTS = [20, 50, 100, 250, 500];
+const WITHDRAW_PERCENT_PRESETS = [25, 50, 75, 100];
+
 interface WalletViewProps {
   onOpenDeposit?: () => void;
   onOpenWithdraw?: () => void;
   onOpenTransactionHistory?: () => void;
 }
 
-export default function WalletView({ onOpenDeposit, onOpenWithdraw, onOpenTransactionHistory }: WalletViewProps = {}) {
-  const { 
-    wallet, 
-    withdrawals, 
-    depositUSDT, 
-    requestWithdrawal, 
+export default function WalletView({ onOpenTransactionHistory }: WalletViewProps = {}) {
+  const {
+    wallet,
+    withdrawals,
+    requestWithdrawal,
     showToast,
     createNowPaymentsInvoice,
     checkDepositStatus,
     platformSettings,
-    walletModalTab,
-    deposits = [],
-    loadingDeposits,
-    fetchDeposits,
     cancelDeposit,
-    walletLedger = [],
-    loadingLedger,
-    fetchWalletLedger,
-    claimDailyBonus,
-    claimDailyFloReward,
-    getDailyFloRewardStatus,
-    calculateDailyFloReward,
     setActiveTab: setGlobalActiveTab
   } = useLottery();
 
   const minWithdrawalLimit = typeof platformSettings?.minWithdrawal === 'number' ? platformSettings.minWithdrawal : 5;
   const maxWithdrawalLimit = typeof platformSettings?.maxWithdrawal === 'number' ? platformSettings.maxWithdrawal : 10000;
-  const treasuryAddress = platformSettings?.treasuryTrc20 || wallet.depositAddress;
+  const selectedNetwork = 'TRC-20';
+  const networkFee = 1.0;
 
-  const [activeTab, setActiveTab] = useState(() => walletModalTab || 'deposit');
-  const [ledgerTab, setLedgerTab] = useState('ledger');
-  const [depositFilter, setDepositFilter] = useState('all');
-
-  // Live timer for countdown updates
+  // Live timer for invoice expiry countdown
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    if (walletModalTab) {
-      setActiveTab(walletModalTab);
-      if (walletModalTab === 'deposit') setLedgerTab('deposits');
-      if (walletModalTab === 'withdraw') setLedgerTab('withdrawals');
-    }
-  }, [walletModalTab]);
-  const [selectedNetwork, setSelectedNetwork] = useState('TRC-20');
-
-  // Deposit method: 'nowpayments' | 'direct'
-  const [depositMethod, setDepositMethod] = useState('nowpayments');
+  // Deposit state (Internally backed by NOWPayments without frontend provider branding)
   const [payCurrency, setPayCurrency] = useState('usdttrc20');
+  const [depositAmount, setDepositAmount] = useState('50');
+  const [depositError, setDepositError] = useState('');
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
   const [activeInvoice, setActiveInvoice] = useState<any>(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [invoiceStatusText, setInvoiceStatusText] = useState('waiting');
 
-  // Deposit amount (Min 20 USDT, Max 500 USDT)
-  const [depositAmount, setDepositAmount] = useState('50');
-
-  // Withdrawal form
+  // Withdrawal state (Preserves TRC-20 disbursal & fee calculations)
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [destinationAddress, setDestinationAddress] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [selectedProofOrder, setSelectedProofOrder] = useState<any>(null);
+  const [withdrawError, setWithdrawError] = useState('');
+  const [isSubmittingWithdrawal, setIsSubmittingWithdrawal] = useState(false);
+  const [copiedSettlement, setCopiedSettlement] = useState(false);
 
-  // Copy address to clipboard
-  const handleCopy = () => {
-    navigator.clipboard.writeText(treasuryAddress);
-    setCopied(true);
-    showToast('Deposit address copied to clipboard!');
-    setTimeout(() => setCopied(false), 2000);
+  const safeBalance = Number(wallet?.balance || 0);
+  const safeLifetimeWon = Number(wallet?.lifetimeWon || 0);
+  const walletIdentifier = String(wallet?.address || 'TRC-20 Vault');
+
+  const pendingWithdrawalsSum = (withdrawals || [])
+    .filter((w: any) => w.status === 'processing')
+    .reduce((sum: number, w: any) => sum + Number(w.amount || 0), 0);
+
+  const handleCopySettlement = async () => {
+    if (!wallet?.address) return;
+    try {
+      await navigator.clipboard.writeText(wallet.address);
+      setCopiedSettlement(true);
+      showToast('Settlement identifier copied to clipboard!', 'success');
+      setTimeout(() => setCopiedSettlement(false), 2000);
+    } catch {
+      showToast('Copy unavailable in this browser context', 'info');
+    }
   };
 
-  // Preset percentage for withdrawal
-  const handlePreset = (pct) => {
-    const amt = ((wallet.balance * pct) / 100).toFixed(2);
+  // Preset percentage for withdrawal (25%, 50%, 75%, MAX)
+  const handleWithdrawPreset = (pct: number) => {
+    setWithdrawError('');
+    const amt = ((safeBalance * pct) / 100).toFixed(2);
     setWithdrawAmount(amt);
   };
 
-  const handleWithdrawSubmit = (e) => {
+  const handleWithdrawSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    requestWithdrawal(withdrawAmount, destinationAddress, selectedNetwork);
+    if (isSubmittingWithdrawal) return;
+
+    const amt = parseFloat(withdrawAmount);
+    const trimmedDest = destinationAddress.trim();
+
+    if (isNaN(amt) || amt <= 0) {
+      setWithdrawError('Please enter a valid USDT withdrawal amount.');
+      return;
+    }
+    if (amt < minWithdrawalLimit) {
+      setWithdrawError(`Minimum withdrawal amount is ${minWithdrawalLimit} USDT.`);
+      return;
+    }
+    if (amt > maxWithdrawalLimit) {
+      setWithdrawError(`Maximum withdrawal amount is ${maxWithdrawalLimit.toLocaleString()} USDT.`);
+      return;
+    }
+    if (amt > safeBalance) {
+      setWithdrawError('Withdrawal amount exceeds your available USDT balance.');
+      return;
+    }
+    if (trimmedDest.length < 8) {
+      setWithdrawError('Please enter a valid TRC-20 destination wallet address.');
+      return;
+    }
+
+    setWithdrawError('');
+    setIsSubmittingWithdrawal(true);
+    try {
+      const ok = await requestWithdrawal(withdrawAmount, trimmedDest, selectedNetwork);
+      if (ok) {
+        setWithdrawAmount('');
+        setDestinationAddress('');
+      }
+    } finally {
+      setIsSubmittingWithdrawal(false);
+    }
   };
 
-  const handleDepositSubmit = (e) => {
+  // Unified Deposit Handler (Routes internally through backend invoice creation API)
+  const handleDepositSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    depositUSDT(depositAmount);
-  };
+    if (isGeneratingInvoice) return;
 
-  // NOWPayments invoice generation handler (Min: 20 USDT, Max: 500 USDT)
-  const handleNowPaymentsSubmit = async (e) => {
-    e.preventDefault();
+    const selectedAsset = PAYMENT_CURRENCIES.find((c) => c.id === payCurrency);
+    if (!selectedAsset) {
+      setDepositError('Please select a supported cryptocurrency.');
+      return;
+    }
+
     const amt = parseFloat(depositAmount);
     if (isNaN(amt) || amt < 20 || amt > 500) {
+      const msg = 'Deposit amount must be between 20 USDT and 500 USDT.';
+      setDepositError(msg);
       showToast('Deposit amount must be between 20 USDT and 500 USDT (Min: 20 USDT, Max: 500 USDT)', 'error');
       return;
     }
+
+    setDepositError('');
     setIsGeneratingInvoice(true);
     try {
       const res = await createNowPaymentsInvoice(amt, payCurrency);
-      if (res.success) {
+      if (res?.success) {
         setActiveInvoice({
           depositId: res.depositId,
           invoiceUrl: res.invoiceUrl,
@@ -152,18 +178,18 @@ export default function WalletView({ onOpenDeposit, onOpenWithdraw, onOpenTransa
           createdAt: Date.now()
         });
         setInvoiceStatusText('waiting');
-        setLedgerTab('deposits');
         if (res.invoiceUrl) {
           window.open(res.invoiceUrl, '_blank', 'noopener,noreferrer');
         }
+      } else if (res?.error) {
+        setDepositError(res.error);
       }
     } finally {
       setIsGeneratingInvoice(false);
     }
   };
 
-  // Check NOWPayments invoice status
-  const handleCheckNowPaymentsStatus = async () => {
+  const handleCheckInvoiceStatus = async () => {
     if (!activeInvoice?.depositId) return;
     setIsCheckingStatus(true);
     try {
@@ -175,35 +201,33 @@ export default function WalletView({ onOpenDeposit, onOpenWithdraw, onOpenTransa
           showToast('Deposit confirmed! USDT credited to your wallet.', 'success');
           setActiveInvoice(null);
         } else if (depStatus === 'expired' || depStatus === 'failed') {
-          showToast('Payment invoice has expired or was cancelled.', 'info');
+          showToast('Deposit request expired or was cancelled.', 'info');
           setActiveInvoice(null);
         } else {
-          showToast(`Invoice status: ${depStatus.toUpperCase()}`, 'info');
+          showToast(`Deposit status: ${depStatus.toUpperCase()}`, 'info');
         }
       } else {
-        showToast('Status check: Waiting for on-chain broadcast', 'info');
+        showToast('Status check: Waiting for network confirmation', 'info');
       }
     } finally {
       setIsCheckingStatus(false);
     }
   };
 
-  // Auto-poll active invoice status every 6 seconds and check 15m timeout
+  // Auto-poll active deposit invoice every 6s with 15-minute expiration check
   useEffect(() => {
     if (!activeInvoice?.depositId) return;
 
-    // Strict 15-minute invoice timeout check
     if (activeInvoice.createdAt && Date.now() - activeInvoice.createdAt > 15 * 60 * 1000) {
       setActiveInvoice(null);
-      showToast('Payment invoice expired after 15 minutes without payment.', 'info');
+      showToast('Deposit request expired after 15 minutes without payment.', 'info');
       return;
     }
 
     const interval = setInterval(async () => {
-      // Check timeout
       if (activeInvoice.createdAt && Date.now() - activeInvoice.createdAt > 15 * 60 * 1000) {
         setActiveInvoice(null);
-        showToast('Payment invoice expired after 15 minutes without payment.', 'info');
+        showToast('Deposit request expired after 15 minutes without payment.', 'info');
         return;
       }
 
@@ -219,522 +243,519 @@ export default function WalletView({ onOpenDeposit, onOpenWithdraw, onOpenTransa
             setActiveInvoice(null);
           }
         }
-      } catch (err) {
-        // silent poll catch
+      } catch {
+        // Silent background status poll
       }
     }, 6000);
 
     return () => clearInterval(interval);
   }, [activeInvoice]);
 
-  const formatSLATime = (targetMs) => {
-    const diff = Math.max(0, targetMs - now);
-    const h = Math.floor(diff / (1000 * 60 * 60));
-    const m = Math.floor((diff / (1000 * 60)) % 60);
-    const s = Math.floor((diff / 1000) % 60);
-    return `${h}h ${m}m ${s}s remaining`;
-  };
-
-  const pendingWithdrawalsSum = withdrawals
-    .filter(w => w.status === 'processing')
-    .reduce((sum, w) => sum + w.amount, 0);
+  const parsedWithdrawAmt = parseFloat(withdrawAmount || '0');
+  const netWithdrawAmt = parsedWithdrawAmt > 0 ? Math.max(0, parsedWithdrawAmt - networkFee) : 0;
 
   return (
-    <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-8">
-      
-      {/* Portfolio Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        
-        {/* Card 1: Available Balance */}
-        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-5 lg:p-6 rounded-2xl border-l-4 border-l-[#a855f7] relative overflow-hidden flex flex-col justify-between min-w-0 h-full">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider truncate">
-                Available USDT Balance
-              </span>
-              <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[rgba(168,85,247,0.15)] flex items-center justify-center text-[#a855f7] shrink-0">
-                <Coins className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1.5 xs:gap-2 min-w-0 overflow-hidden my-1">
-              <span 
-                className="font-display font-black text-xl xs:text-2xl sm:text-3xl text-purple-300 font-mono-numbers tracking-tight truncate max-w-full block"
-                title={`${wallet.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })} USDT`}
-              >
-                {wallet.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              <span className="text-xs text-purple-400 font-bold font-mono-numbers shrink-0">USDT</span>
+    <div
+      data-testid="wallet-view"
+      className="w-full max-w-[1360px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-3.5 sm:py-6 space-y-4 sm:space-y-6 text-left box-border overflow-x-clip"
+    >
+      {/* ====================================================================
+          SECTION A: WALLET SUMMARY (4 Responsive Cards)
+      ==================================================================== */}
+      <section
+        data-testid="wallet-summary-grid"
+        aria-label="Wallet Summary"
+        className="grid grid-cols-1 min-[360px]:grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-4"
+      >
+        {/* Card 1: Available USDT Balance */}
+        <article
+          data-testid="wallet-card-balance"
+          className="glass-panel rounded-2xl p-3 sm:p-4 lg:p-5 border border-[#1F2737] border-l-4 border-l-purple-500 flex flex-col justify-between gap-2 min-w-0 h-full"
+        >
+          <div className="flex items-start justify-between gap-2 min-w-0">
+            <span className="text-[10.5px] sm:text-xs text-[#94A3B8] font-bold uppercase tracking-wider leading-tight">
+              Available USDT Balance
+            </span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-purple-500/15 border border-purple-500/25 flex items-center justify-center text-purple-400 shrink-0">
+              <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
             </div>
           </div>
-          <span className="text-[10px] xs:text-[11px] text-[#9b8f7c] mt-2 block font-mono-numbers truncate">
+
+          <div className="flex items-baseline gap-1.5 min-w-0">
+            <span
+              className="font-display font-black text-lg sm:text-2xl lg:text-[26px] text-purple-200 font-mono-numbers tracking-tight truncate"
+              title={`${safeBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })} USDT`}
+            >
+              {safeBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            <span className="text-[10.5px] sm:text-xs text-purple-400 font-bold font-mono-numbers shrink-0">
+              USDT
+            </span>
+          </div>
+
+          <span className="text-[10px] sm:text-[11px] text-[#94A3B8] font-mono-numbers truncate">
             TRC-20 Network Settlement
           </span>
-        </div>
+        </article>
 
         {/* Card 2: Total Won Prizes */}
-        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-5 lg:p-6 rounded-2xl border-l-4 border-l-[#05d5aa] relative overflow-hidden flex flex-col justify-between min-w-0 h-full">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider truncate">
-                Total Won Prizes
-              </span>
-              <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[rgba(5,213,170,0.15)] flex items-center justify-center text-[#05d5aa] shrink-0">
-                <DollarSign className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1.5 xs:gap-2 min-w-0 overflow-hidden my-1">
-              <span 
-                className="font-display font-black text-xl xs:text-2xl sm:text-3xl text-white font-mono-numbers tracking-tight truncate max-w-full block"
-                title={`${wallet.lifetimeWon.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })} USDT`}
-              >
-                {wallet.lifetimeWon.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              <span className="text-xs text-[#05d5aa] font-bold font-mono-numbers shrink-0">USDT</span>
+        <article
+          data-testid="wallet-card-winnings"
+          className="glass-panel rounded-2xl p-3 sm:p-4 lg:p-5 border border-[#1F2737] border-l-4 border-l-emerald-400 flex flex-col justify-between gap-2 min-w-0 h-full"
+        >
+          <div className="flex items-start justify-between gap-2 min-w-0">
+            <span className="text-[10.5px] sm:text-xs text-[#94A3B8] font-bold uppercase tracking-wider leading-tight">
+              Total Won Prizes
+            </span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shrink-0">
+              <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
             </div>
           </div>
-          <span className="text-[10px] xs:text-[11px] text-[#05d5aa] mt-2 block font-semibold truncate">
-            Auto-credited directly to balance ✅
-          </span>
-        </div>
 
-        {/* Card 3: Pending 24h Withdrawals */}
-        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-5 lg:p-6 rounded-2xl border-l-4 border-l-amber-500 relative overflow-hidden flex flex-col justify-between min-w-0 h-full">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider truncate">
-                Pending 24h Withdrawals
-              </span>
-              <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400 shrink-0">
-                <Clock className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
-              </div>
-            </div>
-            <div className="flex items-baseline gap-1.5 xs:gap-2 min-w-0 overflow-hidden my-1">
-              <span 
-                className="font-display font-black text-xl xs:text-2xl sm:text-3xl text-amber-400 font-mono-numbers tracking-tight truncate max-w-full block"
-                title={`${pendingWithdrawalsSum.toFixed(2)} USDT`}
-              >
-                {pendingWithdrawalsSum.toFixed(2)}
-              </span>
-              <span className="text-xs text-amber-400 font-bold font-mono-numbers shrink-0">USDT</span>
+          <div className="flex items-baseline gap-1.5 min-w-0">
+            <span
+              className="font-display font-black text-lg sm:text-2xl lg:text-[26px] text-white font-mono-numbers tracking-tight truncate"
+              title={`${safeLifetimeWon.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })} USDT`}
+            >
+              {safeLifetimeWon.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            <span className="text-[10.5px] sm:text-xs text-emerald-400 font-bold font-mono-numbers shrink-0">
+              USDT
+            </span>
+          </div>
+
+          <span className="text-[10px] sm:text-[11px] text-emerald-400 font-semibold inline-flex items-center gap-1 min-w-0 truncate">
+            <CheckCircle2 className="w-3 h-3 shrink-0" aria-hidden="true" />
+            <span className="truncate">Auto-credited directly to balance</span>
+          </span>
+        </article>
+
+        {/* Card 3: Pending 24H Withdrawal */}
+        <article
+          data-testid="wallet-card-pending"
+          className="glass-panel rounded-2xl p-3 sm:p-4 lg:p-5 border border-[#1F2737] border-l-4 border-l-amber-400 flex flex-col justify-between gap-2 min-w-0 h-full"
+        >
+          <div className="flex items-start justify-between gap-2 min-w-0">
+            <span className="text-[10.5px] sm:text-xs text-[#94A3B8] font-bold uppercase tracking-wider leading-tight">
+              Pending 24H Withdrawal
+            </span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-400 shrink-0">
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
             </div>
           </div>
-          <span className="text-[10px] xs:text-[11px] text-amber-400/80 mt-2 block font-mono-numbers truncate">
+
+          <div className="flex items-baseline gap-1.5 min-w-0">
+            <span
+              className="font-display font-black text-lg sm:text-2xl lg:text-[26px] text-amber-300 font-mono-numbers tracking-tight truncate"
+              title={`${pendingWithdrawalsSum.toFixed(2)} USDT`}
+            >
+              {pendingWithdrawalsSum.toFixed(2)}
+            </span>
+            <span className="text-[10.5px] sm:text-xs text-amber-400 font-bold font-mono-numbers shrink-0">
+              USDT
+            </span>
+          </div>
+
+          <span className="text-[10px] sm:text-[11px] text-amber-300/85 font-mono-numbers truncate">
             Disbursed &lt; 24 Hours
           </span>
-        </div>
+        </article>
 
-        {/* Card 4: Connected Wallet Status */}
-        <div className="glass-panel p-3.5 xs:p-4.5 sm:p-5 lg:p-6 rounded-2xl border-l-4 border-l-[#00f2fe] relative overflow-hidden flex flex-col justify-between min-w-0 h-full">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] xs:text-xs text-[#9b8f7c] font-bold uppercase tracking-wider truncate">
-                Settlement Network
-              </span>
-              <div className="w-7 xs:w-8 h-7 xs:h-8 rounded-lg bg-[#00f2fe]/15 flex items-center justify-center text-[#00f2fe] shrink-0">
-                <ShieldCheck className="w-3.5 xs:w-4 h-3.5 xs:h-4" />
-              </div>
-            </div>
-            <div className="min-w-0 overflow-hidden my-1">
-              <span 
-                className="font-mono-numbers font-bold text-base xs:text-lg sm:text-xl text-white tracking-tight truncate block"
-                title={wallet.address}
-              >
-                {wallet.address.slice(0, 8)}...{wallet.address.slice(-6)}
-              </span>
+        {/* Card 4: Settlement Network */}
+        <article
+          data-testid="wallet-card-network"
+          className="glass-panel rounded-2xl p-3 sm:p-4 lg:p-5 border border-[#1F2737] border-l-4 border-l-cyan-400 flex flex-col justify-between gap-2 min-w-0 h-full"
+        >
+          <div className="flex items-start justify-between gap-2 min-w-0">
+            <span className="text-[10.5px] sm:text-xs text-[#94A3B8] font-bold uppercase tracking-wider leading-tight">
+              Settlement Network
+            </span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-cyan-400/15 border border-cyan-400/25 flex items-center justify-center text-cyan-400 shrink-0">
+              <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
             </div>
           </div>
-          <span className="text-[10px] xs:text-[11px] text-[#05d5aa] mt-2 block font-mono-numbers flex items-center gap-1 truncate">
-            <span className="w-2 h-2 rounded-full bg-[#05d5aa] animate-ping shrink-0" />
-            Active Non-Custodial Vault
+
+          <div className="flex items-center justify-between gap-1.5 min-w-0">
+            <span
+              data-testid="settlement-address-value"
+              className="font-mono-numbers font-bold text-sm sm:text-base lg:text-lg text-white tracking-tight truncate min-w-0"
+              title={walletIdentifier}
+            >
+              {walletIdentifier.length > 16
+                ? `${walletIdentifier.slice(0, 7)}...${walletIdentifier.slice(-5)}`
+                : walletIdentifier}
+            </span>
+
+            {wallet?.address && (
+              <button
+                type="button"
+                onClick={handleCopySettlement}
+                aria-label="Copy full settlement identifier"
+                title={walletIdentifier}
+                className="p-1.5 rounded-lg bg-[#0B0F19] hover:bg-[#171F30] border border-[#253045] text-[#CBD5E1] hover:text-amber-300 transition-colors cursor-pointer shrink-0"
+              >
+                {copiedSettlement ? (
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+              </button>
+            )}
+          </div>
+
+          <span className="text-[10px] sm:text-[11px] text-emerald-400 font-mono-numbers inline-flex items-center gap-1.5 min-w-0 truncate">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="truncate">Active Non-Custodial Vault</span>
           </span>
-        </div>
+        </article>
+      </section>
 
-      </div>
-
-      {/* Main Two-Column Workstation: Deposit & Withdrawal */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8">
-        
-        {/* LEFT COLUMN: Deposit USDT / Multi-Crypto (6 Cols) */}
-        <div className="lg:col-span-6 glass-panel rounded-2xl p-3.5 xs:p-4.5 sm:p-6 lg:p-8 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between gap-2 mb-4 sm:mb-5">
+      {/* ====================================================================
+          SECTIONS B & C: DEPOSIT FUNDS & WITHDRAW USDT
+          - Mobile / Tablet (<1024px): Deposit Funds stacked above Withdraw USDT
+          - Laptop / Desktop (1024px+): Balanced 2-Column Side-by-Side
+      ==================================================================== */}
+      <div
+        data-testid="wallet-transactions-grid"
+        className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 lg:gap-6 items-stretch"
+      >
+        {/* SECTION B — DEPOSIT FUNDS (Completely Neutral UI, NOWPayments Backend Only) */}
+        <section
+          data-testid="deposit-funds-section"
+          aria-label="Deposit Funds"
+          className="lg:col-span-6 glass-panel rounded-2xl border border-[#1F2737] p-3.5 xs:p-4 sm:p-6 flex flex-col justify-between min-w-0"
+        >
+          <div className="space-y-4">
+            {/* Heading + Generic Icon + Fee Pill */}
+            <div className="flex items-start sm:items-center justify-between gap-2 pb-3 border-b border-[#1F2737]">
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[rgba(5,213,170,0.15)] flex items-center justify-center text-[#05d5aa] border border-[#05d5aa]/30 shrink-0">
-                  <ArrowDownLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400 border border-emerald-500/30 shrink-0">
+                  <ArrowDownLeft className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-display font-extrabold text-lg sm:text-xl text-white truncate">
+                  <h2 className="font-display font-extrabold text-base sm:text-xl text-white leading-tight">
                     Deposit Funds
-                  </h3>
-                  <p className="text-[11px] xs:text-xs text-[#9b8f7c] truncate">
-                    Multi-crypto gateway & automated settlement
+                  </h2>
+                  <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-snug mt-0.5">
+                    Multi-crypto gateway &amp; automated settlement
                   </p>
                 </div>
               </div>
 
-              <span className="text-[10px] xs:text-[11px] font-mono-numbers font-bold px-2 xs:px-2.5 py-1 rounded bg-[#10131a] text-[#05d5aa] border border-[#05d5aa]/30 shrink-0">
+              <span className="text-[10px] sm:text-[11px] font-mono-numbers font-bold px-2.5 py-1 rounded-lg bg-[#0B0F19] text-emerald-400 border border-emerald-500/30 whitespace-nowrap shrink-0">
                 0% Fee
               </span>
             </div>
 
-            {/* Deposit Method Selector */}
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 p-1 bg-[#0b0e14] rounded-xl border border-[#272a31] mb-5">
-              <button
-                type="button"
-                onClick={() => setDepositMethod('nowpayments')}
-                className={`py-2 px-2 sm:px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
-                  depositMethod === 'nowpayments'
-                    ? 'bg-[#1e2638] text-[#ffd700] border border-[#f5c451]/50 shadow-md'
-                    : 'text-[#9b8f7c] hover:text-white'
-                }`}
+            {activeInvoice ? (
+              <div
+                data-testid="active-deposit-invoice"
+                className="bg-[#0B0F19] rounded-2xl p-4 sm:p-5 border border-amber-400/40 space-y-4"
               >
-                <CreditCard className="w-3.5 h-3.5 text-[#ffd700] shrink-0" />
-                <span className="truncate">NOWPayments</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setDepositMethod('direct')}
-                className={`py-2 px-2 sm:px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
-                  depositMethod === 'direct'
-                    ? 'bg-[#1e2638] text-[#ffd700] border border-[#f5c451]/50 shadow-md'
-                    : 'text-[#9b8f7c] hover:text-white'
-                }`}
-              >
-                <Coins className="w-3.5 h-3.5 text-[#05d5aa] shrink-0" />
-                <span className="truncate">Direct TRC-20</span>
-              </button>
-            </div>
-
-            {/* METHOD 1: NOWPAYMENTS GATEWAY */}
-            {depositMethod === 'nowpayments' && (
-              <div className="space-y-5">
-                {/* Active Invoice Card if one exists */}
-                {activeInvoice ? (
-                  <div className="bg-[#0b0e14] rounded-2xl p-5 border border-[#f5c451]/40 space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-[#9b8f7c] font-semibold">
-                          Active Deposit Invoice
-                        </span>
-                        {activeInvoice.createdAt && (
-                          <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 font-mono-numbers text-[10px] font-bold border border-amber-500/30 flex items-center gap-1">
-                            <Clock className="w-3 h-3 animate-spin" />
-                            {(() => {
-                              const rem = Math.max(0, 15 * 60 * 1000 - (now - activeInvoice.createdAt));
-                              const m = Math.floor(rem / 60000);
-                              const s = Math.floor((rem % 60000) / 1000);
-                              return `Expires in ${m}m ${s < 10 ? '0' : ''}${s}s`;
-                            })()}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-mono-numbers font-bold flex items-center gap-1.5 ${
-                          invoiceStatusText === 'finished' || invoiceStatusText === 'confirmed'
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                            : invoiceStatusText === 'confirming'
-                            ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                            : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                        }`}>
-                          <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
-                          {invoiceStatusText.toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="bg-[#121721] p-4 rounded-xl border border-[#272a31] space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[#9b8f7c]">Amount to Deposit:</span>
-                        <span className="font-mono-numbers font-black text-white text-base">
-                          {activeInvoice.amount} USDT
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[#9b8f7c]">Payment Asset:</span>
-                        <span className="font-mono-numbers font-bold text-[#ffd700]">
-                          {PAYMENT_CURRENCIES.find(c => c.id === activeInvoice.currency)?.name || activeInvoice.currency.toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[#9b8f7c]">Invoice ID:</span>
-                        <span className="font-mono-numbers text-white/70">
-                          #{activeInvoice.invoiceId || activeInvoice.depositId?.slice(0, 8)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                      {activeInvoice.invoiceUrl && (
-                        <a
-                          href={activeInvoice.invoiceUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="btn-gold flex-1 py-3 rounded-xl font-display font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#f5c451]/20"
-                        >
-                          <span>Open NOWPayments Checkout</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      )}
-                      <button
-                        type="button"
-                        onClick={handleCheckNowPaymentsStatus}
-                        disabled={isCheckingStatus}
-                        className="px-4 py-3 rounded-xl bg-[#1a2232] hover:bg-[#222c42] text-xs font-bold text-white border border-[#272a31] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isCheckingStatus ? 'animate-spin' : ''}`} />
-                        <span>Refresh Status</span>
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-[#1e2638] text-[11px] text-[#9b8f7c]">
-                      <span>Auto-cancelled after 15 mins if unpaid · Instant webhook confirmation</span>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (activeInvoice.depositId) {
-                            await cancelDeposit(activeInvoice.depositId);
-                          }
-                          setActiveInvoice(null);
-                        }}
-                        className="text-rose-400 hover:text-rose-300 hover:underline cursor-pointer flex items-center gap-1 font-semibold"
-                      >
-                        <X className="w-3 h-3" />
-                        Cancel Order
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <form onSubmit={handleNowPaymentsSubmit} className="space-y-4">
-                    {/* Currency Selector */}
-                    <div>
-                      <label className="block text-xs text-[#9b8f7c] font-semibold mb-1.5">
-                        Choose Payment Cryptocurrency:
-                      </label>
-                      <select
-                        value={payCurrency}
-                        onChange={(e) => setPayCurrency(e.target.value)}
-                        className="w-full bg-[#0b0e14] border border-[#32353c] focus:border-[#ffd700] rounded-xl px-4 py-3 text-white font-mono-numbers text-xs outline-none cursor-pointer"
-                      >
-                        {PAYMENT_CURRENCIES.map((c) => (
-                          <option key={c.id} value={c.id} className="bg-[#0b0e14] text-white">
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Deposit Amount */}
-                    <div>
-                      <div className="flex items-center justify-between text-xs mb-1.5">
-                        <label className="text-[#9b8f7c] font-semibold">Deposit Amount (USDT equivalent):</label>
-                        <span className="font-mono-numbers text-[11px] text-[#05d5aa] font-bold">Min: 20 USDT · Max: 500 USDT</span>
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          step="1"
-                          min="20"
-                          max="500"
-                          value={depositAmount}
-                          onChange={(e) => setDepositAmount(e.target.value)}
-                          className="w-full bg-[#0b0e14] border border-[#32353c] focus:border-[#ffd700] rounded-xl pl-4 pr-24 py-3.5 text-white font-mono-numbers font-bold text-lg outline-none"
-                          placeholder="e.g. 50"
-                          required
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-[#141924] border border-[#272a31] text-xs font-bold text-[#ffd700] select-none pointer-events-none">
-                          USDT
-                        </span>
-                      </div>
-
-                      {/* Quick Chips */}
-                      <div className="grid grid-cols-5 gap-1.5 sm:gap-2 mt-2">
-                        {[20, 50, 100, 250, 500].map((amt) => (
-                          <button
-                            key={amt}
-                            type="button"
-                            onClick={() => setDepositAmount(String(amt))}
-                            className={`w-full py-1.5 rounded-lg text-[11px] font-mono-numbers font-bold border transition-colors cursor-pointer text-center ${
-                              depositAmount === String(amt)
-                                ? 'bg-[rgba(245,196,81,0.2)] text-[#ffd700] border-[#f5c451]'
-                                : 'bg-[#121721] hover:bg-[#1a2232] text-[#9b8f7c] hover:text-white border-[#272a31]'
-                            }`}
-                          >
-                            ${amt}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Submit Button */}
-                    <button
-                      type="submit"
-                      disabled={isGeneratingInvoice}
-                      className="btn-gold w-full sm:max-w-xs mx-auto py-2.5 sm:py-3 px-6 rounded-xl font-display font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#f5c451]/20 disabled:opacity-50 mt-2 transition-all"
-                    >
-                      {isGeneratingInvoice ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          <span>Generating Invoice...</span>
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="w-4 h-4" />
-                          <span>Deposit</span>
-                        </>
-                      )}
-                    </button>
-
-                    <div className="p-3 rounded-xl bg-[#0b0e14] border border-[#272a31] flex items-start gap-2.5 text-xs text-[#9b8f7c]">
-                      <ShieldCheck className="w-4 h-4 text-[#05d5aa] shrink-0 mt-0.5" />
-                      <p className="text-[11px] leading-relaxed">
-                        Hosted on NOWPayments official infrastructure. Supports auto-detection of network deposits with real-time webhook confirmation. Unpaid deposits auto-cancel after 15 minutes.
-                      </p>
-                    </div>
-                  </form>
-                )}
-              </div>
-            )}
-
-            {/* METHOD 2: DIRECT TRC-20 ADDRESS */}
-            {depositMethod === 'direct' && (
-              <div>
-                {/* Network Display */}
-                <div className="p-1.5 rounded-xl bg-[#0b0e14] border border-[#272a31] mb-5">
-                  <div className="py-2 px-3 text-center text-xs font-mono-numbers font-bold rounded-lg bg-[#1e2638] text-[#ffd700] border border-[#f5c451]/50 shadow-md flex items-center justify-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#05d5aa] animate-pulse" />
-                    <span>Network: TRON (TRC-20 USDT) · Direct Ingress</span>
-                  </div>
-                </div>
-
-                {/* QR Code & Address Display */}
-                <div className="bg-[#0b0e14] rounded-2xl p-5 border border-[#272a31] text-center mb-5">
-                  <div className="w-32 h-32 mx-auto bg-white p-2 rounded-xl shadow-lg flex items-center justify-center mb-3">
-                    <div className="w-full h-full bg-[#0b0e14] rounded flex flex-col items-center justify-center border-2 border-[#f5c451] p-2 text-center">
-                      <QrCode className="w-14 h-14 text-[#ffd700]" />
-                      <span className="text-[9px] font-mono-numbers text-[#f5c451] font-bold mt-1">
-                        USDT {selectedNetwork}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-[#94A3B8] font-semibold">
+                      Active Deposit Invoice
+                    </span>
+                    {activeInvoice.createdAt && (
+                      <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 font-mono-numbers text-[10px] font-bold border border-amber-500/30 inline-flex items-center gap-1">
+                        <Clock className="w-3 h-3 animate-spin" aria-hidden="true" />
+                        {(() => {
+                          const rem = Math.max(0, 15 * 60 * 1000 - (now - activeInvoice.createdAt));
+                          const m = Math.floor(rem / 60000);
+                          const s = Math.floor((rem % 60000) / 1000);
+                          return `Expires in ${m}m ${s < 10 ? '0' : ''}${s}s`;
+                        })()}
                       </span>
-                    </div>
+                    )}
                   </div>
 
-                  <div className="text-xs text-[#9b8f7c] mb-2 font-medium">
-                    Your Personal Non-Custodial Vault Address ({selectedNetwork}):
-                  </div>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-mono-numbers font-bold inline-flex items-center gap-1.5 ${
+                      invoiceStatusText === 'finished' || invoiceStatusText === 'confirmed'
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                        : invoiceStatusText === 'confirming'
+                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
+                    {invoiceStatusText.toUpperCase()}
+                  </span>
+                </div>
 
-                  <div className="flex items-center gap-2 bg-[#121721] p-3 rounded-xl border border-[#272a31]">
-                    <code className="flex-1 font-mono-numbers text-xs text-white truncate text-left">
-                      {treasuryAddress}
-                    </code>
-                    <button
-                      type="button"
-                      onClick={handleCopy}
-                      className="px-3 py-1.5 rounded-lg bg-[rgba(245,196,81,0.15)] hover:bg-[#f5c451] text-[#ffd700] hover:text-[#0b0e14] text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
-                    >
-                      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      {copied ? 'Copied' : 'Copy'}
-                    </button>
+                <div className="bg-[#121721] p-3.5 sm:p-4 rounded-xl border border-[#1F2737] space-y-2">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-[#94A3B8]">Amount to Deposit:</span>
+                    <span className="font-mono-numbers font-black text-white text-sm sm:text-base">
+                      {activeInvoice.amount} USDT
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-[#94A3B8]">Selected Cryptocurrency:</span>
+                    <span className="font-mono-numbers font-bold text-amber-300 text-right truncate">
+                      {PAYMENT_CURRENCIES.find((c) => c.id === activeInvoice.currency)?.name ||
+                        activeInvoice.currency.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-[#94A3B8]">Reference ID:</span>
+                    <span className="font-mono-numbers text-white/80">
+                      #{activeInvoice.invoiceId || activeInvoice.depositId?.slice(0, 8)}
+                    </span>
                   </div>
                 </div>
 
-                <div className="space-y-1.5 text-xs text-[#9b8f7c] mb-5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#05d5aa]" />
-                    <span>Minimum Deposit: <strong>20.00 USDT</strong> | Maximum: <strong>500.00 USDT</strong></span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#05d5aa]" />
-                    <span>Confirmation Time: <strong>1 Network Block (~30 seconds)</strong></span>
-                  </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {activeInvoice.invoiceUrl && (
+                    <a
+                      href={activeInvoice.invoiceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn-gold flex-1 min-h-[44px] px-4 py-2.5 rounded-xl font-display font-extrabold text-xs sm:text-sm text-black flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/20 whitespace-nowrap"
+                    >
+                      <span>Open Secure Checkout</span>
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleCheckInvoiceStatus}
+                    disabled={isCheckingStatus}
+                    className="min-h-[44px] px-4 py-2.5 rounded-xl bg-[#1A2232] hover:bg-[#222C42] text-xs font-bold text-white border border-[#273145] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isCheckingStatus ? 'animate-spin' : ''}`} />
+                    <span>Refresh Status</span>
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1E2638] text-[11px] text-[#94A3B8]">
+                  <span>Unpaid invoices auto-expire after 15 minutes</span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (activeInvoice.depositId) {
+                        await cancelDeposit(activeInvoice.depositId);
+                      }
+                      setActiveInvoice(null);
+                    }}
+                    className="text-rose-400 hover:text-rose-300 hover:underline cursor-pointer inline-flex items-center gap-1 font-semibold"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
+                    <span>Cancel Order</span>
+                  </button>
                 </div>
               </div>
+            ) : (
+              <form onSubmit={handleDepositSubmit} className="space-y-4">
+                {/* Cryptocurrency Selection Dropdown */}
+                <div>
+                  <label
+                    htmlFor="deposit-currency-select"
+                    className="block text-xs text-[#CBD5E1] font-semibold mb-1.5"
+                  >
+                    Select Cryptocurrency
+                  </label>
+                  <select
+                    id="deposit-currency-select"
+                    data-testid="deposit-currency-select"
+                    value={payCurrency}
+                    onChange={(e) => {
+                      setPayCurrency(e.target.value);
+                      setDepositError('');
+                    }}
+                    className="w-full min-h-[44px] bg-[#0B0F19] border border-[#2D3545] focus:border-amber-400 rounded-xl px-3.5 py-2.5 text-white font-mono-numbers text-xs sm:text-sm outline-none cursor-pointer transition-colors"
+                  >
+                    {PAYMENT_CURRENCIES.map((c) => (
+                      <option key={c.id} value={c.id} className="bg-[#0B0F19] text-white">
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Deposit Amount Input */}
+                <div>
+                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs mb-1.5">
+                    <label htmlFor="deposit-amount-input" className="text-[#CBD5E1] font-semibold">
+                      Deposit Amount (USDT equivalent)
+                    </label>
+                    <span className="font-mono-numbers text-[11px] text-emerald-400 font-bold whitespace-nowrap">
+                      Min: 20 USDT · Max: 500 USDT
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      id="deposit-amount-input"
+                      data-testid="deposit-amount-input"
+                      type="number"
+                      step="1"
+                      min="20"
+                      max="500"
+                      value={depositAmount}
+                      onChange={(e) => {
+                        setDepositAmount(e.target.value);
+                        setDepositError('');
+                      }}
+                      className="w-full bg-[#0B0F19] border border-[#2D3545] focus:border-amber-400 rounded-xl pl-3.5 pr-20 py-3 text-white font-mono-numbers font-bold text-base sm:text-lg outline-none transition-colors"
+                      placeholder="e.g. 50"
+                      required
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-[#141924] border border-[#273145] text-[11px] font-bold text-amber-300 font-mono-numbers select-none pointer-events-none">
+                      USDT
+                    </span>
+                  </div>
+
+                  {/* Quick Amount Selection Buttons */}
+                  <div
+                    data-testid="deposit-quick-amounts"
+                    className="grid grid-cols-3 min-[380px]:grid-cols-5 gap-1.5 sm:gap-2 mt-2"
+                  >
+                    {QUICK_DEPOSIT_AMOUNTS.map((amt) => {
+                      const isSelected = depositAmount === String(amt);
+                      return (
+                        <button
+                          key={amt}
+                          type="button"
+                          onClick={() => {
+                            setDepositAmount(String(amt));
+                            setDepositError('');
+                          }}
+                          className={`w-full min-h-[38px] py-1.5 px-2 rounded-lg text-[11px] font-mono-numbers font-bold border transition-colors cursor-pointer text-center whitespace-nowrap ${
+                            isSelected
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-400'
+                              : 'bg-[#121721] hover:bg-[#1A2232] text-[#94A3B8] hover:text-white border-[#253045]'
+                          }`}
+                        >
+                          {amt} USDT
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {depositError && (
+                  <div
+                    role="alert"
+                    className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/35 text-rose-300 text-xs flex items-start gap-2"
+                  >
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                    <span>{depositError}</span>
+                  </div>
+                )}
+
+                {/* Deposit Submission Button */}
+                <button
+                  type="submit"
+                  data-testid="deposit-submit-button"
+                  disabled={isGeneratingInvoice}
+                  className="btn-gold w-full min-h-[44px] py-3 px-6 rounded-xl font-display font-black text-xs sm:text-sm text-black flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+                >
+                  {isGeneratingInvoice ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin shrink-0" aria-hidden="true" />
+                      <span>Processing Deposit...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ArrowDownLeft className="w-4 h-4 shrink-0" aria-hidden="true" />
+                      <span>Proceed to Deposit</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="p-3 rounded-xl bg-[#0B0F19] border border-[#1F2737] flex items-start gap-2.5 text-xs text-[#94A3B8]">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
+                  <p className="text-[11px] leading-relaxed">
+                    Automated crypto deposit verification with real-time settlement. Unpaid deposit requests expire automatically after 15 minutes.
+                  </p>
+                </div>
+              </form>
             )}
           </div>
+        </section>
 
-          {/* Quick Simulation Button for Testing */}
-          <div className="pt-4 border-t border-[#272a31] mt-6">
-            <span className="text-[11px] text-[#9b8f7c] block mb-2 font-semibold">
-              QUICK TEST DEPOSIT (INSTANT ON-CHAIN SIMULATION):
-            </span>
-            <div className="grid grid-cols-2 xs:grid-cols-4 gap-1.5 sm:gap-2">
-              {[20, 50, 100, 500].map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  onClick={() => depositUSDT(amt)}
-                  className="w-full py-2 rounded-xl bg-[rgba(5,213,170,0.12)] hover:bg-[#05d5aa] text-[#05d5aa] hover:text-[#0b0e14] border border-[#05d5aa]/30 text-xs font-bold font-mono-numbers transition-all cursor-pointer text-center"
-                >
-                  +{amt} USDT
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: Withdraw USDT (24-Hour SLA) (6 Cols) */}
-        <div className="lg:col-span-6 glass-panel rounded-2xl p-3.5 xs:p-4.5 sm:p-6 lg:p-8 flex flex-col justify-between border border-[rgba(245,196,81,0.35)]">
-          <div>
-            <div className="flex items-center justify-between gap-2 mb-4 sm:mb-5">
+        {/* SECTION C — WITHDRAW USDT (Preserves TRC-20 Withdrawal Flow 100%) */}
+        <section
+          data-testid="withdraw-usdt-section"
+          aria-label="Withdraw USDT"
+          className="lg:col-span-6 glass-panel rounded-2xl border border-amber-500/30 p-3.5 xs:p-4 sm:p-6 flex flex-col justify-between min-w-0"
+        >
+          <div className="space-y-4">
+            {/* Header + 24h Badge */}
+            <div className="flex items-start sm:items-center justify-between gap-2 pb-3 border-b border-[#1F2737]">
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[rgba(245,196,81,0.15)] flex items-center justify-center text-[#ffd700] border border-[#f5c451]/30 shrink-0">
-                  <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-300 border border-amber-500/30 shrink-0">
+                  <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-display font-extrabold text-lg sm:text-xl text-white truncate">
+                  <h2 className="font-display font-extrabold text-base sm:text-xl text-white leading-tight">
                     Withdraw USDT
-                  </h3>
-                  <p className="text-[11px] xs:text-xs text-[#9b8f7c] truncate">
+                  </h2>
+                  <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-snug mt-0.5">
                     Cold-storage multi-sig verified disbursal
                   </p>
                 </div>
               </div>
 
-              <div className="badge-gold px-2.5 xs:px-3 py-1 rounded-full text-[10px] xs:text-xs font-bold font-mono-numbers flex items-center gap-1.5 shrink-0">
-                <Clock className="w-3 xs:w-3.5 h-3 xs:h-3.5 text-amber-400" />
-                <span className="hidden xs:inline">24-Hour</span> Guarantee
-              </div>
+              <span className="badge-gold px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-bold font-mono-numbers inline-flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                <Clock className="w-3 h-3 text-amber-400 shrink-0" aria-hidden="true" />
+                <span>24-Hour SLA</span>
+              </span>
             </div>
 
             <form onSubmit={handleWithdrawSubmit} className="space-y-4">
-              
-              {/* Amount input */}
+              {/* Withdrawal Amount Input */}
               <div>
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <label className="text-[#9b8f7c] font-semibold">Withdrawal Amount (USDT):</label>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono-numbers text-[11px] text-[#f5c451]">
+                <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs mb-1.5">
+                  <label htmlFor="withdraw-amount-input" className="text-[#CBD5E1] font-semibold">
+                    Withdrawal Amount (USDT)
+                  </label>
+                  <div className="flex items-center gap-2 font-mono-numbers text-[11px] flex-wrap">
+                    <span className="text-amber-300 font-bold">
                       Min: {minWithdrawalLimit} USDT
                     </span>
-                    <span className="text-[#3b4150]">|</span>
-                    <span className="font-mono-numbers text-xs text-[#05d5aa]">
-                      Available: {wallet.balance.toFixed(2)} USDT
+                    <span className="text-[#3B4150]">|</span>
+                    <span className="text-emerald-400 font-bold">
+                      Available: {safeBalance.toFixed(2)} USDT
                     </span>
                   </div>
                 </div>
+
                 <div className="relative">
                   <input
+                    id="withdraw-amount-input"
+                    data-testid="withdraw-amount-input"
                     type="number"
                     step="0.01"
                     min={minWithdrawalLimit}
-                    max={Math.min(maxWithdrawalLimit, wallet.balance)}
+                    max={Math.min(maxWithdrawalLimit, safeBalance)}
                     value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                    className="w-full bg-[#0b0e14] border border-[#32353c] focus:border-[#ffd700] rounded-xl pl-4 pr-24 py-3.5 text-white font-mono-numbers font-bold text-lg outline-none"
-                    placeholder={`e.g. ${minWithdrawalLimit}`}
+                    onChange={(e) => {
+                      setWithdrawAmount(e.target.value);
+                      setWithdrawError('');
+                    }}
+                    className="w-full bg-[#0B0F19] border border-[#2D3545] focus:border-amber-400 rounded-xl pl-3.5 pr-20 py-3 text-white font-mono-numbers font-bold text-base sm:text-lg outline-none transition-colors"
+                    placeholder={`Min ${minWithdrawalLimit} USDT`}
                     required
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-[#141924] border border-[#272a31] text-xs font-bold text-[#ffd700] select-none pointer-events-none">
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-[#141924] border border-[#273145] text-[11px] font-bold text-amber-300 font-mono-numbers select-none pointer-events-none">
                     USDT
                   </span>
                 </div>
 
-                {/* Percentage Presets */}
-                <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mt-2">
-                  {[25, 50, 75, 100].map((pct) => (
+                {/* Quick Percentage Buttons (25%, 50%, 75%, MAX) */}
+                <div
+                  data-testid="withdraw-percent-presets"
+                  className="grid grid-cols-4 gap-1.5 sm:gap-2 mt-2"
+                >
+                  {WITHDRAW_PERCENT_PRESETS.map((pct) => (
                     <button
                       key={pct}
                       type="button"
-                      onClick={() => handlePreset(pct)}
-                      className="w-full py-1.5 rounded-lg bg-[#121721] hover:bg-[#1a2232] text-[11px] font-mono-numbers text-[#9b8f7c] hover:text-white border border-[#272a31] text-center cursor-pointer transition-colors"
+                      onClick={() => handleWithdrawPreset(pct)}
+                      className="w-full min-h-[38px] py-1.5 rounded-lg bg-[#121721] hover:bg-[#1A2232] text-[11px] font-mono-numbers font-bold text-[#94A3B8] hover:text-white border border-[#253045] text-center cursor-pointer transition-colors"
                     >
                       {pct === 100 ? 'MAX' : `${pct}%`}
                     </button>
@@ -742,71 +763,98 @@ export default function WalletView({ onOpenDeposit, onOpenWithdraw, onOpenTransa
                 </div>
               </div>
 
-              {/* Destination Address */}
+              {/* Recipient Destination USDT Address */}
               <div>
-                <label className="block text-xs text-[#9b8f7c] font-semibold mb-1.5">
-                  Recipient Destination USDT Address ({selectedNetwork}):
+                <label
+                  htmlFor="withdraw-destination-input"
+                  className="block text-xs text-[#CBD5E1] font-semibold mb-1.5"
+                >
+                  Recipient Destination USDT Address ({selectedNetwork})
                 </label>
                 <input
+                  id="withdraw-destination-input"
+                  data-testid="withdraw-destination-input"
                   type="text"
                   value={destinationAddress}
-                  onChange={(e) => setDestinationAddress(e.target.value)}
-                  className="w-full bg-[#0b0e14] border border-[#32353c] focus:border-[#ffd700] rounded-xl px-4 py-3 text-white font-mono-numbers text-xs outline-none"
-                  placeholder="Paste TRC-20 Address (starts with T...)"
+                  onChange={(e) => {
+                    setDestinationAddress(e.target.value);
+                    setWithdrawError('');
+                  }}
+                  className="w-full min-h-[44px] bg-[#0B0F19] border border-[#2D3545] focus:border-amber-400 rounded-xl px-3.5 py-2.5 text-white font-mono-numbers text-xs sm:text-sm outline-none transition-colors"
+                  placeholder="TRC-20 address (starts with T...)"
                   required
                 />
               </div>
 
-              {/* Breakdown Box */}
-              <div className="bg-[#0b0e14] p-4 rounded-xl border border-[#272a31] space-y-2 text-xs">
-                <div className="flex justify-between text-[#9b8f7c]">
+              {/* Breakdown Summary Box */}
+              <div className="bg-[#0B0F19] p-3.5 sm:p-4 rounded-xl border border-[#1F2737] space-y-2 text-xs">
+                <div className="flex items-center justify-between gap-2 text-[#94A3B8]">
                   <span>Requested Amount:</span>
-                  <span className="font-mono-numbers text-white font-bold">{parseFloat(withdrawAmount || '0').toFixed(2)} USDT</span>
+                  <span className="font-mono-numbers text-white font-bold whitespace-nowrap shrink-0">
+                    {parsedWithdrawAmt.toFixed(2)} USDT
+                  </span>
                 </div>
-                <div className="flex justify-between text-[#9b8f7c]">
+                <div className="flex items-center justify-between gap-2 text-[#94A3B8]">
                   <span>Network Fee:</span>
-                  <span className="font-mono-numbers text-white font-bold">1.00 USDT ({selectedNetwork})</span>
+                  <span className="font-mono-numbers text-white font-bold whitespace-nowrap shrink-0">
+                    {networkFee.toFixed(2)} USDT ({selectedNetwork})
+                  </span>
                 </div>
-                <div className="flex justify-between text-sm pt-2 border-t border-[#1f2737]">
-                  <span className="font-bold text-white">Net Disbursal Amount:</span>
-                  <span className="font-display font-black text-[#ffd700] text-base font-mono-numbers">
-                    {Math.max(0, (parseFloat(withdrawAmount || '0') - 1.0)).toFixed(2)} USDT
+                <div className="flex items-center justify-between gap-2 text-xs sm:text-sm pt-2 border-t border-[#1F2737]">
+                  <span className="font-bold text-white">Net Withdrawal Amount:</span>
+                  <span className="font-display font-black text-amber-300 text-sm sm:text-base font-mono-numbers whitespace-nowrap shrink-0">
+                    {netWithdrawAmt.toFixed(2)} USDT
                   </span>
                 </div>
               </div>
 
-              {/* SLA Guarantee Notice */}
-              <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/30 flex items-start gap-3">
-                <Clock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-amber-200/90 leading-relaxed">
-                  <strong>24-Hour Guarantee:</strong> All withdrawal requests are processed within 24 hours via multi-sig security. Average disbursement takes 2–4 hours.
-                </p>
-              </div>
+              {withdrawError && (
+                <div
+                  role="alert"
+                  className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/35 text-rose-300 text-xs flex items-start gap-2"
+                >
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                  <span>{withdrawError}</span>
+                </div>
+              )}
 
               {/* Submit Button */}
               <button
                 type="submit"
-                className="btn-gold w-full sm:max-w-xs mx-auto py-2.5 sm:py-3 px-6 rounded-xl font-display font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#f5c451]/20 transition-all whitespace-nowrap"
+                data-testid="withdraw-submit-button"
+                disabled={isSubmittingWithdrawal}
+                className="btn-gold w-full min-h-[44px] py-3 px-6 rounded-xl font-display font-black text-xs sm:text-sm text-black flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all whitespace-nowrap active:scale-[0.98]"
               >
-                <ArrowUpRight className="w-4 h-4" />
-                <span>Request Withdrawal</span>
+                {isSubmittingWithdrawal ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin shrink-0" aria-hidden="true" />
+                    <span>Submitting Request...</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowUpRight className="w-4 h-4 shrink-0" aria-hidden="true" />
+                    <span>Request Withdrawal</span>
+                  </>
+                )}
               </button>
 
-              {/* Supporting 24-Hour Notice Label */}
-              <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#9b8f7c] text-center pt-1">
-                <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>Disbursement guaranteed within <strong className="text-amber-300">24 Hours</strong></span>
+              {/* SLA Notice */}
+              <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-200/90">
+                <Clock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
+                <p className="text-[11px] leading-relaxed">
+                  <strong>24-Hour Guarantee:</strong> Withdrawals settle via {selectedNetwork} within 24 hours after verification.
+                </p>
               </div>
             </form>
           </div>
-        </div>
-
+        </section>
       </div>
 
-      {/* Dedicated Transaction History Navigation Button */}
-      <div className="pt-2 pb-6">
+      {/* Transaction History Navigation Action */}
+      <div className="pt-1 pb-4">
         <button
           type="button"
+          data-testid="wallet-history-button"
           onClick={() => {
             if (onOpenTransactionHistory) {
               onOpenTransactionHistory();
@@ -815,13 +863,12 @@ export default function WalletView({ onOpenDeposit, onOpenWithdraw, onOpenTransa
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className="w-full py-4 px-6 rounded-2xl btn-gold text-[#0B0F19] font-display font-extrabold text-sm sm:text-base shadow-xl shadow-amber-500/20 hover:scale-[1.01] active:scale-98 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+          className="w-full min-h-[46px] py-3.5 px-6 rounded-2xl btn-gold text-[#0B0F19] font-display font-extrabold text-sm sm:text-base shadow-xl shadow-amber-500/20 hover:brightness-105 active:scale-[0.99] transition-all flex items-center justify-center gap-2.5 cursor-pointer"
         >
-          <History className="w-5 h-5 text-black" />
+          <History className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-black shrink-0" aria-hidden="true" />
           <span>Transaction History</span>
         </button>
       </div>
-
     </div>
   );
 }

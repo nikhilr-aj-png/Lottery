@@ -550,7 +550,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      showToast('Creating secure NOWPayments invoice...', 'info');
+      showToast('Creating secure deposit invoice...', 'info');
       const response = await fetch(
         'https://pkloymdzdjykpsutpyqk.supabase.co/functions/v1/payment-api/create-nowpayments-invoice',
         {
@@ -570,10 +570,10 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to create payment invoice');
+        throw new Error(data.error || 'Failed to create deposit invoice');
       }
 
-      showToast('NOWPayments invoice ready! Redirecting to checkout...', 'success');
+      showToast('Deposit invoice ready! Redirecting to checkout...', 'success');
       fetchDeposits();
       return {
         success: true,
@@ -582,8 +582,8 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         invoiceId: data.invoice_id
       };
     } catch (err) {
-      console.error('NOWPayments error:', err);
-      showToast('NOWPayments error: ' + err.message, 'error');
+      console.error('Deposit invoice error:', err);
+      showToast('Deposit error: ' + err.message, 'error');
       return { success: false, error: err.message };
     }
   };
