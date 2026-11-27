@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  History, 
-  ArrowDownLeft, 
-  ArrowUpRight, 
-  Coins, 
-  RefreshCw, 
-  CheckCircle2, 
-  XCircle, 
-  Clock, 
-  ExternalLink, 
-  Check, 
+import {
+  History,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Coins,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ExternalLink,
+  Check,
   FileCheck,
   Search,
-  Wallet,
-  ShieldCheck,
-  Sparkles,
   Lock,
   LogIn
 } from 'lucide-react';
@@ -24,6 +21,99 @@ import WithdrawalProofModal from '../components/WithdrawalProofModal';
 export interface TransactionHistoryPageProps {
   onBackToWallet?: () => void;
   onBackToHome?: () => void;
+}
+
+const TRANSACTION_TYPE_MAP: Record<string, { label: string; bg: string }> = {
+  welcome_grant: {
+    label: 'Welcome Bonus',
+    bg: 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+  },
+  daily_reward: {
+    label: 'Daily Reward',
+    bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+  },
+  daily_bonus: {
+    label: 'Daily Reward',
+    bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+  },
+  lucky_wheel_spin: {
+    label: 'Lucky Wheel Spin',
+    bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+  },
+  lottery_win: {
+    label: 'Lottery Win',
+    bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+  },
+  game_win: {
+    label: 'Game Win',
+    bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+  },
+  monthly_leaderboard_reward: {
+    label: 'Leaderboard Prize',
+    bg: 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+  },
+  referral_reward: {
+    label: 'Referral Reward',
+    bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+  },
+  referral_commission: {
+    label: 'Referral Commission',
+    bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+  },
+  deposit: {
+    label: 'Deposit',
+    bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+  },
+  crypto_deposit: {
+    label: 'Crypto Deposit',
+    bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+  },
+  withdrawal: {
+    label: 'Withdrawal',
+    bg: 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+  },
+  withdrawal_request: {
+    label: 'Withdrawal Request',
+    bg: 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+  },
+  ticket_purchase: {
+    label: 'Ticket Purchase',
+    bg: 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+  },
+  game_bet: {
+    label: 'Game Wager',
+    bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+  },
+  admin_adjustment: {
+    label: 'Admin Grant',
+    bg: 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+  }
+};
+
+export function formatTransactionTypeLabel(rawType?: string | null): string {
+  const normalized = String(rawType || '').trim().toLowerCase();
+  if (!normalized) return 'Transaction';
+  if (TRANSACTION_TYPE_MAP[normalized]) {
+    return TRANSACTION_TYPE_MAP[normalized].label;
+  }
+  return normalized
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : ''))
+    .join(' ');
+}
+
+export function getTransactionTypeMeta(rawType?: string | null): { label: string; bg: string } {
+  const normalized = String(rawType || '').trim().toLowerCase();
+  if (TRANSACTION_TYPE_MAP[normalized]) {
+    return TRANSACTION_TYPE_MAP[normalized];
+  }
+  return {
+    label: formatTransactionTypeLabel(rawType),
+    bg: 'bg-white/10 text-white/85 border-white/20'
+  };
 }
 
 export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }: TransactionHistoryPageProps) {
@@ -94,13 +184,15 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
     return `${h}h ${m}m ${s}s remaining`;
   };
 
-  // Filtered ledger records for 'All' tab
+  // Filtered ledger records for 'All' tab (supports both raw type & formatted label searches)
   const filteredLedger = walletLedger.filter(tx => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
+    const formattedType = formatTransactionTypeLabel(tx.transaction_type).toLowerCase();
     return (
       (tx.id && String(tx.id).toLowerCase().includes(q)) ||
       (tx.transaction_type && tx.transaction_type.toLowerCase().includes(q)) ||
+      formattedType.includes(q) ||
       (tx.description && tx.description.toLowerCase().includes(q)) ||
       (tx.reference_id && tx.reference_id.toLowerCase().includes(q))
     );
@@ -169,124 +261,233 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
   }
 
   return (
-    <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-5 sm:space-y-6 text-left animate-in fade-in duration-200">
-      
+    <div
+      data-testid="transaction-history-page"
+      className="w-full max-w-[1360px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 text-left box-border overflow-x-clip animate-in fade-in duration-200"
+    >
       {/* 1. TOP HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1F2737]">
-        <div className="flex items-center gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <History className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
-              <h1 className="font-display font-extrabold text-xl sm:text-2xl lg:text-3xl text-white tracking-tight">
-                Transaction History
-              </h1>
-            </div>
-            <p className="text-xs sm:text-sm text-[#9b8f7c] mt-0.5">
-              Verified record of all wallet ledger activity, deposit orders, and withdrawal disbursements.
-            </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-3.5 border-b border-[#1F2737] min-w-0">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <History className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 shrink-0" aria-hidden="true" />
+            <h1 className="font-display font-extrabold text-xl sm:text-2xl lg:text-3xl text-white tracking-tight truncate">
+              Transaction History
+            </h1>
           </div>
+          <p className="text-xs sm:text-sm text-[#9b8f7c] mt-0.5 leading-snug">
+            Verified record of all wallet ledger activity, deposit orders, and withdrawal disbursements.
+          </p>
         </div>
 
         {/* Quick Refresh & Balance Indicator */}
-        <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
-          <div className="hidden xs:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#111827] border border-[#1F2737] text-xs font-mono-numbers">
-            <span className="text-[#9b8f7c]">Balance:</span>
-            <span className="text-purple-400 font-black">{Number(wallet?.balance || 0).toFixed(2)} USDT</span>
+        <div className="flex items-center justify-between xs:justify-start gap-2 self-stretch xs:self-start sm:self-auto shrink-0">
+          <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#111827] border border-[#1F2737] text-[11px] sm:text-xs font-mono-numbers min-w-0">
+            <span className="text-[#9b8f7c] shrink-0">Balance:</span>
+            <span className="text-purple-400 font-black truncate">{Number(wallet?.balance || 0).toFixed(2)} USDT</span>
           </div>
 
           <button
+            type="button"
             onClick={handleRefresh}
             disabled={isRefreshing || loadingLedger || loadingDeposits}
-            className="px-3.5 py-2 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#9b8f7c] hover:text-amber-300 border border-[#1F2737] hover:border-amber-400/40 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+            className="min-h-[36px] px-3 sm:px-3.5 py-1.5 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#9b8f7c] hover:text-amber-300 border border-[#1F2737] hover:border-amber-400/40 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 disabled:opacity-50"
             title="Refresh All Records"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-amber-400' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isRefreshing ? 'animate-spin text-amber-400' : ''}`} />
             <span className="hidden xs:inline">Refresh</span>
           </button>
         </div>
       </div>
 
-      {/* 2. THREE SECTION OPTIONS (All, Deposit Orders, Withdrawal Orders) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 bg-[#0b0e14] p-1 rounded-2xl border border-[#272a31] w-full sm:w-auto">
+      {/* 2. THREE SECTION OPTIONS (All, Deposit Orders, Withdrawal Orders) + SEARCH BAR */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3 min-w-0">
+        <div
+          data-testid="tx-filter-tabs"
+          className="flex items-center gap-1 sm:gap-1.5 bg-[#0b0e14] p-1 rounded-2xl border border-[#272a31] w-full md:w-auto max-w-full overflow-x-auto ef-subtle-scroll box-border"
+        >
           {/* Option 1: All */}
           <button
             type="button"
+            data-testid="tx-tab-all"
             onClick={() => setActiveHistoryTab('all')}
-            className={`flex-1 sm:flex-initial px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`shrink-0 min-h-[36px] px-2.5 sm:px-4 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
               activeHistoryTab === 'all'
                 ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-md font-extrabold'
                 : 'text-[#9b8f7c] hover:text-white hover:bg-white/5'
             }`}
           >
-            <Coins className="w-4 h-4" />
+            <Coins className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             <span>All ({walletLedger.length})</span>
           </button>
 
           {/* Option 2: Deposit Orders */}
           <button
             type="button"
+            data-testid="tx-tab-deposits"
             onClick={() => setActiveHistoryTab('deposits')}
-            className={`flex-1 sm:flex-initial px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`shrink-0 min-h-[36px] px-2.5 sm:px-4 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
               activeHistoryTab === 'deposits'
                 ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-md font-extrabold'
                 : 'text-[#9b8f7c] hover:text-white hover:bg-white/5'
             }`}
           >
-            <ArrowDownLeft className="w-4 h-4" />
+            <ArrowDownLeft className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             <span>Deposit Orders ({deposits.length})</span>
           </button>
 
           {/* Option 3: Withdrawal Orders */}
           <button
             type="button"
+            data-testid="tx-tab-withdrawals"
             onClick={() => setActiveHistoryTab('withdrawals')}
-            className={`flex-1 sm:flex-initial px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`shrink-0 min-h-[36px] px-2.5 sm:px-4 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
               activeHistoryTab === 'withdrawals'
                 ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-md font-extrabold'
                 : 'text-[#9b8f7c] hover:text-white hover:bg-white/5'
             }`}
           >
-            <ArrowUpRight className="w-4 h-4" />
+            <ArrowUpRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             <span>Withdrawal Orders ({withdrawals.length})</span>
           </button>
         </div>
 
         {/* Search Filter */}
-        <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 text-[#9b8f7c] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <div className="relative w-full md:w-64 min-w-0 box-border">
+          <Search className="w-4 h-4 text-[#9b8f7c] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
           <input
             type="text"
+            data-testid="tx-search-input"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by ID, type..."
-            className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#111827] border border-[#272a31] text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-amber-400/60"
+            aria-label="Search transactions by ID or type"
+            className="w-full min-h-[40px] pl-9 pr-3 py-2 rounded-xl bg-[#111827] border border-[#272a31] text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-amber-400/60 box-border"
           />
         </div>
       </div>
 
       {/* 3. OPTION 1: ALL TRANSACTIONS (USDT LEDGER) */}
       {activeHistoryTab === 'all' && (
-        <div className="glass-panel rounded-2xl p-3.5 xs:p-5 sm:p-6 space-y-4">
-          <div className="flex items-center justify-between text-xs text-[#9b8f7c] pb-2 border-b border-[#272a31]">
-            <span className="font-semibold text-white/90">
+        <div
+          data-testid="tx-ledger-card"
+          className="glass-panel rounded-2xl p-3 xs:p-4 sm:p-6 space-y-3.5 sm:space-y-4 w-full min-w-0 box-border overflow-hidden"
+        >
+          <div
+            data-testid="tx-ledger-header"
+            className="flex flex-col xs:flex-row xs:items-center justify-between gap-1 text-xs text-[#9b8f7c] pb-2.5 border-b border-[#272a31] min-w-0"
+          >
+            <span className="font-semibold text-white/90 truncate">
               All Transaction Records ({filteredLedger.length})
             </span>
-            <span className="text-[11px] font-mono-numbers text-purple-400 font-bold">USDT (TRC-20) Settlement</span>
+            <span className="text-[11px] font-mono-numbers text-purple-400 font-bold whitespace-nowrap">
+              USDT (TRC-20) Settlement
+            </span>
           </div>
 
-          <div className="max-h-[520px] sm:max-h-[540px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#272a31]/70">
+          {/* MOBILE COMPACT CARDS (< 768px) — Zero table overflow at 320px-767px */}
+          <div
+            data-testid="tx-mobile-cards"
+            className="md:hidden space-y-2.5 max-h-[560px] overflow-y-auto ef-subtle-scroll min-w-0"
+          >
+            {filteredLedger.length === 0 ? (
+              <div className="py-8 text-center text-xs text-[#9b8f7c] font-mono-numbers">
+                {searchQuery ? 'No transactions matching your search query.' : 'No transactions recorded in ledger yet.'}
+              </div>
+            ) : (
+              filteredLedger.map((tx) => {
+                const isCredit = Number(tx.amount) > 0;
+                const typeConfig = getTransactionTypeMeta(tx.transaction_type);
+
+                return (
+                  <article
+                    key={tx.id}
+                    data-testid={`tx-mobile-card-${tx.id}`}
+                    className="rounded-xl bg-[#0B0F19]/95 border border-[#1F2737] p-3 space-y-2 w-full min-w-0 box-border"
+                  >
+                    {/* Top Row: Transaction Type Badge + Status Badge */}
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 min-w-0">
+                      <span
+                        data-testid={`tx-type-badge-${tx.id}`}
+                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10.5px] font-semibold border max-w-full break-words leading-snug ${typeConfig.bg}`}
+                      >
+                        {typeConfig.label}
+                      </span>
+
+                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 shrink-0 whitespace-nowrap">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" aria-hidden="true" />
+                        <span>Completed</span>
+                      </span>
+                    </div>
+
+                    {/* Main Row: Amount (USDT) & TX ID */}
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1 min-w-0">
+                      <span
+                        className={`font-mono-numbers font-black text-sm ${
+                          isCredit ? 'text-emerald-400' : 'text-rose-400'
+                        }`}
+                      >
+                        {isCredit ? '+' : ''}
+                        {Number(tx.amount).toFixed(2)} USDT
+                      </span>
+
+                      <span
+                        className="bg-[#10141F] px-2 py-0.5 rounded border border-[#272A31] text-[10.5px] text-amber-400/90 font-mono max-w-full truncate"
+                        title={tx.id ? String(tx.id) : ''}
+                      >
+                        #{tx.id ? String(tx.id).slice(0, 14) : '—'}
+                      </span>
+                    </div>
+
+                    {/* Secondary Metadata: Network & Balance After */}
+                    <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-[#1F2737]/70 text-[11px] font-mono-numbers min-w-0">
+                      <div className="min-w-0">
+                        <span className="text-[9.5px] uppercase text-[#94A3B8] block">Network</span>
+                        <span className="text-purple-300 font-bold">TRC-20</span>
+                      </div>
+                      <div className="text-right min-w-0">
+                        <span className="text-[9.5px] uppercase text-[#94A3B8] block">Balance After</span>
+                        <span className="text-purple-300 font-bold truncate block">
+                          {Number(tx.balance_after || 0).toFixed(2)} USDT
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Description / Reference + Timestamp */}
+                    <div className="pt-1.5 border-t border-[#1F2737]/70 space-y-0.5 min-w-0">
+                      <p className="text-[11px] text-white/80 leading-snug break-words">
+                        {tx.description || tx.reference_id || 'Virtual Credit Adjustment'}
+                      </p>
+                      {tx.reference_id && (
+                        <p className="text-[10px] text-[#9b8f7c] font-mono break-all">
+                          Ref: {tx.reference_id}
+                        </p>
+                      )}
+                      <span className="block text-[10px] font-mono-numbers text-[#94A3B8]">
+                        {tx.created_at ? new Date(tx.created_at).toLocaleString() : 'Recent'}
+                      </span>
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+
+          {/* DESKTOP TABLE (>= 768px) — Preserved Table Layout with Contained Horizontal Scroll */}
+          <div
+            data-testid="tx-desktop-table-wrap"
+            className="hidden md:block max-h-[540px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#272a31]/70 min-w-0"
+          >
             <table className="w-full min-w-[760px] text-left text-xs">
               <thead className="sticky top-0 z-10 bg-[#0e131e]/95 backdrop-blur-md shadow-[0_1px_0_0_#272a31]">
                 <tr className="text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Tx ID</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Transaction Type</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Network</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Balance After</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Description / Reference</th>
-                  <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Timestamp</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Tx ID</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Transaction Type</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Amount (USDT)</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Network</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Balance After</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Status</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Description / Reference</th>
+                  <th className="py-3 px-3 text-right whitespace-nowrap">Timestamp</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1f2737]">
@@ -299,53 +500,43 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
                 ) : (
                   filteredLedger.map((tx) => {
                     const isCredit = Number(tx.amount) > 0;
-                    const typeConfig = {
-                      welcome_grant: { label: 'WELCOME BONUS', bg: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
-                      daily_reward: { label: 'DAILY REWARD', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
-                      daily_bonus: { label: 'DAILY REWARD', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
-                      ticket_purchase: { label: 'TICKET PURCHASE', bg: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
-                      lottery_win: { label: 'LOTTERY WIN', bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
-                      monthly_leaderboard_reward: { label: 'LEADERBOARD PRIZE', bg: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
-                      game_bet: { label: 'GAME WAGER', bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-                      game_win: { label: 'GAME WIN', bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
-                      admin_adjustment: { label: 'ADMIN GRANT', bg: 'bg-blue-500/15 text-blue-300 border-blue-500/30' }
-                    }[tx.transaction_type] || { 
-                      label: (tx.transaction_type || 'TRANSACTION').toUpperCase(), 
-                      bg: 'bg-white/10 text-white/80 border-white/20' 
-                    };
+                    const typeConfig = getTransactionTypeMeta(tx.transaction_type);
 
                     return (
                       <tr key={tx.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-3.5 px-2 xs:px-3 font-mono-numbers text-[11px] text-white/70 whitespace-nowrap">
-                          <span className="bg-[#10141f] px-2 py-0.5 rounded border border-[#272a31] text-amber-400/90 font-mono">
+                        <td className="py-3.5 px-3 font-mono-numbers text-[11px] text-white/70 whitespace-nowrap">
+                          <span
+                            className="bg-[#10141f] px-2 py-0.5 rounded border border-[#272a31] text-amber-400/90 font-mono"
+                            title={tx.id ? String(tx.id) : ''}
+                          >
                             #{tx.id ? String(tx.id).slice(0, 14) : '—'}
                           </span>
                         </td>
-                        <td className="py-3.5 px-2 xs:px-3 whitespace-nowrap">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${typeConfig.bg}`}>
+                        <td className="py-3.5 px-3 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ${typeConfig.bg}`}>
                             {typeConfig.label}
                           </span>
                         </td>
-                        <td className="py-3.5 px-2 xs:px-3 font-mono-numbers font-black text-sm whitespace-nowrap">
+                        <td className="py-3.5 px-3 font-mono-numbers font-black text-sm whitespace-nowrap">
                           <span className={isCredit ? 'text-emerald-400' : 'text-rose-400'}>
                             {isCredit ? '+' : ''}{Number(tx.amount).toFixed(2)} USDT
                           </span>
                         </td>
-                        <td className="py-3.5 px-2 xs:px-3 font-mono-numbers font-bold text-xs whitespace-nowrap">
+                        <td className="py-3.5 px-3 font-mono-numbers font-bold text-xs whitespace-nowrap">
                           <span className="text-purple-300 font-mono">
                             TRC-20
                           </span>
                         </td>
-                        <td className="py-3.5 px-2 xs:px-3 font-mono-numbers text-xs text-white/90 whitespace-nowrap">
+                        <td className="py-3.5 px-3 font-mono-numbers text-xs text-white/90 whitespace-nowrap">
                           <span className="text-purple-300 font-bold">{Number(tx.balance_after || 0).toFixed(2)} USDT</span>
                         </td>
-                        <td className="py-3.5 px-2 xs:px-3 whitespace-nowrap">
+                        <td className="py-3.5 px-3 whitespace-nowrap">
                           <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                             <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                             <span>Completed</span>
                           </span>
                         </td>
-                        <td className="py-3.5 px-2 xs:px-3 text-xs text-white/80 max-w-[260px] truncate">
+                        <td className="py-3.5 px-3 text-xs text-white/80 max-w-[260px] truncate">
                           <span title={tx.description || tx.reference_id}>
                             {tx.description || tx.reference_id || 'Virtual Credit Adjustment'}
                           </span>
@@ -355,7 +546,7 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
                             </span>
                           )}
                         </td>
-                        <td className="py-3.5 px-2 xs:px-3 text-right text-[11px] font-mono-numbers text-[#9b8f7c] whitespace-nowrap">
+                        <td className="py-3.5 px-3 text-right text-[11px] font-mono-numbers text-[#9b8f7c] whitespace-nowrap">
                           {tx.created_at ? new Date(tx.created_at).toLocaleString() : 'Recent'}
                         </td>
                       </tr>
@@ -370,9 +561,12 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
 
       {/* 4. OPTION 2: DEPOSIT ORDERS */}
       {activeHistoryTab === 'deposits' && (
-        <div className="glass-panel rounded-2xl p-3.5 xs:p-5 sm:p-6 space-y-4">
+        <div
+          data-testid="tx-deposits-card"
+          className="glass-panel rounded-2xl p-3 xs:p-4 sm:p-6 space-y-3.5 sm:space-y-4 w-full min-w-0 box-border overflow-hidden"
+        >
           {/* Sub-Filter Pills */}
-          <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-[#272a31]">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pb-2 border-b border-[#272a31] min-w-0">
             {[
               { id: 'all', label: `All (${deposits.length})` },
               { id: 'completed', label: `Successful (${deposits.filter(d => d.status === 'finished' || d.status === 'confirmed').length})` },
@@ -383,7 +577,7 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
                 key={f.id}
                 type="button"
                 onClick={() => setDepositFilter(f.id)}
-                className={`px-3 py-1 rounded-lg text-xs font-mono-numbers font-bold transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs font-mono-numbers font-bold transition-all cursor-pointer whitespace-nowrap ${
                   depositFilter === f.id
                     ? 'bg-amber-500 text-black shadow-sm font-extrabold'
                     : 'bg-[#10141f] text-[#9b8f7c] hover:text-white border border-[#272a31]'
@@ -394,16 +588,111 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
             ))}
           </div>
 
-          <div className="max-h-[520px] sm:max-h-[540px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#272a31]/70">
+          {/* Mobile Cards for Deposit Orders (< 768px) */}
+          <div className="md:hidden space-y-2.5 max-h-[540px] overflow-y-auto ef-subtle-scroll min-w-0">
+            {filteredDeposits.length === 0 ? (
+              <div className="py-8 text-center text-xs text-[#9b8f7c]">
+                No deposit orders matching filter.
+              </div>
+            ) : (
+              filteredDeposits.map((order) => {
+                const isFinished = order.status === 'finished' || order.status === 'confirmed';
+                const isCancelled = order.status === 'cancelled';
+                const isExplicitExpired = order.status === 'expired' || order.status === 'failed';
+                const isWaiting = order.status === 'waiting';
+
+                const createdAtMs = order.created_at ? new Date(order.created_at).getTime() : now;
+                const ageMs = now - createdAtMs;
+                const timeoutMs = 15 * 60 * 1000;
+                const isTimedOut = isWaiting && ageMs > timeoutMs;
+                const remainingMs = Math.max(0, timeoutMs - ageMs);
+                const remMin = Math.floor(remainingMs / 60000);
+                const remSec = Math.floor((remainingMs % 60000) / 1000);
+
+                return (
+                  <article
+                    key={order.id}
+                    className="rounded-xl bg-[#0B0F19]/95 border border-[#1F2737] p-3 space-y-2 w-full min-w-0 box-border text-xs"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+                      <span className="px-2 py-0.5 rounded bg-[#10131a] text-[#ffd700] border border-[#f5c451]/30 font-mono-numbers font-bold text-[10px]">
+                        {(order.pay_currency || 'usdttrc20').toUpperCase()}
+                      </span>
+                      <span className="font-mono-numbers text-white/75 text-[11px] truncate" title={order.id}>
+                        #{order.invoice_id || (order.id ? String(order.id).slice(0, 14) : 'DEP')}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+                      <span className="font-mono-numbers font-black text-sm text-[#05d5aa]">
+                        +{Number(order.amount || 0).toFixed(2)} USDT
+                      </span>
+                      <span className="text-[10px] font-mono-numbers text-[#94A3B8]">
+                        {order.created_at ? new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Just now'}
+                      </span>
+                    </div>
+
+                    <div className="pt-1.5 border-t border-[#1F2737] flex flex-wrap items-center justify-between gap-2 min-w-0">
+                      {isFinished ? (
+                        <span className="px-2 py-0.5 rounded bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold text-[11px] inline-flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 shrink-0" />
+                          <span>Success (+{order.amount} USDT)</span>
+                        </span>
+                      ) : isCancelled ? (
+                        <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-bold text-[11px] inline-flex items-center gap-1">
+                          <XCircle className="w-3 h-3 shrink-0" />
+                          <span>Cancelled</span>
+                        </span>
+                      ) : (isExplicitExpired || isTimedOut) ? (
+                        <span className="px-2 py-0.5 rounded bg-[#161a23] text-[#9b8f7c] border border-[#272a31] font-bold text-[11px] inline-flex items-center gap-1">
+                          <Clock className="w-3 h-3 shrink-0" />
+                          <span>Unpaid (Expired 15m)</span>
+                        </span>
+                      ) : (
+                        <span className="text-amber-400 font-bold text-[11px]">
+                          Awaiting Payment ({remMin}m {remSec < 10 ? '0' : ''}{remSec}s)
+                        </span>
+                      )}
+
+                      {isWaiting && !isTimedOut && (
+                        <div className="flex items-center gap-1.5">
+                          {order.invoice_url && (
+                            <a
+                              href={order.invoice_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-2.5 py-1 rounded-lg bg-[rgba(245,196,81,0.15)] text-[#ffd700] text-[11px] font-bold border border-[#f5c451]/30 inline-flex items-center gap-1"
+                            >
+                              <span>Pay Now</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => cancelDeposit(order.id)}
+                            className="px-2.5 py-1 rounded-lg bg-rose-950/40 text-rose-300 text-[11px] font-bold border border-rose-500/30 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+
+          <div className="hidden md:block max-h-[540px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#272a31]/70 min-w-0">
             <table className="w-full min-w-[640px] text-left text-xs">
               <thead className="sticky top-0 z-10 bg-[#0e131e]/95 backdrop-blur-md shadow-[0_1px_0_0_#272a31]">
                 <tr className="text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Invoice / Order ID</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Payment Asset</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Initiated At</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status</th>
-                  <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Action</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Invoice / Order ID</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Amount (USDT)</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Payment Asset</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Initiated At</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Status</th>
+                  <th className="py-3 px-3 text-right whitespace-nowrap">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1f2737]">
@@ -430,23 +719,23 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
 
                     return (
                       <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-4 px-2 xs:px-3 font-mono-numbers font-bold text-white whitespace-nowrap">
+                        <td className="py-4 px-3 font-mono-numbers font-bold text-white whitespace-nowrap">
                           <span title={order.id}>
                             #{order.invoice_id || (order.id ? String(order.id).slice(0, 14) : 'DEP')}
                           </span>
                         </td>
-                        <td className="py-4 px-2 xs:px-3 font-mono-numbers font-black text-sm text-[#05d5aa] whitespace-nowrap">
+                        <td className="py-4 px-3 font-mono-numbers font-black text-sm text-[#05d5aa] whitespace-nowrap">
                           +{Number(order.amount || 0).toFixed(2)} USDT
                         </td>
-                        <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
+                        <td className="py-4 px-3 whitespace-nowrap">
                           <span className="px-2.5 py-0.5 rounded bg-[#10131a] text-[#ffd700] border border-[#f5c451]/30 font-mono-numbers font-bold text-[10px] whitespace-nowrap inline-flex items-center">
                             {(order.pay_currency || 'usdttrc20').toUpperCase()}
                           </span>
                         </td>
-                        <td className="py-4 px-2 xs:px-3 font-mono-numbers text-white/80 whitespace-nowrap text-[11px]">
+                        <td className="py-4 px-3 font-mono-numbers text-white/80 whitespace-nowrap text-[11px]">
                           {order.created_at ? new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Just now'}
                         </td>
-                        <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
+                        <td className="py-4 px-3 whitespace-nowrap">
                           {isFinished ? (
                             <span className="px-2.5 py-1 rounded-md bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold flex items-center gap-1.5 w-max whitespace-nowrap">
                               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -476,7 +765,7 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
                             </div>
                           )}
                         </td>
-                        <td className="py-4 px-2 xs:px-3 text-right whitespace-nowrap">
+                        <td className="py-4 px-3 text-right whitespace-nowrap">
                           {isWaiting && !isTimedOut ? (
                             <div className="flex items-center justify-end gap-2">
                               {order.invoice_url && (
@@ -521,24 +810,102 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
 
       {/* 5. OPTION 3: WITHDRAWAL ORDERS */}
       {activeHistoryTab === 'withdrawals' && (
-        <div className="glass-panel rounded-2xl p-3.5 xs:p-5 sm:p-6 space-y-4">
-          <div className="flex items-center justify-between text-xs text-[#9b8f7c] pb-2 border-b border-[#272a31]">
-            <span className="font-semibold text-white/90">
+        <div
+          data-testid="tx-withdrawals-card"
+          className="glass-panel rounded-2xl p-3 xs:p-4 sm:p-6 space-y-3.5 sm:space-y-4 w-full min-w-0 box-border overflow-hidden"
+        >
+          <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1 text-xs text-[#9b8f7c] pb-2.5 border-b border-[#272a31] min-w-0">
+            <span className="font-semibold text-white/90 truncate">
               Withdrawal Disbursement Orders ({filteredWithdrawals.length})
             </span>
-            <span className="text-[11px] font-mono-numbers">Automated 24h Payouts</span>
+            <span className="text-[11px] font-mono-numbers whitespace-nowrap">Automated 24h Payouts</span>
           </div>
 
-          <div className="max-h-[520px] sm:max-h-[540px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#272a31]/70">
+          {/* Mobile Cards for Withdrawal Orders (< 768px) */}
+          <div className="md:hidden space-y-2.5 max-h-[540px] overflow-y-auto ef-subtle-scroll min-w-0">
+            {filteredWithdrawals.length === 0 ? (
+              <div className="py-8 text-center text-xs text-[#9b8f7c]">
+                {searchQuery ? 'No withdrawals matching your search query.' : 'No withdrawals yet.'}
+              </div>
+            ) : (
+              filteredWithdrawals.map((order) => {
+                const isProcessing = order.status === 'processing';
+                const isCompleted = order.status === 'completed';
+
+                return (
+                  <article
+                    key={order.id}
+                    className="rounded-xl bg-[#0B0F19]/95 border border-[#1F2737] p-3 space-y-2 w-full min-w-0 box-border text-xs"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+                      <span className="px-2 py-0.5 rounded bg-[#10131a] text-[#05d5aa] border border-[#05d5aa]/30 font-mono-numbers font-bold text-[10px]">
+                        {order.network || 'TRC20'}
+                      </span>
+                      <span className="font-mono-numbers font-bold text-white/80 text-[11px]">
+                        #{order.id}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-baseline justify-between gap-2 min-w-0">
+                      <div>
+                        <span className="font-mono-numbers font-black text-sm text-[#ffd700] block">
+                          {Number(order.amount || 0).toFixed(2)} USDT
+                        </span>
+                        <span className="text-[10px] text-[#9b8f7c] font-mono-numbers">
+                          Net: {Number(order.netDisbursal || order.amount || 0).toFixed(2)} USDT
+                        </span>
+                      </div>
+
+                      <span className="font-mono-numbers text-white/75 text-[11px] truncate" title={order.address}>
+                        {order.address ? `${order.address.slice(0, 6)}...${order.address.slice(-6)}` : 'TRC-20 Address'}
+                      </span>
+                    </div>
+
+                    <div className="pt-1.5 border-t border-[#1F2737] flex flex-wrap items-center justify-between gap-2 min-w-0">
+                      {isProcessing ? (
+                        <span className="text-amber-400 font-bold text-[11px]">
+                          In Progress ({formatSLATime(order.slaTargetMs)})
+                        </span>
+                      ) : isCompleted ? (
+                        <span className="px-2 py-0.5 rounded bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold text-[11px] inline-flex items-center gap-1">
+                          <Check className="w-3 h-3 shrink-0" />
+                          <span>Completed</span>
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30 font-bold text-[11px]">
+                          Flagged / Refunded
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProofOrder(order)}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold font-mono-numbers cursor-pointer whitespace-nowrap ${
+                          isCompleted
+                            ? 'bg-emerald-500/15 text-[#05d5aa] border border-[#05d5aa]/30'
+                            : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                        }`}
+                      >
+                        <FileCheck className="w-3 h-3 shrink-0" />
+                        <span>{isCompleted ? 'View Receipt' : 'Track Order'}</span>
+                      </button>
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+
+          <div className="hidden md:block max-h-[540px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#272a31]/70 min-w-0">
             <table className="w-full min-w-[640px] text-left text-xs">
               <thead className="sticky top-0 z-10 bg-[#0e131e]/95 backdrop-blur-md shadow-[0_1px_0_0_#272a31]">
                 <tr className="text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Order ID</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Amount (USDT)</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Network</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Destination Address</th>
-                  <th className="pb-3 px-2 xs:px-3 whitespace-nowrap">Status / Timer</th>
-                  <th className="pb-3 px-2 xs:px-3 text-right whitespace-nowrap">Receipt / Tracking</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Order ID</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Amount (USDT)</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Network</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Destination Address</th>
+                  <th className="py-3 px-3 whitespace-nowrap">Status / Timer</th>
+                  <th className="py-3 px-3 text-right whitespace-nowrap">Receipt / Tracking</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1f2737]">
@@ -555,24 +922,24 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
 
                     return (
                       <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-4 px-2 xs:px-3 font-mono-numbers font-bold text-white whitespace-nowrap">
+                        <td className="py-4 px-3 font-mono-numbers font-bold text-white whitespace-nowrap">
                           #{order.id}
                         </td>
-                        <td className="py-4 px-2 xs:px-3 font-mono-numbers font-black text-sm text-[#ffd700] whitespace-nowrap">
+                        <td className="py-4 px-3 font-mono-numbers font-black text-sm text-[#ffd700] whitespace-nowrap">
                           {Number(order.amount || 0).toFixed(2)} USDT
                           <span className="block text-[10px] text-[#9b8f7c] font-normal">
                             Net: {Number(order.netDisbursal || order.amount || 0).toFixed(2)} USDT
                           </span>
                         </td>
-                        <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
+                        <td className="py-4 px-3 whitespace-nowrap">
                           <span className="px-2.5 py-0.5 rounded bg-[#10131a] text-[#05d5aa] border border-[#05d5aa]/30 font-mono-numbers font-bold text-[10px] whitespace-nowrap inline-flex items-center">
                             {order.network || 'TRC20'}
                           </span>
                         </td>
-                        <td className="py-4 px-2 xs:px-3 font-mono-numbers text-white/80 whitespace-nowrap">
+                        <td className="py-4 px-3 font-mono-numbers text-white/80 whitespace-nowrap">
                           {order.address ? `${order.address.slice(0, 6)}...${order.address.slice(-6)}` : 'TRC-20 Address'}
                         </td>
-                        <td className="py-4 px-2 xs:px-3 whitespace-nowrap">
+                        <td className="py-4 px-3 whitespace-nowrap">
                           {isProcessing ? (
                             <div className="flex items-center gap-2">
                               <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
@@ -596,12 +963,12 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
                             </span>
                           )}
                         </td>
-                        <td className="py-4 px-2 xs:px-3 text-right whitespace-nowrap">
+                        <td className="py-4 px-3 text-right whitespace-nowrap">
                           <button
                             type="button"
                             onClick={() => setSelectedProofOrder(order)}
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-mono-numbers transition-all cursor-pointer whitespace-nowrap ${
-                              isCompleted 
+                              isCompleted
                                 ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-[#05d5aa] border border-[#05d5aa]/30 shadow-[0_0_15px_rgba(5,213,170,0.15)]'
                                 : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30'
                             }`}
