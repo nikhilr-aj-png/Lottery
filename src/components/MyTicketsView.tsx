@@ -87,11 +87,14 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
     return () => clearInterval(id);
   }, [getServerNowMs]);
 
-  // Refresh latest server-joined tickets whenever page mounts for an authenticated player
+  // Refresh latest server-joined tickets whenever page mounts and poll gently while pending draws await cron finalization
   useEffect(() => {
-    if (user?.id && fetchTickets) {
+    if (!user?.id || !fetchTickets) return;
+    fetchTickets();
+    const pollId = setInterval(() => {
       fetchTickets();
-    }
+    }, 20000);
+    return () => clearInterval(pollId);
   }, [user?.id]);
 
   // 1. Authenticated user's purchased tickets ONLY
@@ -104,7 +107,7 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
     );
   }, [tickets, user, wallet?.address]);
 
-  // 2. Map every ticket strictly to its authentic event & room record (NEVER substitute synthetic active events)
+  // 2. Map every ticket strictly to its authentic event & room record and enforce post-finalization 1-hour visibility
   const enrichedTickets = useMemo(() => {
     return myPurchasedTickets.map((tkt: any) => {
       const eventId = tkt.eventId || tkt.event_id || '';
@@ -126,6 +129,11 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
         isActive: Boolean(tkt.eventIsActive),
         isDeleted: Boolean(tkt.eventIsDeleted),
         isPaused: Boolean(tkt.eventIsPaused),
+        isFinalized: Boolean(tkt.isFinalized),
+        finalizedAt: tkt.finalizedAt || null,
+        finalizedAtMs: tkt.finalizedAtMs || 0,
+        ticketVisibilityUntil: tkt.ticketVisibilityUntil || null,
+        ticketVisibilityUntilMs: tkt.ticketVisibilityUntilMs || 0,
         winningDigits: tkt.winningDigits || null,
         drawResultCodes: tkt.drawResultCodes || [],
         poolPrize: tkt.poolPrize || 0,
@@ -134,14 +142,16 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
       };
 
       const statusInfo = getEventStatusInfo(authoritativeEvent, undefined, nowTick);
+      const isFinalized = statusInfo.isFinalized;
 
-      // Only reveal official winning codes once completed/drawn (never expose private preset digits)
-      const rawCodes =
-        authoritativeEvent.drawResultCodes?.length > 0
+      // Only reveal official winning codes once completed & finalized (never expose private preset digits)
+      const rawCodes = isFinalized
+        ? authoritativeEvent.drawResultCodes?.length > 0
           ? authoritativeEvent.drawResultCodes
           : authoritativeEvent.winningDigits
             ? [authoritativeEvent.winningDigits]
-            : [];
+            : []
+        : [];
 
       const winningCodes: string[] = Array.isArray(rawCodes)
         ? rawCodes
@@ -153,29 +163,42 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
       const rawTktNum = String(tkt.ticketNumber ?? tkt.ticket_number ?? tkt.digits ?? '0').replace(/\D/g, '');
       const tktNumber = rawTktNum.padStart(4, '0').slice(-4);
 
-      const hasOfficialResult = winningCodes.length > 0 || authoritativeEvent.status === 'completed';
+      const hasOfficialResult = isFinalized && winningCodes.length > 0;
       const isWon =
-        String(tkt.status || '').toLowerCase() === 'won' ||
-        (hasOfficialResult && winningCodes.includes(tktNumber));
+        isFinalized &&
+        (String(tkt.status || '').toLowerCase() === 'won' ||
+          (hasOfficialResult && winningCodes.includes(tktNumber)));
       const isLost =
+        isFinalized &&
         !isWon &&
-        (String(tkt.status || '').toLowerCase() === 'lost' ||
-          (statusInfo.isEnd && hasOfficialResult && winningCodes.length > 0));
+        (String(tkt.status || '').toLowerCase() === 'lost' || hasOfficialResult);
       const isUpcoming = statusInfo.isUpcoming;
       const isLive = statusInfo.isLive || statusInfo.isExpiringSoon;
+      const isExpiredPending = statusInfo.isEnd && !isFinalized && !authoritativeEvent.isDeleted;
       const isExpiredOrCompleted = statusInfo.isEnd;
+
+      // 1-Hour Post-Finalization Auto-Hide Rule (computed strictly from server finalized_at + 1h)
+      const visibilityUntilMs = statusInfo.ticketVisibilityUntilMs || Number(tkt.ticketVisibilityUntilMs || 0);
+      const visibilityRemainingMs = isFinalized && visibilityUntilMs > 0
+        ? Math.max(0, visibilityUntilMs - nowTick)
+        : 0;
+      const isPostFinalizationExpired =
+        (isFinalized && visibilityUntilMs > 0 && nowTick >= visibilityUntilMs) ||
+        Boolean(tkt.isPostFinalizationHidden);
+      const isDeletedBeforeFinalization = Boolean(authoritativeEvent.isDeleted) && !isFinalized;
+      const shouldHideFromNormalListing = isPostFinalizationExpired || isDeletedBeforeFinalization;
 
       const ticketStatusLabel = isWon
         ? 'Won'
         : isLost
           ? 'Lost'
-          : isExpiredOrCompleted
-            ? hasOfficialResult
-              ? 'Completed'
-              : 'Expired'
-            : isUpcoming
-              ? 'Upcoming'
-              : 'Active';
+          : isFinalized
+            ? 'Completed'
+            : isExpiredPending
+              ? 'Processing Result'
+              : isUpcoming
+                ? 'Upcoming'
+                : 'Active';
 
       const roomId = authoritativeEvent.roomId || tkt.roomId || `room-${eventId}`;
       const roomName = authoritativeEvent.roomName || tkt.roomName || authoritativeEvent.title || 'Lottery Room';
@@ -201,10 +224,15 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
         statusInfo,
         isLive,
         isUpcoming,
+        isFinalized,
+        isExpiredPending,
         isExpiredOrCompleted,
         isWon,
         isLost,
         hasOfficialResult,
+        visibilityUntilMs,
+        visibilityRemainingMs,
+        shouldHideFromNormalListing,
         ticketStatusLabel,
         winningCodes,
         price,
@@ -215,29 +243,34 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
     });
   }, [myPurchasedTickets, events, nowTick]);
 
-  // 3. Summary KPI counts computed strictly from user's real tickets
-  const stats = useMemo(() => {
-    const total = enrichedTickets.length;
-    const active = enrichedTickets.filter((t) => t.isLive).length;
-    const upcoming = enrichedTickets.filter((t) => t.isUpcoming).length;
-    const completed = enrichedTickets.filter((t) => t.isExpiredOrCompleted).length;
-    const won = enrichedTickets.filter((t) => t.isWon).length;
-    const lost = enrichedTickets.filter((t) => t.isLost).length;
-    const totalWonUsdt = enrichedTickets.reduce((sum, t) => sum + (t.isWon ? t.wonAmount : 0), 0);
-
-    return { total, active, upcoming, completed, won, lost, totalWonUsdt };
+  // Normal My Ticket listing: includes live, upcoming, expired pending result, AND finalized within 1h visibility
+  const visibleNormalTickets = useMemo(() => {
+    return enrichedTickets.filter((t) => !t.shouldHideFromNormalListing);
   }, [enrichedTickets]);
 
-  // 4. Filter + Search (active default excludes expired/completed events)
+  // 3. Summary KPI counts computed strictly from user's currently visible My Tickets
+  const stats = useMemo(() => {
+    const total = visibleNormalTickets.length;
+    const active = visibleNormalTickets.filter((t) => t.isLive).length;
+    const upcoming = visibleNormalTickets.filter((t) => t.isUpcoming).length;
+    const pending = visibleNormalTickets.filter((t) => t.isExpiredPending).length;
+    const completed = visibleNormalTickets.filter((t) => t.isFinalized).length;
+    const won = visibleNormalTickets.filter((t) => t.isWon).length;
+    const lost = visibleNormalTickets.filter((t) => t.isLost).length;
+    const totalWonUsdt = visibleNormalTickets.reduce((sum, t) => sum + (t.isWon ? t.wonAmount : 0), 0);
+
+    return { total, active, upcoming, pending, completed, won, lost, totalWonUsdt };
+  }, [visibleNormalTickets]);
+
+  // 4. Filter + Search (automatically hides post-finalization tickets once 1-hour visibility ends)
   const filteredTickets = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
 
-    return enrichedTickets
+    return visibleNormalTickets
       .filter((t) => {
-        if (statusFilter === 'all_active' && (!t.isLive && !t.isUpcoming)) return false;
         if (statusFilter === 'upcoming' && !t.isUpcoming) return false;
         if (statusFilter === 'live' && !t.isLive) return false;
-        if (statusFilter === 'completed' && !t.isExpiredOrCompleted) return false;
+        if (statusFilter === 'completed' && !t.isFinalized && !t.isExpiredPending) return false;
         if (statusFilter === 'won' && !t.isWon) return false;
         if (statusFilter === 'lost' && !t.isLost) return false;
 
@@ -251,7 +284,7 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
         return true;
       })
       .sort((a, b) => new Date(b.purchaseTime).getTime() - new Date(a.purchaseTime).getTime());
-  }, [enrichedTickets, statusFilter, searchQuery]);
+  }, [visibleNormalTickets, statusFilter, searchQuery]);
 
   // 5. Group Tickets Strictly by Actual Room & Event Association (never mixing rooms)
   const roomGroups = useMemo(() => {
@@ -345,10 +378,10 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
   }
 
   const filterTabs: { key: TicketFilterKey; label: string; count: number }[] = [
-    { key: 'all_active', label: 'All Active Tickets', count: stats.active + stats.upcoming },
+    { key: 'all_active', label: 'All Tickets', count: stats.total },
     { key: 'upcoming', label: 'Upcoming', count: stats.upcoming },
     { key: 'live', label: 'Live', count: stats.active },
-    { key: 'completed', label: 'Completed', count: stats.completed },
+    { key: 'completed', label: 'Results / Pending', count: stats.completed + stats.pending },
     { key: 'won', label: 'Won', count: stats.won },
     { key: 'lost', label: 'Lost', count: stats.lost }
   ];
@@ -557,8 +590,8 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
             </div>
           ))}
         </div>
-      ) : enrichedTickets.length === 0 ? (
-        /* 6. EMPTY STATE (No Purchased Tickets Yet) */
+      ) : visibleNormalTickets.length === 0 ? (
+        /* 6. EMPTY STATE (No Active / Pending / 1-Hour Visible Tickets) */
         <div
           data-testid="my-tickets-empty"
           className="bg-[#111728] rounded-2xl p-8 sm:p-10 border border-[#1F2737] text-center max-w-md mx-auto space-y-3"
@@ -567,10 +600,10 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
             <Ticket className="w-6 h-6" />
           </div>
           <h3 className="font-display font-bold text-base sm:text-lg text-white">
-            No Tickets Yet
+            No Active Tickets
           </h3>
           <p className="text-xs text-[#94A3B8] leading-relaxed">
-            Your purchased tickets will appear here.
+            Your active, pending-result, and recently finalized (1-hour window) tickets appear here. Completed ticket history remains securely preserved in your account transactions.
           </p>
           {onExploreEvents && (
             <button
@@ -674,18 +707,20 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
                         </span>
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-mono-numbers font-bold uppercase whitespace-nowrap ${
-                            statusInfo.isEnd
-                              ? 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
-                              : statusInfo.badgeClass
+                            statusInfo.isFinalized
+                              ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
+                              : statusInfo.isEnd
+                                ? 'bg-amber-500/15 border border-amber-500/30 text-amber-300'
+                                : statusInfo.badgeClass
                           }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusInfo.dotClass}`} />
                           <span>
-                            {statusInfo.isEnd
-                              ? event?.winningDigits
-                                ? 'COMPLETED'
-                                : 'EXPIRED'
-                              : statusInfo.label}
+                            {statusInfo.isFinalized
+                              ? 'COMPLETED'
+                              : statusInfo.isEnd
+                                ? 'EXPIRED · PENDING RESULT'
+                                : statusInfo.label}
                           </span>
                         </span>
                       </div>
@@ -809,15 +844,25 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
                   )}
                 </div>
 
-                {/* Card Footer: Official Result OR Enter Room ONLY When Officially Active & Unexpired */}
+                {/* Card Footer: Official Result OR 1-Hour Post-Finalization Timer OR Enter Room */}
                 <div className="pt-3 mt-3 border-t border-[#1F2737] flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[10px] text-[#94A3B8] font-mono-numbers">
-                    {event?.winningDigits
-                      ? `Winning: ${event.winningDigits}`
-                      : statusInfo.isEnd
-                        ? 'Read-Only Historical Record'
-                        : `Purchased ${formatTimestamp(roomTickets[0]?.purchaseTime)}`}
-                  </span>
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="text-[10px] text-[#94A3B8] font-mono-numbers">
+                      {statusInfo.isFinalized && event?.winningDigits
+                        ? `Winning: ${event.winningDigits}`
+                        : statusInfo.isEnd
+                          ? 'Awaiting Official Result Processing'
+                          : `Purchased ${formatTimestamp(roomTickets[0]?.purchaseTime)}`}
+                    </span>
+                    {statusInfo.isFinalized && statusInfo.visibilityRemainingMs > 0 && (
+                      <span
+                        data-testid={`visibility-countdown-${eventId}`}
+                        className="text-[10px] text-amber-300 font-mono-numbers font-bold"
+                      >
+                        Hides in {formatRemainingCountdown(statusInfo.visibilityRemainingMs)}
+                      </span>
+                    )}
+                  </div>
 
                   {canEnterRoom ? (
                     <button

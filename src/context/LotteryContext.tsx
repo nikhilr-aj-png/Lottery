@@ -76,15 +76,20 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     const isActiveFlag = row.is_active !== false;
     const isTimedOut = drawTimeMs <= 0 || drawTimeMs <= nowMs;
     const isUpcoming = startTimeMs > 0 && nowMs < startTimeMs;
+    const finalizedAt = row.finalized_at || (row.status === 'completed' ? row.draw_executed_at : null) || null;
+    const finalizedAtMs = finalizedAt ? new Date(finalizedAt).getTime() : 0;
+    const ticketVisibilityUntil = row.ticket_visibility_until || (finalizedAtMs > 0 ? new Date(finalizedAtMs + 3600 * 1000).toISOString() : null);
+    const ticketVisibilityUntilMs = ticketVisibilityUntil ? new Date(ticketVisibilityUntil).getTime() : 0;
+    const isFinalized = row.status === 'completed' && (finalizedAtMs > 0 || Boolean(row.winning_digits));
 
-    // Status strictly driven by database + server timestamp
+    // Status strictly separated: active -> expired / result_pending -> completed ONLY after finalization
     let effectiveStatus = row.status || 'active';
     if (isDeleted) {
       effectiveStatus = 'deleted';
-    } else if (row.status === 'completed' || row.winning_digits) {
+    } else if (isFinalized) {
       effectiveStatus = 'completed';
-    } else if (!isActiveFlag) {
-      effectiveStatus = 'expired';
+    } else if (!isActiveFlag || row.status === 'expired') {
+      effectiveStatus = row.status === 'result_pending' ? 'result_pending' : 'expired';
     } else if (isUpcoming && row.status !== 'paused') {
       effectiveStatus = 'scheduled';
     } else if (isTimedOut && row.status === 'active') {
@@ -183,6 +188,11 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       drawResultCodes,
       drawResultDetails,
       drawExecutedAt,
+      finalizedAt,
+      finalizedAtMs,
+      ticketVisibilityUntil,
+      ticketVisibilityUntilMs,
+      isFinalized,
       winnerMode,
       winnerCount,
       winnerSharePercent: winnerPayoutSharePercent,
@@ -2345,6 +2355,12 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           eventIsActive: Boolean(t.event_is_active),
           eventIsDeleted: Boolean(t.event_is_deleted),
           eventIsPaused: Boolean(t.event_is_paused),
+          isFinalized: Boolean(t.is_finalized),
+          finalizedAt: t.finalized_at || null,
+          finalizedAtMs: Number(t.finalized_at_ms || 0),
+          ticketVisibilityUntil: t.ticket_visibility_until || null,
+          ticketVisibilityUntilMs: Number(t.ticket_visibility_until_ms || 0),
+          isPostFinalizationHidden: Boolean(t.is_post_finalization_hidden),
           winningDigits: t.winning_digits || null,
           drawResultCodes: Array.isArray(t.draw_result_codes) ? t.draw_result_codes : []
         }));
@@ -2893,42 +2909,59 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Draw Logic: Provably Fair Multi/Single Lucky Winner Match & Automated Payout
+  // Authoritative Server-Side Finalization (Atomic & Idempotent — zero client simulation fallback)
   const executeDraw = async (eventId: string, specifiedWinningDigits: any = null, customWinnerCount: any = null, winningCodesList: any = null) => {
     const event = events.find(e => e.id === eventId);
     if (!event) return { success: false, error: 'Event not found' };
 
-    // Idempotency Protection: If event is already concluded, never re-process or duplicate payouts
-    if (event.status === 'completed') {
+    if (event.status === 'completed' && (event.finalizedAtMs > 0 || event.drawExecutedAt)) {
       return { success: true, alreadySettled: true, message: 'Event is already finalized and settled.' };
     }
 
     const parsedWinnerCount = Math.max(1, parseInt(customWinnerCount || event.winnerCount || event.winningCodeCount || 1, 10));
-    
+
     let codesPayload: string[] | null = null;
     if (Array.isArray(winningCodesList) && winningCodesList.length > 0) {
-      codesPayload = winningCodesList.map((c: any) => String(c).replace(/\D/g, '').padStart(4, '0'));
+      codesPayload = winningCodesList
+        .map((c: any) => String(c).replace(/\D/g, ''))
+        .filter((c: string) => c.length > 0)
+        .map((c: string) => c.padStart(4, '0').slice(-4));
     } else if (Array.isArray(specifiedWinningDigits) && specifiedWinningDigits.length > 0) {
-      codesPayload = specifiedWinningDigits.map((c: any) => String(c).replace(/\D/g, '').padStart(4, '0'));
+      codesPayload = specifiedWinningDigits
+        .map((c: any) => String(c).replace(/\D/g, ''))
+        .filter((c: string) => c.length > 0)
+        .map((c: string) => c.padStart(4, '0').slice(-4));
     } else if (specifiedWinningDigits) {
-      codesPayload = [String(specifiedWinningDigits).replace(/\D/g, '').padStart(4, '0')];
-    } else if (event.winningCodes && event.winningCodes.length > 0) {
-      codesPayload = event.winningCodes;
+      const cleaned = String(specifiedWinningDigits).replace(/\D/g, '');
+      if (cleaned.length > 0) {
+        codesPayload = [cleaned.padStart(4, '0').slice(-4)];
+      }
     }
 
     const targetDigits = codesPayload && codesPayload.length > 0 ? codesPayload[0] : null;
 
-    // 1. Try Server-Authoritative Provably Fair Finalization RPC
     try {
       const { data: rpcData, error: rpcError } = await supabase.rpc('finalize_lottery_draw_secure', {
         p_event_id: eventId,
         p_winning_codes: codesPayload,
-        p_draw_mode: event.drawMode || 'random',
+        p_draw_mode: event.drawMode || null,
         p_custom_winner_count: parsedWinnerCount,
         p_custom_digits: targetDigits
       });
 
-      if (!rpcError && rpcData?.success) {
+      if (rpcError) {
+        const errMsg = rpcError.message || 'Draw finalization failed cleanly; event remains uncompleted.';
+        showToast(errMsg, 'error');
+        return { success: false, error: errMsg };
+      }
+
+      if (rpcData && rpcData.success === false) {
+        const errMsg = rpcData.error || 'Draw finalization failed cleanly; event remains uncompleted.';
+        showToast(errMsg, 'error');
+        return { success: false, error: errMsg };
+      }
+
+      if (rpcData?.success) {
         await refreshEvents();
         await fetchTickets();
         await fetchWinnerPayouts();
@@ -2939,13 +2972,15 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           ? rpcData.winning_codes.join(', ')
           : finalDigits;
         const auditRef = rpcData.audit_id ? ` · Audit #${rpcData.audit_id}` : '';
-        showToast(`🏆 Draw Finalized! Winning Code(s): [${codesStr}]${auditRef}`, 'success');
+        if (!rpcData.already_finalized) {
+          showToast(`🏆 Draw Finalized! Winning Code(s): [${codesStr}]${auditRef}`, 'success');
+        }
 
-        const userWon = tickets.filter(t => 
-          t.eventId === eventId && 
+        const userWon = tickets.filter(t =>
+          t.eventId === eventId &&
           (Array.isArray(rpcData.winning_codes) ? rpcData.winning_codes.includes(t.ticketNumber) : t.ticketNumber === finalDigits)
         );
-        if (userWon.length > 0) {
+        if (userWon.length > 0 && !rpcData.already_finalized) {
           confetti({
             particleCount: 180,
             spread: 100,
@@ -2961,188 +2996,12 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         }
         return { success: true, ...rpcData };
       }
-      if (rpcData && rpcData.success === false && rpcData.error) {
-        showToast(rpcData.error, 'error');
-        return { success: false, error: rpcData.error };
-      }
-      if (rpcError) {
-        console.warn('finalize_lottery_draw_secure RPC error, falling back to client simulation:', rpcError);
-      }
-    } catch (rpcEx) {
-      console.warn('finalize_lottery_draw_secure exception, falling back to client simulation:', rpcEx);
-    }
 
-    // 2. Client-Side Simulation Fallback
-    // How many lucky winners should win? (e.g. 1, 5, 10, 12 etc.)
-    const configuredWinnerCount = parsedWinnerCount;
-
-    // Generate 4-digit winning sequence (e.g. '7429') if not specified
-    const winDigits = targetDigits || String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-
-    // Active tickets for this event
-    const activeTicketsForEvent = tickets.filter(t => t.eventId === eventId && t.status === 'active');
-
-    // STRICT FINANCIAL INTEGRITY: Only tickets genuinely matching the target winning sequence(s) get selected!
-    // Never randomly sample non-matching tickets or fabricate winners when no tickets match.
-    const targetCodesList: string[] = codesPayload && codesPayload.length > 0 
-      ? codesPayload 
-      : (winDigits ? [winDigits] : []);
-    const targetCodeSet = new Set(targetCodesList);
-
-    const winningTickets = activeTicketsForEvent.filter(t => targetCodeSet.has(t.ticketNumber));
-    const selectedWinnerTicketIds = new Set(winningTickets.map(t => t.id));
-    const finalWinnerCount = winningTickets.length;
-
-    // Calculate pool collection strictly from eligible sold ticket collections
-    const totalPoolCollected = event.ticketsSold > 0
-      ? Number((event.ticketsSold * event.ticketPrice).toFixed(2))
-      : 0;
-    const winnerSharePct = event.winnerSharePercent || 90;
-    const totalWinnerPool = parseFloat(((totalPoolCollected * winnerSharePct) / 100).toFixed(2));
-    const perWinnerCalculated = finalWinnerCount > 0 
-      ? parseFloat((totalWinnerPool / finalWinnerCount).toFixed(2))
-      : 0;
-
-    let totalWonByUser = 0;
-    let winningTicketsFound: any[] = [];
-
-    // Process tickets for this event
-    const updatedTickets = tickets.map(tkt => {
-      if (tkt.eventId === eventId && tkt.status === 'active') {
-        const isWinner = selectedWinnerTicketIds.has(tkt.id);
-
-        if (isWinner) {
-          totalWonByUser += perWinnerCalculated;
-          const tierName = configuredWinnerCount > 1 
-            ? `LUCKY WINNER (${finalWinnerCount} WINNERS EQUAL SHARE)` 
-            : 'EXACT 4/4 MATCH (JACKPOT WINNER)';
-          winningTicketsFound.push({ ...tkt, matchTier: tierName, wonAmount: perWinnerCalculated });
-          return {
-            ...tkt,
-            status: 'won',
-            matchTier: tierName,
-            wonAmount: perWinnerCalculated,
-            claimed: true
-          };
-        } else {
-          return {
-            ...tkt,
-            status: 'lost',
-            matchTier: 'NO MATCH',
-            wonAmount: 0,
-            claimed: false
-          };
-        }
-      }
-      return tkt;
-    });
-
-    setTickets(updatedTickets);
-
-    // Winning digits displayed
-    const winningDigitsDisplay = winningTickets.length > 0
-      ? Array.from(new Set(winningTickets.map(w => w.ticketNumber))).join(', ')
-      : winDigits;
-
-    // Update event status
-    const nowMs = Date.now();
-    setEvents(prev => prev.map(e => {
-      if (e.id === eventId) {
-        return {
-          ...e,
-          status: 'completed',
-          winningDigits: winningDigitsDisplay,
-          drawTime: nowMs,
-          winnerCount: finalWinnerCount
-        };
-      }
-      return e;
-    }));
-
-    // Queue Winner Payouts into Admin Approval Suite ("Winner Add USDT")
-    if (winningTickets.length > 0) {
-      const newPayouts = winningTickets.map((wTkt, idx) => ({
-        id: `WP-${Date.now()}-${idx}`,
-        eventId: event.id,
-        eventTitle: event.title,
-        ticketId: wTkt.id,
-        winnerAddress: wTkt.userAddress || wallet.address,
-        winnerUsername: wTkt.username || profile?.username || (wTkt.userAddress ? `${wTkt.userAddress.slice(0, 6)}...${wTkt.userAddress.slice(-4)}` : null) || user?.email?.split('@')[0] || `Winner_${idx + 1}`,
-        winningDigits: wTkt.ticketNumber,
-        ticketsSold: event.ticketsSold,
-        ticketPrice: event.ticketPrice,
-        totalPoolCollected: totalPoolCollected,
-        winnerSharePercent: winnerSharePct,
-        calculatedAmount: perWinnerCalculated,
-        payoutAmount: perWinnerCalculated, // Editable in Admin Console!
-        status: 'pending_approval',
-        createdAt: nowMs
-      }));
-
-      setWinnerPayouts(prev => [...newPayouts, ...prev]);
-
-      // Persist to Supabase winner_payouts table
-      for (const p of newPayouts) {
-        supabase.from('winner_payouts').insert({
-          id: p.id,
-          event_id: p.eventId,
-          event_title: p.eventTitle,
-          ticket_id: p.ticketId,
-          winner_address: p.winnerAddress,
-          winner_username: p.winnerUsername,
-          winning_digits: p.winningDigits,
-          tickets_sold: p.ticketsSold,
-          ticket_price: p.ticketPrice,
-          total_pool_collected: p.totalPoolCollected,
-          winner_share_percent: p.winnerSharePercent,
-          calculated_amount: p.calculatedAmount,
-          payout_amount: p.payoutAmount,
-          status: 'pending_approval'
-        }).then(() => {});
-      }
-    }
-
-    if (totalWonByUser > 0) {
-      // Trigger Grand Celebration Confetti & Modal!
-      confetti({
-        particleCount: 180,
-        spread: 100,
-        origin: { y: 0.6 },
-        colors: ['#ffd700', '#f5c451', '#05d5aa', '#00f2fe', '#ffffff']
-      });
-
-      setWinCelebration({
-        eventTitle: event.title,
-        winningDigits: winDigits,
-        totalWon: totalWonByUser,
-        winningTickets: winningTicketsFound
-      });
-
-      showToast(`🏆 EXACT MATCH! Winning number [${winDigits}]! Payout of ${totalWonByUser.toLocaleString()} USDT queued for disbursal!`, 'success');
-    } else {
-      showToast(`Draw for ${event.title} completed! Winning number is [${winDigits}].`);
-    }
-
-    // Sync Draw and Winners to Supabase
-    try {
-      // 1. Update event
-      await supabase.from('lottery_events').update({
-        status: 'completed',
-        winning_digits: winDigits,
-        draw_time: nowMs
-      }).eq('id', eventId);
-
-      // 2. Update tickets in DB
-      for (const t of updatedTickets.filter(tk => tk.eventId === eventId)) {
-        await supabase.from('lottery_tickets').update({
-          status: t.status,
-          match_tier: t.matchTier,
-          won_amount: t.wonAmount,
-          claimed: t.claimed
-        }).eq('id', t.id);
-      }
-    } catch (err) {
-      console.error('Supabase draw sync error:', err);
+      return { success: false, error: 'Unexpected response from draw finalization server.' };
+    } catch (rpcEx: any) {
+      const errMsg = rpcEx?.message || 'Draw finalization error; event was not marked completed.';
+      showToast(errMsg, 'error');
+      return { success: false, error: errMsg };
     }
   };
 
@@ -3748,40 +3607,30 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const adminDeleteEvent = async (eventId: string) => {
+  const adminDeleteEvent = async (eventId: string, forceCancel: boolean = false, reason: string | null = null) => {
     try {
-      // Soft-delete in database: Never delete user wallet balances, ledger entries, or historical payouts!
-      const { error } = await supabase
-        .from('lottery_events')
-        .update({ status: 'deleted', is_active: false, is_deleted: true, archived_at: new Date().toISOString() })
-        .eq('id', eventId);
+      const { data, error } = await supabase.rpc('admin_delete_event_secure', {
+        p_event_id: eventId,
+        p_force_cancel: forceCancel,
+        p_reason: reason
+      });
 
       if (error) {
-        console.warn('Soft-delete event update error:', error);
+        showToast('Failed to delete event: ' + error.message, 'error');
+        return { success: false, error: error.message };
       }
 
-      // Record administrative audit log
-      try {
-        await supabase.from('admin_audit_logs').insert({
-          action: 'safe_delete_event',
-          target_type: 'lottery_event',
-          target_id: eventId,
-          details: {
-            preserved_wallet_balances: true,
-            preserved_payouts: true,
-            deleted_at: new Date().toISOString()
-          },
-          admin_id: user?.id || null,
-          admin_email: user?.email || null
-        });
-      } catch (logErr) {
-        console.warn('Audit log insert warning:', logErr);
+      if (data && data.success === false) {
+        if (!data.blocked_unfinalized) {
+          showToast(data.error || 'Failed to delete event', 'error');
+        }
+        return data;
       }
 
-      // Immediately remove from active event management list
-      setEvents(prev => prev.filter(e => e.id !== eventId));
-      showToast('Event safely archived. All historical user payouts remain 100% permanently intact.', 'info');
-      return { success: true };
+      await refreshEvents();
+      await fetchTickets();
+      showToast('Event safely archived. All tickets, winning digits, and financial history remain permanently preserved.', 'info');
+      return { success: true, ...data };
     } catch (err: any) {
       console.error('adminDeleteEvent error:', err);
       showToast('Failed to delete event: ' + (err.message || err), 'error');
@@ -3789,27 +3638,28 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Update an event's Winner Configuration & Multi-Winning Codes (Parts 2, 3, 5, 9)
+  // Save Winning Digits Configuration ONLY (Never marks event Completed or starts 1h visibility timer)
   const adminUpdateEventWinnerConfig = async (eventId: string, configData: any) => {
     try {
       const event = events.find(e => e.id === eventId);
       if (!event) throw new Error('Event not found: ' + eventId);
 
-      if (event.status === 'completed') {
-        throw new Error('Event is concluded and paid out. Winning codes cannot be modified.');
+      if (event.status === 'completed' || event.finalizedAtMs > 0) {
+        throw new Error('Event is already finalized and settled. Winning codes cannot be modified.');
       }
 
       const winnerMode = configData.winnerMode || event.winnerMode || 'single';
-      const drawMode = configData.drawMode || event.drawMode || 'random';
+      const drawMode = configData.drawMode || event.drawMode || 'preset';
       const winnerPayoutSharePercent = parseFloat(configData.winnerPayoutSharePercent || event.winnerPayoutSharePercent || 90);
-      
+
       let winningCodes: string[] = [];
       if (Array.isArray(configData.winningCodes)) {
         winningCodes = configData.winningCodes
-          .map((c: any) => String(c).replace(/\D/g, '').padStart(4, '0'))
-          .filter((c: string, idx: number, arr: string[]) => c.length === 4 && arr.indexOf(c) === idx);
+          .map((c: any) => String(c).replace(/\D/g, ''))
+          .filter((c: string) => c.length === 4)
+          .filter((c: string, idx: number, arr: string[]) => arr.indexOf(c) === idx);
       } else if (configData.presetWinningDigits) {
-        const single = String(configData.presetWinningDigits).replace(/\D/g, '').padStart(4, '0');
+        const single = String(configData.presetWinningDigits).replace(/\D/g, '');
         if (single.length === 4) winningCodes = [single];
       }
 
@@ -3817,83 +3667,30 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         winningCodes = [winningCodes[0]];
       }
 
-      const winningCodeCount = winnerMode === 'single' 
-        ? 1 
-        : Math.max(1, parseInt(configData.winningCodeCount || winningCodes.length || 1, 10));
-
       const winnerDistribution = Array.isArray(configData.winnerDistribution) && configData.winnerDistribution.length > 0
         ? configData.winnerDistribution
         : [{ position: 1, percent: 100 }];
 
-      const previousCodes = Array.isArray(event.winningCodes) 
-        ? event.winningCodes 
-        : (event.presetWinningDigits ? [event.presetWinningDigits] : []);
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('admin_save_event_winning_digits_secure', {
+        p_event_id: eventId,
+        p_winning_codes: winningCodes,
+        p_winner_mode: winnerMode,
+        p_draw_mode: drawMode,
+        p_payout_share_percent: winnerPayoutSharePercent,
+        p_winner_distribution: winnerDistribution
+      });
 
-      const auditEntry = {
-        action: 'UPDATE_WINNING_CODES',
-        eventId,
-        previousCodes,
-        newCodes: winningCodes,
-        adminIdentity: wallet?.address || 'Admin',
-        timestamp: new Date().toISOString()
-      };
-
-      const existingAuditLog = (event.metadata && Array.isArray(event.metadata.audit_log)) ? event.metadata.audit_log : [];
-      const updatedMetadata = {
-        ...(event.metadata || {}),
-        audit_log: [...existingAuditLog, auditEntry],
-        winning_codes: winningCodes,
-        winner_mode: winnerMode
-      };
-
-      const updatePayload: any = {
-        winner_mode: winnerMode,
-        draw_mode: drawMode,
-        winning_codes: winningCodes,
-        winning_code_count: winningCodeCount,
-        winner_count: winningCodeCount,
-        preset_winning_digits: winningCodes.length > 0 ? winningCodes[0] : null,
-        winner_payout_share_percent: winnerPayoutSharePercent,
-        winner_distribution: winnerDistribution,
-        codes_timing: 'configured',
-        metadata: updatedMetadata
-      };
-
-      if (configData.codesLocked !== undefined) {
-        updatePayload.codes_locked = Boolean(configData.codesLocked);
-      }
-
-      const { error } = await supabase
-        .from('lottery_events')
-        .update(updatePayload)
-        .eq('id', eventId);
-
-      if (error) throw error;
-
-      // Also record in lottery_draw_audits for tamper-evident tracking
-      try {
-        await supabase.from('lottery_draw_audits').insert({
-          event_id: eventId,
-          event_title: event.title,
-          published_commit_hash: event.sha256Seed || event.sha256_seed || null,
-          draw_timestamp: Date.now(),
-          block_number: Math.floor(19400000 + Math.random() * 100000),
-          winning_digits: winningCodes.join(', '),
-          tickets_evaluated: event.ticketsSold || 0,
-          winners_count: winningCodeCount,
-          total_payout_amount: event.poolPrize || 0,
-          audit_details: `Admin (${wallet?.address || 'Admin'}) updated winning digits from [${previousCodes.join(', ')}] to [${winningCodes.join(', ')}] at ${new Date().toISOString()}`
-        });
-      } catch (auditErr) {
-        // Safe non-blocking fallback if lottery_draw_audits has specific constraints
+      if (rpcErr) throw rpcErr;
+      if (rpcData && rpcData.success === false) {
+        throw new Error(rpcData.error || 'Unable to save winning digits.');
       }
 
       await refreshEvents();
-      showToast('Winner configuration updated and saved to database!', 'success');
-      return { success: true };
+      showToast('Winning digits saved to database! Event stays active/pending until final draw processing.', 'success');
+      return { success: true, ...rpcData };
     } catch (err: any) {
       console.error('adminUpdateEventWinnerConfig error:', err);
-      showToast('Failed to update winner configuration: ' + (err.message || err), 'error');
+      showToast('Failed to save winning digits: ' + (err.message || err), 'error');
       return { success: false, error: err.message || err };
     }
   };
@@ -3921,17 +3718,28 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // General event edits (title, room, times, limits)
+  // General event edits (strictly preserves saved winning digits & finalization timestamps)
   const adminUpdateEvent = async (eventId: string, updateData: any) => {
     try {
-      const { error } = await supabase
-        .from('lottery_events')
-        .update(updateData)
-        .eq('id', eventId);
+      const sanitized = { ...(updateData || {}) };
+      delete sanitized.winning_digits;
+      delete sanitized.preset_winning_digits;
+      delete sanitized.winning_codes;
+      delete sanitized.finalized_at;
+      delete sanitized.ticket_visibility_until;
+      delete sanitized.draw_executed_at;
+
+      const { data: rpcData, error } = await supabase.rpc('admin_update_event_settings_secure', {
+        p_event_id: eventId,
+        p_updates: sanitized
+      });
 
       if (error) throw error;
+      if (rpcData && rpcData.success === false) {
+        throw new Error(rpcData.error || 'Failed to update event.');
+      }
       await refreshEvents();
-      showToast('Event settings updated successfully!', 'success');
+      showToast('Event settings updated safely!', 'success');
       return { success: true };
     } catch (err: any) {
       console.error('adminUpdateEvent error:', err);

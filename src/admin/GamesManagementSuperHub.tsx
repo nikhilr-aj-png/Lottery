@@ -766,9 +766,9 @@ export default function GamesManagementSuperHub({
           .filter((e: any) => {
             if (lotteryRoomFilter !== 'all' && e.roomName !== lotteryRoomFilter) return false;
             
-            const isConcluded = e.status === 'completed';
-            const isDrawProcessing = e.status === 'result_pending' || (e.status === 'active' && e.drawTime && e.drawTime <= currentTime);
-            const hasWinningDigits = (Array.isArray(e.winningCodes) && e.winningCodes.length > 0) || Boolean(e.presetWinningDigits) || Boolean(e.winningDigits);
+            const isConcluded = e.status === 'completed' && Boolean(e.finalizedAtMs || e.drawExecutedAt || e.winningDigits);
+            const isDrawProcessing = !isConcluded && (e.status === 'result_pending' || e.status === 'expired' || (e.status === 'active' && e.drawTime && e.drawTime <= currentTime));
+            const hasWinningDigits = (Array.isArray(e.winningCodes) && e.winningCodes.length > 0) || Boolean(e.presetWinningDigits);
             const isWaitingForDigits = isDrawProcessing && !hasWinningDigits && e.drawMode !== 'random';
             const diff = e.drawTime ? e.drawTime - currentTime : 0;
             const isExpiringSoon = !isConcluded && !isDrawProcessing && diff > 0 && diff <= 15 * 60 * 1000;
@@ -1048,10 +1048,12 @@ export default function GamesManagementSuperHub({
                 <div className="p-3.5 sm:p-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                     {filteredLotteryEvents.map((evt: any) => {
-                      const isConcluded = evt.status === 'completed';
-                      const isDrawProcessing = evt.status === 'result_pending' || (evt.status === 'active' && evt.drawTime && evt.drawTime <= currentTime);
-                      const hasWinningDigits = (Array.isArray(evt.winningCodes) && evt.winningCodes.length > 0) || Boolean(evt.presetWinningDigits) || Boolean(evt.winningDigits);
+                      const isConcluded = evt.status === 'completed' && Boolean(evt.finalizedAtMs || evt.drawExecutedAt || evt.winningDigits);
+                      const isDrawProcessing = !isConcluded && (evt.status === 'result_pending' || evt.status === 'expired' || (evt.status === 'active' && evt.drawTime && evt.drawTime <= currentTime));
+                      const hasWinningDigits = (Array.isArray(evt.winningCodes) && evt.winningCodes.length > 0) || Boolean(evt.presetWinningDigits);
                       const isWaitingForDigits = isDrawProcessing && !hasWinningDigits && evt.drawMode !== 'random';
+                      const visibilityUntilMs = evt.ticketVisibilityUntilMs || (evt.finalizedAtMs ? evt.finalizedAtMs + 3600 * 1000 : 0);
+                      const visibilityRemainingMs = isConcluded && visibilityUntilMs > 0 ? Math.max(0, visibilityUntilMs - currentTime) : 0;
                       const diff = evt.drawTime ? evt.drawTime - currentTime : 0;
                       const isExpiringSoon = !isConcluded && !isDrawProcessing && diff > 0 && diff <= 15 * 60 * 1000;
                       const isActive = !isConcluded && !isDrawProcessing;
@@ -1208,8 +1210,10 @@ export default function GamesManagementSuperHub({
                                     </span>
                                   </div>
                                   <div className="flex items-center justify-between text-[11px] text-[#94A3B8]">
-                                    <span>Settlement Status:</span>
-                                    <strong className="text-emerald-400 font-bold">✓ Settled &amp; Paid</strong>
+                                    <span>Finalization Status:</span>
+                                    <strong className="text-emerald-400 font-bold">
+                                      ✓ Finalized {visibilityRemainingMs > 0 ? `(1H Visible: ${Math.ceil(visibilityRemainingMs / 60000)}m left)` : '(1H Window Ended · Ready to Delete)'}
+                                    </strong>
                                   </div>
                                 </div>
                               ) : isWaitingForDigits ? (
@@ -1283,16 +1287,26 @@ export default function GamesManagementSuperHub({
                                 <span className="text-xs font-bold">Winning Digits</span>
                               </button>
 
-                              {/* Action C: Delete Event (Financial Safety Guaranteed) */}
+                              {/* Action C: Safe Event Deletion (Protected Before Finalization) */}
                               <button
                                 type="button"
-                                onClick={() => {
-                                  if (confirm(`Are you sure you want to delete event "${evt.title}" (${evt.id})?\n\nCRITICAL FINANCIAL INTEGRITY GUARANTEE:\n• All user wallet balances remain 100% permanently intact.\n• Past credited winnings will NEVER be reversed or deducted.\n• Event is safely archived from the active management view.`)) {
-                                    directDeleteEvent(evt.id);
+                                onClick={async () => {
+                                  if (isConcluded) {
+                                    if (confirm(`Archive completed event "${evt.title}" (${evt.id})?\n\nRETENTION GUARANTEE:\n• All purchased Ticket IDs, winning digits, payouts, and ledger transactions remain permanently preserved.`)) {
+                                      await directDeleteEvent(evt.id, false, 'Post-finalization admin cleanup');
+                                    }
+                                    return;
+                                  }
+
+                                  const res = await directDeleteEvent(evt.id, false);
+                                  if (res?.blocked_unfinalized) {
+                                    if (confirm(`⚠️ SAFE DELETION PROTECTION:\nEvent "${evt.title}" (${evt.id}) has NOT completed finalization yet.\n\nStandard deletion is blocked so saved winning digits, active tickets, and pending result processing are not discarded.\n\nProceed ONLY if you want to run AUTHORIZED RECOVERY / CANCELLATION (preserves all ticket & audit history)?`)) {
+                                      await directDeleteEvent(evt.id, true, 'Admin authorized recovery cancellation');
+                                    }
                                   }
                                 }}
                                 className="p-2 rounded-xl bg-red-950/20 hover:bg-red-900/40 text-red-400 border border-red-500/30 transition-all cursor-pointer flex items-center justify-center"
-                                title="Delete Event"
+                                title={isConcluded ? 'Archive Finalized Event' : 'Protected Until Finalized (Authorized Recovery Only)'}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -2305,7 +2319,7 @@ export default function GamesManagementSuperHub({
                             }}
                             className="flex-1 py-2.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] cursor-pointer disabled:opacity-50"
                           >
-                            {wcSaving ? 'Saving...' : 'Save Digits to Database'}
+                            {wcSaving ? 'Saving...' : 'Save Winning Digits (Keep Pending)'}
                           </button>
 
                           {/* If event is draw processing or duration expired, allow instant finalize */}

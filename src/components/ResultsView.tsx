@@ -22,7 +22,7 @@ import {
  * 5. Clicking "Show Result" or clicking the card opens that exact event in LotteryShowResultScreen.
  */
 export default function ResultsView() {
-  const { events, tickets, platformSettings } = useLottery();
+  const { events, tickets, platformSettings, getServerNowMs } = useLottery();
   const [statusFilter, setStatusFilter] = useState<'pending' | 'declared'>('pending');
   const [selectedShowResultEvent, setSelectedShowResultEvent] = useState<any>(null);
 
@@ -36,47 +36,67 @@ export default function ResultsView() {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1.0;
   }, [platformSettings?.resultsRetentionHours, platformSettings?.resultsRetention]);
 
-  // Filter and deduplicate strictly to ended events within global display period
+  // Filter and deduplicate strictly to ended events; 1-hour countdown begins ONLY from finalizedAtMs
   const endedEvents = useMemo(() => {
     const seenIds = new Set<string>();
     const list: any[] = [];
-    const now = Date.now();
+    const now = getServerNowMs ? getServerNowMs() : Date.now();
     const retentionMs = retentionHours * 3600 * 1000;
 
     (events || []).forEach((e: any) => {
-      if (!e || !e.id || seenIds.has(e.id)) return;
+      if (!e || !e.id || seenIds.has(e.id) || e.isDeleted || e.status === 'deleted') return;
 
-      const isConcludedOrPending = Boolean(
+      const isFinalizedCompleted =
+        e.status === 'completed' && Boolean(e.finalizedAtMs || e.drawExecutedAt || e.winningDigits);
+      const isPendingOrExpired = Boolean(
         e.status === 'result_pending' ||
-        e.status === 'completed' ||
-        Boolean(e.winningDigits) ||
-        (e.drawTime && new Date(e.drawTime).getTime() <= now)
+          e.status === 'expired' ||
+          (!isFinalizedCompleted && e.drawTime && new Date(e.drawTime).getTime() <= now)
       );
 
-      if (isConcludedOrPending) {
-        if (e.status === 'completed' && e.drawTime && (now - new Date(e.drawTime).getTime()) > retentionMs) {
-          return;
+      if (isFinalizedCompleted || isPendingOrExpired) {
+        if (isFinalizedCompleted) {
+          const visDeadlineMs =
+            e.ticketVisibilityUntilMs ||
+            (e.finalizedAtMs
+              ? e.finalizedAtMs + retentionMs
+              : e.drawExecutedAt
+                ? new Date(e.drawExecutedAt).getTime() + retentionMs
+                : 0);
+          if (visDeadlineMs > 0 && now > visDeadlineMs) {
+            return;
+          }
         }
         seenIds.add(e.id);
         list.push(e);
       }
     });
 
-    // Sort by draw time descending (most recent first)
+    // Sort by finalization time or draw time descending (most recent first)
     return list.sort((a, b) => {
-      const timeA = a.drawTime ? new Date(a.drawTime).getTime() : 0;
-      const timeB = b.drawTime ? new Date(b.drawTime).getTime() : 0;
+      const timeA = a.finalizedAtMs || (a.drawTime ? new Date(a.drawTime).getTime() : 0);
+      const timeB = b.finalizedAtMs || (b.drawTime ? new Date(b.drawTime).getTime() : 0);
       return timeB - timeA;
     });
-  }, [events, retentionHours]);
+  }, [events, retentionHours, getServerNowMs]);
 
-  // Declared vs Pending strictly driven by official declaration state in backend
+  // Declared vs Pending strictly driven by official finalization state in backend
   const declaredEvents = useMemo(() => {
-    return endedEvents.filter(e => e.status === 'completed' && Boolean(e.winningDigits || (Array.isArray(e.winning_codes) && e.winning_codes.length > 0)));
+    return endedEvents.filter(
+      (e) =>
+        e.status === 'completed' &&
+        Boolean(e.finalizedAtMs || e.drawExecutedAt) &&
+        Boolean(e.winningDigits)
+    );
   }, [endedEvents]);
 
   const pendingEvents = useMemo(() => {
-    return endedEvents.filter(e => e.status !== 'completed' || !Boolean(e.winningDigits || (Array.isArray(e.winning_codes) && e.winning_codes.length > 0)));
+    return endedEvents.filter(
+      (e) =>
+        e.status !== 'completed' ||
+        !Boolean(e.finalizedAtMs || e.drawExecutedAt) ||
+        !Boolean(e.winningDigits)
+    );
   }, [endedEvents]);
 
   // Filtered list based on active tab: ONLY 'pending' and 'declared'
