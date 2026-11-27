@@ -77,8 +77,13 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     const isUpcoming = startTimeMs > 0 && nowMs < startTimeMs;
     const finalizedAt = row.finalized_at || (row.status === 'completed' ? row.draw_executed_at : null) || null;
     const finalizedAtMs = finalizedAt ? new Date(finalizedAt).getTime() : 0;
-    const ticketVisibilityUntil = row.ticket_visibility_until || (finalizedAtMs > 0 ? new Date(finalizedAtMs + 3600 * 1000).toISOString() : null);
+    const resultPublishedAt = row.result_published_at || finalizedAt || null;
+    const resultPublishedAtMs = resultPublishedAt ? new Date(resultPublishedAt).getTime() : 0;
+    const ticketVisibilityUntil = row.result_visible_until || row.ticket_visibility_until || (finalizedAtMs > 0 ? new Date(finalizedAtMs + 3600 * 1000).toISOString() : null);
     const ticketVisibilityUntilMs = ticketVisibilityUntil ? new Date(ticketVisibilityUntil).getTime() : 0;
+    const resultVisibleUntil = row.result_visible_until || ticketVisibilityUntil || null;
+    const resultVisibleUntilMs = resultVisibleUntil ? new Date(resultVisibleUntil).getTime() : 0;
+    const eventCategory = String(row.event_category || meta.event_category || 'normal').toLowerCase() === 'vip' ? 'vip' : 'normal';
     const scheduledPublishAt = row.scheduled_publish_at || null;
     const scheduledPublishAtMs = scheduledPublishAt ? new Date(scheduledPublishAt).getTime() : 0;
     const publishedAt = row.published_at || null;
@@ -211,8 +216,13 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       drawExecutedAt,
       finalizedAt,
       finalizedAtMs,
+      resultPublishedAt,
+      resultPublishedAtMs,
+      resultVisibleUntil,
+      resultVisibleUntilMs,
       ticketVisibilityUntil,
       ticketVisibilityUntilMs,
+      eventCategory,
       scheduledPublishAt,
       scheduledPublishAtMs,
       publishedAt,
@@ -1221,6 +1231,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     minWithdrawal: 5.0,
     maxWithdrawal: 10000.0,
     houseFeePercent: 5,
+    vipMembershipPrice: 25.0,
     supportEmail: 'earnflow.user@gmail.com',
     usernameChangeFee: 5.0,
     apkDownloadUrl: '/download/earnflow.apk',
@@ -1239,8 +1250,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     spinWheelSettings: {
       is_active: true,
       daily_spins_limit: 1,
-      min_deposit_required: 0,
-      require_kyc: false
+      min_deposit_required: 0
     }
   };
 
@@ -1387,6 +1397,15 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         return { success: false, error: errMsg };
       }
 
+      const parsedVipPrice = parseFloat(
+        newSettings.vipMembershipPrice !== undefined ? newSettings.vipMembershipPrice : (platformSettings.vipMembershipPrice ?? 25)
+      );
+      if (!Number.isFinite(parsedVipPrice) || parsedVipPrice <= 0 || parsedVipPrice > 100000) {
+        const errMsg = 'VIP Membership Price must be greater than 0 and up to 100,000 USDT.';
+        showToast(errMsg, 'error');
+        return { success: false, error: errMsg };
+      }
+
       const payload: any = {
         ...platformSettings,
         ...newSettings,
@@ -1395,6 +1414,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         minWithdrawal: parseFloat(newSettings.minWithdrawal !== undefined ? newSettings.minWithdrawal : platformSettings.minWithdrawal),
         maxWithdrawal: parseFloat(newSettings.maxWithdrawal !== undefined ? newSettings.maxWithdrawal : platformSettings.maxWithdrawal),
         houseFeePercent: parsedHouseFee,
+        vipMembershipPrice: parsedVipPrice,
         supportEmail: (newSettings.supportEmail || platformSettings.supportEmail).trim(),
         usernameChangeFee: parseFloat(newSettings.usernameChangeFee !== undefined ? newSettings.usernameChangeFee : (platformSettings.usernameChangeFee ?? 5.0)),
         apkDownloadUrl: (newSettings.apkDownloadUrl !== undefined ? newSettings.apkDownloadUrl : (platformSettings.apkDownloadUrl || '/download/earnflow.apk')).trim(),
@@ -3316,6 +3336,10 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
   const adminFetchAllUsers = async () => {
     try {
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('admin_get_users_with_wallets');
+      if (!rpcErr && rpcRes?.success && Array.isArray(rpcRes.users)) {
+        return rpcRes.users;
+      }
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -3325,6 +3349,100 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error('Failed to fetch users:', err);
       return [];
+    }
+  };
+
+  const adminAdjustUserWallet = async (
+    targetUserId: string,
+    action: 'add' | 'deduct',
+    amount: number,
+    reason: string,
+    idempotencyKey?: string
+  ) => {
+    try {
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('admin_adjust_user_wallet_secure', {
+        p_target_user_id: targetUserId,
+        p_action: action,
+        p_amount: amount,
+        p_reason: reason,
+        p_idempotency_key: idempotencyKey || null
+      });
+      if (rpcErr || !rpcRes?.success) {
+        const msg = rpcRes?.error || rpcErr?.message || 'Wallet adjustment failed.';
+        showToast(msg, 'error');
+        return { success: false, error: msg };
+      }
+      await Promise.all([
+        fetchWalletLedger(),
+        user?.id === targetUserId ? fetchWallet(wallet.address) : Promise.resolve()
+      ]);
+      showToast(
+        `${action === 'add' ? 'Added' : 'Deducted'} ${Number(amount).toFixed(2)} USDT cleanly. New Balance: ${Number(rpcRes.new_balance).toFixed(2)} USDT`,
+        'success'
+      );
+      return { success: true, ...rpcRes };
+    } catch (err: any) {
+      showToast(err?.message || 'Wallet adjustment failed.', 'error');
+      return { success: false, error: err?.message };
+    }
+  };
+
+  const adminUpdateUserPlayerCategory = async (
+    targetUserId: string,
+    playerType: 'normal' | 'vip',
+    reason?: string
+  ) => {
+    try {
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('admin_update_user_player_category_secure', {
+        p_target_user_id: targetUserId,
+        p_player_type: playerType,
+        p_reason: reason || null
+      });
+      if (rpcErr || !rpcRes?.success) {
+        const msg = rpcRes?.error || rpcErr?.message || 'Failed to update player category.';
+        showToast(msg, 'error');
+        return { success: false, error: msg };
+      }
+      if (user?.id === targetUserId) {
+        await fetchProfile(targetUserId);
+      }
+      showToast(`Player category updated to ${playerType.toUpperCase()} Player!`, 'success');
+      return { success: true, ...rpcRes };
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to update player category.', 'error');
+      return { success: false, error: err?.message };
+    }
+  };
+
+  const purchaseVipMembership = async (idempotencyKey?: string) => {
+    if (!user?.id) {
+      requireAuth({ type: 'tab', tab: 'profile' }, 'Please log in to upgrade to VIP Membership.');
+      return { success: false, error: 'Authentication required' };
+    }
+    try {
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('purchase_vip_membership_secure', {
+        p_idempotency_key: idempotencyKey || null
+      });
+      if (rpcErr || !rpcRes?.success) {
+        const msg = rpcRes?.error || rpcErr?.message || 'VIP Membership upgrade failed.';
+        showToast(msg, 'error');
+        return { success: false, insufficientBalance: Boolean(rpcRes?.insufficient_balance), error: msg };
+      }
+      await Promise.all([
+        fetchProfile(user.id),
+        fetchWallet(wallet.address),
+        fetchWalletLedger(wallet.address)
+      ]);
+      showToast(
+        rpcRes.already_vip
+          ? 'Your VIP Membership is already active!'
+          : `Welcome to VIP! Paid ${Number(rpcRes.vip_paid_amount || 0).toFixed(2)} USDT — VIP Events unlocked.`,
+        'success'
+      );
+      return { success: true, ...rpcRes };
+    } catch (err: any) {
+      showToast(err?.message || 'VIP upgrade error.', 'error');
+      return { success: false, error: err?.message };
     }
   };
 
@@ -3542,12 +3660,15 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       const serverSeed = `seed_${randBytes}`;
       const sha256Seed = `0x${randBytes}`;
 
+      const eventCategory = eventData.eventCategory === 'vip' ? 'vip' : 'normal';
+
       const metadataObj = {
         block: `#${Math.floor(19400000 + Math.random() * 100000)}`,
         theme,
         banner_image: bannerImage,
         room_name: roomName,
         currency,
+        event_category: eventCategory,
         jackpot_mode: jackpotMode,
         min_jackpot: minJackpot,
         max_jackpot: maxJackpot,
@@ -3570,6 +3691,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         id: newId,
         title,
         badge,
+        event_category: eventCategory,
         game_id: 'lottery',
         room_id: roomId,
         room_name: roomName,
@@ -3976,6 +4098,11 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         adminApproveWithdrawal,
         adminRejectWithdrawal,
         adminFetchAllUsers,
+        adminAdjustUserWallet,
+        adminUpdateUserPlayerCategory,
+        purchaseVipMembership,
+        isVipMember: Boolean(profile?.player_type === 'vip' && profile?.vip_status === 'active'),
+        vipMembershipPrice: Number(platformSettings?.vipMembershipPrice ?? 25),
         adminToggleUserStatus,
         adminUpdateUserRole,
         adminDeleteUser,

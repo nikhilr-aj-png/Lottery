@@ -108,8 +108,12 @@ export const TRANSACTION_TYPE_MAP: Record<string, TransactionTypeMeta> = {
     bg: SLATE_GAME_BADGE,
   },
   admin_adjustment: {
-    label: 'Account Adjustment',
+    label: 'Wallet Adjustment',
     bg: SKY_ADMIN_BADGE,
+  },
+  vip_membership: {
+    label: 'VIP Membership',
+    bg: 'bg-amber-500/15 text-amber-300 border-amber-500/35',
   },
 };
 

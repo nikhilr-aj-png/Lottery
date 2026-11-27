@@ -1,27 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useLottery } from '../context/LotteryContext';
-import { 
-  User, 
-  Wallet, 
-  ShieldCheck, 
-  CheckCircle2, 
-  AlertCircle, 
-  Copy, 
-  Check, 
-  Edit3, 
-  Save, 
-  Sparkles, 
-  Loader2, 
-  Lock, 
-  ArrowDownLeft, 
-  ArrowUpRight, 
-  LogOut, 
+import {
+  User,
+  Wallet,
+  ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
+  Copy,
+  Check,
+  Edit3,
+  Save,
+  Sparkles,
+  Loader2,
+  Lock,
+  ArrowDownLeft,
+  ArrowUpRight,
+  LogOut,
   DollarSign,
   Ticket,
   Trophy,
   Headphones,
   CheckCircle,
-  ExternalLink
+  ExternalLink,
+  Crown
 } from 'lucide-react';
 
 interface ProfileViewProps {
@@ -30,10 +31,10 @@ interface ProfileViewProps {
 }
 
 export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileViewProps) {
-  const { 
+  const {
     user,
     profile,
-    wallet, 
+    wallet,
     updateTrc20Address,
     logout,
     setActiveTab,
@@ -42,6 +43,9 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
     usernameChangeCount = 0,
     checkUsernameAvailability,
     platformSettings,
+    isVipMember = false,
+    vipMembershipPrice = 25,
+    purchaseVipMembership,
     showToast
   } = useLottery();
 
@@ -57,6 +61,9 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
   const [usernameAvailability, setUsernameAvailability] = useState({ valid: false, message: '' });
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [isSavingUsername, setIsSavingUsername] = useState(false);
+  const [isConfirmingVip, setIsConfirmingVip] = useState(false);
+  const [isUpgradingVip, setIsUpgradingVip] = useState(false);
+  const [vipIdemKey, setVipIdemKey] = useState('');
 
   // Sync TRC-20 input with current wallet address
   useEffect(() => {
@@ -185,7 +192,7 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
 
   return (
     <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8 animate-in fade-in duration-200">
-      
+
 
       {/* Super Admin Console Access Banner (if super_admin) */}
       {profile?.role === 'super_admin' && (
@@ -218,9 +225,174 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
         </div>
       )}
 
+      {/* VIP Membership Tier & Self-Service Paid Upgrade Section (Visible on all viewports) */}
+      {profile?.role !== 'super_admin' && (
+        <section
+          data-testid="vip-membership-section"
+          className={`rounded-2xl p-4 sm:p-5 border shadow-lg ${isVipMember
+            ? 'bg-gradient-to-r from-amber-500/15 via-[#141924] to-[#0d1117] border-amber-500/40'
+            : 'bg-[#111728] border-[#272a31]'
+            }`}
+        >
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${isVipMember
+                ? 'bg-amber-500/20 text-amber-300 border-amber-400/50'
+                : 'bg-[#0B0F19] text-slate-300 border-[#272a31]'
+                }`}>
+                <Crown className="w-5 h-5" />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-display font-black text-sm sm:text-base text-white">
+                    {isVipMember ? 'VIP Player Membership' : 'Normal Player Account'}
+                  </h3>
+                  <span
+                    data-testid="player-category-badge"
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono-numbers font-black uppercase border ${isVipMember
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      : 'bg-slate-800 text-slate-300 border-slate-700'
+                      }`}
+                  >
+                    {isVipMember ? 'VIP PLAYER' : 'NORMAL PLAYER'}
+                  </span>
+                </div>
+
+                {isVipMember ? (
+                  <p className="text-xs text-[#CBD5E1] leading-relaxed">
+                    VIP access active — eligible for both Normal Events and exclusive VIP Events.
+                    {profile?.vip_paid_amount != null && (
+                      <span className="text-amber-300 font-mono-numbers font-bold ml-1.5">
+                        (Paid {Number(profile.vip_paid_amount).toFixed(2)} USDT)
+                      </span>
+                    )}
+                    {profile?.vip_source === 'admin_granted' && profile?.vip_paid_amount == null && (
+                      <span className="text-emerald-300 font-semibold ml-1.5">(Admin Granted)</span>
+                    )}
+                  </p>
+                ) : (
+                  <p className="text-xs text-[#94A3B8] leading-relaxed">
+                    Upgrade to <strong className="text-amber-300">VIP Player</strong> to unlock exclusive VIP Events. One-time fee:{' '}
+                    <strong data-testid="vip-fee-display" className="text-white font-mono-numbers">
+                      {Number(vipMembershipPrice).toFixed(2)} USDT
+                    </strong>{' '}
+                    (Available Balance:{' '}
+                    <strong className="text-emerald-400 font-mono-numbers">
+                      {Number(wallet?.balance || 0).toFixed(2)} USDT
+                    </strong>
+                    ).
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {!isVipMember && (
+              <div className="shrink-0 w-full md:w-auto">
+                <button
+                  type="button"
+                  data-testid="vip-upgrade-open-btn"
+                  onClick={() => {
+                    setVipIdemKey(`vip-upgrade-${user?.id || 'u'}-${Date.now()}`);
+                    setIsConfirmingVip(true);
+                  }}
+                  className="w-full md:w-auto px-5 py-2.5 rounded-xl btn-gold text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                >
+                  <Crown className="w-4 h-4 text-black shrink-0" />
+                  <span>Upgrade to VIP ({Number(vipMembershipPrice).toFixed(2)} USDT)</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Explicit Confirmation Step for Paid VIP Upgrade */}
+          {!isVipMember && isConfirmingVip && (
+            <div
+              data-testid="vip-upgrade-confirm-modal"
+              className="mt-4 p-4 rounded-xl bg-[#07090d] border border-amber-500/40 space-y-3 animate-in fade-in duration-150"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono-numbers">
+                <div className="p-2.5 rounded-lg bg-[#111728] border border-[#1F2737]">
+                  <span className="text-[10px] text-[#94A3B8] block">VIP Membership Fee</span>
+                  <strong className="text-amber-300 font-black">{Number(vipMembershipPrice).toFixed(2)} USDT</strong>
+                </div>
+                <div className="p-2.5 rounded-lg bg-[#111728] border border-[#1F2737]">
+                  <span className="text-[10px] text-[#94A3B8] block">Available Wallet Balance</span>
+                  <strong className="text-emerald-400 font-black">{Number(wallet?.balance || 0).toFixed(2)} USDT</strong>
+                </div>
+                <div className="p-2.5 rounded-lg bg-[#111728] border border-[#1F2737]">
+                  <span className="text-[10px] text-[#94A3B8] block">Balance After Upgrade</span>
+                  <strong className={Number(wallet?.balance || 0) >= Number(vipMembershipPrice) ? 'text-white font-black' : 'text-red-400 font-black'}>
+                    {Number(wallet?.balance || 0) >= Number(vipMembershipPrice)
+                      ? `${(Number(wallet?.balance || 0) - Number(vipMembershipPrice)).toFixed(2)} USDT`
+                      : 'Insufficient Funds'}
+                  </strong>
+                </div>
+              </div>
+
+              {Number(wallet?.balance || 0) < Number(vipMembershipPrice) ? (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg bg-red-950/30 border border-red-500/35 text-xs text-red-200">
+                  <span>
+                    Insufficient wallet balance ({Number(wallet?.balance || 0).toFixed(2)} USDT). Please add funds to your wallet before upgrading to VIP.
+                  </span>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setIsConfirmingVip(false)}
+                      className="px-3 py-1.5 rounded-lg bg-[#141924] text-[#94A3B8] font-bold cursor-pointer"
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWalletModalTab('deposit');
+                        setActiveTab('wallet');
+                      }}
+                      className="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-black cursor-pointer"
+                    >
+                      Add Funds
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    disabled={isUpgradingVip}
+                    onClick={() => setIsConfirmingVip(false)}
+                    className="px-4 py-2 rounded-xl bg-[#141924] text-[#94A3B8] hover:text-white border border-[#272a31] text-xs font-bold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="vip-upgrade-confirm-btn"
+                    disabled={isUpgradingVip}
+                    onClick={async () => {
+                      setIsUpgradingVip(true);
+                      try {
+                        const res = await purchaseVipMembership?.(vipIdemKey);
+                        if (res?.success) {
+                          setIsConfirmingVip(false);
+                        }
+                      } finally {
+                        setIsUpgradingVip(false);
+                      }
+                    }}
+                    className="px-5 py-2 rounded-xl btn-gold text-xs font-black uppercase tracking-wider cursor-pointer disabled:opacity-50"
+                  >
+                    {isUpgradingVip ? 'Processing Payment...' : `Confirm & Pay ${Number(vipMembershipPrice).toFixed(2)} USDT`}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Overview Stats Cards — Hidden on Mobile (320px, 375px, 425px) and Visible on Tablet (768px+) & Desktop */}
       <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        
+
         {/* Stat 1: Available USDT Balance */}
         <div className="glass-panel p-4 sm:p-5 rounded-2xl border-l-4 border-l-[#ffd700] relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
@@ -297,7 +469,7 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
             </div>
           </div>
           <div className="font-display font-extrabold text-xl sm:text-2xl text-white">
-            {profile?.role === 'super_admin' ? 'Super Admin' : 'VIP Member'}
+            {profile?.role === 'super_admin' ? 'Super Admin' : isVipMember ? 'VIP Player' : 'Normal Player'}
           </div>
           <p className="text-[10px] text-[#9b8f7c] mt-2.5 pt-2 border-t border-[#1b2230] font-mono-numbers">
             {user?.email || 'Authenticated Player'}
@@ -327,7 +499,7 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
 
       {/* Main Two-Column Workstation */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
-        
+
         {/* LEFT COLUMN: User ID & TRC-20 Wallet Configuration (7 Cols) */}
         <div className="lg:col-span-7 space-y-6">
 
@@ -340,7 +512,7 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-display font-bold text-sm xs:text-base text-white">
-                    VIP Player User ID
+                    {isVipMember ? 'VIP Player User ID' : 'Player User ID'}
                   </h3>
                   <p className="text-[11px] xs:text-xs text-[#9b8f7c] leading-tight">
                     Unique public username visible on lucky leaderboards and winning ticket draws
@@ -365,7 +537,7 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
                 <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2.5 xs:gap-3 bg-[#0b0e14] p-3 sm:px-4 sm:py-3 rounded-xl border border-[#1b2230]">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span className="text-xs text-[#9b8f7c] shrink-0">Handle:</span>
-                    <span 
+                    <span
                       className="font-mono-numbers font-bold text-sm xs:text-base text-[#ffd700] truncate"
                       title={`@${currentUsername}`}
                     >
@@ -388,8 +560,8 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
 
                 <div className="flex items-center justify-between text-[11px] xs:text-xs text-[#8b92a2] px-1">
                   <span>
-                    {usernameChangeCount === 0 
-                      ? '🎁 You have 1 free lifetime User ID change available.' 
+                    {usernameChangeCount === 0
+                      ? '🎁 You have 1 free lifetime User ID change available.'
                       : `⚡ Edited ${usernameChangeCount} time(s). Next edit: ${platformSettings?.usernameChangeFee ?? '5.00'} USDT.`}
                   </span>
                 </div>
@@ -436,13 +608,12 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
                 </div>
 
                 {/* Fee notice box */}
-                <div className={`p-3 rounded-xl border text-xs leading-relaxed ${
-                  usernameChangeCount === 0
-                    ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
-                    : wallet.balance < parseFloat(platformSettings?.usernameChangeFee ?? 5.0)
+                <div className={`p-3 rounded-xl border text-xs leading-relaxed ${usernameChangeCount === 0
+                  ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
+                  : wallet.balance < parseFloat(platformSettings?.usernameChangeFee ?? 5.0)
                     ? 'bg-red-950/20 border-red-500/30 text-red-300'
                     : 'bg-amber-950/20 border-amber-500/30 text-amber-300'
-                }`}>
+                  }`}>
                   {usernameChangeCount === 0 ? (
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -467,9 +638,9 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
                   <button
                     type="submit"
                     disabled={
-                      !usernameAvailability.valid || 
-                      isCheckingUsername || 
-                      isSavingUsername || 
+                      !usernameAvailability.valid ||
+                      isCheckingUsername ||
+                      isSavingUsername ||
                       (usernameChangeCount > 0 && wallet.balance < parseFloat(platformSettings?.usernameChangeFee ?? 5.0))
                     }
                     className="flex-1 py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
@@ -570,9 +741,8 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
                     value={trcInput}
                     onChange={(e) => { setTrcInput(e.target.value); setAddressSaveStatus(''); }}
                     placeholder="Paste TRC-20 address starting with 'T'..."
-                    className={`w-full bg-[#0b0e14] border rounded-xl px-3.5 py-2.5 text-xs text-white font-mono-numbers outline-none transition-colors ${
-                      addressSaveStatus ? 'border-red-500 focus:border-red-500' : 'border-[#232938] focus:border-[#ffd700]'
-                    }`}
+                    className={`w-full bg-[#0b0e14] border rounded-xl px-3.5 py-2.5 text-xs text-white font-mono-numbers outline-none transition-colors ${addressSaveStatus ? 'border-red-500 focus:border-red-500' : 'border-[#232938] focus:border-[#ffd700]'
+                      }`}
                     required
                   />
 
@@ -656,7 +826,7 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
                 data-testid="profile-quick-my-tickets"
                 onClick={() => {
                   setActiveTab('tickets');
-                  try { window.history.pushState(null, '', '/my-tickets'); } catch {}
+                  try { window.history.pushState(null, '', '/my-tickets'); } catch { }
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="p-3 rounded-xl bg-[#141924] hover:bg-[#1a2130] border border-[#272a31] hover:border-[#ffd700]/30 transition-all text-left flex flex-col justify-between cursor-pointer group"

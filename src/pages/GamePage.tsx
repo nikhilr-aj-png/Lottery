@@ -194,6 +194,7 @@ export default function GamePage({
 
   if (isBlocked) {
     const isUpcoming = roomAccessState.reason === 'upcoming' || Boolean(selectedStatus?.isUpcoming);
+    const isVipBlocked = roomAccessState.reason === 'vip_required';
     const blockMsg =
       roomAccessState.message ||
       (isUpcoming
@@ -205,29 +206,44 @@ export default function GamePage({
         data-testid="room-access-blocked"
         className="w-full h-full flex items-center justify-center p-4 overflow-y-auto bg-[#080C16]"
       >
-        <div className="max-w-md w-full bg-[#111728] border border-rose-500/35 rounded-2xl p-6 sm:p-7 text-center space-y-4 shadow-2xl">
-          <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/35 flex items-center justify-center mx-auto text-rose-400">
+        <div className={`max-w-md w-full bg-[#111728] rounded-2xl p-6 sm:p-7 text-center space-y-4 shadow-2xl border ${
+          isVipBlocked ? 'border-amber-500/45' : 'border-rose-500/35'
+        }`}>
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto border ${
+            isVipBlocked
+              ? 'bg-amber-500/15 border-amber-500/35 text-amber-400'
+              : 'bg-rose-500/15 border-rose-500/35 text-rose-400'
+          }`}>
             {isUpcoming ? <Clock className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
           </div>
           <div className="space-y-1.5">
             <h2 className="font-display font-extrabold text-lg sm:text-xl text-white">
-              {isUpcoming ? 'Event Not Started Yet' : 'Room Entry Closed'}
+              {isVipBlocked ? 'VIP Membership Required' : isUpcoming ? 'Event Not Started Yet' : 'Room Entry Closed'}
             </h2>
             <p className="text-xs sm:text-sm text-[#CBD5E1] leading-relaxed">
               {blockMsg}
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+            {isVipBlocked && onNavigate && (
+              <button
+                type="button"
+                onClick={() => onNavigate('/profile')}
+                className="btn-gold px-5 py-2.5 rounded-xl text-xs font-bold text-black cursor-pointer"
+              >
+                Upgrade to VIP Player
+              </button>
+            )}
             {onBackToHome && (
               <button
                 type="button"
                 onClick={onBackToHome}
-                className="btn-gold px-5 py-2.5 rounded-xl text-xs font-bold text-black cursor-pointer"
+                className={isVipBlocked ? 'px-5 py-2.5 rounded-xl bg-[#0B0F19] hover:bg-[#171E2E] border border-[#2A354A] text-xs font-bold text-white cursor-pointer' : 'btn-gold px-5 py-2.5 rounded-xl text-xs font-bold text-black cursor-pointer'}
               >
                 Explore Active Events
               </button>
             )}
-            {onNavigate && (
+            {!isVipBlocked && onNavigate && (
               <button
                 type="button"
                 onClick={() => onNavigate('/results')}

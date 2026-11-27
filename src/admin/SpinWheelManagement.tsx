@@ -44,7 +44,6 @@ export default function SpinWheelManagement() {
   const [isActive, setIsActive] = useState(true);
   const [dailySpinsLimit, setDailySpinsLimit] = useState(1);
   const [minDepositRequired, setMinDepositRequired] = useState(0);
-  const [requireKyc, setRequireKyc] = useState(false);
 
   const [segments, setSegments] = useState<SegmentConfig[]>(DEFAULT_SEGMENTS);
   const [savingSettings, setSavingSettings] = useState(false);
@@ -97,7 +96,6 @@ export default function SpinWheelManagement() {
         setIsActive(setRow.value.is_active !== false && setRow.value.enabled !== false);
         setDailySpinsLimit(Number(setRow.value.daily_spins_limit ?? setRow.value.daily_spin_limit ?? 1));
         setMinDepositRequired(Number(setRow.value.min_deposit_required ?? 0));
-        setRequireKyc(Boolean(setRow.value.require_kyc));
         if (Array.isArray(setRow.value.segments) && setRow.value.segments.length > 0) {
           const normalized = setRow.value.segments.map((s: any, idx: number) => {
             const rawAmt = Number(s.usdt_amount ?? s.amount ?? DEFAULT_SEGMENTS[idx]?.usdt_amount ?? 0.1);
@@ -210,7 +208,6 @@ export default function SpinWheelManagement() {
         daily_spins_limit: Math.max(1, dailySpinsLimit),
         daily_spin_limit: Math.max(1, dailySpinsLimit),
         min_deposit_required: Math.max(0, minDepositRequired),
-        require_kyc: requireKyc,
         segments: segments.map((s, idx) => {
           const amt = Math.max(0.01, parseFloat(String(s.usdt_amount)) || 0.10);
           const prob = Math.max(0.1, parseFloat(String(s.probability_percent)) || 1.0);
@@ -288,7 +285,7 @@ export default function SpinWheelManagement() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             <div className="bg-[#111622] border border-[#272a31] rounded-xl p-3.5 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <span className="text-xs font-bold text-white block">Wheel Status</span>
@@ -333,22 +330,6 @@ export default function SpinWheelManagement() {
                 className="w-full bg-[#07090d] border border-[#272a31] rounded-lg px-3 py-1.5 text-xs font-bold font-mono-numbers text-white outline-none focus:border-amber-400"
               />
               <span className="text-[10px] text-[#8b92a2] block">0 = 100% Free for all users</span>
-            </div>
-
-            <div className="bg-[#111622] border border-[#272a31] rounded-xl p-3.5 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <span className="text-xs font-bold text-white block">KYC Verification</span>
-                <span className="text-[11px] text-[#8b92a2] block">Require verified ID</span>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                <input
-                  type="checkbox"
-                  checked={requireKyc}
-                  onChange={(e) => setRequireKyc(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-[#272a31] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500" />
-              </label>
             </div>
           </div>
         </div>

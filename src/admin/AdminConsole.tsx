@@ -43,6 +43,7 @@ import {
   Mail,
   Send,
   Inbox,
+  Crown,
   AtSign,
   User,
   Download,
@@ -83,6 +84,8 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
     adminRejectWinnerPayout,
     adminAddManualWinnerCredit,
     adminFetchAllUsers,
+    adminAdjustUserWallet,
+    adminUpdateUserPlayerCategory,
     adminToggleUserStatus,
     adminUpdateUserRole,
     adminDeleteUser,
@@ -312,11 +315,24 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
   const [minWithdrawal, setMinWithdrawal] = useState(() => String(platformSettings?.minWithdrawal ?? '5.00'));
   const [maxWithdrawal, setMaxWithdrawal] = useState(() => String(platformSettings?.maxWithdrawal ?? '10000.00'));
   const [houseFeePercent, setHouseFeePercent] = useState(() => String(platformSettings?.houseFeePercent ?? '5'));
+  const [vipMembershipPrice, setVipMembershipPrice] = useState(() => String(platformSettings?.vipMembershipPrice ?? '25'));
   const [supportEmail, setSupportEmail] = useState(() => platformSettings?.supportEmail || 'earnflow.user@gmail.com');
   const [usernameChangeFee, setUsernameChangeFee] = useState(() => String(platformSettings?.usernameChangeFee ?? '5.00'));
   const [apkDownloadUrl, setApkDownloadUrl] = useState(() => platformSettings?.apkDownloadUrl || '/download/earnflow.apk');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+
+  // User Edit Modal State (Wallet Adjustment + Player Category)
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [walletAdjType, setWalletAdjType] = useState<'add' | 'deduct'>('add');
+  const [walletAdjAmount, setWalletAdjAmount] = useState('');
+  const [walletAdjReason, setWalletAdjReason] = useState('');
+  const [walletAdjSubmitting, setWalletAdjSubmitting] = useState(false);
+  const [walletAdjIdemKey, setWalletAdjIdemKey] = useState('');
+  const [editCategoryType, setEditCategoryType] = useState<'normal' | 'vip'>('normal');
+  const [editCategoryReason, setEditCategoryReason] = useState('');
+  const [categorySubmitting, setCategorySubmitting] = useState(false);
+  const [confirmCategoryChange, setConfirmCategoryChange] = useState(false);
 
   // Sync inputs whenever platformSettings updates from database or another session
   useEffect(() => {
@@ -324,6 +340,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       setMinWithdrawal(String(platformSettings.minWithdrawal ?? '5.00'));
       setMaxWithdrawal(String(platformSettings.maxWithdrawal ?? '10000.00'));
       setHouseFeePercent(String(platformSettings.houseFeePercent ?? '5'));
+      setVipMembershipPrice(String(platformSettings.vipMembershipPrice ?? '25'));
       setSupportEmail(platformSettings.supportEmail || 'earnflow.user@gmail.com');
       setUsernameChangeFee(String(platformSettings.usernameChangeFee ?? '5.00'));
       setApkDownloadUrl(platformSettings.apkDownloadUrl || '/download/earnflow.apk');
@@ -444,6 +461,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
         minWithdrawal,
         maxWithdrawal,
         houseFeePercent,
+        vipMembershipPrice,
         supportEmail,
         usernameChangeFee,
         apkDownloadUrl
@@ -1334,10 +1352,10 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                   <thead className="bg-[#07090d] text-[#8b92a2] uppercase text-[10px] tracking-wider border-b border-[#1f2737]">
                     <tr>
                       <th className="py-3.5 px-4">User ID / Username</th>
-                      <th className="py-3.5 px-4">Email</th>
-                      <th className="py-3.5 px-4">TRC-20 Address</th>
-                      <th className="py-3.5 px-4">Role</th>
-                      <th className="py-3.5 px-4">Status</th>
+                      <th className="py-3.5 px-4">Email &amp; TRC-20</th>
+                      <th className="py-3.5 px-4">Wallet Balance</th>
+                      <th className="py-3.5 px-4">Category</th>
+                      <th className="py-3.5 px-4">Role / Status</th>
                       <th className="py-3.5 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -1352,6 +1370,8 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                       filteredUsers.map((u) => {
                         const isBlocked = u.status === 'blocked';
                         const isSuper = u.role === 'super_admin';
+                        const isVipUser = u.player_type === 'vip' && u.vip_status === 'active';
+                        const userBal = Number(u.wallet_balance ?? 0);
                         return (
                           <tr key={u.id} className="hover:bg-white/2">
                             <td className="py-3.5 px-4">
@@ -1364,38 +1384,75 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                                 </span>
                               </div>
                             </td>
-                            <td className="py-3.5 px-4 font-mono-numbers text-[#9b8f7c]">
-                              {u.email}
+                            <td className="py-3.5 px-4 font-mono-numbers">
+                              <div className="text-[#9b8f7c]">{u.email}</div>
+                              <div className="text-[10px] text-[#05d5aa]">
+                                {u.trc20_address ? `${u.trc20_address.slice(0, 6)}...${u.trc20_address.slice(-4)}` : 'TRC-20 not set'}
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4 font-mono-numbers font-bold text-emerald-400 whitespace-nowrap">
+                              {userBal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT
                             </td>
                             <td className="py-3.5 px-4">
-                              {u.trc20_address ? (
-                                <span className="font-mono-numbers text-[11px] text-[#05d5aa]">
-                                  {u.trc20_address.slice(0, 6)}...{u.trc20_address.slice(-4)}
-                                </span>
+                              {isVipUser ? (
+                                <div className="space-y-0.5">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/35 text-[10px] font-black uppercase whitespace-nowrap">
+                                    <Crown className="w-3 h-3 text-amber-400" />
+                                    VIP Player
+                                  </span>
+                                  <span className="block text-[9px] text-[#94A3B8]">
+                                    {u.vip_source === 'purchased'
+                                      ? `Paid ${Number(u.vip_paid_amount || 0).toFixed(2)} USDT`
+                                      : 'Admin Granted'}
+                                  </span>
+                                </div>
                               ) : (
-                                <span className="text-[#64748b] text-[11px]">Not set</span>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-bold uppercase whitespace-nowrap">
+                                  Normal Player
+                                </span>
                               )}
                             </td>
                             <td className="py-3.5 px-4">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                isSuper
-                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                  : 'bg-zinc-800 text-zinc-300'
-                              }`}>
-                                {u.role || 'user'}
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                isBlocked
-                                  ? 'bg-red-950/60 text-red-400 border border-red-500/30'
-                                  : 'bg-emerald-950/60 text-[#05d5aa] border border-[#05d5aa]/30'
-                              }`}>
-                                {u.status || 'active'}
-                              </span>
+                              <div className="flex flex-col gap-1 items-start">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                  isSuper
+                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                    : 'bg-zinc-800 text-zinc-300'
+                                }`}>
+                                  {u.role || 'user'}
+                                </span>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                  isBlocked
+                                    ? 'bg-red-950/60 text-red-400 border border-red-500/30'
+                                    : 'bg-emerald-950/60 text-[#05d5aa] border border-[#05d5aa]/30'
+                                }`}>
+                                  {u.status || 'active'}
+                                </span>
+                              </div>
                             </td>
                             <td className="py-3.5 px-4 text-right">
                               <div className="flex items-center justify-end gap-1.5">
+                                {/* Edit Wallet & Membership */}
+                                <button
+                                  type="button"
+                                  data-testid={`edit-user-btn-${u.id}`}
+                                  onClick={() => {
+                                    setEditingUser(u);
+                                    setWalletAdjType('add');
+                                    setWalletAdjAmount('');
+                                    setWalletAdjReason('');
+                                    setWalletAdjIdemKey(`adm-adj-${u.id}-${Date.now()}`);
+                                    setEditCategoryType(isVipUser ? 'vip' : 'normal');
+                                    setEditCategoryReason('');
+                                    setConfirmCategoryChange(false);
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 font-bold text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
+                                  title="Edit Wallet & Player Category"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                  <span>Edit</span>
+                                </button>
+
                                 {/* Toggle Active / Block */}
                                 <button
                                   onClick={() => handleToggleStatus(u)}
@@ -1436,6 +1493,302 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                 </table>
               </div>
             </div>
+
+            {/* Responsive Modal: Edit User Wallet Balance & Player Membership Category */}
+            {editingUser && (() => {
+              const curBal = Number(editingUser.wallet_balance ?? 0);
+              const parsedAmt = parseFloat(walletAdjAmount);
+              const validAmt = Number.isFinite(parsedAmt) && parsedAmt > 0;
+              const previewBal = validAmt
+                ? walletAdjType === 'add'
+                  ? curBal + parsedAmt
+                  : curBal - parsedAmt
+                : curBal;
+              const exceedsBal = walletAdjType === 'deduct' && validAmt && parsedAmt > curBal;
+              const currentCat = editingUser.player_type === 'vip' && editingUser.vip_status === 'active' ? 'vip' : 'normal';
+              const categoryChanged = editCategoryType !== currentCat;
+
+              return (
+                <div
+                  data-testid="admin-edit-user-modal"
+                  className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2.5 xs:p-4 overflow-y-auto"
+                >
+                  <div className="max-w-lg w-full bg-[#0d1117] border border-amber-500/35 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-5 shadow-2xl my-auto max-h-[92vh] overflow-y-auto no-scrollbar text-left text-xs">
+                    <div className="flex items-start justify-between gap-2 pb-3 border-b border-[#1f2737]">
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-mono-numbers uppercase font-bold text-amber-400 block">
+                          User Wallet &amp; Membership Control
+                        </span>
+                        <h3 className="font-display font-black text-base text-white truncate">
+                          Edit @{editingUser.username || 'user'}
+                        </h3>
+                        <p className="text-[11px] text-[#94A3B8] truncate">{editingUser.email}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditingUser(null)}
+                        className="p-1.5 rounded-lg bg-[#141924] text-[#94A3B8] hover:text-white border border-[#272a31] cursor-pointer shrink-0"
+                        aria-label="Close Edit User Modal"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#07090d] border border-[#1f2737] grid grid-cols-2 gap-3 font-mono-numbers">
+                      <div>
+                        <span className="text-[10px] text-[#64748B] block uppercase">Current Wallet Balance</span>
+                        <strong
+                          data-testid="edit-user-current-balance"
+                          className="text-sm sm:text-base font-black text-emerald-400 block"
+                        >
+                          {curBal.toFixed(2)} USDT
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-[#64748B] block uppercase">Player Category</span>
+                        <strong className={`text-xs sm:text-sm font-black inline-flex items-center gap-1 ${currentCat === 'vip' ? 'text-amber-300' : 'text-slate-300'}`}>
+                          {currentCat === 'vip' && <Crown className="w-3.5 h-3.5 text-amber-400" />}
+                          {currentCat === 'vip' ? 'VIP Player' : 'Normal Player'}
+                        </strong>
+                        {editingUser.vip_paid_amount != null && (
+                          <span className="block text-[9px] text-[#94A3B8]">
+                            Paid {Number(editingUser.vip_paid_amount).toFixed(2)} USDT
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 sm:p-4 rounded-2xl bg-[#111622] border border-[#272a31] space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-display font-bold text-xs sm:text-sm text-white flex items-center gap-1.5">
+                          <Wallet className="w-4 h-4 text-emerald-400" />
+                          <span>Wallet Balance Adjustment</span>
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          data-testid="wallet-adj-type-add"
+                          onClick={() => setWalletAdjType('add')}
+                          className={`py-2 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                            walletAdjType === 'add'
+                              ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-sm'
+                              : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                          }`}
+                        >
+                          <ArrowDownLeft className="w-3.5 h-3.5" />
+                          <span>Add Balance</span>
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="wallet-adj-type-deduct"
+                          onClick={() => setWalletAdjType('deduct')}
+                          className={`py-2 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                            walletAdjType === 'deduct'
+                              ? 'bg-red-500/20 border-red-400 text-red-300 shadow-sm'
+                              : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                          }`}
+                        >
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                          <span>Deduct Balance</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="text-[10px] text-[#94A3B8] block mb-1">Amount (USDT) *</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            data-testid="wallet-adj-amount-input"
+                            value={walletAdjAmount}
+                            onChange={(e) => setWalletAdjAmount(e.target.value)}
+                            placeholder="0.00"
+                            className="w-full bg-[#07090d] border border-[#272a31] focus:border-amber-400 rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
+                          />
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-[#07090d] border border-[#1f2737] flex flex-col justify-center">
+                          <span className="text-[10px] text-[#64748B] block">Updated Balance Preview</span>
+                          <strong
+                            data-testid="wallet-adj-preview"
+                            className={`text-sm font-mono-numbers font-black ${
+                              exceedsBal ? 'text-red-400' : walletAdjType === 'add' ? 'text-emerald-400' : 'text-amber-300'
+                            }`}
+                          >
+                            {exceedsBal ? 'Insufficient Balance' : `${previewBal.toFixed(2)} USDT`}
+                          </strong>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-[#94A3B8] block mb-1">Admin Note / Reason *</label>
+                        <input
+                          type="text"
+                          data-testid="wallet-adj-reason-input"
+                          value={walletAdjReason}
+                          onChange={(e) => setWalletAdjReason(e.target.value)}
+                          placeholder="e.g. Manual compensation / balance correction"
+                          className="w-full bg-[#07090d] border border-[#272a31] focus:border-amber-400 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        data-testid="confirm-wallet-adj-btn"
+                        disabled={walletAdjSubmitting || !validAmt || exceedsBal || !walletAdjReason.trim()}
+                        onClick={async () => {
+                          setWalletAdjSubmitting(true);
+                          try {
+                            const res = await adminAdjustUserWallet(
+                              editingUser.id,
+                              walletAdjType,
+                              parsedAmt,
+                              walletAdjReason.trim(),
+                              walletAdjIdemKey
+                            );
+                            if (res?.success) {
+                              const nextBal = Number(res.new_balance ?? previewBal);
+                              setEditingUser((prev: any) => prev ? { ...prev, wallet_balance: nextBal } : null);
+                              setUsersList((prev: any[]) =>
+                                prev.map((row) => row.id === editingUser.id ? { ...row, wallet_balance: nextBal } : row)
+                              );
+                              setWalletAdjAmount('');
+                              setWalletAdjReason('');
+                              setWalletAdjIdemKey(`adm-adj-${editingUser.id}-${Date.now()}`);
+                            }
+                          } finally {
+                            setWalletAdjSubmitting(false);
+                          }
+                        }}
+                        className="w-full py-2.5 rounded-xl btn-gold text-xs font-black uppercase tracking-wider cursor-pointer disabled:opacity-45"
+                      >
+                        {walletAdjSubmitting ? 'Processing Adjustment...' : 'Confirm Adjustment'}
+                      </button>
+                    </div>
+
+                    <div className="p-3.5 sm:p-4 rounded-2xl bg-[#111622] border border-[#272a31] space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-display font-bold text-xs sm:text-sm text-white flex items-center gap-1.5">
+                          <Crown className="w-4 h-4 text-amber-400" />
+                          <span>Player Membership Category</span>
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          data-testid="edit-cat-normal-btn"
+                          onClick={() => { setEditCategoryType('normal'); setConfirmCategoryChange(false); }}
+                          className={`py-2 px-3 rounded-xl border font-bold text-xs cursor-pointer transition-all ${
+                            editCategoryType === 'normal'
+                              ? 'bg-slate-600/30 border-slate-400 text-white'
+                              : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                          }`}
+                        >
+                          Normal Player
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="edit-cat-vip-btn"
+                          onClick={() => { setEditCategoryType('vip'); setConfirmCategoryChange(false); }}
+                          className={`py-2 px-3 rounded-xl border font-bold text-xs inline-flex items-center justify-center gap-1 cursor-pointer transition-all ${
+                            editCategoryType === 'vip'
+                              ? 'bg-amber-500/20 border-amber-400 text-amber-300'
+                              : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                          }`}
+                        >
+                          <Crown className="w-3.5 h-3.5" />
+                          <span>VIP Player</span>
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-[#94A3B8] block mb-1">Reason for Category Change</label>
+                        <input
+                          type="text"
+                          data-testid="edit-cat-reason-input"
+                          value={editCategoryReason}
+                          onChange={(e) => setEditCategoryReason(e.target.value)}
+                          placeholder="e.g. Promotional grant / manual adjustment"
+                          className="w-full bg-[#07090d] border border-[#272a31] focus:border-amber-400 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                        />
+                      </div>
+
+                      <p className="text-[10px] text-[#94A3B8] leading-relaxed">
+                        Admin category updates never fabricate VIP payments or wallet deductions and preserve existing payment records.
+                      </p>
+
+                      {!confirmCategoryChange ? (
+                        <button
+                          type="button"
+                          data-testid="request-cat-change-btn"
+                          disabled={!categoryChanged || categorySubmitting}
+                          onClick={() => setConfirmCategoryChange(true)}
+                          className="w-full py-2.5 rounded-xl bg-[#1a2234] hover:bg-[#232d45] text-white border border-amber-500/35 text-xs font-bold cursor-pointer disabled:opacity-45"
+                        >
+                          {categoryChanged ? `Change Category to ${editCategoryType === 'vip' ? 'VIP Player' : 'Normal Player'}` : 'Select Different Category to Update'}
+                        </button>
+                      ) : (
+                        <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/35 space-y-2">
+                          <span className="text-[11px] font-bold text-amber-300 block">
+                            Confirm updating @{editingUser.username} from {currentCat.toUpperCase()} to {editCategoryType.toUpperCase()}?
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setConfirmCategoryChange(false)}
+                              className="flex-1 py-2 rounded-lg bg-[#07090d] text-[#94A3B8] border border-[#272a31] font-bold cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              data-testid="confirm-cat-change-btn"
+                              disabled={categorySubmitting}
+                              onClick={async () => {
+                                setCategorySubmitting(true);
+                                try {
+                                  const res = await adminUpdateUserPlayerCategory(
+                                    editingUser.id,
+                                    editCategoryType,
+                                    editCategoryReason.trim() || 'Admin category update'
+                                  );
+                                  if (res?.success) {
+                                    setEditingUser((prev: any) => prev ? {
+                                      ...prev,
+                                      player_type: res.player_type,
+                                      vip_status: res.vip_status,
+                                      vip_source: res.vip_source
+                                    } : null);
+                                    setUsersList((prev: any[]) =>
+                                      prev.map((row) => row.id === editingUser.id ? {
+                                        ...row,
+                                        player_type: res.player_type,
+                                        vip_status: res.vip_status,
+                                        vip_source: res.vip_source
+                                      } : row)
+                                    );
+                                    setConfirmCategoryChange(false);
+                                    setEditCategoryReason('');
+                                  }
+                                } finally {
+                                  setCategorySubmitting(false);
+                                }
+                              }}
+                              className="flex-1 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-black cursor-pointer disabled:opacity-50"
+                            >
+                              {categorySubmitting ? 'Saving...' : 'Confirm Change'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -1540,6 +1893,33 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                     </div>
                     <p className="text-[11px] text-[#05d5aa]/90 leading-relaxed">
                       Server-side commission percentage deducted from gross ticket sales on every new ticket purchase (0%–30%).
+                    </p>
+                  </div>
+
+                  <div className="bg-[#07090d] p-3.5 sm:p-4 rounded-xl border border-[#1f2737] flex flex-col justify-between gap-2 min-w-0">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                        <label className="text-xs text-[#e1e2eb] font-semibold">
+                          VIP Membership Price (USDT)
+                        </label>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold shrink-0">
+                          VIP Access
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        min="0.01"
+                        max="100000"
+                        step="0.01"
+                        data-testid="vip-membership-price-input"
+                        value={vipMembershipPrice}
+                        onChange={(e) => setVipMembershipPrice(e.target.value)}
+                        className="w-full min-w-0 bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
+                        required
+                      />
+                    </div>
+                    <p className="text-[11px] text-amber-300/90 leading-relaxed">
+                      One-time fee deducted from a Normal Player&apos;s wallet to unlock VIP Membership &amp; VIP Events.
                     </p>
                   </div>
 

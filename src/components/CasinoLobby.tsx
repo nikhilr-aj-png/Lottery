@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import {
   Sparkles,
@@ -6,6 +6,8 @@ import {
   Ticket,
   ChevronRight,
   Wallet,
+  Crown,
+  Lock,
   X
 } from 'lucide-react';
 import LotteryCard from './LotteryCard';
@@ -26,11 +28,20 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
     platformSettings,
     requireAuth,
     user,
+    isVipMember,
     getServerNowMs,
     verifyRoomEntry,
     showToast
   } = useLottery();
   const [selectedResultEvent, setSelectedResultEvent] = useState<any>(null);
+  const [nowTick, setNowTick] = useState<number>(() => (getServerNowMs ? getServerNowMs() : Date.now()));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowTick(getServerNowMs ? getServerNowMs() : Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [getServerNowMs]);
   const netPoolSharePct = Math.max(0, Math.min(100, 100 - Number(platformSettings?.houseFeePercent ?? 5))).toFixed(1);
 
   // Results Retention Setting from Admin Panel (Default: 1 hour)
@@ -84,30 +95,63 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
     [primaryLiveEvent]
   );
 
-  // 2. Results: Ended events within retention window
+  // Categorize Normal vs VIP active/upcoming events
+  const normalAvailableEvents = useMemo(
+    () => availableEvents.filter((e: any) => (e.eventCategory || e.event_category || 'normal') !== 'vip'),
+    [availableEvents]
+  );
+  const vipAvailableEvents = useMemo(
+    () => availableEvents.filter((e: any) => (e.eventCategory || e.event_category || 'normal') === 'vip'),
+    [availableEvents]
+  );
+
+  // 2. Results: Ended events strictly within their authoritative result visibility window
   const resultsEvents = useMemo(() => {
-    const now = Date.now();
     const retentionMs = retentionHours * 3600 * 1000;
 
     return (events || [])
       .filter((e: any) => {
         if (e.status === 'deleted' || e.is_deleted) return false;
-        const isConcluded = e.status === 'completed' || Boolean(e.winningDigits) || (e.drawTime && e.drawTime <= now);
+        const isFinalized =
+          e.status === 'completed' &&
+          Boolean(e.winningDigits) &&
+          Boolean(e.resultPublishedAtMs || e.finalizedAtMs || e.drawExecutedAt);
+        const isConcluded = isFinalized || e.status === 'completed' || Boolean(e.winningDigits) || (e.drawTime && e.drawTime <= nowTick);
         if (!isConcluded) return false;
-        if (e.drawTime && now - e.drawTime > retentionMs) {
+
+        const publishedAtMs =
+          e.resultPublishedAtMs ||
+          e.finalizedAtMs ||
+          (e.drawExecutedAt ? new Date(e.drawExecutedAt).getTime() : 0);
+        const visibleUntilMs =
+          e.resultVisibleUntilMs ||
+          e.ticketVisibilityUntilMs ||
+          (publishedAtMs > 0 ? publishedAtMs + retentionMs : 0);
+
+        if (isFinalized && visibleUntilMs > 0) {
+          return nowTick < visibleUntilMs;
+        }
+        if (e.drawTime && nowTick - e.drawTime > retentionMs) {
           return false;
         }
         return true;
       })
-      .sort((a: any, b: any) => (b.drawTime || 0) - (a.drawTime || 0));
-  }, [events, retentionHours]);
+      .sort((a: any, b: any) => (b.finalizedAtMs || b.drawTime || 0) - (a.finalizedAtMs || a.drawTime || 0));
+  }, [events, retentionHours, nowTick]);
 
-  // Single-action Direct Room Entry (Protected: Login + Authoritative Server Active Check)
+  // Single-action Direct Room Entry (Protected: Login + VIP Membership + Authoritative Server Active Check)
   const handleDirectEnterRoom = async (eventOrId?: any) => {
     const targetId =
       typeof eventOrId === 'string'
         ? eventOrId
         : eventOrId?.id || primaryLiveEvent?.id || 'lottery';
+
+    const matchedEvt = (events || []).find((e: any) => e.id === targetId);
+    if (matchedEvt && (matchedEvt.eventCategory || matchedEvt.event_category || 'normal') === 'vip' && !isVipMember) {
+      showToast?.('VIP Membership required to join VIP events. Upgrade in Profile.', 'info');
+      setActiveTab('profile');
+      return;
+    }
 
     const roomId = targetId && targetId !== 'lottery' && targetId !== 'four-digit-lottery' ? targetId : null;
     if (!requireAuth({ type: 'game', gameSlug: 'four-digit-lottery', roomId }, 'Please log in to enter the Live Draw Room.')) {
@@ -300,17 +344,79 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
-            {availableEvents.map((evt: any, idx: number) => (
-              <LotteryCard
-                key={evt.id}
-                event={evt}
-                mode="available"
-                isLive={idx === 0 && evt.status === 'active'}
-                onEnterRoom={() => handleDirectEnterRoom(evt.id)}
-                onSelect={() => handleDirectEnterRoom(evt.id)}
-              />
-            ))}
+          <div className="space-y-6">
+            {/* Normal Events */}
+            {normalAvailableEvents.length > 0 && (
+              <div className="space-y-2.5" data-testid="normal-events-section">
+                {vipAvailableEvents.length > 0 && (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                      Normal Events (Open to All Players)
+                    </span>
+                    <span className="text-[10px] font-mono-numbers text-slate-400">
+                      {normalAvailableEvents.length} {normalAvailableEvents.length === 1 ? 'Event' : 'Events'}
+                    </span>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
+                  {normalAvailableEvents.map((evt: any, idx: number) => (
+                    <LotteryCard
+                      key={evt.id}
+                      event={evt}
+                      mode="available"
+                      isLive={idx === 0 && evt.status === 'active'}
+                      onEnterRoom={() => handleDirectEnterRoom(evt.id)}
+                      onSelect={() => handleDirectEnterRoom(evt.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* VIP Exclusive Events */}
+            {vipAvailableEvents.length > 0 && (
+              <div
+                data-testid="vip-events-section"
+                className="space-y-3 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-amber-500/[0.06] via-[#0F1422] to-[#17122B] border border-amber-500/30"
+              >
+                <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Crown className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-amber-300 truncate">
+                      VIP Exclusive Events
+                    </span>
+                  </div>
+                  {!isVipMember ? (
+                    <button
+                      type="button"
+                      data-testid="lobby-upgrade-vip-btn"
+                      onClick={() => setActiveTab('profile')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-[11px] font-bold cursor-pointer transition-colors whitespace-nowrap self-start xs:self-auto"
+                    >
+                      <Lock className="w-3 h-3 text-amber-400 shrink-0" />
+                      <span>Upgrade to VIP Player</span>
+                    </button>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/35 text-amber-300 text-[10px] font-bold whitespace-nowrap self-start xs:self-auto">
+                      VIP Access Unlocked
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
+                  {vipAvailableEvents.map((evt: any, idx: number) => (
+                    <LotteryCard
+                      key={evt.id}
+                      event={evt}
+                      mode="available"
+                      isLive={idx === 0 && evt.status === 'active'}
+                      onEnterRoom={() => handleDirectEnterRoom(evt.id)}
+                      onSelect={() => handleDirectEnterRoom(evt.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </section>

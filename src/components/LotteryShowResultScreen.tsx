@@ -38,9 +38,28 @@ export default function LotteryShowResultScreen({
   const [freshEvent, setFreshEvent] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [nowTick, setNowTick] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const activeEvent = freshEvent || event;
   const eventId = activeEvent?.id;
+  const visibleUntilMs = useMemo(() => {
+    const raw =
+      activeEvent?.resultVisibleUntilMs ||
+      activeEvent?.ticketVisibilityUntilMs ||
+      (activeEvent?.result_visible_until ? new Date(activeEvent.result_visible_until).getTime() : 0) ||
+      (activeEvent?.ticket_visibility_until ? new Date(activeEvent.ticket_visibility_until).getTime() : 0);
+    return Number.isFinite(Number(raw)) ? Number(raw) : 0;
+  }, [activeEvent]);
+  const remainingMs = visibleUntilMs > 0 ? Math.max(0, visibleUntilMs - nowTick) : 0;
+  const formatClock = (ms: number) => {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    return `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  };
 
   // Authoritative Database Fetch (with error boundary and zero fake fallback)
   const fetchVerifiedData = useCallback(async () => {
@@ -180,7 +199,16 @@ export default function LotteryShowResultScreen({
           </div>
         </div>
 
-        <div className="text-xs font-mono text-slate-400 shrink-0">
+        <div className="flex items-center gap-2 text-xs font-mono text-slate-400 shrink-0">
+          {visibleUntilMs > 0 && remainingMs > 0 && (
+            <span
+              data-testid="show-result-countdown-badge"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/35 text-amber-300 font-bold"
+            >
+              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Result Available For: {formatClock(remainingMs)}</span>
+            </span>
+          )}
           <span className="px-3 py-1 rounded-lg bg-[#111728] border border-[#1F2737] text-amber-300 font-bold">
             {winningCodesList.length > 0 ? `${winningCodesList.length} Winning Tier${winningCodesList.length > 1 ? 's' : ''}` : 'Pending Draw'}
           </span>
@@ -193,11 +221,17 @@ export default function LotteryShowResultScreen({
       <main className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-4 sm:p-6 lg:p-8 flex flex-col justify-start">
         <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto w-full flex flex-col gap-5">
 
-          {/* Subtitle */}
-          <div className="pb-2 border-b border-white/5">
+          {/* Subtitle + Mobile Countdown */}
+          <div className="pb-2 border-b border-white/5 flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs sm:text-sm text-slate-300">
               Official winning 4-digit combinations settled for this draw round.
             </p>
+            {visibleUntilMs > 0 && remainingMs > 0 && (
+              <span className="sm:hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/35 text-amber-300 text-[11px] font-mono font-bold">
+                <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                <span>Result Available For: {formatClock(remainingMs)}</span>
+              </span>
+            )}
           </div>
 
           {/* Content States */}
@@ -237,6 +271,18 @@ export default function LotteryShowResultScreen({
                 <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
                 <span>Retry Connection</span>
               </button>
+            </div>
+          ) : winningCodesList.length > 0 && visibleUntilMs > 0 && remainingMs <= 0 ? (
+            <div className="p-8 sm:p-12 rounded-2xl bg-[#111728] border border-[#1F2737] flex flex-col items-center justify-center text-center space-y-3 shadow-xl max-w-lg mx-auto my-auto">
+              <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300">
+                <Clock className="w-6 h-6" />
+              </div>
+              <h4 className="font-display font-bold text-base text-white">
+                Result Display Window Ended
+              </h4>
+              <p className="text-xs text-[#94A3B8] max-w-md leading-relaxed">
+                This result&apos;s public display countdown has reached 00:00:00. All official ticket, payout, and audit records remain safely preserved in the backend ledger.
+              </p>
             </div>
           ) : winningCodesList.length === 0 ? (
             /* Draw Pending State (Zero Dummy Numbers) */

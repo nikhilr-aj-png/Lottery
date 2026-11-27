@@ -236,6 +236,7 @@ export default function GamesManagementSuperHub({
   const [wizardStep, setWizardStep] = useState(1);
   const [wizardData, setWizardData] = useState({
     eventId: 'evt-' + Date.now().toString(36) + '-' + Math.floor(100 + Math.random() * 900),
+    eventCategory: 'normal' as 'normal' | 'vip',
     eventName: '',
     eventTag: 'BATCH-' + Math.floor(1000 + Math.random() * 9000),
     roomName: 'Room 1: Grand Pot Arena',
@@ -961,6 +962,7 @@ export default function GamesManagementSuperHub({
                     const initialTag = 'BATCH-' + Math.floor(1000 + Math.random() * 9000);
                     const initialData = {
                       eventId: 'evt-' + Date.now().toString(36) + '-' + Math.floor(100 + Math.random() * 900),
+                      eventCategory: 'normal' as const,
                       eventName: '',
                       eventTag: initialTag,
                       roomName: uniqueRooms[0] || 'Room 1: Grand Pot Arena',
@@ -1078,7 +1080,14 @@ export default function GamesManagementSuperHub({
                           {/* Card Top: Batch Tag & Status Pill */}
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
-                              <div className="flex items-center gap-1.5 min-w-0">
+                              <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                                <span className={`text-[9px] px-2 py-0.5 rounded uppercase font-black border ${
+                                  evt.eventCategory === 'vip'
+                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                    : 'bg-slate-800 text-slate-300 border-slate-700'
+                                }`}>
+                                  {evt.eventCategory === 'vip' ? 'VIP EVENT' : 'NORMAL EVENT'}
+                                </span>
                                 <span className="text-[9px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 uppercase font-black truncate max-w-[130px]" title={evt.batchTag || evt.badge || 'VIP LOTTERY'}>
                                   {evt.batchTag || evt.badge || 'VIP DRAW'}
                                 </span>
@@ -1432,6 +1441,42 @@ export default function GamesManagementSuperHub({
                     <div className="space-y-4 animate-in fade-in duration-200 text-xs">
                       <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
                         ℹ️ Step 1 establishes permanent event name, ticket availability, batch tag, and countdown duration.
+                      </div>
+
+                      {/* 0. Event Player Category */}
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold text-[#8b92a2] block">
+                          Event Player Category *
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            data-testid="wizard-event-category-normal"
+                            onClick={() => setWizardData(prev => ({ ...prev, eventCategory: 'normal' }))}
+                            className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                              wizardData.eventCategory === 'normal'
+                                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                            }`}
+                          >
+                            <span className="font-bold text-xs block">Normal Event</span>
+                            <span className="text-[10px] opacity-75">Open to Normal &amp; VIP Players</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            data-testid="wizard-event-category-vip"
+                            onClick={() => setWizardData(prev => ({ ...prev, eventCategory: 'vip' }))}
+                            className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                              wizardData.eventCategory === 'vip'
+                                ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                            }`}
+                          >
+                            <span className="font-bold text-xs block">VIP Event</span>
+                            <span className="text-[10px] opacity-75">Exclusive to active VIP Players</span>
+                          </button>
+                        </div>
                       </div>
 
                       {/* 1. Event Name */}
@@ -2146,6 +2191,12 @@ export default function GamesManagementSuperHub({
                           <strong className="text-white font-bold">{wizardData.eventName}</strong>
                         </div>
                         <div className="flex justify-between items-center text-xs">
+                          <span className="text-[#94A3B8]">Event Category:</span>
+                          <strong className={wizardData.eventCategory === 'vip' ? 'text-amber-300 font-black uppercase' : 'text-emerald-300 font-bold uppercase'}>
+                            {wizardData.eventCategory === 'vip' ? 'VIP Event (VIP Only)' : 'Normal Event'}
+                          </strong>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
                           <span className="text-[#94A3B8]">Batch Tag:</span>
                           <strong className="text-amber-400 font-bold">{wizardData.eventTag}</strong>
                         </div>
@@ -2542,6 +2593,12 @@ export default function GamesManagementSuperHub({
 
                     {/* Core Specifications */}
                     <div className="p-3.5 rounded-2xl bg-[#07090d] border border-[#272a31] grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono-numbers">
+                      <div>
+                        <span className="text-[10px] text-[#64748B] block uppercase">Category</span>
+                        <strong className={viewDetailsEvent.eventCategory === 'vip' ? 'text-amber-300 font-black uppercase' : 'text-emerald-300 font-bold uppercase'}>
+                          {viewDetailsEvent.eventCategory === 'vip' ? 'VIP Event' : 'Normal Event'}
+                        </strong>
+                      </div>
                       <div>
                         <span className="text-[10px] text-[#64748B] block uppercase">Batch Tag</span>
                         <strong className="text-amber-400 font-bold">{viewDetailsEvent.batchTag || viewDetailsEvent.badge || 'VIP'}</strong>

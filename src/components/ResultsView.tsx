@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import LotteryCard from './LotteryCard';
 import LotteryShowResultScreen from './LotteryShowResultScreen';
@@ -25,6 +25,14 @@ export default function ResultsView() {
   const { events, tickets, platformSettings, getServerNowMs } = useLottery();
   const [statusFilter, setStatusFilter] = useState<'pending' | 'declared'>('pending');
   const [selectedShowResultEvent, setSelectedShowResultEvent] = useState<any>(null);
+  const [nowTick, setNowTick] = useState<number>(() => (getServerNowMs ? getServerNowMs() : Date.now()));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNowTick(getServerNowMs ? getServerNowMs() : Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [getServerNowMs]);
 
   const retentionHours = useMemo(() => {
     const raw =
@@ -36,34 +44,34 @@ export default function ResultsView() {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1.0;
   }, [platformSettings?.resultsRetentionHours, platformSettings?.resultsRetention]);
 
-  // Filter and deduplicate strictly to ended events; 1-hour countdown begins ONLY from finalizedAtMs
+  // Filter and deduplicate strictly to ended events; countdown begins ONLY from result_published_at / finalized_at
   const endedEvents = useMemo(() => {
     const seenIds = new Set<string>();
     const list: any[] = [];
-    const now = getServerNowMs ? getServerNowMs() : Date.now();
     const retentionMs = retentionHours * 3600 * 1000;
 
     (events || []).forEach((e: any) => {
       if (!e || !e.id || seenIds.has(e.id) || e.isDeleted || e.status === 'deleted') return;
 
       const isFinalizedCompleted =
-        e.status === 'completed' && Boolean(e.finalizedAtMs || e.drawExecutedAt || e.winningDigits);
+        e.status === 'completed' && Boolean(e.resultPublishedAtMs || e.finalizedAtMs || e.drawExecutedAt || e.winningDigits);
       const isPendingOrExpired = Boolean(
         e.status === 'result_pending' ||
           e.status === 'expired' ||
-          (!isFinalizedCompleted && e.drawTime && new Date(e.drawTime).getTime() <= now)
+          (!isFinalizedCompleted && e.drawTime && new Date(e.drawTime).getTime() <= nowTick)
       );
 
       if (isFinalizedCompleted || isPendingOrExpired) {
         if (isFinalizedCompleted) {
+          const publishedAtMs =
+            e.resultPublishedAtMs ||
+            e.finalizedAtMs ||
+            (e.drawExecutedAt ? new Date(e.drawExecutedAt).getTime() : 0);
           const visDeadlineMs =
+            e.resultVisibleUntilMs ||
             e.ticketVisibilityUntilMs ||
-            (e.finalizedAtMs
-              ? e.finalizedAtMs + retentionMs
-              : e.drawExecutedAt
-                ? new Date(e.drawExecutedAt).getTime() + retentionMs
-                : 0);
-          if (visDeadlineMs > 0 && now > visDeadlineMs) {
+            (publishedAtMs > 0 ? publishedAtMs + retentionMs : 0);
+          if (visDeadlineMs > 0 && nowTick >= visDeadlineMs) {
             return;
           }
         }
@@ -74,11 +82,11 @@ export default function ResultsView() {
 
     // Sort by finalization time or draw time descending (most recent first)
     return list.sort((a, b) => {
-      const timeA = a.finalizedAtMs || (a.drawTime ? new Date(a.drawTime).getTime() : 0);
-      const timeB = b.finalizedAtMs || (b.drawTime ? new Date(b.drawTime).getTime() : 0);
+      const timeA = a.resultPublishedAtMs || a.finalizedAtMs || (a.drawTime ? new Date(a.drawTime).getTime() : 0);
+      const timeB = b.resultPublishedAtMs || b.finalizedAtMs || (b.drawTime ? new Date(b.drawTime).getTime() : 0);
       return timeB - timeA;
     });
-  }, [events, retentionHours, getServerNowMs]);
+  }, [events, retentionHours, nowTick]);
 
   // Declared vs Pending strictly driven by official finalization state in backend
   const declaredEvents = useMemo(() => {

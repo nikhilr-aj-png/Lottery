@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Users, Ticket, ArrowRight, Flame, Trophy, Play, CheckCircle2 } from 'lucide-react';
+import { Clock, Users, Ticket, ArrowRight, Flame, Trophy, Play, CheckCircle2, Crown, Lock } from 'lucide-react';
 import { getEventStatusInfo } from '../utils/eventStatus';
 import { useLottery } from '../context/LotteryContext';
 
@@ -20,10 +20,13 @@ export default function LotteryCard({
   mode = 'available',
   isLive = false 
 }: LotteryCardProps) {
-  const { getServerNowMs } = useLottery();
+  const { getServerNowMs, isVipMember, setActiveTab, platformSettings, showToast } = useLottery();
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 });
-  const serverNowMs = getServerNowMs ? getServerNowMs() : Date.now();
+  const [nowTick, setNowTick] = useState<number>(() => (getServerNowMs ? getServerNowMs() : Date.now()));
+  const serverNowMs = nowTick;
   const statusInfo = getEventStatusInfo(event, undefined, serverNowMs);
+  const isVipEvent = (event.eventCategory || event.event_category || 'normal') === 'vip';
+  const isVipLockedForUser = isVipEvent && !isVipMember;
 
   useEffect(() => {
     const updateCountdown = () => {
@@ -51,11 +54,58 @@ export default function LotteryCard({
   // Authoritative event title (Never fallback to generic verification text)
   const eventTitle = event.title || event.name || event.roomName || 'Four Digit Lottery Draw';
 
+  // Live 1-second ticker for both active draw timers and published result visibility countdown
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNowTick(getServerNowMs ? getServerNowMs() : Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [getServerNowMs]);
+
+  const retentionHours = (() => {
+    const raw =
+      platformSettings?.resultsRetentionHours ??
+      platformSettings?.resultsRetention?.duration_hours ??
+      platformSettings?.resultsRetention?.retention_duration_hours ??
+      1.0;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1.0;
+  })();
+
+  const resultPublishedAtMs =
+    event.resultPublishedAtMs ||
+    event.finalizedAtMs ||
+    (event.result_published_at ? new Date(event.result_published_at).getTime() : 0) ||
+    (event.finalized_at ? new Date(event.finalized_at).getTime() : 0) ||
+    (event.drawExecutedAt ? new Date(event.drawExecutedAt).getTime() : 0);
+
+  const resultVisibleUntilMs =
+    event.resultVisibleUntilMs ||
+    event.ticketVisibilityUntilMs ||
+    (event.result_visible_until ? new Date(event.result_visible_until).getTime() : 0) ||
+    (event.ticket_visibility_until ? new Date(event.ticket_visibility_until).getTime() : 0) ||
+    (resultPublishedAtMs > 0 ? resultPublishedAtMs + retentionHours * 3600 * 1000 : 0);
+
+  const resultRemainingMs = resultVisibleUntilMs > 0 ? Math.max(0, resultVisibleUntilMs - serverNowMs) : 0;
+
   // Live timer formatted as HH:MM:SS
   const formatLiveClock = () => {
     const totalHours = timeLeft.days * 24 + timeLeft.hours;
     return `${String(totalHours).padStart(2, '0')}:${String(timeLeft.minutes).padStart(2, '0')}:${String(timeLeft.seconds).padStart(2, '0')}`;
   };
+
+  const formatCountdownMs = (ms: number) => {
+    const totalSecs = Math.max(0, Math.floor(ms / 1000));
+    const hrs = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
+    return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  // Auto-hide concluded published result card the exact second its visibility countdown expires
+  if (mode === 'result' && isCompleted && Boolean(event.winningDigits) && resultVisibleUntilMs > 0 && resultRemainingMs <= 0) {
+    return null;
+  }
 
   const getThemeStyling = () => {
     switch (event.theme) {
@@ -80,6 +130,9 @@ export default function LotteryCard({
     if (isCompleted) {
       if (onShowResult) onShowResult(event);
       else if (onSelect) onSelect(event);
+    } else if (isVipLockedForUser) {
+      showToast?.('VIP Membership required. Upgrade to VIP Player to enter VIP Events.', 'info');
+      setActiveTab?.('profile');
     } else {
       if (onEnterRoom) onEnterRoom(event);
       else if (onSelect) onSelect(event);
@@ -110,6 +163,23 @@ export default function LotteryCard({
               <span className="px-2 py-0.5 rounded-md text-[9.5px] sm:text-[10.5px] font-mono-numbers font-extrabold tracking-tight bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1 whitespace-nowrap shrink-0">
                 <Clock className="w-3 h-3 text-amber-400 shrink-0 animate-pulse" />
                 <span>PENDING</span>
+              </span>
+            )}
+
+            {isVipEvent ? (
+              <span
+                data-testid={`event-category-badge-${event.id}`}
+                className="text-[9px] font-mono-numbers px-1.5 py-0.5 rounded-md font-extrabold tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 inline-flex items-center gap-1 whitespace-nowrap shrink-0"
+              >
+                <Crown className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                <span>VIP</span>
+              </span>
+            ) : (
+              <span
+                data-testid={`event-category-badge-${event.id}`}
+                className="text-[9px] font-mono-numbers px-1.5 py-0.5 rounded-md font-bold tracking-wider bg-slate-800/90 text-slate-300 border border-slate-700 inline-flex items-center whitespace-nowrap shrink-0"
+              >
+                NORMAL
               </span>
             )}
 
@@ -211,13 +281,31 @@ export default function LotteryCard({
           </div>
         )}
 
-        {/* Live Draw Scheduled Info */}
-        {isCompleted && event.drawTime && (
-          <div className="text-[10px] text-[#94A3B8] flex items-center justify-between mb-2.5 px-1">
-            <span>Concluded On:</span>
-            <span className="font-mono-numbers text-white font-medium">
-              {new Date(event.drawTime).toLocaleDateString()} {new Date(event.drawTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
+        {/* Live Draw Scheduled Info & Result Visibility Countdown */}
+        {isCompleted && (resultPublishedAtMs > 0 || event.drawTime) && (
+          <div className="space-y-1.5 mb-2.5 px-1">
+            <div className="text-[10px] text-[#94A3B8] flex items-center justify-between gap-2">
+              <span className="truncate">{event.winningDigits ? 'Published On:' : 'Concluded On:'}</span>
+              <span className="font-mono-numbers text-white font-medium shrink-0">
+                {new Date(resultPublishedAtMs || event.drawTime).toLocaleDateString()}{' '}
+                {new Date(resultPublishedAtMs || event.drawTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+
+            {event.winningDigits && resultVisibleUntilMs > 0 && (
+              <div
+                data-testid={`result-countdown-${event.id}`}
+                className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[10px]"
+              >
+                <span className="inline-flex items-center gap-1 text-amber-300 font-bold truncate">
+                  <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                  <span>Result Available For:</span>
+                </span>
+                <span className="font-mono-numbers font-black text-amber-200 tracking-wider shrink-0">
+                  {formatCountdownMs(resultRemainingMs)}
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -233,6 +321,16 @@ export default function LotteryCard({
             <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
             <span>Show Result</span>
             <ArrowRight className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          </button>
+        ) : isVipLockedForUser ? (
+          <button
+            type="button"
+            data-testid={`lottery-card-vip-lock-${event.id}`}
+            onClick={handleCardAction}
+            className="w-full min-h-[40px] py-2 px-3 rounded-xl bg-[#161B2B] hover:bg-amber-500/15 border border-amber-500/40 text-amber-300 font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all whitespace-nowrap"
+          >
+            <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span>VIP Required • Upgrade</span>
           </button>
         ) : statusInfo.isUpcoming ? (
           <button
