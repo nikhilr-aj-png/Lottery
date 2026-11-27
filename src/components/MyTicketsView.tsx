@@ -2,7 +2,6 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import {
   Ticket,
-  Trophy,
   Clock,
   CheckCircle2,
   Lock,
@@ -13,10 +12,8 @@ import {
   ChevronUp,
   X,
   AlertCircle,
-  RefreshCw,
   Calendar,
   Hash,
-  Layers,
   Eye,
   Compass
 } from 'lucide-react';
@@ -27,7 +24,7 @@ interface MyTicketsViewProps {
   onNavigateToRoom?: (eventOrRoomId: string) => void;
 }
 
-type TicketFilterKey = 'all_active' | 'upcoming' | 'live' | 'completed' | 'won' | 'lost';
+type TicketFilterKey = 'all' | 'upcoming' | 'live' | 'pending' | 'won' | 'lost';
 
 function formatTimestamp(ms?: number | string | null): string {
   if (!ms) return '—';
@@ -72,7 +69,7 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
     showToast
   } = useLottery();
 
-  const [statusFilter, setStatusFilter] = useState<TicketFilterKey>('all_active');
+  const [statusFilter, setStatusFilter] = useState<TicketFilterKey>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedRooms, setExpandedRooms] = useState<Record<string, boolean>>({});
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
@@ -155,8 +152,8 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
 
       const winningCodes: string[] = Array.isArray(rawCodes)
         ? rawCodes
-            .filter(Boolean)
-            .map((c: any) => String(c).replace(/\D/g, '').padStart(4, '0'))
+          .filter(Boolean)
+          .map((c: any) => String(c).replace(/\D/g, '').padStart(4, '0'))
         : [];
 
       // Preserve exact 4-digit leading zeros (e.g., 0047 -> '0047')
@@ -174,8 +171,19 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
         (String(tkt.status || '').toLowerCase() === 'lost' || hasOfficialResult);
       const isUpcoming = statusInfo.isUpcoming;
       const isLive = statusInfo.isLive || statusInfo.isExpiringSoon;
-      const isExpiredPending = statusInfo.isEnd && !isFinalized && !authoritativeEvent.isDeleted;
+      const isExpiredPending = !isWon && !isLost && !isUpcoming && !isLive;
       const isExpiredOrCompleted = statusInfo.isEnd;
+
+      // Mutually exclusive ticket category matching real server/event lifecycle
+      const ticketCategory: Exclude<TicketFilterKey, 'all'> = isWon
+        ? 'won'
+        : isLost
+          ? 'lost'
+          : isUpcoming
+            ? 'upcoming'
+            : isLive
+              ? 'live'
+              : 'pending';
 
       // 1-Hour Post-Finalization Auto-Hide Rule (computed strictly from server finalized_at + 1h)
       const visibilityUntilMs = statusInfo.ticketVisibilityUntilMs || Number(tkt.ticketVisibilityUntilMs || 0);
@@ -192,13 +200,11 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
         ? 'Won'
         : isLost
           ? 'Lost'
-          : isFinalized
-            ? 'Completed'
-            : isExpiredPending
-              ? 'Processing Result'
-              : isUpcoming
-                ? 'Upcoming'
-                : 'Active';
+          : isExpiredPending
+            ? 'Pending'
+            : isUpcoming
+              ? 'Upcoming'
+              : 'Live';
 
       const roomId = authoritativeEvent.roomId || tkt.roomId || `room-${eventId}`;
       const roomName = authoritativeEvent.roomName || tkt.roomName || authoritativeEvent.title || 'Lottery Room';
@@ -222,6 +228,7 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
         event: authoritativeEvent,
         eventTitle: authoritativeEvent.title || tkt.eventTitle || 'Lottery Draw Room',
         statusInfo,
+        ticketCategory,
         isLive,
         isUpcoming,
         isFinalized,
@@ -243,23 +250,21 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
     });
   }, [myPurchasedTickets, events, nowTick]);
 
-  // Normal My Ticket listing: includes live, upcoming, expired pending result, AND finalized within 1h visibility
+  // Normal My Ticket listing: includes live, upcoming, pending result, AND finalized within 1h visibility
   const visibleNormalTickets = useMemo(() => {
     return enrichedTickets.filter((t) => !t.shouldHideFromNormalListing);
   }, [enrichedTickets]);
 
-  // 3. Summary KPI counts computed strictly from user's currently visible My Tickets
+  // 3. Mutually exclusive category counts matching the single unified filter bar
   const stats = useMemo(() => {
-    const total = visibleNormalTickets.length;
-    const active = visibleNormalTickets.filter((t) => t.isLive).length;
-    const upcoming = visibleNormalTickets.filter((t) => t.isUpcoming).length;
-    const pending = visibleNormalTickets.filter((t) => t.isExpiredPending).length;
-    const completed = visibleNormalTickets.filter((t) => t.isFinalized).length;
-    const won = visibleNormalTickets.filter((t) => t.isWon).length;
-    const lost = visibleNormalTickets.filter((t) => t.isLost).length;
-    const totalWonUsdt = visibleNormalTickets.reduce((sum, t) => sum + (t.isWon ? t.wonAmount : 0), 0);
+    const all = visibleNormalTickets.length;
+    const upcoming = visibleNormalTickets.filter((t) => t.ticketCategory === 'upcoming').length;
+    const live = visibleNormalTickets.filter((t) => t.ticketCategory === 'live').length;
+    const pending = visibleNormalTickets.filter((t) => t.ticketCategory === 'pending').length;
+    const won = visibleNormalTickets.filter((t) => t.ticketCategory === 'won').length;
+    const lost = visibleNormalTickets.filter((t) => t.ticketCategory === 'lost').length;
 
-    return { total, active, upcoming, pending, completed, won, lost, totalWonUsdt };
+    return { all, upcoming, live, pending, won, lost };
   }, [visibleNormalTickets]);
 
   // 4. Filter + Search (automatically hides post-finalization tickets once 1-hour visibility ends)
@@ -268,11 +273,7 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
 
     return visibleNormalTickets
       .filter((t) => {
-        if (statusFilter === 'upcoming' && !t.isUpcoming) return false;
-        if (statusFilter === 'live' && !t.isLive) return false;
-        if (statusFilter === 'completed' && !t.isFinalized && !t.isExpiredPending) return false;
-        if (statusFilter === 'won' && !t.isWon) return false;
-        if (statusFilter === 'lost' && !t.isLost) return false;
+        if (statusFilter !== 'all' && t.ticketCategory !== statusFilter) return false;
 
         if (q) {
           const matchesRoom = t.roomName.toLowerCase().includes(q) || String(t.roomId).toLowerCase().includes(q);
@@ -378,10 +379,10 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
   }
 
   const filterTabs: { key: TicketFilterKey; label: string; count: number }[] = [
-    { key: 'all_active', label: 'All Tickets', count: stats.total },
+    { key: 'all', label: 'All Tickets', count: stats.all },
     { key: 'upcoming', label: 'Upcoming', count: stats.upcoming },
-    { key: 'live', label: 'Live', count: stats.active },
-    { key: 'completed', label: 'Results / Pending', count: stats.completed + stats.pending },
+    { key: 'live', label: 'Live', count: stats.live },
+    { key: 'pending', label: 'Pending', count: stats.pending },
     { key: 'won', label: 'Won', count: stats.won },
     { key: 'lost', label: 'Lost', count: stats.lost }
   ];
@@ -389,115 +390,17 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
   return (
     <div
       data-testid="my-tickets-view"
-      className="w-full max-w-[1400px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-5 text-left select-none box-border overflow-x-clip"
+      className="w-full max-w-[1400px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 pt-3 pb-20 md:py-5 space-y-3.5 sm:space-y-4 text-left select-none box-border overflow-x-clip"
     >
-      {/* 1. VIEW-ONLY PAGE HEADER */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#111728]/95 backdrop-blur-xl p-3.5 xs:p-4 sm:p-5 rounded-2xl border border-[#1F2737] shadow-xl">
-        <div className="flex items-start sm:items-center gap-3 min-w-0">
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-400 shrink-0 shadow-[0_0_16px_rgba(245,158,11,0.2)]">
-            <Ticket className="w-5 h-5 sm:w-5.5 sm:h-5.5" aria-hidden="true" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="font-display font-black text-lg xs:text-xl sm:text-2xl text-white leading-tight">
-              My Tickets
-            </h1>
-            <p className="text-[11px] sm:text-xs text-[#94A3B8] mt-0.5 leading-snug">
-              View your purchased lottery tickets and their current status.
-            </p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => fetchTickets?.()}
-          disabled={loadingTickets}
-          className="self-start sm:self-auto px-3 py-2 rounded-xl bg-[#0B0F19] hover:bg-[#171F30] border border-[#253045] text-[11px] sm:text-xs font-bold text-[#CBD5E1] hover:text-white inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 text-amber-400 ${loadingTickets ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </button>
-      </header>
-
-      {/* 2. SUMMARY CARDS (4 KPIs — 2x2 mobile/tablet, 1x4 desktop) */}
-      <section
-        data-testid="my-tickets-summary-grid"
-        aria-label="Ticket Summary"
-        className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4"
-      >
-        <article
-          data-testid="summary-card-total"
-          className="rounded-2xl bg-[#111728] border border-[#1F2737] p-3 xs:p-3.5 sm:p-4 flex flex-col justify-between gap-1.5 min-w-0"
-        >
-          <div className="flex items-center justify-between gap-1.5 min-w-0">
-            <span className="text-[10px] sm:text-[11px] uppercase font-bold tracking-wider text-[#94A3B8] truncate">
-              Total Tickets
-            </span>
-            <Layers className="w-4 h-4 text-amber-400 shrink-0" aria-hidden="true" />
-          </div>
-          <div className="font-display font-black text-xl sm:text-2xl text-white font-mono-numbers">
-            {stats.total}
-          </div>
-          <span className="text-[10px] text-[#64748B] truncate">Purchased entries</span>
-        </article>
-
-        <article
-          data-testid="summary-card-active"
-          className="rounded-2xl bg-[#111728] border border-emerald-500/25 p-3 xs:p-3.5 sm:p-4 flex flex-col justify-between gap-1.5 min-w-0"
-        >
-          <div className="flex items-center justify-between gap-1.5 min-w-0">
-            <span className="text-[10px] sm:text-[11px] uppercase font-bold tracking-wider text-[#94A3B8] truncate">
-              Active Tickets
-            </span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-          </div>
-          <div className="font-display font-black text-xl sm:text-2xl text-emerald-400 font-mono-numbers">
-            {stats.active}
-          </div>
-          <span className="text-[10px] text-emerald-400/80 truncate">Live open rooms</span>
-        </article>
-
-        <article
-          data-testid="summary-card-upcoming"
-          className="rounded-2xl bg-[#111728] border border-blue-500/25 p-3 xs:p-3.5 sm:p-4 flex flex-col justify-between gap-1.5 min-w-0"
-        >
-          <div className="flex items-center justify-between gap-1.5 min-w-0">
-            <span className="text-[10px] sm:text-[11px] uppercase font-bold tracking-wider text-[#94A3B8] truncate">
-              Upcoming
-            </span>
-            <Clock className="w-4 h-4 text-blue-400 shrink-0" aria-hidden="true" />
-          </div>
-          <div className="font-display font-black text-xl sm:text-2xl text-blue-300 font-mono-numbers">
-            {stats.upcoming}
-          </div>
-          <span className="text-[10px] text-[#94A3B8] truncate">Scheduled draws</span>
-        </article>
-
-        <article
-          data-testid="summary-card-won"
-          className="rounded-2xl bg-[#111728] border border-amber-500/30 p-3 xs:p-3.5 sm:p-4 flex flex-col justify-between gap-1.5 min-w-0"
-        >
-          <div className="flex items-center justify-between gap-1.5 min-w-0">
-            <span className="text-[10px] sm:text-[11px] uppercase font-bold tracking-wider text-[#94A3B8] truncate">
-              Won / Done
-            </span>
-            <Trophy className="w-4 h-4 text-amber-400 shrink-0" aria-hidden="true" />
-          </div>
-          <div className="font-display font-black text-xl sm:text-2xl text-amber-300 font-mono-numbers truncate">
-            {stats.won} Won
-          </div>
-          <span className="text-[10px] text-amber-400/90 font-mono-numbers truncate">
-            {stats.completed} Done · +{stats.totalWonUsdt.toFixed(2)} USDT
-          </span>
-        </article>
-      </section>
-
-      {/* 3. FILTER TABS & SEARCH BAR */}
-      <section className="bg-[#111728] border border-[#1F2737] rounded-2xl p-3 sm:p-4 space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Status Filters */}
+      {/* UNIFIED FILTER TABS & SEARCH BAR */}
+      <section className="bg-[#111728] border border-[#1F2737] rounded-2xl p-2.5 sm:p-3.5 space-y-2.5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3">
+          {/* Unified Category Filters */}
           <div
             data-testid="my-tickets-filters"
-            className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-0.5"
+            role="tablist"
+            aria-label="Ticket status categories"
+            className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-0.5 max-w-full min-w-0"
           >
             {filterTabs.map((tab) => {
               const active = statusFilter === tab.key;
@@ -505,13 +408,14 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
                 <button
                   key={tab.key}
                   type="button"
+                  role="tab"
+                  aria-selected={active}
                   data-testid={`ticket-filter-${tab.key}`}
                   onClick={() => setStatusFilter(tab.key)}
-                  className={`px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
-                    active
-                      ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-                      : 'bg-[#0B0F19] text-[#94A3B8] hover:text-white border border-[#1F2737]'
-                  }`}
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold whitespace-nowrap transition-colors cursor-pointer shrink-0 ${active
+                    ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                    : 'bg-[#0B0F19] text-[#94A3B8] hover:text-white border border-[#1F2737]'
+                    }`}
                 >
                   {tab.label} ({tab.count})
                 </button>
@@ -520,7 +424,7 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
           </div>
 
           {/* Search Input */}
-          <div className="relative w-full lg:w-72 shrink-0">
+          <div className="relative w-full lg:w-72 shrink-0 min-w-0">
             <Search className="w-4 h-4 text-[#64748B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
@@ -543,11 +447,13 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
           </div>
         </div>
 
-        {(statusFilter === 'completed' || statusFilter === 'won' || statusFilter === 'lost') && (
+        {(statusFilter === 'pending' || statusFilter === 'won' || statusFilter === 'lost') && (
           <div className="px-3 py-2 rounded-xl bg-[#0B0F19] border border-[#1F2737] text-[11px] text-[#94A3B8] flex items-center gap-2">
             <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <span>
-              Historical &amp; expired ticket records are strictly read-only. Room entry and purchasing are closed.
+              {statusFilter === 'pending'
+                ? 'Waiting for official draw finalization. Room entry and purchasing are closed.'
+                : 'Confirmed result records remain visible for 1 hour after official finalization.'}
             </span>
           </div>
         )}
@@ -629,32 +535,20 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
             No Matching Tickets
           </h3>
           <p className="text-xs text-[#94A3B8] leading-relaxed">
-            {statusFilter === 'all_active' && stats.total > 0
-              ? 'You have no currently active or upcoming tickets. Switch to Completed, Won, or Lost to view past rounds.'
-              : 'No tickets match your current filter or search criteria.'}
+            No tickets match your current filter or search criteria.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-            {searchQuery || statusFilter !== 'all_active' ? (
+            {(searchQuery || statusFilter !== 'all') && (
               <button
                 type="button"
                 onClick={() => {
                   setSearchQuery('');
-                  setStatusFilter('all_active');
+                  setStatusFilter('all');
                 }}
                 className="px-4 py-2 rounded-xl bg-[#0B0F19] hover:bg-[#171F30] border border-[#253045] text-xs font-bold text-amber-300 cursor-pointer"
               >
-                Clear Filters
+                Show All Tickets ({stats.all})
               </button>
-            ) : (
-              stats.completed > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter('completed')}
-                  className="px-4 py-2 rounded-xl bg-[#0B0F19] hover:bg-[#171F30] border border-[#253045] text-xs font-bold text-amber-300 cursor-pointer"
-                >
-                  View Completed History ({stats.completed})
-                </button>
-              )
             )}
           </div>
         </div>
@@ -676,25 +570,23 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
               <article
                 key={groupKey}
                 data-testid={`room-group-card-${roomId}`}
-                className={`bg-[#0D121D] rounded-2xl border p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden min-w-0 box-border ${
-                  hasWin
-                    ? 'border-emerald-500/45 shadow-lg shadow-emerald-500/10'
-                    : statusInfo.isEnd
-                      ? 'border-[#1F2737] opacity-95'
-                      : 'border-amber-500/30 shadow-lg'
-                }`}
+                className={`bg-[#0D121D] rounded-2xl border p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden min-w-0 box-border ${hasWin
+                  ? 'border-emerald-500/45 shadow-lg shadow-emerald-500/10'
+                  : statusInfo.isEnd
+                    ? 'border-[#1F2737] opacity-95'
+                    : 'border-amber-500/30 shadow-lg'
+                  }`}
               >
                 {/* Top Status Accent Stripe */}
                 <div
-                  className={`absolute top-0 left-0 right-0 h-1 ${
-                    hasWin
-                      ? 'bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-500'
-                      : statusInfo.isEnd
-                        ? 'bg-slate-700'
-                        : statusInfo.isUpcoming
-                          ? 'bg-blue-500'
-                          : 'bg-gradient-to-r from-amber-500 via-amber-300 to-emerald-400'
-                  }`}
+                  className={`absolute top-0 left-0 right-0 h-1 ${hasWin
+                    ? 'bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-500'
+                    : statusInfo.isEnd
+                      ? 'bg-slate-700'
+                      : statusInfo.isUpcoming
+                        ? 'bg-blue-500'
+                        : 'bg-gradient-to-r from-amber-500 via-amber-300 to-emerald-400'
+                    }`}
                 />
 
                 <div className="space-y-3 min-w-0">
@@ -706,13 +598,12 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
                           {lotteryType}
                         </span>
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-mono-numbers font-bold uppercase whitespace-nowrap ${
-                            statusInfo.isFinalized
-                              ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
-                              : statusInfo.isEnd
-                                ? 'bg-amber-500/15 border border-amber-500/30 text-amber-300'
-                                : statusInfo.badgeClass
-                          }`}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-mono-numbers font-bold uppercase whitespace-nowrap ${statusInfo.isFinalized
+                            ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
+                            : statusInfo.isEnd
+                              ? 'bg-amber-500/15 border border-amber-500/30 text-amber-300'
+                              : statusInfo.badgeClass
+                            }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusInfo.dotClass}`} />
                           <span>
@@ -792,11 +683,10 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
                           type="button"
                           onClick={() => setSelectedTicket(tkt)}
                           data-testid={`ticket-row-${tkt.id}`}
-                          className={`w-full text-left p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-colors cursor-pointer group ${
-                            tkt.isWon
-                              ? 'bg-emerald-950/20 border-emerald-500/40 hover:border-emerald-400'
-                              : 'bg-[#111728] border-[#1F2737] hover:border-amber-500/45'
-                          }`}
+                          className={`w-full text-left p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-colors cursor-pointer group ${tkt.isWon
+                            ? 'bg-emerald-950/20 border-emerald-500/40 hover:border-emerald-400'
+                            : 'bg-[#111728] border-[#1F2737] hover:border-amber-500/45'
+                            }`}
                         >
                           <div className="space-y-1 min-w-0">
                             {/* Preserved Leading-Zero 4-Digit Tiles */}
@@ -804,11 +694,10 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
                               {tkt.tktNumber.split('').map((digit: string, dIdx: number) => (
                                 <span
                                   key={dIdx}
-                                  className={`w-6.5 h-6.5 xs:w-7 xs:h-7 rounded-lg flex items-center justify-center border ${
-                                    tkt.isWon
-                                      ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
-                                      : 'bg-[#090D16] border-[#2A354A] text-amber-300'
-                                  }`}
+                                  className={`w-6.5 h-6.5 xs:w-7 xs:h-7 rounded-lg flex items-center justify-center border ${tkt.isWon
+                                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                                    : 'bg-[#090D16] border-[#2A354A] text-amber-300'
+                                    }`}
                                 >
                                   {digit}
                                 </span>
@@ -821,15 +710,14 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
 
                           <div className="text-right shrink-0 space-y-0.5">
                             <span
-                              className={`inline-block px-2 py-0.5 rounded-md text-[9.5px] font-mono-numbers font-bold uppercase ${
-                                tkt.isWon
-                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                                  : tkt.isLost
-                                    ? 'bg-slate-800 text-slate-300 border border-slate-700'
-                                    : tkt.isExpiredOrCompleted
-                                      ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
-                                      : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                              }`}
+                              className={`inline-block px-2 py-0.5 rounded-md text-[9.5px] font-mono-numbers font-bold uppercase ${tkt.isWon
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                : tkt.isLost
+                                  ? 'bg-slate-800 text-slate-300 border border-slate-700'
+                                  : tkt.isExpiredOrCompleted
+                                    ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
+                                    : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                }`}
                             >
                               {tkt.isWon ? `+${tkt.wonAmount} ${currency}` : tkt.ticketStatusLabel}
                             </span>
@@ -933,11 +821,10 @@ export default function MyTicketsView({ onExploreEvents, onNavigateToRoom }: MyT
                 {selectedTicket.tktNumber.split('').map((digit: string, i: number) => (
                   <span
                     key={i}
-                    className={`w-11 h-12 rounded-xl flex items-center justify-center border ${
-                      selectedTicket.isWon
-                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
-                        : 'bg-[#141924] border-amber-500/40 text-amber-300'
-                    }`}
+                    className={`w-11 h-12 rounded-xl flex items-center justify-center border ${selectedTicket.isWon
+                      ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300'
+                      : 'bg-[#141924] border-amber-500/40 text-amber-300'
+                      }`}
                   >
                     {digit}
                   </span>
