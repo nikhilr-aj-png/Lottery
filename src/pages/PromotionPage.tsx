@@ -174,45 +174,50 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
   };
 
   return (
-    <div className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 text-left select-none animate-in fade-in duration-200">
-      
+    <div
+      data-testid="promotion-page"
+      className="w-full max-w-[1360px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6 text-left select-none box-border overflow-x-clip animate-in fade-in duration-200"
+    >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#1F2737]">
-        <div className="flex items-center gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                <Share2 className="w-4 h-4" />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#1F2737] min-w-0">
+        <div className="flex items-center gap-3 min-w-0 max-w-full">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="p-1.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+                <Share2 className="w-4 h-4" aria-hidden="true" />
               </span>
-              <h1 className="font-display font-black text-xl sm:text-2xl text-white">
+              <h1 className="font-display font-black text-lg xs:text-xl sm:text-2xl text-white leading-tight break-words">
                 Promotions &amp; Referral Program
               </h1>
             </div>
-            <p className="text-xs text-[#94A3B8] mt-1">
+            <p className="text-xs text-[#94A3B8] mt-1 leading-snug">
               Invite friends, share your exclusive referral code, and earn instant USDT commissions.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono-numbers">
-          <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold inline-flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-2 text-xs font-mono-numbers shrink-0 max-w-full">
+          <span className="px-2.5 sm:px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold inline-flex items-center gap-1.5 whitespace-nowrap">
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             <span>Instant USDT TRC-20 Payouts</span>
           </span>
         </div>
       </div>
 
       {/* Hero Banner: Invite Friends & Earn USDT */}
-      <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#121624] via-[#0E131F] to-[#1C1335] border border-amber-500/30 p-5 sm:p-7 shadow-2xl">
+      <section
+        data-testid="promo-hero-section"
+        className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#121624] via-[#0E131F] to-[#1C1335] border border-amber-500/30 p-3.5 xs:p-4 sm:p-6 lg:p-7 shadow-2xl box-border"
+      >
         <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-b from-amber-500/15 via-purple-600/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-xl">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono-numbers text-[11px] font-bold">
-              <Flame className="w-3.5 h-3.5 text-amber-400" />
-              <span>EarnFlow Partner Program · USDT TRC-20</span>
+        <div className="relative z-10 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-5 lg:gap-6 min-w-0">
+          <div className="space-y-3 min-w-0 flex-1 lg:max-w-xl">
+            <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono-numbers text-[10.5px] sm:text-[11px] font-bold max-w-full">
+              <Flame className="w-3.5 h-3.5 text-amber-400 shrink-0" aria-hidden="true" />
+              <span className="truncate">EarnFlow Partner Program · USDT TRC-20</span>
             </span>
-            
+
             <h2 className="font-display font-black text-xl sm:text-3xl text-white tracking-tight leading-tight">
               Invite Friends &amp; Earn <span className="text-amber-400">USDT Rewards</span>
             </h2>
@@ -221,92 +226,132 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
               Share your personal referral link. Earn direct USDT bonuses when friends register, top up their wallets, and participate in Four Digit Lottery draws.
             </p>
 
-            <div className="grid grid-cols-3 gap-2.5 pt-2 text-[11px]">
-              <div className="p-3 rounded-xl bg-[#0B0F19]/90 border border-[#1F2737]">
-                <span className="text-[10px] text-[#94A3B8] block uppercase font-bold">Registration</span>
-                <strong className="text-emerald-400 font-mono-numbers text-xs sm:text-sm">
+            {/* Three Referral Reward Information Cards: 2-col (+ spanning 3rd) on <400px, 3-col on 400px+ */}
+            <div
+              data-testid="promo-reward-cards"
+              className="grid grid-cols-2 min-[400px]:grid-cols-3 gap-2 sm:gap-2.5 pt-1 text-[11px] min-w-0"
+            >
+              <div
+                data-testid="promo-card-registration"
+                className="p-2.5 sm:p-3 rounded-xl bg-[#0B0F19]/90 border border-[#1F2737] min-w-0 box-border flex flex-col justify-between gap-0.5"
+              >
+                <span className="text-[9.5px] sm:text-[10px] text-[#94A3B8] block uppercase font-bold leading-tight break-words">
+                  Registration
+                </span>
+                <strong className="text-emerald-400 font-mono-numbers text-xs sm:text-sm leading-tight block break-words">
                   {referralSettings.registrationReward?.amount || 0.25} USDT
                 </strong>
               </div>
-              <div className="p-3 rounded-xl bg-[#0B0F19]/90 border border-[#1F2737]">
-                <span className="text-[10px] text-[#94A3B8] block uppercase font-bold">First Deposit</span>
-                <strong className="text-amber-400 font-mono-numbers text-xs sm:text-sm">
+
+              <div
+                data-testid="promo-card-first-deposit"
+                className="p-2.5 sm:p-3 rounded-xl bg-[#0B0F19]/90 border border-[#1F2737] min-w-0 box-border flex flex-col justify-between gap-0.5"
+              >
+                <span className="text-[9.5px] sm:text-[10px] text-[#94A3B8] block uppercase font-bold leading-tight break-words">
+                  First Deposit
+                </span>
+                <strong className="text-amber-400 font-mono-numbers text-xs sm:text-sm leading-tight block break-words">
                   {referralSettings.firstDepositReward?.amount || 5}% Bonus
                 </strong>
               </div>
-              <div className="p-3 rounded-xl bg-[#0B0F19]/90 border border-[#1F2737]">
-                <span className="text-[10px] text-[#94A3B8] block uppercase font-bold">Commissions</span>
-                <strong className="text-purple-400 font-mono-numbers text-xs sm:text-sm">
+
+              <div
+                data-testid="promo-card-commissions"
+                className="col-span-2 min-[400px]:col-span-1 p-2.5 sm:p-3 rounded-xl bg-[#0B0F19]/90 border border-[#1F2737] min-w-0 box-border flex flex-row min-[400px]:flex-col items-center min-[400px]:items-start justify-between gap-2 min-[400px]:gap-0.5"
+              >
+                <span className="text-[9.5px] sm:text-[10px] text-[#94A3B8] block uppercase font-bold leading-tight break-words">
+                  Commissions
+                </span>
+                <strong className="text-purple-400 font-mono-numbers text-xs sm:text-sm leading-tight block break-words">
                   {referralSettings.lifetimeCommission?.percent || 1}% Lifetime
                 </strong>
               </div>
             </div>
           </div>
 
-          {/* Share Card */}
-          <div className="w-full lg:w-96 p-4 sm:p-5 rounded-2xl bg-[#0B0F19]/95 border border-amber-500/25 space-y-3.5 shadow-xl backdrop-blur-md">
+          {/* Share Card: Strict border-box & min-w-0 containment across 320px-2560px */}
+          <div
+            data-testid="referral-share-card"
+            className="w-full lg:w-96 shrink-0 min-w-0 max-w-full p-3.5 sm:p-5 rounded-2xl bg-[#0B0F19]/95 border border-amber-500/25 space-y-3.5 shadow-xl backdrop-blur-md box-border overflow-hidden"
+          >
             <span className="text-xs font-bold text-white uppercase tracking-wider block">
               Your Referral Link &amp; Code
             </span>
 
-            {/* Referral Code Box */}
-            <div className="space-y-1">
-              <label className="text-[10px] text-[#94A3B8] uppercase font-bold">Referral Code</label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 px-3 py-2 rounded-xl bg-[#141A28] border border-[#273145] font-mono-numbers font-black text-amber-300 text-sm tracking-wider select-all">
+            {/* Referral Code Box (Stacked Copy button on 320px-375px, inline on 376px+) */}
+            <div className="space-y-1.5 min-w-0">
+              <label className="text-[10px] text-[#94A3B8] uppercase font-bold block">
+                Referral Code
+              </label>
+              <div className="flex flex-col min-[376px]:flex-row items-stretch min-[376px]:items-center gap-2 min-w-0 w-full">
+                <div
+                  data-testid="referral-code-value"
+                  title={referralCode}
+                  className="w-full min-[376px]:w-auto flex-1 min-w-0 px-3 py-2.5 min-[376px]:py-2 rounded-xl bg-[#141A28] border border-[#273145] font-mono-numbers font-black text-amber-300 text-xs sm:text-sm tracking-wider select-all truncate box-border"
+                >
                   {referralCode}
                 </div>
                 <button
                   type="button"
+                  data-testid="copy-code-button"
                   onClick={handleCopyCode}
-                  className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                  className="w-full min-[376px]:w-auto min-h-[38px] px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0 box-border whitespace-nowrap"
                   title="Copy Code"
                 >
-                  {copiedCode ? <Check className="w-3.5 h-3.5 text-black" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedCode ? <Check className="w-3.5 h-3.5 text-black shrink-0" /> : <Copy className="w-3.5 h-3.5 shrink-0" />}
                   <span>{copiedCode ? 'Copied' : 'Copy'}</span>
                 </button>
               </div>
             </div>
 
-            {/* Referral Link Box */}
-            <div className="space-y-1">
-              <label className="text-[10px] text-[#94A3B8] uppercase font-bold">Direct Link</label>
-              <div className="flex items-center gap-2">
+            {/* Direct Link Box (Stacked Copy button on 320px-375px, inline on 376px+) */}
+            <div className="space-y-1.5 min-w-0">
+              <label
+                htmlFor="referral-direct-link-input"
+                className="text-[10px] text-[#94A3B8] uppercase font-bold block"
+              >
+                Direct Link
+              </label>
+              <div className="flex flex-col min-[376px]:flex-row items-stretch min-[376px]:items-center gap-2 min-w-0 w-full">
                 <input
+                  id="referral-direct-link-input"
+                  data-testid="referral-link-input"
                   type="text"
                   readOnly
                   value={referralLink}
-                  className="flex-1 px-3 py-2 rounded-xl bg-[#141A28] border border-[#273145] text-xs text-[#CBD5E1] truncate font-mono select-all outline-none"
+                  title={referralLink}
+                  className="w-full min-[376px]:w-auto flex-1 min-w-0 max-w-full px-3 py-2.5 min-[376px]:py-2 rounded-xl bg-[#141A28] border border-[#273145] text-xs text-[#CBD5E1] truncate font-mono select-all outline-none box-border"
                 />
                 <button
                   type="button"
+                  data-testid="copy-link-button"
                   onClick={handleCopyLink}
-                  className="px-3 py-2 rounded-xl bg-[#1C2333] hover:bg-[#273145] text-white border border-[#273145] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                  className="w-full min-[376px]:w-auto min-h-[38px] px-3.5 py-2 rounded-xl bg-[#1C2333] hover:bg-[#273145] text-white border border-[#273145] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0 box-border whitespace-nowrap"
                   title="Copy Link"
                 >
-                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> : <Copy className="w-3.5 h-3.5 shrink-0" />}
                   <span>{copiedLink ? 'Copied' : 'Copy'}</span>
                 </button>
               </div>
             </div>
 
             {/* Social Share Buttons */}
-            <div className="pt-1 flex items-center gap-2">
+            <div className="pt-1 grid grid-cols-2 gap-2 min-w-0">
               <button
                 type="button"
                 onClick={handleShareWhatsApp}
-                className="flex-1 py-2 px-3 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/30 text-[#25D366] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="w-full min-h-[38px] py-2 px-2.5 sm:px-3 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/30 text-[#25D366] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap min-w-0"
               >
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span>WhatsApp</span>
+                <MessageCircle className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">WhatsApp</span>
               </button>
               <button
                 type="button"
                 onClick={handleShareTelegram}
-                className="flex-1 py-2 px-3 rounded-xl bg-[#0088cc]/15 hover:bg-[#0088cc]/25 border border-[#0088cc]/30 text-[#0088cc] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="w-full min-h-[38px] py-2 px-2.5 sm:px-3 rounded-xl bg-[#0088cc]/15 hover:bg-[#0088cc]/25 border border-[#0088cc]/30 text-[#0088cc] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap min-w-0"
               >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>Telegram</span>
+                <Share2 className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Telegram</span>
               </button>
             </div>
           </div>
@@ -314,49 +359,49 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
       </section>
 
       {/* Referral Statistics 4-Card Grid */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0D121D] border border-[#1F2737] space-y-1">
-          <span className="text-[11px] text-[#94A3B8] uppercase font-bold flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-amber-400" />
-            <span>Total Referred</span>
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 min-w-0">
+        <div className="p-3 sm:p-5 rounded-2xl bg-[#0D121D] border border-[#1F2737] space-y-1 min-w-0 box-border">
+          <span className="text-[10px] sm:text-[11px] text-[#94A3B8] uppercase font-bold flex items-center gap-1.5 min-w-0">
+            <Users className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="truncate">Total Referred</span>
           </span>
-          <div className="font-display font-black text-xl sm:text-2xl text-white font-mono-numbers">
+          <div className="font-display font-black text-lg xs:text-xl sm:text-2xl text-white font-mono-numbers truncate">
             {totalReferredCount}
           </div>
-          <span className="text-[10px] text-[#94A3B8] block">Registered accounts</span>
+          <span className="text-[10px] text-[#94A3B8] block truncate">Registered accounts</span>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0D121D] border border-[#1F2737] space-y-1">
-          <span className="text-[11px] text-[#94A3B8] uppercase font-bold flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Active Players</span>
+        <div className="p-3 sm:p-5 rounded-2xl bg-[#0D121D] border border-[#1F2737] space-y-1 min-w-0 box-border">
+          <span className="text-[10px] sm:text-[11px] text-[#94A3B8] uppercase font-bold flex items-center gap-1.5 min-w-0">
+            <TrendingUp className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span className="truncate">Active Players</span>
           </span>
-          <div className="font-display font-black text-xl sm:text-2xl text-emerald-400 font-mono-numbers">
+          <div className="font-display font-black text-lg xs:text-xl sm:text-2xl text-emerald-400 font-mono-numbers truncate">
             {activeReferralsCount}
           </div>
-          <span className="text-[10px] text-[#94A3B8] block">Purchased lottery entries</span>
+          <span className="text-[10px] text-[#94A3B8] block truncate">Purchased lottery entries</span>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0D121D] border border-[#1F2737] space-y-1">
-          <span className="text-[11px] text-[#94A3B8] uppercase font-bold flex items-center gap-1.5">
-            <Trophy className="w-3.5 h-3.5 text-amber-400" />
-            <span>Total Earned</span>
+        <div className="p-3 sm:p-5 rounded-2xl bg-[#0D121D] border border-[#1F2737] space-y-1 min-w-0 box-border">
+          <span className="text-[10px] sm:text-[11px] text-[#94A3B8] uppercase font-bold flex items-center gap-1.5 min-w-0">
+            <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="truncate">Total Earned</span>
           </span>
-          <div className="font-display font-black text-xl sm:text-2xl text-amber-400 font-mono-numbers">
+          <div className="font-display font-black text-base xs:text-lg sm:text-2xl text-amber-400 font-mono-numbers truncate">
             {totalEarnedUsdt.toFixed(2)} USDT
           </div>
-          <span className="text-[10px] text-emerald-400 block font-semibold">Credited to wallet</span>
+          <span className="text-[10px] text-emerald-400 block font-semibold truncate">Credited to wallet</span>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#0D121D] border border-[#1F2737] space-y-1">
-          <span className="text-[11px] text-[#94A3B8] uppercase font-bold flex items-center gap-1.5">
-            <Coins className="w-3.5 h-3.5 text-purple-400" />
-            <span>Commission Rate</span>
+        <div className="p-3 sm:p-5 rounded-2xl bg-[#0D121D] border border-[#1F2737] space-y-1 min-w-0 box-border">
+          <span className="text-[10px] sm:text-[11px] text-[#94A3B8] uppercase font-bold flex items-center gap-1.5 min-w-0">
+            <Coins className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+            <span className="truncate">Commission Rate</span>
           </span>
-          <div className="font-display font-black text-xl sm:text-2xl text-purple-400 font-mono-numbers">
+          <div className="font-display font-black text-lg xs:text-xl sm:text-2xl text-purple-400 font-mono-numbers truncate">
             {referralSettings.lifetimeCommission?.percent || 1.0}%
           </div>
-          <span className="text-[10px] text-[#94A3B8] block">On ticket purchases</span>
+          <span className="text-[10px] text-[#94A3B8] block truncate">On ticket purchases</span>
         </div>
       </section>
 
