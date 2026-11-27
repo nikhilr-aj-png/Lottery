@@ -126,8 +126,8 @@ export default function GamesManagementSuperHub({
   const lotteryCtx = useLottery();
   const directCreateEvent = lotteryCtx?.adminCreateEvent;
   const directDeleteEvent = lotteryCtx?.adminDeleteEvent || adminDeleteEvent;
-  const directExecuteDraw = lotteryCtx?.executeDraw || handleTriggerDraw;
   const directUpdateWinnerConfig = lotteryCtx?.adminUpdateEventWinnerConfig;
+  const directManageScheduledEvent = lotteryCtx?.adminManageScheduledEvent;
   const directPauseEvent = lotteryCtx?.adminPauseEvent;
   const directUpdateEvent = lotteryCtx?.adminUpdateEvent;
   const platformSettings = lotteryCtx?.platformSettings;
@@ -256,11 +256,13 @@ export default function GamesManagementSuperHub({
     selectedJackpotAmount: 5000,
     winnerMode: 'single' as 'single' | 'multiple',
     winnerCount: 1,
-    winningCodesOption: 'preset' as 'preset' | 'later',
     winningCodes: ['2538'] as string[],
     winnerPayoutSharePercent: 90,
     distributionRule: 'tiered' as 'equal' | 'tiered',
     winnerDistribution: [{ position: 1, percent: 100 }] as Array<{ position: number; percent: number }>,
+    publishMode: 'now' as 'now' | 'schedule',
+    scheduledDate: '',
+    scheduledTime: '',
     badge: 'VIP LOTTERY',
     bannerImage: ''
   });
@@ -269,6 +271,10 @@ export default function GamesManagementSuperHub({
   // Modals for Contextual Actions on Events
   const [viewDetailsEvent, setViewDetailsEvent] = useState<any | null>(null);
   const [winnerConfigEvent, setWinnerConfigEvent] = useState<any | null>(null);
+  const [editScheduleEvent, setEditScheduleEvent] = useState<any | null>(null);
+  const [schedEditDate, setSchedEditDate] = useState('');
+  const [schedEditTime, setSchedEditTime] = useState('');
+  const [schedSaving, setSchedSaving] = useState(false);
 
   // Winning Digits Management Modal Inner State
   const [wcWinnerMode, setWcWinnerMode] = useState<'single' | 'multiple'>('single');
@@ -767,21 +773,21 @@ export default function GamesManagementSuperHub({
             if (lotteryRoomFilter !== 'all' && e.roomName !== lotteryRoomFilter) return false;
             
             const isConcluded = e.status === 'completed' && Boolean(e.finalizedAtMs || e.drawExecutedAt || e.winningDigits);
-            const isDrawProcessing = !isConcluded && (e.status === 'result_pending' || e.status === 'expired' || (e.status === 'active' && e.drawTime && e.drawTime <= currentTime));
-            const hasWinningDigits = (Array.isArray(e.winningCodes) && e.winningCodes.length > 0) || Boolean(e.presetWinningDigits);
-            const isWaitingForDigits = isDrawProcessing && !hasWinningDigits && e.drawMode !== 'random';
+            const isScheduled = e.status === 'scheduled' && !e.publishedAt;
+            const isProcessing = !isConcluded && (e.status === 'processing' || e.status === 'result_pending');
+            const isExpired = !isConcluded && !isScheduled && (e.status === 'expired' || isProcessing || (e.drawTime && e.drawTime <= currentTime));
             const diff = e.drawTime ? e.drawTime - currentTime : 0;
-            const isExpiringSoon = !isConcluded && !isDrawProcessing && diff > 0 && diff <= 15 * 60 * 1000;
-            const isActive = !isConcluded && !isDrawProcessing;
+            const isExpiringSoon = !isConcluded && !isScheduled && !isExpired && diff > 0 && diff <= 15 * 60 * 1000;
+            const isActive = !isConcluded && !isScheduled && !isExpired;
 
-            if (lotteryStatusFilter === 'active') {
+            if (lotteryStatusFilter === 'scheduled') {
+              if (!isScheduled) return false;
+            } else if (lotteryStatusFilter === 'active') {
               if (!isActive) return false;
             } else if (lotteryStatusFilter === 'expiring_soon') {
               if (!isExpiringSoon) return false;
-            } else if (lotteryStatusFilter === 'action_required') {
-              if (!isWaitingForDigits) return false;
-            } else if (lotteryStatusFilter === 'result_pending') {
-              if (!isDrawProcessing) return false;
+            } else if (lotteryStatusFilter === 'result_pending' || lotteryStatusFilter === 'processing') {
+              if (!isExpired && !isProcessing) return false;
             } else if (lotteryStatusFilter === 'completed') {
               if (!isConcluded) return false;
             }
@@ -919,11 +925,11 @@ export default function GamesManagementSuperHub({
                     className="w-full min-w-0 bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs font-bold text-white outline-none cursor-pointer focus:border-purple-400"
                   >
                     <option value="all">All Statuses</option>
+                    <option value="scheduled">📅 Scheduled (Unpublished)</option>
                     <option value="active">● Active</option>
                     <option value="expiring_soon">⏳ Expiring Soon (&lt;15m)</option>
-                    <option value="action_required">⚠️ Action Required (Set Digits)</option>
-                    <option value="result_pending">⏳ Expired / Draw Processing</option>
-                    <option value="completed">✓ Settled &amp; Paid</option>
+                    <option value="processing">⚙️ Expired / Processing</option>
+                    <option value="completed">✓ Completed</option>
                   </select>
                 </div>
 
@@ -978,11 +984,13 @@ export default function GamesManagementSuperHub({
                       selectedJackpotAmount: 5000,
                       winnerMode: 'single' as const,
                       winnerCount: 1,
-                      winningCodesOption: 'preset' as const,
                       winningCodes: ['2538'],
                       winnerPayoutSharePercent: 90,
                       distributionRule: 'tiered' as const,
                       winnerDistribution: [{ position: 1, percent: 100 }],
+                      publishMode: 'now' as const,
+                      scheduledDate: new Date(Date.now() + 3600000).toISOString().slice(0, 10),
+                      scheduledTime: new Date(Date.now() + 3600000).toTimeString().slice(0, 5),
                       badge: 'VIP LOTTERY',
                       bannerImage: ''
                     };
@@ -1049,14 +1057,16 @@ export default function GamesManagementSuperHub({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                     {filteredLotteryEvents.map((evt: any) => {
                       const isConcluded = evt.status === 'completed' && Boolean(evt.finalizedAtMs || evt.drawExecutedAt || evt.winningDigits);
-                      const isDrawProcessing = !isConcluded && (evt.status === 'result_pending' || evt.status === 'expired' || (evt.status === 'active' && evt.drawTime && evt.drawTime <= currentTime));
-                      const hasWinningDigits = (Array.isArray(evt.winningCodes) && evt.winningCodes.length > 0) || Boolean(evt.presetWinningDigits);
-                      const isWaitingForDigits = isDrawProcessing && !hasWinningDigits && evt.drawMode !== 'random';
+                      const isScheduled = evt.status === 'scheduled' && !evt.publishedAt;
+                      const isProcessing = !isConcluded && (evt.status === 'processing' || evt.status === 'result_pending');
+                      const isExpired = !isConcluded && !isScheduled && (evt.status === 'expired' || isProcessing || (evt.drawTime && evt.drawTime <= currentTime));
+                      const isLocked = isConcluded || isExpired || Boolean(evt.codesLocked);
+                      const canEditWinningDigits = !isLocked;
                       const visibilityUntilMs = evt.ticketVisibilityUntilMs || (evt.finalizedAtMs ? evt.finalizedAtMs + 3600 * 1000 : 0);
                       const visibilityRemainingMs = isConcluded && visibilityUntilMs > 0 ? Math.max(0, visibilityUntilMs - currentTime) : 0;
                       const diff = evt.drawTime ? evt.drawTime - currentTime : 0;
-                      const isExpiringSoon = !isConcluded && !isDrawProcessing && diff > 0 && diff <= 15 * 60 * 1000;
-                      const isActive = !isConcluded && !isDrawProcessing;
+                      const isExpiringSoon = !isConcluded && !isScheduled && !isExpired && diff > 0 && diff <= 15 * 60 * 1000;
+                      const isActive = !isConcluded && !isScheduled && !isExpired;
                       const currency = evt.currency || 'USDT';
 
                       // Winning codes display
@@ -1085,19 +1095,24 @@ export default function GamesManagementSuperHub({
 
                               {/* Dynamic Single-Source Status Pill */}
                               {isConcluded ? (
-                                <span className="px-2 py-0.5 rounded border bg-purple-500/15 text-purple-300 border-purple-500/30 text-[10px] font-black inline-flex items-center gap-1">
-                                  <CheckCircle2 className="w-3 h-3 text-purple-400" />
-                                  <span>SETTLED &amp; PAID</span>
+                                <span className="px-2 py-0.5 rounded border bg-emerald-500/15 text-emerald-300 border-emerald-500/30 text-[10px] font-black inline-flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                  <span>COMPLETED</span>
                                 </span>
-                              ) : isWaitingForDigits ? (
-                                <span className="px-2 py-0.5 rounded border bg-amber-500/20 text-amber-300 border-amber-500/40 text-[10px] font-black inline-flex items-center gap-1 animate-pulse">
-                                  <AlertTriangle className="w-3 h-3 text-amber-400" />
-                                  <span>ACTION REQUIRED</span>
+                              ) : isScheduled ? (
+                                <span className="px-2 py-0.5 rounded border bg-blue-500/15 text-blue-300 border-blue-500/30 text-[10px] font-black inline-flex items-center gap-1">
+                                  <Calendar className="w-3 h-3 text-blue-400" />
+                                  <span>SCHEDULED</span>
                                 </span>
-                              ) : isDrawProcessing ? (
+                              ) : isProcessing ? (
                                 <span className="px-2 py-0.5 rounded border bg-indigo-500/20 text-indigo-300 border-indigo-500/40 text-[10px] font-black inline-flex items-center gap-1 animate-pulse">
-                                  <Clock className="w-3 h-3 text-indigo-400" />
-                                  <span>DRAW PROCESSING</span>
+                                  <RefreshCw className="w-3 h-3 text-indigo-400 animate-spin" />
+                                  <span>PROCESSING</span>
+                                </span>
+                              ) : isExpired ? (
+                                <span className="px-2 py-0.5 rounded border bg-amber-500/20 text-amber-300 border-amber-500/40 text-[10px] font-black inline-flex items-center gap-1">
+                                  <Lock className="w-3 h-3 text-amber-400" />
+                                  <span>EXPIRED · LOCKED</span>
                                 </span>
                               ) : isExpiringSoon ? (
                                 <span className="px-2 py-0.5 rounded border bg-amber-500/15 text-amber-300 border-amber-500/40 text-[10px] font-black inline-flex items-center gap-1 animate-pulse">
@@ -1189,17 +1204,41 @@ export default function GamesManagementSuperHub({
                               </div>
                             </div>
 
-                            {/* Real-Time Countdown / Final Result Banner */}
+                            {/* Real-Time Countdown / Lifecycle Banner */}
                             <div className="p-2.5 rounded-xl bg-[#141924]/60 border border-[#272a31]/60 space-y-1.5 mb-3">
-                              {isActive ? (
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] text-[#94A3B8] font-bold uppercase flex items-center gap-1">
-                                    <Clock className="w-3.5 h-3.5 text-amber-400 animate-spin" />
-                                    <span>Live Countdown:</span>
-                                  </span>
-                                  <span className="font-mono-numbers font-black text-sm text-amber-400 tracking-wider">
-                                    {formatCountdown(evt.drawTime)}
-                                  </span>
+                              {isScheduled ? (
+                                <div className="space-y-1">
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="text-[10px] text-blue-300 font-bold uppercase flex items-center gap-1">
+                                      <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                                      <span>Scheduled Publish:</span>
+                                    </span>
+                                    <span className="font-mono-numbers font-bold text-white text-[11px]">
+                                      {evt.scheduledPublishAt ? new Date(evt.scheduledPublishAt).toLocaleString() : 'Scheduled'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-[11px] text-[#94A3B8]">
+                                    <span>Saved Digits:</span>
+                                    <strong className="text-amber-300 font-mono-numbers">[{codesList.join(', ') || 'Configured'}]</strong>
+                                  </div>
+                                </div>
+                              ) : isActive ? (
+                                <div className="space-y-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] text-[#94A3B8] font-bold uppercase flex items-center gap-1">
+                                      <Clock className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                                      <span>Live Countdown:</span>
+                                    </span>
+                                    <span className="font-mono-numbers font-black text-sm text-amber-400 tracking-wider">
+                                      {formatCountdown(evt.drawTime)}
+                                    </span>
+                                  </div>
+                                  {codesList.length > 0 && (
+                                    <div className="flex items-center justify-between text-[11px] text-[#94A3B8]">
+                                      <span>Editable Digits:</span>
+                                      <strong className="text-amber-300 font-mono-numbers">[{codesList.join(', ')}]</strong>
+                                    </div>
+                                  )}
                                 </div>
                               ) : isConcluded ? (
                                 <div className="space-y-1">
@@ -1212,44 +1251,61 @@ export default function GamesManagementSuperHub({
                                   <div className="flex items-center justify-between text-[11px] text-[#94A3B8]">
                                     <span>Finalization Status:</span>
                                     <strong className="text-emerald-400 font-bold">
-                                      ✓ Finalized {visibilityRemainingMs > 0 ? `(1H Visible: ${Math.ceil(visibilityRemainingMs / 60000)}m left)` : '(1H Window Ended · Ready to Delete)'}
+                                      ✓ Completed {visibilityRemainingMs > 0 ? `(1H Visible: ${Math.ceil(visibilityRemainingMs / 60000)}m left)` : '(1H Window Ended · Ready to Archive)'}
                                     </strong>
                                   </div>
                                 </div>
-                              ) : isWaitingForDigits ? (
+                              ) : (
                                 <div className="space-y-1">
-                                  <div className="text-amber-400 font-bold text-xs flex items-center gap-1">
-                                    <AlertTriangle className="w-3.5 h-3.5" />
-                                    <span>Duration Expired · Digits Required</span>
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="text-amber-300 font-bold flex items-center gap-1">
+                                      <Lock className="w-3.5 h-3.5 text-amber-400" />
+                                      <span>{isProcessing ? 'Automatic Final Processing Running...' : 'Expired · Winning Digits Locked'}</span>
+                                    </span>
+                                    <span className="font-mono-numbers text-amber-300 font-bold">
+                                      [{codesList.join(', ') || 'Locked'}]
+                                    </span>
                                   </div>
                                   <p className="text-[10px] text-[#94A3B8]">
-                                    Configure winning digits below to automatically finalize the draw and disburse payouts.
+                                    Winning digits are permanently locked at expiration. Backend scheduler settles and publishes automatically.
                                   </p>
-                                </div>
-                              ) : (
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-[#94A3B8] flex items-center gap-1">
-                                    <RefreshCw className="w-3 h-3 text-indigo-400 animate-spin" />
-                                    <span>Draw Processing...</span>
-                                  </span>
-                                  <span className="font-mono-numbers text-indigo-300 font-bold">Matching Tickets</span>
                                 </div>
                               )}
                             </div>
                           </div>
 
-                          {/* Card Actions: Primary Button + Strictly 3 Contextual Actions */}
+                          {/* Card Actions: Scheduled Controls / Editable Digits Before Expiration Only */}
                           <div className="space-y-2 pt-2 border-t border-[#1f2737]">
-                            {/* Prominent Action Button for Waiting Digits */}
-                            {isWaitingForDigits && (
-                              <button
-                                type="button"
-                                onClick={() => openWinnerConfig(evt)}
-                                className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-lg animate-pulse"
-                              >
-                                <AlertTriangle className="w-4 h-4" />
-                                <span>Configure Winning Digits to Finalize Draw</span>
-                              </button>
+                            {isScheduled && (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  data-testid={`edit-schedule-btn-${evt.id}`}
+                                  onClick={() => {
+                                    setEditScheduleEvent(evt);
+                                    const dt = evt.scheduledPublishAt ? new Date(evt.scheduledPublishAt) : new Date(Date.now() + 3600000);
+                                    setSchedEditDate(dt.toISOString().slice(0, 10));
+                                    setSchedEditTime(dt.toISOString().slice(11, 16));
+                                  }}
+                                  className="flex-1 py-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-500/30 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                  <span>Edit Schedule</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  data-testid={`cancel-schedule-btn-${evt.id}`}
+                                  onClick={async () => {
+                                    if (confirm(`Cancel scheduled event "${evt.title}" before publication?`) && directManageScheduledEvent) {
+                                      await directManageScheduledEvent(evt.id, 'cancel');
+                                    }
+                                  }}
+                                  className="flex-1 py-2 rounded-xl bg-red-950/30 hover:bg-red-900/40 text-red-300 border border-red-500/30 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  <XCircle className="w-3.5 h-3.5" />
+                                  <span>Cancel Scheduled</span>
+                                </button>
+                              </div>
                             )}
 
                             {isConcluded && (
@@ -1263,9 +1319,8 @@ export default function GamesManagementSuperHub({
                               </button>
                             )}
 
-                            {/* STRICTLY 3 ACTIONS TOOLBAR: A. View Details | B. Winning Digits | C. Delete Event */}
+                            {/* STRICTLY CONTEXTUAL TOOLBAR: Details | Edit Winning Digits (Before Expiration ONLY) | Safe Delete */}
                             <div className="flex flex-wrap items-center gap-2 pt-1">
-                              {/* Action A: View Details */}
                               <button
                                 type="button"
                                 onClick={() => setViewDetailsEvent(evt)}
@@ -1276,16 +1331,18 @@ export default function GamesManagementSuperHub({
                                 <span className="text-xs font-bold">Details</span>
                               </button>
 
-                              {/* Action B: Winning Digits Management */}
-                              <button
-                                type="button"
-                                onClick={() => openWinnerConfig(evt)}
-                                className="flex-1 min-w-[120px] py-2 px-2.5 sm:px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                                title={isConcluded ? 'View Winning Digits (Locked)' : 'Manage Winning Digits'}
-                              >
-                                <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                <span className="text-xs font-bold">Winning Digits</span>
-                              </button>
+                              {canEditWinningDigits && (
+                                <button
+                                  type="button"
+                                  data-testid={`edit-winning-digits-btn-${evt.id}`}
+                                  onClick={() => openWinnerConfig(evt)}
+                                  className="flex-1 min-w-[130px] py-2 px-2.5 sm:px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                  title="Edit Winning Digits Before Expiration"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                  <span className="text-xs font-bold">Edit Winning Digit</span>
+                                </button>
+                              )}
 
                               {/* Action C: Safe Event Deletion (Protected Before Finalization) */}
                               <button
@@ -1769,7 +1826,12 @@ export default function GamesManagementSuperHub({
                         <div className="grid grid-cols-2 gap-3">
                           <button
                             type="button"
-                            onClick={() => setWizardData(prev => ({ ...prev, winnerMode: 'single', winnerCount: 1 }))}
+                            onClick={() => setWizardData(prev => ({
+                              ...prev,
+                              winnerMode: 'single',
+                              winnerCount: 1,
+                              winningCodes: [prev.winningCodes[0] || '2538']
+                            }))}
                             className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
                               wizardData.winnerMode === 'single'
                                 ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
@@ -1782,7 +1844,15 @@ export default function GamesManagementSuperHub({
 
                           <button
                             type="button"
-                            onClick={() => setWizardData(prev => ({ ...prev, winnerMode: 'multiple', winnerCount: 3 }))}
+                            onClick={() => {
+                              const count = Math.max(2, wizardData.winnerCount >= 2 ? wizardData.winnerCount : 3);
+                              setWizardData(prev => ({
+                                ...prev,
+                                winnerMode: 'multiple',
+                                winnerCount: count,
+                                winningCodes: generateDistinctCodes(count)
+                              }));
+                            }}
                             className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
                               wizardData.winnerMode === 'multiple'
                                 ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
@@ -1850,107 +1920,78 @@ export default function GamesManagementSuperHub({
                     </div>
                   )}
 
-                  {/* STEP 3: WINNING DIGITS CONFIGURATION */}
-                  {wizardStep === 3 && (
-                    <div className="space-y-4 animate-in fade-in duration-200 text-xs">
+                  {/* STEP 3: AUTOMATIC WINNING DIGITS POLICY (DERIVED FROM STEP 2 WINNER MODE) */}
+                  {wizardStep === 3 && (() => {
+                    const requiredCount = wizardData.winnerMode === 'single' ? 1 : Math.max(2, wizardData.winnerCount);
+                    const displayedCodes = Array.from({ length: requiredCount }, (_, idx) => wizardData.winningCodes[idx] ?? '');
+                    const allValidCodes = displayedCodes.every(c => /^\d{4}$/.test(c)) && !hasDuplicateCodes(displayedCodes);
+
+                    return (
+                    <div data-testid="wizard-step-3" className="space-y-4 animate-in fade-in duration-200 text-xs">
                       <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
-                        ℹ️ Step 3 is flexible: preset your winning digits now or leave blank to configure later before expiration.
+                        ℹ️ Step 3 automatically applies your{' '}
+                        <strong>
+                          {wizardData.winnerMode === 'single'
+                            ? 'Single Winner (1 Winning Digit)'
+                            : `Multiple Winners (${requiredCount} Winning Positions)`}
+                        </strong>{' '}
+                        configuration from Step 2.
                       </div>
 
-                      {/* Option Choice */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setWizardData(prev => ({ ...prev, winningCodesOption: 'preset' }))}
-                          className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all ${
-                            wizardData.winningCodesOption === 'preset'
-                              ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
-                              : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
-                          }`}
-                        >
-                          <span className="font-bold text-xs block mb-1">Option A: Preset Winning Digits</span>
-                          <span className="text-[10px] opacity-75">Enter valid 4-digit combination(s) right now</span>
-                        </button>
+                      <div className="space-y-3 pt-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-bold text-[#8b92a2]">
+                            {wizardData.winnerMode === 'single'
+                              ? 'Winning 4-Digit Code (Position #1):'
+                              : `Winning 4-Digit Codes (${requiredCount} Positions):`}
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setWizardData(prev => ({ ...prev, winningCodes: generateDistinctCodes(requiredCount) }))}
+                            className="text-[11px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer"
+                          >
+                            ⚡ Randomize Codes
+                          </button>
+                        </div>
 
-                        <button
-                          type="button"
-                          onClick={() => setWizardData(prev => ({ ...prev, winningCodesOption: 'later' }))}
-                          className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all ${
-                            wizardData.winningCodesOption === 'later'
-                              ? 'bg-purple-500/15 border-purple-500/40 text-purple-300'
-                              : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
-                          }`}
-                        >
-                          <span className="font-bold text-xs block mb-1">Option B: Configure Later</span>
-                          <span className="text-[10px] opacity-75">Leave blank &amp; configure before expiration</span>
-                        </button>
-                      </div>
-
-                      {wizardData.winningCodesOption === 'preset' ? (
-                        <div className="space-y-3 pt-1">
-                          <div className="flex items-center justify-between">
-                            <label className="text-[11px] font-bold text-[#8b92a2]">
-                              Preset Winning 4-Digit Combination(s):
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const count = wizardData.winnerMode === 'single' ? 1 : wizardData.winnerCount;
-                                setWizardData(prev => ({ ...prev, winningCodes: generateDistinctCodes(count) }));
-                              }}
-                              className="text-[11px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer"
-                            >
-                              ⚡ Randomize Codes
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {(wizardData.winnerMode === 'single' ? [wizardData.winningCodes[0] || '2538'] : wizardData.winningCodes).map((code, idx) => (
-                              <div key={idx} className="p-2.5 rounded-xl bg-[#07090d] border border-[#272a31] space-y-1">
-                                <span className="text-[10px] text-[#94A3B8] block font-bold">
-                                  Position #{idx + 1}:
-                                </span>
-                                <input
-                                  type="text"
-                                  maxLength={4}
-                                  value={code}
-                                  onChange={(e) => {
-                                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-                                    const codes = [...wizardData.winningCodes];
-                                    codes[idx] = val;
-                                    setWizardData(prev => ({ ...prev, winningCodes: codes }));
-                                  }}
-                                  className="w-full bg-[#141924] border border-[#272a31] rounded-lg px-2 py-1.5 text-center font-mono-numbers text-white font-bold text-sm tracking-[4px] outline-none focus:border-amber-400"
-                                />
-                              </div>
-                            ))}
-                          </div>
-
-                          {hasDuplicateCodes(wizardData.winningCodes) && (
-                            <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-bold">
-                              ⚠️ All winning codes must be unique! Duplicate combination detected.
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {displayedCodes.map((code, idx) => (
+                            <div key={idx} className="p-2.5 rounded-xl bg-[#07090d] border border-[#272a31] space-y-1">
+                              <span className="text-[10px] text-[#94A3B8] block font-bold">
+                                Position #{idx + 1}:
+                              </span>
+                              <input
+                                type="text"
+                                data-testid={`wizard-digit-input-${idx + 1}`}
+                                maxLength={4}
+                                value={code}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                  const next = [...displayedCodes];
+                                  next[idx] = val;
+                                  setWizardData(prev => ({ ...prev, winningCodes: next }));
+                                }}
+                                placeholder="0000"
+                                className="w-full bg-[#141924] border border-[#272a31] rounded-lg px-2 py-1.5 text-center font-mono-numbers text-white font-bold text-sm tracking-[4px] outline-none focus:border-amber-400"
+                              />
                             </div>
-                          )}
+                          ))}
                         </div>
-                      ) : (
-                        <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-[#CBD5E1] space-y-1.5">
-                          <strong className="text-purple-300 block text-xs">Winning Digits Will Be Configured Later:</strong>
-                          <p className="text-[11px] leading-relaxed">
-                            The event will launch and allow users to purchase tickets normally. You can configure the winning digits anytime before the countdown expires using the event&apos;s dedicated <strong>Winning Digits</strong> management action.
-                          </p>
-                          <p className="text-[10px] text-amber-400 font-bold">
-                            ⚠️ If duration expires while digits are blank, the draw will pause safely with status &quot;Action Required&quot; until you enter the winning digits. No fake results will ever be generated.
-                          </p>
-                        </div>
-                      )}
 
-                      {/* Strict Rule Callout */}
+                        {hasDuplicateCodes(displayedCodes) && (
+                          <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-bold">
+                            ⚠️ All winning codes must be unique! Duplicate combination detected.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Strict Expiration Lock Rule Callout */}
                       <div className="p-3.5 rounded-xl bg-[#07090d] border border-amber-500/30 text-[#94A3B8] space-y-1">
                         <span className="text-[10px] uppercase font-black text-amber-400 block tracking-wider">
-                          📌 Strict Editing Permissions Rule
+                          📌 Expiration Locking &amp; Automatic Finalization
                         </span>
                         <p className="text-[11px] leading-relaxed">
-                          Only winning digit combinations can be edited after event creation. Once the final result is declared, winning digits become permanently locked. Event Name, Description, Ticket Price, Ticket Limit, and Duration cannot be modified after creation.
+                          Winning digits may be edited only while the event is active before expiration. Once the server expiration timestamp arrives, winning digits lock permanently and final processing runs automatically.
                         </p>
                       </div>
 
@@ -1965,27 +2006,110 @@ export default function GamesManagementSuperHub({
                         </button>
                         <button
                           type="button"
-                          disabled={
-                            wizardData.winningCodesOption === 'preset' && (
-                              wizardData.winningCodes.some(c => c.length !== 4) ||
-                              hasDuplicateCodes(wizardData.winningCodes)
-                            )
-                          }
-                          onClick={() => setWizardStep(4)}
+                          disabled={!allValidCodes}
+                          onClick={() => {
+                            setWizardData(prev => ({ ...prev, winningCodes: displayedCodes }));
+                            setWizardStep(4);
+                          }}
                           className="px-5 py-2.5 rounded-xl btn-gold text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
                         >
-                          <span>Proceed to Step 4: Review</span>
+                          <span>Proceed to Step 4: Publish</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
-                  )}
+                    );
+                  })()}
 
-                  {/* STEP 4: REVIEW AND CREATE EVENT */}
-                  {wizardStep === 4 && (
-                    <div className="space-y-4 animate-in fade-in duration-200 text-xs">
+                  {/* STEP 4: REVIEW, PUBLISH MODE & CREATE EVENT */}
+                  {wizardStep === 4 && (() => {
+                    const schedIso = wizardData.publishMode === 'schedule' && wizardData.scheduledDate && wizardData.scheduledTime
+                      ? new Date(`${wizardData.scheduledDate}T${wizardData.scheduledTime}`).toISOString()
+                      : null;
+                    const schedValid = wizardData.publishMode === 'now' || Boolean(schedIso && new Date(schedIso).getTime() > Date.now() + 5000);
+
+                    return (
+                    <div data-testid="wizard-step-4" className="space-y-4 animate-in fade-in duration-200 text-xs">
                       <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
-                        ✓ Step 4: Complete Event Summary. Confirm all parameters and publish to the live database.
+                        ✓ Step 4: Review event parameters and select Publish Now or Schedule for Later.
+                      </div>
+
+                      {/* Publishing Mode Selector */}
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold text-[#8b92a2] block">
+                          Publishing Mode
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            data-testid="publish-mode-now"
+                            onClick={() => setWizardData(prev => ({ ...prev, publishMode: 'now' }))}
+                            className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                              wizardData.publishMode === 'now'
+                                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                            }`}
+                          >
+                            <span className="font-bold text-xs block">Publish Now</span>
+                            <span className="text-[10px] opacity-75">Activate immediately for players</span>
+                          </button>
+                          <button
+                            type="button"
+                            data-testid="publish-mode-schedule"
+                            onClick={() => {
+                              const nextHour = new Date(Date.now() + 3600000);
+                              const pad = (n: number) => String(n).padStart(2, '0');
+                              const localDate = `${nextHour.getFullYear()}-${pad(nextHour.getMonth() + 1)}-${pad(nextHour.getDate())}`;
+                              const localTime = `${pad(nextHour.getHours())}:${pad(nextHour.getMinutes())}`;
+                              setWizardData(prev => ({
+                                ...prev,
+                                publishMode: 'schedule',
+                                scheduledDate: prev.scheduledDate || localDate,
+                                scheduledTime: prev.scheduledTime || localTime
+                              }));
+                            }}
+                            className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                              wizardData.publishMode === 'schedule'
+                                ? 'bg-blue-500/15 border-blue-500/40 text-blue-300'
+                                : 'bg-[#07090d] border-[#272a31] text-[#94A3B8] hover:text-white'
+                            }`}
+                          >
+                            <span className="font-bold text-xs block">Schedule for Later</span>
+                            <span className="text-[10px] opacity-75">Auto-publish at UTC scheduled time</span>
+                          </button>
+                        </div>
+
+                        {wizardData.publishMode === 'schedule' && (
+                          <div className="p-3 rounded-xl bg-[#07090d] border border-blue-500/30 space-y-2.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              <div>
+                                <label className="text-[10px] text-[#94A3B8] block mb-1">Publication Date</label>
+                                <input
+                                  type="date"
+                                  data-testid="schedule-date-input"
+                                  value={wizardData.scheduledDate}
+                                  onChange={(e) => setWizardData(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                                  className="w-full bg-[#141924] border border-[#272a31] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-blue-400"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] text-[#94A3B8] block mb-1">Publication Time</label>
+                                <input
+                                  type="time"
+                                  data-testid="schedule-time-input"
+                                  value={wizardData.scheduledTime}
+                                  onChange={(e) => setWizardData(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                                  className="w-full bg-[#141924] border border-[#272a31] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-blue-400"
+                                />
+                              </div>
+                            </div>
+                            <p className="text-[10px] text-blue-300 font-mono-numbers">
+                              {schedIso && schedValid
+                                ? `Scheduled UTC: ${schedIso} (Unpublished until this server time)`
+                                : 'Select a valid future date & time for automatic publication.'}
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       {/* Parameter summary grid */}
@@ -2030,17 +2154,13 @@ export default function GamesManagementSuperHub({
                         </div>
                         <div className="flex justify-between items-center text-xs pt-2 border-t border-[#1f2737]">
                           <span className="text-[#94A3B8]">Winning Digits:</span>
-                          {wizardData.winningCodesOption === 'preset' ? (
-                            <div className="flex gap-1.5">
-                              {wizardData.winningCodes.map((c, i) => (
-                                <span key={i} className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold">
-                                  [{c}]
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-amber-400 font-bold">⚠️ To Be Configured Later</span>
-                          )}
+                          <div className="flex gap-1.5 flex-wrap justify-end">
+                            {(wizardData.winnerMode === 'single' ? [wizardData.winningCodes[0]] : wizardData.winningCodes.slice(0, wizardData.winnerCount)).map((c, i) => (
+                              <span key={i} className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold">
+                                [{c}]
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
 
@@ -2055,10 +2175,13 @@ export default function GamesManagementSuperHub({
                         </button>
                         <button
                           type="button"
-                          disabled={isSubmittingWizard}
+                          disabled={isSubmittingWizard || !schedValid}
                           onClick={async () => {
                             setIsSubmittingWizard(true);
                             try {
+                              const codes = wizardData.winnerMode === 'single'
+                                ? [wizardData.winningCodes[0]]
+                                : wizardData.winningCodes.slice(0, Math.max(2, wizardData.winnerCount));
                               const res = await directCreateEvent({
                                 ...wizardData,
                                 title: wizardData.eventName.trim(),
@@ -2066,15 +2189,16 @@ export default function GamesManagementSuperHub({
                                 durationHours: wizardData.durationHours,
                                 durationMinutes: wizardData.durationMinutes,
                                 batchTag: wizardData.eventTag,
-                                drawMode: wizardData.winningCodesOption === 'preset' ? 'preset' : 'random',
-                                presetWinningDigits: wizardData.winningCodesOption === 'preset' && wizardData.winningCodes.length > 0 ? wizardData.winningCodes[0] : null,
-                                winningCodes: wizardData.winningCodesOption === 'preset' ? wizardData.winningCodes : []
+                                drawMode: 'preset',
+                                presetWinningDigits: codes[0],
+                                winningCodes: codes,
+                                publishMode: wizardData.publishMode,
+                                scheduledPublishAt: schedIso
                               });
                               if (res?.success) {
                                 setIsWizardOpen(false);
                                 setWizardStep(1);
                                 if (lotteryCtx?.refreshEvents) await lotteryCtx.refreshEvents();
-                                if (showToast) showToast('🎉 Lottery event published successfully to database!', 'success');
                               }
                             } catch (err: any) {
                               if (showToast) showToast('Failed to deploy event: ' + err.message, 'error');
@@ -2087,18 +2211,19 @@ export default function GamesManagementSuperHub({
                           {isSubmittingWizard ? (
                             <>
                               <RefreshCw className="w-4 h-4 animate-spin" />
-                              <span>Publishing Event...</span>
+                              <span>{wizardData.publishMode === 'schedule' ? 'Scheduling...' : 'Publishing...'}</span>
                             </>
                           ) : (
                             <>
                               <PlusCircle className="w-4 h-4" />
-                              <span>Publish Event to Database</span>
+                              <span>{wizardData.publishMode === 'schedule' ? 'Schedule Event' : 'Publish Now'}</span>
                             </>
                           )}
                         </button>
                       </div>
                     </div>
-                  )}
+                    );
+                  })()}
 
                 </div>
               </div>
@@ -2108,8 +2233,15 @@ export default function GamesManagementSuperHub({
             {/* MODAL 2: WINNING DIGITS MANAGEMENT MODAL (DEDICATED ACTION)       */}
             {/* ================================================================ */}
             {winnerConfigEvent && (() => {
-              const isConcluded = winnerConfigEvent.status === 'completed';
-              const isDrawProcessing = winnerConfigEvent.status === 'result_pending' || (winnerConfigEvent.drawTime && winnerConfigEvent.drawTime <= currentTime);
+              const isConcluded = winnerConfigEvent.status === 'completed' && Boolean(winnerConfigEvent.finalizedAtMs || winnerConfigEvent.drawExecutedAt || winnerConfigEvent.winningDigits);
+              const isScheduledEvt = winnerConfigEvent.status === 'scheduled' && !winnerConfigEvent.publishedAt;
+              const isExpiredOrLocked =
+                isConcluded ||
+                Boolean(winnerConfigEvent.codesLocked) ||
+                ['expired', 'processing', 'result_pending', 'completed', 'settled'].includes(winnerConfigEvent.status) ||
+                (!isScheduledEvt && winnerConfigEvent.drawTime > 0 && currentTime >= winnerConfigEvent.drawTime);
+              const fixedRequiredCount = wcWinnerMode === 'single' ? 1 : Math.max(2, wcWinnerCount);
+              const boundedCodes = Array.from({ length: fixedRequiredCount }, (_, idx) => wcWinningCodes[idx] ?? '');
 
               return (
                 <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
@@ -2137,23 +2269,25 @@ export default function GamesManagementSuperHub({
                       </button>
                     </div>
 
-                    {/* Concluded vs Active State View */}
-                    {isConcluded ? (
+                    {/* Locked vs Editable Before Expiration View */}
+                    {isExpiredOrLocked ? (
                       <div className="space-y-4 py-2">
-                        <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-300 space-y-1">
+                        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 space-y-1">
                           <span className="font-bold text-xs flex items-center gap-1.5">
-                            <Lock className="w-4 h-4 text-purple-400" />
-                            <span>Result Declared &amp; Settled</span>
+                            <Lock className="w-4 h-4 text-amber-400" />
+                            <span>{isConcluded ? 'Result Declared & Finalized' : 'Winning Digits Permanently Locked at Expiration'}</span>
                           </span>
                           <p className="text-[11px] text-[#94A3B8]">
-                            Winning digits are permanently locked and cannot be edited after final result declaration and USDT disbursement.
+                            {isConcluded
+                              ? 'Winning digits are permanently locked and published with official draw results.'
+                              : 'The event expiration timestamp has passed. Winning digits are permanently locked while automatic result processing executes.'}
                           </p>
                         </div>
 
                         <div className="p-4 rounded-2xl bg-[#07090d] border border-[#272a31] space-y-2">
-                          <span className="text-[10px] text-[#8b92a2] uppercase font-bold block">Final Drawn Winning Digits:</span>
+                          <span className="text-[10px] text-[#8b92a2] uppercase font-bold block">Locked Winning Digits:</span>
                           <div className="flex flex-wrap gap-2">
-                            {wcWinningCodes.map((code, idx) => (
+                            {boundedCodes.map((code, idx) => (
                               <span key={idx} className="px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono-numbers font-black text-sm tracking-[3px]">
                                 [{code}]
                               </span>
@@ -2172,49 +2306,12 @@ export default function GamesManagementSuperHub({
                     ) : (
                       <div className="space-y-4 py-1">
                         <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[#CBD5E1] space-y-1">
-                          <span className="text-amber-300 font-bold block text-xs">Configure Winning Digit Combinations:</span>
+                          <span className="text-amber-300 font-bold block text-xs">
+                            Edit Winning Digits Before Expiration ({wcWinnerMode === 'single' ? 'Single Winner' : `${fixedRequiredCount} Winners`}):
+                          </span>
                           <p className="text-[11px] leading-relaxed">
-                            Winning digits can be added, edited, or removed before final draw settlement. All modifications are logged in the Admin Audit Log with administrator identity and timestamp.
+                            Updates are permitted strictly before the expiration timestamp. Once expired, the latest saved digit locks automatically for background result processing.
                           </p>
-                        </div>
-
-                        {/* Mode Selector */}
-                        <div className="space-y-2">
-                          <label className="text-[11px] font-bold text-[#8b92a2] block">Winner Mode</label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setWcWinnerMode('single');
-                                setWcWinningCodes(prev => [prev[0] || '2538']);
-                                setWcWinnerCount(1);
-                              }}
-                              className={`p-2.5 rounded-xl border text-left cursor-pointer ${
-                                wcWinnerMode === 'single'
-                                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-bold'
-                                  : 'bg-[#07090d] border-[#272a31] text-[#94A3B8]'
-                              }`}
-                            >
-                              Single Winner (1 Code)
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setWcWinnerMode('multiple');
-                                if (wcWinningCodes.length < 2) {
-                                  setWcWinningCodes(['2538', '7412', '9065']);
-                                  setWcWinnerCount(3);
-                                }
-                              }}
-                              className={`p-2.5 rounded-xl border text-left cursor-pointer ${
-                                wcWinnerMode === 'multiple'
-                                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-bold'
-                                  : 'bg-[#07090d] border-[#272a31] text-[#94A3B8]'
-                              }`}
-                            >
-                              Multiple Winners
-                            </button>
-                          </div>
                         </div>
 
                         {/* Codes Inputs */}
@@ -2225,7 +2322,7 @@ export default function GamesManagementSuperHub({
                             </label>
                             <button
                               type="button"
-                              onClick={() => setWcWinningCodes(generateDistinctCodes(wcWinningCodes.length))}
+                              onClick={() => setWcWinningCodes(generateDistinctCodes(fixedRequiredCount))}
                               className="text-[11px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer"
                             >
                               ⚡ Randomize Codes
@@ -2233,27 +2330,19 @@ export default function GamesManagementSuperHub({
                           </div>
 
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                            {wcWinningCodes.map((code, idx) => (
+                            {boundedCodes.map((code, idx) => (
                               <div key={idx} className="p-2.5 rounded-xl bg-[#07090d] border border-[#272a31] space-y-1">
-                                <div className="flex items-center justify-between text-[10px] text-[#94A3B8]">
-                                  <span>Position #{idx + 1}</span>
-                                  {wcWinningCodes.length > 1 && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setWcWinningCodes(prev => prev.filter((_, i) => i !== idx))}
-                                      className="text-red-400 hover:text-red-300 cursor-pointer"
-                                    >
-                                      ✕
-                                    </button>
-                                  )}
-                                </div>
+                                <span className="text-[10px] text-[#94A3B8] block font-bold">
+                                  Position #{idx + 1}
+                                </span>
                                 <input
                                   type="text"
+                                  data-testid={`edit-digit-input-${idx + 1}`}
                                   maxLength={4}
                                   value={code}
                                   onChange={(e) => {
                                     const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-                                    const c = [...wcWinningCodes];
+                                    const c = [...boundedCodes];
                                     c[idx] = val;
                                     setWcWinningCodes(c);
                                   }}
@@ -2263,35 +2352,22 @@ export default function GamesManagementSuperHub({
                             ))}
                           </div>
 
-                          {wcWinnerMode === 'multiple' && wcWinningCodes.length < 10 && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newCode = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-                                setWcWinningCodes(prev => [...prev, newCode]);
-                              }}
-                              className="w-full py-2 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-[#94A3B8] hover:text-white border border-[#272a31] text-xs font-bold cursor-pointer flex items-center justify-center gap-1.5"
-                            >
-                              <PlusCircle className="w-3.5 h-3.5" />
-                              <span>Add Winning Code Position</span>
-                            </button>
-                          )}
-
-                          {hasDuplicateCodes(wcWinningCodes) && (
+                          {hasDuplicateCodes(boundedCodes) && (
                             <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-bold">
                               ⚠️ All winning codes must be unique! Duplicate combination detected.
                             </div>
                           )}
                         </div>
 
-                        {/* Actions */}
-                        <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                        {/* Save Only Action (No Manual Finalize Button — Automatic Processing Runs at Expiration) */}
+                        <div className="pt-2 flex gap-2">
                           <button
                             type="button"
+                            data-testid="save-edited-winning-digits-btn"
                             disabled={
                               wcSaving ||
-                              wcWinningCodes.some(c => c.length !== 4) ||
-                              hasDuplicateCodes(wcWinningCodes)
+                              boundedCodes.some(c => c.length !== 4) ||
+                              hasDuplicateCodes(boundedCodes)
                             }
                             onClick={async () => {
                               setWcSaving(true);
@@ -2299,9 +2375,9 @@ export default function GamesManagementSuperHub({
                                 const res = await directUpdateWinnerConfig(winnerConfigEvent.id, {
                                   winnerMode: wcWinnerMode,
                                   drawMode: 'preset',
-                                  winningCodes: wcWinningCodes,
-                                  winningCodeCount: wcWinningCodes.length,
-                                  winnerCount: wcWinningCodes.length,
+                                  winningCodes: boundedCodes,
+                                  winningCodeCount: boundedCodes.length,
+                                  winnerCount: boundedCodes.length,
                                   winnerPayoutSharePercent: wcPayoutSharePercent,
                                   winnerDistribution: wcDistribution,
                                   codesTiming: 'configured'
@@ -2309,57 +2385,17 @@ export default function GamesManagementSuperHub({
                                 if (res?.success) {
                                   setWinnerConfigEvent(null);
                                   if (lotteryCtx?.refreshEvents) await lotteryCtx.refreshEvents();
-                                  if (showToast) showToast('Winner configuration updated and saved to database!', 'success');
                                 }
                               } catch (err: any) {
-                                if (showToast) showToast('Failed to save config: ' + err.message, 'error');
+                                if (showToast) showToast('Failed to save winning digits: ' + err.message, 'error');
                               } finally {
                                 setWcSaving(false);
                               }
                             }}
-                            className="flex-1 py-2.5 rounded-xl bg-[#141924] hover:bg-[#1a2130] text-xs font-bold text-white border border-[#272a31] cursor-pointer disabled:opacity-50"
+                            className="w-full py-2.5 rounded-xl btn-gold text-xs font-black uppercase tracking-wider cursor-pointer shadow-md disabled:opacity-50"
                           >
-                            {wcSaving ? 'Saving...' : 'Save Winning Digits (Keep Pending)'}
+                            {wcSaving ? 'Saving...' : 'Save Winning Digits'}
                           </button>
-
-                          {/* If event is draw processing or duration expired, allow instant finalize */}
-                          {isDrawProcessing && (
-                            <button
-                              type="button"
-                              disabled={
-                                wcSaving ||
-                                wcWinningCodes.some(c => c.length !== 4) ||
-                                hasDuplicateCodes(wcWinningCodes)
-                              }
-                              onClick={async () => {
-                                setWcSaving(true);
-                                try {
-                                  await directUpdateWinnerConfig(winnerConfigEvent.id, {
-                                    winnerMode: wcWinnerMode,
-                                    drawMode: 'preset',
-                                    winningCodes: wcWinningCodes,
-                                    winningCodeCount: wcWinningCodes.length,
-                                    winnerCount: wcWinningCodes.length,
-                                    winnerPayoutSharePercent: wcPayoutSharePercent,
-                                    winnerDistribution: wcDistribution,
-                                    codesTiming: 'configured'
-                                  });
-                                  // Directly execute draw and disburse payouts
-                                  await directExecuteDraw(winnerConfigEvent.id, wcWinningCodes);
-                                  setWinnerConfigEvent(null);
-                                  if (lotteryCtx?.refreshEvents) await lotteryCtx.refreshEvents();
-                                  if (showToast) showToast('🏆 Draw settled and winner payouts disbursed!', 'success');
-                                } catch (err: any) {
-                                  if (showToast) showToast('Settlement error: ' + err.message, 'error');
-                                } finally {
-                                  setWcSaving(false);
-                                }
-                              }}
-                              className="flex-1 py-2.5 rounded-xl btn-gold text-xs font-black uppercase tracking-wider cursor-pointer shadow-md disabled:opacity-50"
-                            >
-                              {wcSaving ? 'Settling Draw...' : 'Save & Finalize Draw Now'}
-                            </button>
-                          )}
                         </div>
 
                       </div>
@@ -2369,6 +2405,75 @@ export default function GamesManagementSuperHub({
                 </div>
               );
             })()}
+
+            {/* MODAL: EDIT SCHEDULED EVENT TIME BEFORE PUBLICATION */}
+            {editScheduleEvent && (
+              <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+                <div className="max-w-md w-full bg-[#0d1117] border border-blue-500/40 rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl text-xs">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#1f2737]">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-blue-400" />
+                      <h3 className="font-display font-bold text-sm text-white">
+                        Edit Scheduled Publication
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditScheduleEvent(null)}
+                      className="p-1.5 rounded-lg text-[#94A3B8] hover:text-white bg-[#141924] border border-[#272a31] cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[10px] text-[#94A3B8] block mb-1">Date</label>
+                      <input
+                        type="date"
+                        value={schedEditDate}
+                        onChange={(e) => setSchedEditDate(e.target.value)}
+                        className="w-full bg-[#141924] border border-[#272a31] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-[#94A3B8] block mb-1">Time</label>
+                      <input
+                        type="time"
+                        value={schedEditTime}
+                        onChange={(e) => setSchedEditTime(e.target.value)}
+                        className="w-full bg-[#141924] border border-[#272a31] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditScheduleEvent(null)}
+                      className="flex-1 py-2 rounded-xl bg-[#141924] text-[#94A3B8] border border-[#272a31] font-bold cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={schedSaving || !schedEditDate || !schedEditTime}
+                      onClick={async () => {
+                        setSchedSaving(true);
+                        try {
+                          const nextIso = new Date(`${schedEditDate}T${schedEditTime}`).toISOString();
+                          const res = await directManageScheduledEvent?.(editScheduleEvent.id, 'update', nextIso);
+                          if (res?.success) setEditScheduleEvent(null);
+                        } finally {
+                          setSchedSaving(false);
+                        }
+                      }}
+                      className="flex-1 py-2 rounded-xl bg-blue-500 hover:bg-blue-400 text-slate-950 font-black cursor-pointer disabled:opacity-50"
+                    >
+                      {schedSaving ? 'Saving...' : 'Update Schedule'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* ================================================================ */}
             {/* MODAL 4: CONSOLIDATED EVENT DETAILS & DISBURSED PAYOUTS MODAL     */}

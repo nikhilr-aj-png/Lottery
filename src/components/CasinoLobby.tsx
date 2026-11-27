@@ -43,12 +43,12 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1.0;
   }, [platformSettings?.resultsRetentionHours, platformSettings?.resultsRetention]);
 
-  // 1. Available Pool: ONLY active & upcoming events still within their valid availability window (LIVE event first)
+  // 1. Available Pool: ONLY published active events within their valid availability window
   const availableEvents = useMemo(() => {
     const serverNow = getServerNowMs ? getServerNowMs() : Date.now();
     const list = (events || []).filter((e: any) => {
       const info = getEventStatusInfo(e, undefined, serverNow);
-      return !info.isEnd;
+      return !info.isEnd && !info.isScheduledUnpublished;
     });
 
     return list.sort((a: any, b: any) => {

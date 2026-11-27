@@ -80,20 +80,30 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     const finalizedAtMs = finalizedAt ? new Date(finalizedAt).getTime() : 0;
     const ticketVisibilityUntil = row.ticket_visibility_until || (finalizedAtMs > 0 ? new Date(finalizedAtMs + 3600 * 1000).toISOString() : null);
     const ticketVisibilityUntilMs = ticketVisibilityUntil ? new Date(ticketVisibilityUntil).getTime() : 0;
+    const scheduledPublishAt = row.scheduled_publish_at || null;
+    const scheduledPublishAtMs = scheduledPublishAt ? new Date(scheduledPublishAt).getTime() : 0;
+    const publishedAt = row.published_at || null;
+    const publishedAtMs = publishedAt ? new Date(publishedAt).getTime() : 0;
+    const processingStartedAt = row.processing_started_at || null;
+    const isScheduledUnpublished = (row.status === 'scheduled' || row.status === 'draft') && !publishedAt;
     const isFinalized = row.status === 'completed' && (finalizedAtMs > 0 || Boolean(row.winning_digits));
 
-    // Status strictly separated: active -> expired / result_pending -> completed ONLY after finalization
+    // Lifecycle separation: Draft -> Scheduled -> Active -> Expired -> Processing -> Completed
     let effectiveStatus = row.status || 'active';
     if (isDeleted) {
       effectiveStatus = 'deleted';
     } else if (isFinalized) {
       effectiveStatus = 'completed';
-    } else if (!isActiveFlag || row.status === 'expired') {
+    } else if (isScheduledUnpublished) {
+      effectiveStatus = row.status === 'draft' ? 'draft' : 'scheduled';
+    } else if (row.status === 'processing') {
+      effectiveStatus = 'processing';
+    } else if (!isActiveFlag || row.status === 'expired' || row.status === 'result_pending') {
       effectiveStatus = row.status === 'result_pending' ? 'result_pending' : 'expired';
     } else if (isUpcoming && row.status !== 'paused') {
       effectiveStatus = 'scheduled';
     } else if (isTimedOut && row.status === 'active') {
-      effectiveStatus = 'result_pending';
+      effectiveStatus = 'expired';
     }
 
     // Winning digits strictly real from database — zero dummy '7429'
@@ -139,7 +149,14 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
     const winningCodeCount = Number(row.winning_code_count || (winningCodes.length > 0 ? winningCodes.length : winnerCount));
     const codesTiming = row.codes_timing || meta.codes_timing || (winningCodes.length > 0 ? 'configured' : 'after_publishing');
-    const codesLocked = Boolean(row.codes_locked || (Number(row.tickets_sold || 0) > 0));
+    const codesLocked = Boolean(
+      row.codes_locked ||
+      isFinalized ||
+      effectiveStatus === 'expired' ||
+      effectiveStatus === 'processing' ||
+      effectiveStatus === 'result_pending' ||
+      (!isScheduledUnpublished && isTimedOut)
+    );
     const isPaused = Boolean(row.is_paused);
     const pauseReason = row.pause_reason || '';
     const lockedJackpot = row.locked_jackpot ? Number(row.locked_jackpot) : Number(row.pool_prize || 1000);
@@ -192,6 +209,12 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       finalizedAtMs,
       ticketVisibilityUntil,
       ticketVisibilityUntilMs,
+      scheduledPublishAt,
+      scheduledPublishAtMs,
+      publishedAt,
+      publishedAtMs,
+      processingStartedAt,
+      isScheduledUnpublished,
       isFinalized,
       winnerMode,
       winnerCount,
@@ -409,19 +432,15 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('lotto_events');
     } catch (e) {}
 
-    // Timer check: evaluate local reactive status using server-synced clock without unprivileged DB writes
+    // Timer check: lock expired active events reactively using server-synced clock; never promote unpublished scheduled events client-side
     const timerCheck = setInterval(() => {
       const now = Date.now() + serverTimeOffsetMs;
       setEvents(prev => {
         let hasChanges = false;
         const updated = prev.map(e => {
-          if (e.status === 'scheduled' && e.startTime > 0 && now >= e.startTime && e.drawTime > now) {
-            hasChanges = true;
-            return { ...e, status: 'active' };
-          }
           if (e.status === 'active' && e.drawTime && e.drawTime <= now) {
             hasChanges = true;
-            return { ...e, status: 'result_pending' };
+            return { ...e, status: 'expired', isActive: false, codesLocked: true };
           }
           return e;
         });
@@ -3408,19 +3427,32 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Calculate cooldown
-      const cdVal = Math.max(0, parseFloat(eventData.cooldownValue || 0));
-      const cdUnit = (eventData.cooldownUnit || 'minutes').toLowerCase();
-      let cooldownMs = 0;
-      if (cdVal > 0) {
-        if (cdUnit.startsWith('hour')) cooldownMs = cdVal * 3600 * 1000;
-        else cooldownMs = cdVal * 60 * 1000;
+      // Publish Now vs Schedule for Later (UTC authoritative timestamp)
+      const publishMode = eventData.publishMode === 'schedule' ? 'schedule' : 'now';
+      let startTime = now;
+      let scheduledPublishIso: string | null = null;
+      let publishedIso: string | null = new Date(now).toISOString();
+      let initialStatus: string = 'active';
+      let isActiveInitial = true;
+      let cooldownVal = 0;
+      let cooldownUntil: number | null = null;
+
+      if (publishMode === 'schedule') {
+        const parsedSchedMs = eventData.scheduledPublishAt ? new Date(eventData.scheduledPublishAt).getTime() : 0;
+        if (!Number.isFinite(parsedSchedMs) || parsedSchedMs <= now + 5000) {
+          showToast('Scheduled publication date and time must be strictly in the future.', 'error');
+          return { success: false, error: 'Scheduled publication time must be in the future.' };
+        }
+        startTime = parsedSchedMs;
+        scheduledPublishIso = new Date(parsedSchedMs).toISOString();
+        publishedIso = null;
+        initialStatus = 'scheduled';
+        isActiveInitial = false;
+        cooldownVal = Math.max(1, Math.round((parsedSchedMs - now) / 60000));
+        cooldownUntil = parsedSchedMs;
       }
 
-      const startTime = now + cooldownMs;
       const drawTime = startTime + durationMs;
-      const cooldownUntil = cooldownMs > 0 ? startTime : null;
-      const initialStatus = cooldownMs > 0 ? 'scheduled' : 'active';
 
       // Unique Event ID, Tag & Room Identity (Preserves exact custom event name)
       const newId = eventData.eventId || eventData.id || `evt-${Date.now().toString(36)}-${Math.floor(100 + Math.random() * 900)}`;
@@ -3561,9 +3593,11 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         duration_value: durationVal,
         duration_unit: durUnit,
         draw_time: drawTime,
-        cooldown_value: cdVal,
-        cooldown_unit: cdUnit,
+        cooldown_value: cooldownVal,
+        cooldown_unit: 'minutes',
         cooldown_until: cooldownUntil,
+        scheduled_publish_at: scheduledPublishIso,
+        published_at: publishedIso,
         jackpot_mode: jackpotMode,
         min_jackpot: minJackpot,
         max_jackpot: maxJackpot,
@@ -3587,7 +3621,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         tickets_sold: 0,
         sha256_seed: sha256Seed,
         server_seed: serverSeed,
-        is_active: true,
+        is_active: isActiveInitial,
         block_target: JSON.stringify(metadataObj),
         metadata: metadataObj
       };
@@ -3598,8 +3632,13 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       }
 
       await refreshEvents();
-      showToast(`🎉 New Lottery Event "${title}" deployed to live platform!`, 'success');
-      return { success: true, eventId: newId };
+      showToast(
+        publishMode === 'schedule'
+          ? `📅 Event "${title}" scheduled cleanly for publication!`
+          : `🎉 New Lottery Event "${title}" published to live platform!`,
+        'success'
+      );
+      return { success: true, eventId: newId, status: initialStatus, scheduledPublishAt: scheduledPublishIso };
     } catch (err: any) {
       console.error('adminCreateEvent error:', err);
       showToast('Failed to deploy lottery event: ' + (err.message || err), 'error');
@@ -3745,6 +3784,38 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       console.error('adminUpdateEvent error:', err);
       showToast('Failed to update event: ' + err.message, 'error');
       return { success: false, error: err.message };
+    }
+  };
+
+  // Manage scheduled unpublished events (reschedule/edit details or cancel cleanly)
+  const adminManageScheduledEvent = async (
+    eventId: string,
+    action: 'update' | 'cancel',
+    newScheduledAtIso: string | null = null,
+    updates: any = null
+  ) => {
+    try {
+      const { data, error } = await supabase.rpc('admin_manage_scheduled_event_secure', {
+        p_event_id: eventId,
+        p_action: action,
+        p_new_scheduled_at: newScheduledAtIso,
+        p_updates: updates || {}
+      });
+      if (error) throw error;
+      if (data && data.success === false) {
+        throw new Error(data.error || 'Scheduled event operation failed.');
+      }
+      await refreshEvents();
+      showToast(
+        action === 'cancel'
+          ? 'Scheduled event cancelled before publication.'
+          : 'Scheduled publication updated!',
+        'success'
+      );
+      return { success: true, ...data };
+    } catch (err: any) {
+      showToast('Scheduled event error: ' + (err.message || err), 'error');
+      return { success: false, error: err.message || err };
     }
   };
 
@@ -3909,6 +3980,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         executeDraw,
         adminCreateEvent,
         adminUpdateEvent,
+        adminManageScheduledEvent,
         adminDeleteEvent,
         adminUpdateEventWinnerConfig,
         adminPauseEvent,
