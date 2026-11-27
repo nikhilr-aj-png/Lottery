@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import confetti from 'canvas-confetti';
 import { supabase } from '../lib/supabase';
 import { GAMES } from '../engine';
+import { normalizeReferralSettings } from '../utils/referralConfig';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const LotteryContext = createContext<any>(null);
@@ -537,20 +538,34 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     };
   }, [wallet.address]);
 
-  // NOWPayments: Create Crypto Deposit Invoice via Supabase Edge Function
-  const createNowPaymentsInvoice = async (amount, payCurrency = 'usdttrc20') => {
+  // NOWPayments: Create USDT (TRC-20) Deposit Order via Authenticated Supabase Edge Function
+  const createNowPaymentsInvoice = async (amount: number | string, payCurrency = 'usdttrc20') => {
     if (!user?.id) {
       requireAuth({ type: 'tab', tab: 'wallet' }, 'Please log in to deposit USDT into your wallet.');
       return { success: false, error: 'Authentication required' };
     }
-    const numAmount = parseFloat(amount);
+    const normalizedCurrency = String(payCurrency || 'usdttrc20').trim().toLowerCase();
+    if (normalizedCurrency !== 'usdttrc20') {
+      const msg = 'Unsupported asset/network. Only USDT on TRON (TRC-20) is supported.';
+      showToast(msg, 'error');
+      return { success: false, error: msg };
+    }
+
+    const numAmount = parseFloat(String(amount));
     if (isNaN(numAmount) || numAmount < 20 || numAmount > 500) {
       showToast('Deposit amount must be between 20 USDT and 500 USDT (Min: 20 USDT, Max: 500 USDT)', 'error');
       return { success: false, error: 'Deposit amount must be between 20 USDT and 500 USDT' };
     }
 
     try {
-      showToast('Creating secure deposit invoice...', 'info');
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) {
+        requireAuth({ type: 'tab', tab: 'wallet' }, 'Please log in again to authorize this deposit.');
+        return { success: false, error: 'Active session token missing' };
+      }
+
+      showToast('Creating secure USDT (TRC-20) deposit order...', 'info');
       const response = await fetch(
         'https://pkloymdzdjykpsutpyqk.supabase.co/functions/v1/payment-api/create-nowpayments-invoice',
         {
@@ -558,52 +573,63 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           headers: {
             'Content-Type': 'application/json',
             'apikey': 'sb_publishable_x7puqG5DzU9YkvDsV10HyQ_144KlMqt',
+            'Authorization': `Bearer ${accessToken}`
           },
           body: JSON.stringify({
             amount: numAmount,
             userAddress: wallet.address,
-            userId: user?.id || wallet.address,
-            payCurrency: payCurrency
+            payCurrency: 'usdttrc20',
+            network: 'TRC-20'
           })
         }
       );
 
       const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to create deposit invoice');
+      if (!response.ok || (!data.success && !data.orderId)) {
+        throw new Error(data.error || 'Failed to create deposit order');
       }
 
-      showToast('Deposit invoice ready! Redirecting to checkout...', 'success');
+      showToast('USDT (TRC-20) deposit order ready!', 'success');
       fetchDeposits();
       return {
         success: true,
-        depositId: data.deposit_id,
-        invoiceUrl: data.invoice_url,
-        invoiceId: data.invoice_id
+        depositId: data.deposit_id || data.orderId,
+        invoiceUrl: data.invoice_url || '',
+        invoiceId: data.invoice_id || String(data.paymentId || ''),
+        payAddress: data.payAddress || '',
+        payAmount: data.payAmount || numAmount,
+        network: 'TRC-20'
       };
-    } catch (err) {
+    } catch (err: any) {
       console.error('Deposit invoice error:', err);
       showToast('Deposit error: ' + err.message, 'error');
       return { success: false, error: err.message };
     }
   };
 
-  // Check NOWPayments deposit status via Supabase Edge Function
-  const checkDepositStatus = async (depositId) => {
+  // Check NOWPayments deposit status via Authenticated Supabase Edge Function
+  const checkDepositStatus = async (depositId: string) => {
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'apikey': 'sb_publishable_x7puqG5DzU9YkvDsV10HyQ_144KlMqt',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+
       const response = await fetch(
         'https://pkloymdzdjykpsutpyqk.supabase.co/functions/v1/payment-api/deposit-status',
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': 'sb_publishable_x7puqG5DzU9YkvDsV10HyQ_144KlMqt',
-          },
-          body: JSON.stringify({ depositId })
+          headers,
+          body: JSON.stringify({ depositId, orderId: depositId })
         }
       );
       return await response.json();
-    } catch (err) {
+    } catch (err: any) {
       console.error('checkDepositStatus error:', err);
       return { success: false, error: err.message };
     }
@@ -1122,14 +1148,17 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     usernameChangeFee: 5.0,
     apkDownloadUrl: '/download/earnflow.apk',
     resultsRetentionHours: 1,
-    referralSettings: {
+    referralSettings: normalizeReferralSettings({
+      enabled: true,
       registration_reward_enabled: true,
       registration_reward_amount: 0.25,
       first_deposit_reward_enabled: true,
-      first_deposit_reward_percent: 10,
+      first_deposit_reward_percent: 5,
+      minimum_qualifying_deposit: 10,
+      maximum_first_deposit_bonus: 50,
       lifetime_commission_enabled: true,
-      lifetime_commission_percent: 2
-    },
+      lifetime_commission_percent: 2,
+    }),
     spinWheelSettings: {
       is_active: true,
       daily_spins_limit: 1,
@@ -1200,6 +1229,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         setPlatformSettings(prev => {
           let merged = { ...prev };
           const globalRow = data.find((row: any) => row.key === 'global' && row.value);
+          const refRow = data.find((row: any) => row.key === 'referral_settings' && row.value);
           if (globalRow) {
             merged = { ...merged, ...globalRow.value };
           }
@@ -1215,12 +1245,15 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
                 duration_hours: Number.isFinite(parsed) && parsed > 0 ? parsed : (merged.resultsRetentionHours || 1),
                 retention_duration_hours: Number.isFinite(parsed) && parsed > 0 ? parsed : (merged.resultsRetentionHours || 1)
               };
-            } else if (row.key === 'referral_settings' && row.value) {
-              merged.referralSettings = { ...merged.referralSettings, ...row.value };
             } else if (row.key === 'spin_wheel_settings' && row.value) {
               merged.spinWheelSettings = { ...merged.spinWheelSettings, ...row.value };
             }
           });
+          // Authoritative source for referralSettings is always 'referral_settings', synced with 'global'
+          const authoritativeRef = refRow?.value || globalRow?.value?.referralSettings;
+          if (authoritativeRef) {
+            merged.referralSettings = normalizeReferralSettings(authoritativeRef);
+          }
           return merged;
         });
       }
@@ -1232,9 +1265,36 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   // Update platform settings from Admin Console
   const adminUpdatePlatformSettings = async (newSettings: any) => {
     try {
+      // Referral settings updates go exclusively through server-authoritative validated RPC with audit log
+      if (newSettings.referralSettings && Object.keys(newSettings).length === 1) {
+        const { data: rpcRes, error: rpcErr } = await supabase.rpc('admin_update_referral_settings_secure', {
+          p_payload: newSettings.referralSettings
+        });
+        if (rpcErr || !rpcRes?.success) {
+          const errMsg = rpcRes?.error || rpcErr?.message || 'Failed to save referral settings.';
+          showToast(errMsg, 'error');
+          return { success: false, error: errMsg };
+        }
+        const normalizedRef = normalizeReferralSettings(rpcRes.settings);
+        const updated = {
+          ...platformSettings,
+          referralSettings: normalizedRef
+        };
+        setPlatformSettings(updated);
+        localStorage.setItem('lotto_platform_settings', JSON.stringify(updated));
+        showToast('Referral program settings validated, logged, and synced!', 'success');
+        return { success: true, settings: updated };
+      }
+
+      const normalizedRefIfProvided = newSettings.referralSettings
+        ? normalizeReferralSettings({ ...platformSettings.referralSettings, ...newSettings.referralSettings })
+        : normalizeReferralSettings(platformSettings.referralSettings);
+
       const updated = {
         ...platformSettings,
         ...newSettings,
+        supportedNetwork: 'TRC-20',
+        supportedCurrency: 'USDT',
         minWithdrawal: parseFloat(newSettings.minWithdrawal !== undefined ? newSettings.minWithdrawal : platformSettings.minWithdrawal),
         maxWithdrawal: parseFloat(newSettings.maxWithdrawal !== undefined ? newSettings.maxWithdrawal : platformSettings.maxWithdrawal),
         houseFeePercent: parseFloat(newSettings.houseFeePercent !== undefined ? newSettings.houseFeePercent : platformSettings.houseFeePercent),
@@ -1252,7 +1312,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
               label: `${Number(newSettings.resultsRetentionHours)} hour(s)`
             }
           : platformSettings.resultsRetention,
-        referralSettings: newSettings.referralSettings ? { ...platformSettings.referralSettings, ...newSettings.referralSettings } : platformSettings.referralSettings,
+        referralSettings: normalizedRefIfProvided,
         spinWheelSettings: newSettings.spinWheelSettings ? { ...platformSettings.spinWheelSettings, ...newSettings.spinWheelSettings } : platformSettings.spinWheelSettings
       };
 
@@ -1270,8 +1330,23 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         });
 
       if (globalErr) {
-        console.warn('Supabase settings upsert error:', globalErr.message);
+        throw new Error(globalErr.message || 'Failed to update platform settings');
       }
+
+      // Keep withdrawal_settings synchronized
+      await supabase
+        .from('platform_settings')
+        .upsert({
+          key: 'withdrawal_settings',
+          value: {
+            supportedNetwork: 'TRC-20',
+            supportedCurrency: 'USDT',
+            minWithdrawal: updated.minWithdrawal,
+            maxWithdrawal: updated.maxWithdrawal,
+            networkFee: 1.0
+          },
+          updated_at: new Date().toISOString()
+        });
 
       // Persist results retention
       if (newSettings.resultsRetentionHours !== undefined) {
@@ -1293,15 +1368,11 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Persist referral settings
+      // Persist referral settings atomically if included alongside general settings
       if (newSettings.referralSettings) {
-        await supabase
-          .from('platform_settings')
-          .upsert({
-            key: 'referral_settings',
-            value: updated.referralSettings,
-            updated_at: new Date().toISOString()
-          });
+        await supabase.rpc('admin_update_referral_settings_secure', {
+          p_payload: newSettings.referralSettings
+        });
       }
 
       // Persist spin wheel settings
@@ -1420,11 +1491,21 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     if (!newUserId || !referralCode) return;
     try {
       const cleanCode = referralCode.trim();
-      const { error } = await supabase.rpc('process_referral_registration', {
-        p_referral_code: cleanCode
+      let deviceFp: string | null = null;
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+        const rawFp = `${navigator.platform || ''}|${screen.width}x${screen.height}|${navigator.language || ''}|${tz}`;
+        deviceFp = btoa(unescape(encodeURIComponent(rawFp))).slice(0, 64);
+      } catch {
+        deviceFp = null;
+      }
+
+      const { data: rpcRes, error } = await supabase.rpc('process_referral_registration', {
+        p_referral_code: cleanCode,
+        p_device_fingerprint: deviceFp
       });
-      if (error) {
-        console.warn('process_referral_registration notice:', error.message);
+      if (error || rpcRes?.success === false) {
+        console.warn('process_referral_registration notice:', error?.message || rpcRes?.error);
         return;
       }
       localStorage.removeItem('earnflow_referrer_code');
@@ -2438,49 +2519,16 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const switchNetwork = async (newNetwork) => {
-    setWallet(prev => ({ ...prev, network: newNetwork }));
-    showToast(`Network switched to ${newNetwork}`);
-    try {
-      await supabase.from('lottery_wallets').update({ network: newNetwork }).eq('address', wallet.address);
-    } catch (e) {
-      console.error(e);
-    }
+  const switchNetwork = async (_newNetwork: string) => {
+    // Platform settlement is restricted exclusively to USDT on TRON (TRC-20)
+    setWallet(prev => ({ ...prev, network: 'TRC-20' }));
+    showToast('EarnFlow.in supports USDT on TRON (TRC-20) only.', 'info');
   };
 
-  // Deposit USDT (Authenticated Only)
-  const depositUSDT = async (amount) => {
-    if (!user?.id) {
-      requireAuth({ type: 'tab', tab: 'wallet' }, 'Please log in to deposit USDT into your wallet.');
-      return false;
-    }
-    const val = parseFloat(amount);
-    if (isNaN(val) || val < 20 || val > 500) {
-      showToast('Deposit amount must be between 20 USDT and 500 USDT (Min: 20 USDT, Max: 500 USDT)', 'error');
-      return false;
-    }
-
-    const newBalance = parseFloat((wallet.balance + val).toFixed(2));
-    setWallet(prev => ({
-      ...prev,
-      balance: newBalance
-    }));
-
-    showToast(`Deposit confirmed! +${val.toFixed(2)} USDT credited to wallet.`);
-
-    try {
-      await supabase.from('lottery_wallets').upsert({
-        address: wallet.address,
-        user_id: user.id,
-        balance: newBalance,
-        lifetime_won: wallet.lifetimeWon,
-        network: wallet.network
-      });
-    } catch (e) {
-      console.error(e);
-    }
-
-    return true;
+  // Disabled client-side direct balance mutation; deposits must be settled through verified server checkout
+  const depositUSDT = async (_amount: number | string) => {
+    showToast('Direct client balance credits are disabled. Please complete a verified USDT (TRC-20) deposit.', 'error');
+    return false;
   };
 
   // Helper: Check if a 4-digit number is already sold in an event (across ALL players)
@@ -2686,21 +2734,32 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    if (!destinationAddress || destinationAddress.trim().length < 8) {
-      showToast('Please enter a valid recipient USDT wallet address', 'error');
+    const trimmedDest = (destinationAddress || '').trim();
+    const normNet = String(network || 'TRC-20').trim().toUpperCase().replace(/[-_\s]/g, '');
+    if (normNet !== 'TRC20') {
+      showToast('Unsupported withdrawal network. Only USDT on TRON (TRC-20) is supported.', 'error');
       return false;
     }
 
-    const networkFee = network === 'TRC-20' ? 1.0 : (network === 'BEP-20' ? 0.8 : 8.0);
+    if (!/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(trimmedDest)) {
+      showToast('Please enter a valid 34-character TRON (TRC-20) destination address starting with T', 'error');
+      return false;
+    }
+
+    const networkFee = 1.0;
     const netDisbursal = parseFloat((val - networkFee).toFixed(2));
+    if (netDisbursal <= 0) {
+      showToast(`Withdrawal amount must exceed the ${networkFee.toFixed(2)} USDT TRC-20 network fee`, 'error');
+      return false;
+    }
     const newBalance = parseFloat((wallet.balance - val).toFixed(2));
 
-    // Call atomic Server-Authoritative Withdrawal RPC (verifies auth.uid(), balance, ledger & withdrawal row)
+    // Call atomic Server-Authoritative Withdrawal RPC (verifies auth.uid(), TRC-20 format, limits, rate-limit & ledger)
     try {
       const { data: rpcRes, error: rpcErr } = await supabase.rpc('request_withdrawal_secure', {
         p_amount: val,
-        p_destination_address: destinationAddress.trim(),
-        p_network: network,
+        p_destination_address: trimmedDest,
+        p_network: 'TRC-20',
         p_user_address: wallet.address
       });
 
@@ -2720,7 +2779,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
       await fetchWithdrawals();
       await fetchWalletLedger();
-      showToast(`Withdrawal of ${val} USDT requested! Order #${rpcRes.order_id} queued for 24-hour processing.`, 'success');
+      showToast(`Withdrawal of ${val} USDT (TRC-20) requested! Order #${rpcRes.withdrawal_id || rpcRes.order_id} queued for 24-hour processing.`, 'success');
       return true;
     } catch (err: any) {
       console.error('requestWithdrawal error:', err);
@@ -3251,64 +3310,43 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
 
 
-  const adminApproveWithdrawal = async (orderId) => {
-    const mockTx = `0x${Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-    setWithdrawals(prev => prev.map(w => {
-      if (w.id === orderId) {
-        return {
-          ...w,
-          status: 'completed',
-          txHash: mockTx,
-          slaTargetMs: Date.now()
-        };
-      }
-      return w;
-    }));
-
-    showToast(`Withdrawal #${orderId} approved and disbursed! TxHash: ${mockTx.slice(0, 10)}...`);
-
+  const adminApproveWithdrawal = async (orderId: string) => {
     try {
-      await supabase.from('lottery_withdrawals').update({
-        status: 'completed',
-        tx_hash: mockTx
-      }).eq('id', orderId);
-    } catch (err) {
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('admin_process_withdrawal_secure', {
+        p_order_id: orderId,
+        p_action: 'approve'
+      });
+      if (rpcErr || !rpcRes?.success) {
+        showToast(rpcRes?.error || rpcErr?.message || 'Failed to approve withdrawal', 'error');
+        return;
+      }
+      await fetchWithdrawals();
+      showToast(`Withdrawal #${orderId} approved and disbursed! TxHash: ${String(rpcRes.tx_hash || '').slice(0, 10)}...`);
+    } catch (err: any) {
       console.error('Supabase approval error:', err);
+      showToast('Withdrawal approval failed: ' + err.message, 'error');
     }
   };
 
-  const adminRejectWithdrawal = async (orderId) => {
+  const adminRejectWithdrawal = async (orderId: string) => {
     const order = withdrawals.find(w => w.id === orderId);
-    if (!order) return;
-
-    const newBalance = parseFloat((wallet.balance + order.amount).toFixed(2));
-    setWallet(prev => ({
-      ...prev,
-      balance: newBalance
-    }));
-
-    setWithdrawals(prev => prev.map(w => {
-      if (w.id === orderId) {
-        return { ...w, status: 'flagged' };
-      }
-      return w;
-    }));
-
-    showToast(`Withdrawal #${orderId} flagged/rejected. ${order.amount} USDT refunded to user.`, 'info');
-
     try {
-      await supabase.from('lottery_withdrawals').update({
-        status: 'flagged'
-      }).eq('id', orderId);
-
-      await supabase.from('lottery_wallets').upsert({
-        address: wallet.address,
-        balance: newBalance,
-        lifetime_won: wallet.lifetimeWon,
-        network: wallet.network
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('admin_process_withdrawal_secure', {
+        p_order_id: orderId,
+        p_action: 'reject'
       });
-    } catch (err) {
+      if (rpcErr || !rpcRes?.success) {
+        showToast(rpcRes?.error || rpcErr?.message || 'Failed to reject withdrawal', 'error');
+        return;
+      }
+      await Promise.all([fetchWithdrawals(), fetchWalletLedger(), fetchWallet(wallet.address)]);
+      showToast(
+        `Withdrawal #${orderId} flagged/rejected. ${order ? order.amount : ''} USDT refunded atomically to user wallet.`,
+        'info'
+      );
+    } catch (err: any) {
       console.error('Supabase rejection error:', err);
+      showToast('Withdrawal rejection failed: ' + err.message, 'error');
     }
   };
 

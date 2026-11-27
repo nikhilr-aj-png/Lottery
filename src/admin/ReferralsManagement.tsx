@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useLottery } from '../context/LotteryContext';
+import { normalizeReferralSettings } from '../utils/referralConfig';
 import { 
   Share2, 
   Users, 
@@ -18,16 +19,21 @@ import {
 export default function ReferralsManagement() {
   const { showToast, platformSettings, adminUpdatePlatformSettings } = useLottery();
 
-  // Settings State
+  // Settings State (synchronized 1:1 with authoritative backend referral_settings)
   const [settings, setSettings] = useState({
+    enabled: true,
     registration_reward_enabled: true,
-    registration_reward_amount: 0.25,
+    registration_reward_amount: '0.25',
     first_deposit_reward_enabled: true,
-    first_deposit_reward_percent: 10,
+    first_deposit_reward_percent: '5',
+    minimum_qualifying_deposit: '10',
+    maximum_first_deposit_bonus: '50',
     lifetime_commission_enabled: true,
-    lifetime_commission_percent: 2
+    lifetime_commission_percent: '2',
+    config_version: 1
   });
 
+  const [settingsError, setSettingsError] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [loadingStats, setLoadingStats] = useState(true);
 
@@ -45,18 +51,32 @@ export default function ReferralsManagement() {
   // Load Settings from Supabase
   const loadReferralData = async () => {
     setLoadingStats(true);
+    setSettingsError('');
     try {
-      // 1. Load settings
-      const { data: setRow } = await supabase
+      // 1. Load authoritative settings
+      const { data: setRow, error: setErr } = await supabase
         .from('platform_settings')
         .select('value')
         .eq('key', 'referral_settings')
         .maybeSingle();
 
-      if (setRow && setRow.value) {
-        setSettings(prev => ({ ...prev, ...setRow.value }));
-      } else if (platformSettings?.referralSettings) {
-        setSettings(prev => ({ ...prev, ...platformSettings.referralSettings }));
+      const rawConfig = !setErr && setRow?.value ? setRow.value : platformSettings?.referralSettings;
+      if (rawConfig) {
+        const norm = normalizeReferralSettings(rawConfig);
+        setSettings({
+          enabled: norm.enabled,
+          registration_reward_enabled: norm.registration_reward_enabled,
+          registration_reward_amount: String(norm.registration_reward_amount),
+          first_deposit_reward_enabled: norm.first_deposit_reward_enabled,
+          first_deposit_reward_percent: String(norm.first_deposit_reward_percent),
+          minimum_qualifying_deposit: String(norm.minimum_qualifying_deposit),
+          maximum_first_deposit_bonus: String(norm.maximum_first_deposit_bonus),
+          lifetime_commission_enabled: norm.lifetime_commission_enabled,
+          lifetime_commission_percent: String(norm.lifetime_commission_percent),
+          config_version: norm.config_version
+        });
+      } else {
+        setSettingsError('Unable to load authoritative referral settings from backend.');
       }
 
       // 2. Load referrals network
@@ -87,8 +107,9 @@ export default function ReferralsManagement() {
       if (!rewErr && rewRows) {
         setRewardsList(rewRows);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading referral data:', err);
+      setSettingsError(err?.message || 'Error loading referral settings.');
     } finally {
       setLoadingStats(false);
     }
@@ -100,23 +121,88 @@ export default function ReferralsManagement() {
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSettingsError('');
+
+    const regAmt = Number(settings.registration_reward_amount);
+    const fdPct = Number(settings.first_deposit_reward_percent);
+    const minDep = Number(settings.minimum_qualifying_deposit);
+    const maxBonus = Number(settings.maximum_first_deposit_bonus);
+    const lcPct = Number(settings.lifetime_commission_percent);
+
+    if (
+      settings.registration_reward_amount.trim() === '' ||
+      !Number.isFinite(regAmt) ||
+      regAmt < 0 ||
+      regAmt > 1000
+    ) {
+      setSettingsError('Registration reward amount must be a valid number between 0 and 1000 USDT.');
+      return;
+    }
+    if (
+      settings.first_deposit_reward_percent.trim() === '' ||
+      !Number.isFinite(fdPct) ||
+      fdPct < 0 ||
+      fdPct > 100
+    ) {
+      setSettingsError('First deposit bonus percentage must be between 0% and 100%.');
+      return;
+    }
+    if (!Number.isFinite(minDep) || minDep < 0 || !Number.isFinite(maxBonus) || maxBonus < 0) {
+      setSettingsError('Minimum qualifying deposit and maximum bonus cap must be 0 or greater.');
+      return;
+    }
+    if (
+      settings.lifetime_commission_percent.trim() === '' ||
+      !Number.isFinite(lcPct) ||
+      lcPct < 0 ||
+      lcPct > 50
+    ) {
+      setSettingsError('Lifetime commission percentage must be between 0% and 50%.');
+      return;
+    }
+
     setSavingSettings(true);
     try {
       const updated = {
-        registration_reward_enabled: Boolean(settings.registration_reward_enabled),
-        registration_reward_amount: Math.max(0, parseFloat(String(settings.registration_reward_amount)) || 0.25),
+        enabled: Boolean(settings.enabled),
+        reward_currency: 'USDT',
+        supported_network: 'TRC-20',
+        registration_reward_enabled: Boolean(settings.registration_reward_enabled) && regAmt > 0,
+        registration_reward_amount: Math.round(regAmt * 100) / 100,
         first_deposit_reward_enabled: Boolean(settings.first_deposit_reward_enabled),
-        first_deposit_reward_percent: Math.max(0, parseFloat(String(settings.first_deposit_reward_percent)) || 10),
+        first_deposit_reward_percent: Math.round(fdPct * 100) / 100,
+        minimum_qualifying_deposit: Math.round(minDep * 100) / 100,
+        maximum_first_deposit_bonus: Math.round(maxBonus * 100) / 100,
         lifetime_commission_enabled: Boolean(settings.lifetime_commission_enabled),
-        lifetime_commission_percent: Math.max(0, parseFloat(String(settings.lifetime_commission_percent)) || 2)
+        lifetime_commission_percent: Math.round(lcPct * 100) / 100
       };
 
-      await adminUpdatePlatformSettings({
+      const res = await adminUpdatePlatformSettings({
         referralSettings: updated
       });
 
-      showToast('Referral program settings saved successfully!', 'success');
+      if (!res?.success) {
+        setSettingsError(res?.error || 'Failed to save referral settings.');
+        return;
+      }
+
+      if (res?.settings?.referralSettings) {
+        const norm = normalizeReferralSettings(res.settings.referralSettings);
+        setSettings({
+          enabled: norm.enabled,
+          registration_reward_enabled: norm.registration_reward_enabled,
+          registration_reward_amount: String(norm.registration_reward_amount),
+          first_deposit_reward_enabled: norm.first_deposit_reward_enabled,
+          first_deposit_reward_percent: String(norm.first_deposit_reward_percent),
+          minimum_qualifying_deposit: String(norm.minimum_qualifying_deposit),
+          maximum_first_deposit_bonus: String(norm.maximum_first_deposit_bonus),
+          lifetime_commission_enabled: norm.lifetime_commission_enabled,
+          lifetime_commission_percent: String(norm.lifetime_commission_percent),
+          config_version: norm.config_version
+        });
+      }
     } catch (err: any) {
+      setSettingsError(err.message || 'Failed to save settings.');
       showToast('Failed to save settings: ' + err.message, 'error');
     } finally {
       setSavingSettings(false);
@@ -230,7 +316,7 @@ export default function ReferralsManagement() {
                 </label>
               </div>
               <p className="text-[11px] text-[#8b92a2]">
-                Instant USDT bonus credited to the referrer when an invited user registers.
+                Instant USDT bonus credited to the referrer when an invited user registers (set 0 to disable).
               </p>
               <div>
                 <label className="text-[10px] uppercase font-bold text-[#8b92a2] block mb-1">
@@ -242,11 +328,15 @@ export default function ReferralsManagement() {
                     step="0.01"
                     min="0"
                     value={settings.registration_reward_amount}
-                    onChange={(e) => setSettings(prev => ({ ...prev, registration_reward_amount: parseFloat(e.target.value) || 0 }))}
-                    className="w-full bg-[#0b0e14] border border-[#272a31] rounded-lg px-3 py-2 text-xs font-bold font-mono-numbers text-white outline-none focus:border-amber-400"
+                    onChange={(e) => setSettings(prev => ({ ...prev, registration_reward_amount: e.target.value }))}
+                    className="w-full bg-[#0b0e14] border border-[#272a31] rounded-lg px-3 py-2 pr-14 text-xs font-bold font-mono-numbers text-white outline-none focus:border-amber-400"
                   />
                   <span className="absolute right-3 top-2.5 text-[10px] text-amber-400 font-bold">USDT</span>
                 </div>
+              </div>
+              <div className="pt-1 flex items-center justify-between text-[10px] text-[#8b92a2] font-mono-numbers">
+                <span>Settlement Asset: USDT</span>
+                <span className="text-emerald-400 font-bold">Network: TRC-20</span>
               </div>
             </div>
 
@@ -268,7 +358,7 @@ export default function ReferralsManagement() {
                 </label>
               </div>
               <p className="text-[11px] text-[#8b92a2]">
-                Commission percentage credited to referrer on the invited player's 1st deposit.
+                One-time bonus percentage credited to referrer on the invited player's first confirmed TRC-20 deposit.
               </p>
               <div>
                 <label className="text-[10px] uppercase font-bold text-[#8b92a2] block mb-1">
@@ -281,10 +371,38 @@ export default function ReferralsManagement() {
                     min="0"
                     max="100"
                     value={settings.first_deposit_reward_percent}
-                    onChange={(e) => setSettings(prev => ({ ...prev, first_deposit_reward_percent: parseFloat(e.target.value) || 0 }))}
+                    onChange={(e) => setSettings(prev => ({ ...prev, first_deposit_reward_percent: e.target.value }))}
                     className="w-full bg-[#0b0e14] border border-[#272a31] rounded-lg px-3 py-2 text-xs font-bold font-mono-numbers text-white outline-none focus:border-emerald-400"
                   />
                   <span className="absolute right-3 top-2.5 text-[10px] text-emerald-400 font-bold">%</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] uppercase font-bold text-[#8b92a2] block mb-1">
+                    Min Deposit (USDT)
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={settings.minimum_qualifying_deposit}
+                    onChange={(e) => setSettings(prev => ({ ...prev, minimum_qualifying_deposit: e.target.value }))}
+                    className="w-full bg-[#0b0e14] border border-[#272a31] rounded-lg px-2.5 py-1.5 text-xs font-bold font-mono-numbers text-white outline-none focus:border-emerald-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase font-bold text-[#8b92a2] block mb-1">
+                    Max Bonus (USDT)
+                  </label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={settings.maximum_first_deposit_bonus}
+                    onChange={(e) => setSettings(prev => ({ ...prev, maximum_first_deposit_bonus: e.target.value }))}
+                    className="w-full bg-[#0b0e14] border border-[#272a31] rounded-lg px-2.5 py-1.5 text-xs font-bold font-mono-numbers text-white outline-none focus:border-emerald-400"
+                  />
                 </div>
               </div>
             </div>
@@ -320,14 +438,33 @@ export default function ReferralsManagement() {
                     min="0"
                     max="50"
                     value={settings.lifetime_commission_percent}
-                    onChange={(e) => setSettings(prev => ({ ...prev, lifetime_commission_percent: parseFloat(e.target.value) || 0 }))}
+                    onChange={(e) => setSettings(prev => ({ ...prev, lifetime_commission_percent: e.target.value }))}
                     className="w-full bg-[#0b0e14] border border-[#272a31] rounded-lg px-3 py-2 text-xs font-bold font-mono-numbers text-white outline-none focus:border-purple-400"
                   />
                   <span className="absolute right-3 top-2.5 text-[10px] text-purple-400 font-bold">%</span>
                 </div>
               </div>
+              <div className="pt-1 flex items-center justify-between text-[10px] text-[#8b92a2] font-mono-numbers">
+                <span>Config Version: v{settings.config_version}</span>
+                <label className="inline-flex items-center gap-1.5 cursor-pointer text-white">
+                  <input
+                    type="checkbox"
+                    checked={settings.enabled}
+                    onChange={(e) => setSettings(prev => ({ ...prev, enabled: e.target.checked }))}
+                    className="accent-amber-400"
+                  />
+                  <span>Program Active</span>
+                </label>
+              </div>
             </div>
           </div>
+
+          {settingsError && (
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{settingsError}</span>
+            </div>
+          )}
 
           <div className="flex justify-end pt-2">
             <button

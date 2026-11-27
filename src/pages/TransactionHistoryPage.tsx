@@ -56,6 +56,10 @@ const TRANSACTION_TYPE_MAP: Record<string, { label: string; bg: string }> = {
     label: 'Referral Reward',
     bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
   },
+  referral_registration_reward: {
+    label: 'Registration Bonus',
+    bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+  },
   referral_commission: {
     label: 'Referral Commission',
     bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
@@ -75,6 +79,10 @@ const TRANSACTION_TYPE_MAP: Record<string, { label: string; bg: string }> = {
   withdrawal_request: {
     label: 'Withdrawal Request',
     bg: 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+  },
+  withdrawal_refund: {
+    label: 'Withdrawal Refund',
+    bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
   },
   ticket_purchase: {
     label: 'Ticket Purchase',

@@ -17,18 +17,16 @@ import {
   History
 } from 'lucide-react';
 
-const PAYMENT_CURRENCIES = [
-  { id: 'usdttrc20', name: 'USDT (TRON TRC-20)', symbol: 'USDT', network: 'TRC-20' },
-  { id: 'usdtbep20', name: 'USDT (BNB Chain BEP-20)', symbol: 'USDT', network: 'BEP-20' },
-  { id: 'trx', name: 'TRON (TRX)', symbol: 'TRX', network: 'TRON' },
-  { id: 'btc', name: 'Bitcoin (BTC)', symbol: 'BTC', network: 'Bitcoin' },
-  { id: 'eth', name: 'Ethereum (ETH)', symbol: 'ETH', network: 'ERC-20' },
-  { id: 'sol', name: 'Solana (SOL)', symbol: 'SOL', network: 'Solana' },
-  { id: 'ltc', name: 'Litecoin (LTC)', symbol: 'LTC', network: 'Litecoin' }
-];
+const SUPPORTED_DEPOSIT_ASSET = {
+  id: 'usdttrc20',
+  label: 'USDT — TRON (TRC-20)',
+  symbol: 'USDT',
+  network: 'TRC-20'
+} as const;
 
 const QUICK_DEPOSIT_AMOUNTS = [20, 50, 100, 250, 500];
 const WITHDRAW_PERCENT_PRESETS = [25, 50, 75, 100];
+const TRC20_ADDRESS_REGEX = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 
 interface WalletViewProps {
   onOpenDeposit?: () => void;
@@ -61,8 +59,7 @@ export default function WalletView({ onOpenTransactionHistory }: WalletViewProps
     return () => clearInterval(timer);
   }, []);
 
-  // Deposit state (Internally backed by NOWPayments without frontend provider branding)
-  const [payCurrency, setPayCurrency] = useState('usdttrc20');
+  // Deposit state (Strictly USDT on TRON TRC-20, backed internally by verified payment processor)
   const [depositAmount, setDepositAmount] = useState('50');
   const [depositError, setDepositError] = useState('');
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
@@ -127,8 +124,12 @@ export default function WalletView({ onOpenTransactionHistory }: WalletViewProps
       setWithdrawError('Withdrawal amount exceeds your available USDT balance.');
       return;
     }
-    if (trimmedDest.length < 8) {
-      setWithdrawError('Please enter a valid TRC-20 destination wallet address.');
+    if (!TRC20_ADDRESS_REGEX.test(trimmedDest)) {
+      setWithdrawError('Please enter a valid 34-character TRON (TRC-20) address starting with T.');
+      return;
+    }
+    if (amt <= networkFee) {
+      setWithdrawError(`Withdrawal amount must exceed the ${networkFee.toFixed(2)} USDT TRC-20 network fee.`);
       return;
     }
 
@@ -145,16 +146,10 @@ export default function WalletView({ onOpenTransactionHistory }: WalletViewProps
     }
   };
 
-  // Unified Deposit Handler (Routes internally through backend invoice creation API)
+  // Unified Deposit Handler (Strictly USDT TRC-20 via backend payment creation API)
   const handleDepositSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isGeneratingInvoice) return;
-
-    const selectedAsset = PAYMENT_CURRENCIES.find((c) => c.id === payCurrency);
-    if (!selectedAsset) {
-      setDepositError('Please select a supported cryptocurrency.');
-      return;
-    }
 
     const amt = parseFloat(depositAmount);
     if (isNaN(amt) || amt < 20 || amt > 500) {
@@ -167,14 +162,16 @@ export default function WalletView({ onOpenTransactionHistory }: WalletViewProps
     setDepositError('');
     setIsGeneratingInvoice(true);
     try {
-      const res = await createNowPaymentsInvoice(amt, payCurrency);
+      const res = await createNowPaymentsInvoice(amt, SUPPORTED_DEPOSIT_ASSET.id);
       if (res?.success) {
         setActiveInvoice({
           depositId: res.depositId,
           invoiceUrl: res.invoiceUrl,
           invoiceId: res.invoiceId,
+          payAddress: res.payAddress,
+          payAmount: res.payAmount || amt,
           amount: amt,
-          currency: payCurrency,
+          currency: SUPPORTED_DEPOSIT_ASSET.id,
           createdAt: Date.now()
         });
         setInvoiceStatusText('waiting');
@@ -437,7 +434,7 @@ export default function WalletView({ onOpenTransactionHistory }: WalletViewProps
                     Deposit Funds
                   </h2>
                   <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-snug mt-0.5">
-                    Multi-crypto gateway &amp; automated settlement
+                    USDT (TRON TRC-20) automated settlement
                   </p>
                 </div>
               </div>
@@ -492,12 +489,36 @@ export default function WalletView({ onOpenTransactionHistory }: WalletViewProps
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2 text-xs">
-                    <span className="text-[#94A3B8]">Selected Cryptocurrency:</span>
+                    <span className="text-[#94A3B8]">Asset &amp; Network:</span>
                     <span className="font-mono-numbers font-bold text-amber-300 text-right truncate">
-                      {PAYMENT_CURRENCIES.find((c) => c.id === activeInvoice.currency)?.name ||
-                        activeInvoice.currency.toUpperCase()}
+                      {SUPPORTED_DEPOSIT_ASSET.label}
                     </span>
                   </div>
+                  {activeInvoice.payAddress && (
+                    <div className="flex flex-col gap-1 text-xs pt-1 border-t border-[#1F2737]">
+                      <span className="text-[#94A3B8]">TRC-20 Deposit Address:</span>
+                      <div className="flex items-center justify-between gap-2 bg-[#0B0F19] px-2.5 py-2 rounded-lg border border-[#253045]">
+                        <span className="font-mono-numbers text-white text-[11px] truncate select-all">
+                          {activeInvoice.payAddress}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(activeInvoice.payAddress);
+                              showToast('TRC-20 deposit address copied!', 'success');
+                            } catch {
+                              showToast('Copy unavailable', 'info');
+                            }
+                          }}
+                          className="p-1 rounded bg-[#141924] text-amber-300 hover:text-amber-200 cursor-pointer shrink-0"
+                          aria-label="Copy TRC-20 deposit address"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between gap-2 text-xs">
                     <span className="text-[#94A3B8]">Reference ID:</span>
                     <span className="font-mono-numbers text-white/80">
@@ -548,37 +569,32 @@ export default function WalletView({ onOpenTransactionHistory }: WalletViewProps
               </div>
             ) : (
               <form onSubmit={handleDepositSubmit} className="space-y-4">
-                {/* Cryptocurrency Selection Dropdown */}
+                {/* Locked Asset & Network Display (USDT TRC-20 Only) */}
                 <div>
-                  <label
-                    htmlFor="deposit-currency-select"
-                    className="block text-xs text-[#CBD5E1] font-semibold mb-1.5"
+                  <span className="block text-xs text-[#CBD5E1] font-semibold mb-1.5">
+                    Asset &amp; Network
+                  </span>
+                  <div
+                    data-testid="deposit-network-badge"
+                    className="w-full min-h-[44px] bg-[#0B0F19] border border-emerald-500/35 rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-2 min-w-0"
                   >
-                    Select Cryptocurrency
-                  </label>
-                  <select
-                    id="deposit-currency-select"
-                    data-testid="deposit-currency-select"
-                    value={payCurrency}
-                    onChange={(e) => {
-                      setPayCurrency(e.target.value);
-                      setDepositError('');
-                    }}
-                    className="w-full min-h-[44px] bg-[#0B0F19] border border-[#2D3545] focus:border-amber-400 rounded-xl px-3.5 py-2.5 text-white font-mono-numbers text-xs sm:text-sm outline-none cursor-pointer transition-colors"
-                  >
-                    {PAYMENT_CURRENCIES.map((c) => (
-                      <option key={c.id} value={c.id} className="bg-[#0B0F19] text-white">
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                      <span className="font-mono-numbers font-bold text-white text-xs sm:text-sm truncate">
+                        {SUPPORTED_DEPOSIT_ASSET.label}
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono-numbers font-bold text-emerald-400 uppercase whitespace-nowrap shrink-0">
+                      TRC-20 Only
+                    </span>
+                  </div>
                 </div>
 
                 {/* Deposit Amount Input */}
                 <div>
                   <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs mb-1.5">
                     <label htmlFor="deposit-amount-input" className="text-[#CBD5E1] font-semibold">
-                      Deposit Amount (USDT equivalent)
+                      Deposit Amount (USDT)
                     </label>
                     <span className="font-mono-numbers text-[11px] text-emerald-400 font-bold whitespace-nowrap">
                       Min: 20 USDT · Max: 500 USDT
@@ -706,6 +722,27 @@ export default function WalletView({ onOpenTransactionHistory }: WalletViewProps
             </div>
 
             <form onSubmit={handleWithdrawSubmit} className="space-y-4">
+              {/* Locked Asset & Network Indicator (USDT TRC-20 Only) */}
+              <div>
+                <span className="block text-xs text-[#CBD5E1] font-semibold mb-1.5">
+                  Asset &amp; Settlement Network
+                </span>
+                <div
+                  data-testid="withdraw-network-badge"
+                  className="w-full min-h-[44px] bg-[#0B0F19] border border-amber-500/35 rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-2 min-w-0"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                    <span className="font-mono-numbers font-bold text-white text-xs sm:text-sm truncate">
+                      USDT — TRON (TRC-20)
+                    </span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-[10px] font-mono-numbers font-bold text-amber-300 uppercase whitespace-nowrap shrink-0">
+                    TRC-20 Only
+                  </span>
+                </div>
+              </div>
+
               {/* Withdrawal Amount Input */}
               <div>
                 <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs mb-1.5">

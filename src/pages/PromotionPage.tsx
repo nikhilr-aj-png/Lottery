@@ -15,6 +15,7 @@ import {
   Gift
 } from 'lucide-react';
 import { useSoundFX } from '../hooks/useSoundFX';
+import { normalizeReferralSettings, formatNumericDisplay } from '../utils/referralConfig';
 
 interface PromotionPageProps {
   onBackToHome?: () => void;
@@ -166,12 +167,35 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
     window.open(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   };
 
-  // Referral program settings from platform_settings
-  const referralSettings = platformSettings?.referralSettings || {
-    registrationReward: { enabled: true, amount: 0.25 },
-    firstDepositReward: { enabled: true, amount: 5, mode: 'percentage' },
-    lifetimeCommission: { enabled: true, percent: 1 }
-  };
+  // Authoritative referral program settings synchronized 1:1 with Admin Panel & Postgres
+  const referralSettings = normalizeReferralSettings(platformSettings?.referralSettings);
+
+  const regActive =
+    referralSettings.enabled &&
+    referralSettings.registration_reward_enabled &&
+    referralSettings.registration_reward_amount > 0;
+  const regDisplay = regActive
+    ? `${formatNumericDisplay(referralSettings.registration_reward_amount)} USDT`
+    : '0 USDT (Disabled)';
+
+  const fdActive =
+    referralSettings.enabled &&
+    referralSettings.first_deposit_reward_enabled &&
+    referralSettings.first_deposit_reward_percent > 0;
+  const fdDisplay = fdActive
+    ? `${formatNumericDisplay(referralSettings.first_deposit_reward_percent)}% Bonus`
+    : '0% (Disabled)';
+
+  const lcActive =
+    referralSettings.enabled &&
+    referralSettings.lifetime_commission_enabled &&
+    referralSettings.lifetime_commission_percent > 0;
+  const lcDisplay = lcActive
+    ? `${formatNumericDisplay(referralSettings.lifetime_commission_percent)}% Lifetime`
+    : '0% (Disabled)';
+  const lcStatDisplay = lcActive
+    ? `${formatNumericDisplay(referralSettings.lifetime_commission_percent)}%`
+    : '0%';
 
   return (
     <div
@@ -238,8 +262,10 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
                 <span className="text-[9.5px] sm:text-[10px] text-[#94A3B8] block uppercase font-bold leading-tight break-words">
                   Registration
                 </span>
-                <strong className="text-emerald-400 font-mono-numbers text-xs sm:text-sm leading-tight block break-words">
-                  {referralSettings.registrationReward?.amount || 0.25} USDT
+                <strong
+                  className={`${regActive ? 'text-emerald-400' : 'text-[#94A3B8]'} font-mono-numbers text-xs sm:text-sm leading-tight block break-words`}
+                >
+                  {regDisplay}
                 </strong>
               </div>
 
@@ -250,8 +276,10 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
                 <span className="text-[9.5px] sm:text-[10px] text-[#94A3B8] block uppercase font-bold leading-tight break-words">
                   First Deposit
                 </span>
-                <strong className="text-amber-400 font-mono-numbers text-xs sm:text-sm leading-tight block break-words">
-                  {referralSettings.firstDepositReward?.amount || 5}% Bonus
+                <strong
+                  className={`${fdActive ? 'text-amber-400' : 'text-[#94A3B8]'} font-mono-numbers text-xs sm:text-sm leading-tight block break-words`}
+                >
+                  {fdDisplay}
                 </strong>
               </div>
 
@@ -262,8 +290,10 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
                 <span className="text-[9.5px] sm:text-[10px] text-[#94A3B8] block uppercase font-bold leading-tight break-words">
                   Commissions
                 </span>
-                <strong className="text-purple-400 font-mono-numbers text-xs sm:text-sm leading-tight block break-words">
-                  {referralSettings.lifetimeCommission?.percent || 1}% Lifetime
+                <strong
+                  className={`${lcActive ? 'text-purple-400' : 'text-[#94A3B8]'} font-mono-numbers text-xs sm:text-sm leading-tight block break-words`}
+                >
+                  {lcDisplay}
                 </strong>
               </div>
             </div>
@@ -398,10 +428,15 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
             <Coins className="w-3.5 h-3.5 text-purple-400 shrink-0" />
             <span className="truncate">Commission Rate</span>
           </span>
-          <div className="font-display font-black text-lg xs:text-xl sm:text-2xl text-purple-400 font-mono-numbers truncate">
-            {referralSettings.lifetimeCommission?.percent || 1.0}%
+          <div
+            data-testid="promo-stat-commission-rate"
+            className="font-display font-black text-lg xs:text-xl sm:text-2xl text-purple-400 font-mono-numbers truncate"
+          >
+            {lcStatDisplay}
           </div>
-          <span className="text-[10px] text-[#94A3B8] block truncate">On ticket purchases</span>
+          <span className="text-[10px] text-[#94A3B8] block truncate">
+            {lcActive ? 'On ticket purchases' : 'Commission disabled'}
+          </span>
         </div>
       </section>
 
