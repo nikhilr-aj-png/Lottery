@@ -3,11 +3,8 @@ import { useLottery } from '../context/LotteryContext';
 import {
   Sparkles,
   Trophy,
-  ArrowRight,
   Ticket,
-  Play,
   ChevronRight,
-  ShieldCheck,
   Wallet,
   X
 } from 'lucide-react';
@@ -21,15 +18,14 @@ interface CasinoLobbyProps {
   onShowResult?: (event: any) => void;
 }
 
-export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules, onShowResult }: CasinoLobbyProps) {
+export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyProps) {
   const {
     events,
     tickets,
     setActiveTab,
     platformSettings,
     requireAuth,
-    user,
-    wallet
+    user
   } = useLottery();
   const [selectedResultEvent, setSelectedResultEvent] = useState<any>(null);
 
@@ -59,14 +55,14 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules, onShowRe
     });
   }, [events]);
 
-  // Primary Live Event for Hero CTA
+  // Primary Live Event for Hero metadata & top jackpot lookup
   const primaryLiveEvent = useMemo(() => {
     return availableEvents.find((e: any) => e.status === 'active') || availableEvents[0] || null;
   }, [availableEvents]);
 
   // Real highest jackpot across active pools
   const topJackpotDisplay = useMemo(() => {
-    if (!primaryLiveEvent) return '0000–9999';
+    if (!primaryLiveEvent) return '0 USDT';
     if (primaryLiveEvent.minPrize && primaryLiveEvent.maxPrize) {
       return `${Number(primaryLiveEvent.minPrize).toLocaleString('en-US')}–${Number(primaryLiveEvent.maxPrize).toLocaleString('en-US')} USDT`;
     }
@@ -125,11 +121,6 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules, onShowRe
     }
   };
 
-  const formattedWalletBalance = Number(wallet?.balance || 0).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
-
   return (
     <div
       data-testid="homepage-lobby"
@@ -146,10 +137,9 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules, onShowRe
         <div className="pointer-events-none absolute -top-16 -right-12 w-56 h-56 bg-amber-500/8 rounded-full blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-12 w-48 h-48 bg-purple-600/8 rounded-full blur-3xl" />
 
-        <div className="relative z-10 grid grid-cols-1 xl:grid-cols-12 gap-2.5 sm:gap-4 xl:gap-6 items-center">
-          {/* Left / Primary Identity & Information Column */}
+        <div className="relative z-10 grid grid-cols-1 xl:grid-cols-12 gap-3 sm:gap-4 xl:gap-6 items-center">
+          {/* Top / Left Area: Icon, Status Badges, Heading, Description & Supported Badges */}
           <div className="xl:col-span-7 space-y-2 sm:space-y-2.5 min-w-0">
-            {/* Compact Identity Header: Logo + Official Tag + Title (No Overlapping Elements) */}
             <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
               <div className="w-11 h-11 xs:w-13 xs:h-13 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-[#090D16] border-2 border-amber-400/75 shadow-[0_0_16px_rgba(245,196,81,0.2)] overflow-hidden flex items-center justify-center shrink-0">
                 <img
@@ -179,7 +169,6 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules, onShowRe
               </div>
             </div>
 
-            {/* Unclipped Supporting Description across every viewport */}
             <p
               data-testid="homepage-hero-description"
               className="text-[11px] xs:text-xs sm:text-[13px] text-[#CBD5E1] leading-snug sm:leading-relaxed max-w-2xl"
@@ -187,7 +176,6 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules, onShowRe
               Pick your lucky 4-digit number between <strong className="text-white">0000 and 9999</strong> to enter transparent jackpot pools with instant 24-hour USDT payouts.
             </p>
 
-            {/* Compact Specification Badges */}
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] sm:text-[10px] font-bold font-mono-numbers whitespace-nowrap">
                 USDT TRC-20
@@ -201,76 +189,34 @@ export default function CasinoLobby({ onLaunchGame, onOpenLotteryRules, onShowRe
             </div>
           </div>
 
-          {/* Right / Action & Live Telemetry Panel */}
-          <div className="xl:col-span-5 flex flex-col gap-2 sm:gap-2.5 min-w-0 xl:p-4 xl:rounded-2xl xl:bg-[#0B0F19]/85 xl:border xl:border-[#1F2737]">
-            {/* Telemetry Strip: 2 crisp columns on mobile (<640px) zero truncation, 3 columns on sm+ */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2 min-w-0">
-              <div className="px-2.5 py-1.5 sm:p-2.5 rounded-xl bg-[#0B0F19] xl:bg-[#111827] border border-[#1F2737] min-w-0">
-                <span className="text-[9px] uppercase tracking-wide text-[#94A3B8] font-bold block whitespace-nowrap">
-                  Live Pools
-                </span>
-                <span className="font-mono-numbers font-black text-[11px] sm:text-xs text-emerald-400 block mt-0.5 whitespace-nowrap">
-                  {availableEvents.length} Active
-                </span>
-              </div>
-
-              <div className="px-2.5 py-1.5 sm:p-2.5 rounded-xl bg-[#0B0F19] xl:bg-[#111827] border border-[#1F2737] min-w-0">
-                <span className="text-[9px] uppercase tracking-wide text-[#94A3B8] font-bold block whitespace-nowrap">
-                  {primaryLiveEvent ? 'Top Jackpot' : 'Pick Format'}
-                </span>
-                <span className="font-mono-numbers font-black text-[11px] sm:text-xs text-amber-300 block mt-0.5 whitespace-nowrap truncate">
-                  {topJackpotDisplay}
-                </span>
-              </div>
-
-              <div
-                onClick={user ? () => setActiveTab('wallet') : undefined}
-                className={`hidden sm:block px-2.5 py-1.5 sm:p-2.5 rounded-xl bg-[#0B0F19] xl:bg-[#111827] border border-[#1F2737] min-w-0 ${
-                  user ? 'cursor-pointer hover:border-emerald-500/40 transition-colors' : ''
-                }`}
-              >
-                <span className="text-[9px] uppercase tracking-wide text-[#94A3B8] font-bold block whitespace-nowrap">
-                  {user ? 'Your Balance' : primaryLiveEvent ? 'Ticket Entry' : 'Network'}
-                </span>
-                <span className="font-mono-numbers font-black text-[11px] sm:text-xs text-white block mt-0.5 whitespace-nowrap truncate">
-                  {user
-                    ? `${formattedWalletBalance} USDT`
-                    : primaryLiveEvent
-                      ? `${primaryLiveEvent.ticketPrice || 10} USDT`
-                      : 'TRC-20'}
-                </span>
-              </div>
+          {/* Information Area: Strictly Two Balanced Stat Cards (Live Pools & Top Jackpot) */}
+          <div
+            data-testid="hero-info-cards"
+            className="xl:col-span-5 grid grid-cols-2 gap-2 sm:gap-3 min-w-0"
+          >
+            <div
+              data-testid="hero-live-pools-card"
+              className="px-2.5 py-2 sm:px-3.5 sm:py-3 rounded-xl sm:rounded-2xl bg-[#0B0F19]/90 border border-[#1F2737] min-w-0 flex flex-col justify-between gap-1"
+            >
+              <span className="text-[9.5px] sm:text-[10.5px] uppercase tracking-wider text-[#94A3B8] font-bold inline-flex items-center gap-1.5 whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                <span>Live Pools</span>
+              </span>
+              <span className="font-mono-numbers font-black text-[12px] xs:text-[13px] sm:text-base xl:text-[16px] text-emerald-400 leading-tight break-words">
+                {availableEvents.length} Active
+              </span>
             </div>
 
-            {/* Primary CTA Button + Subtle Rules Link */}
-            <div className="flex flex-col sm:flex-row xl:flex-col items-stretch sm:items-center xl:items-stretch gap-2 sm:gap-3 xl:gap-2">
-              <button
-                type="button"
-                data-testid="enter-live-draw-room-btn"
-                onClick={() => handleDirectEnterRoom(primaryLiveEvent?.id)}
-                className="w-full min-h-[44px] px-4 sm:px-5 py-2.5 rounded-xl btn-gold text-black font-display font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer active:scale-[0.98] transition-all whitespace-nowrap"
-              >
-                <Play className="w-3.5 h-3.5 fill-current shrink-0" />
-                <span>Enter Live Draw Room</span>
-                <ArrowRight className="w-3.5 h-3.5 shrink-0" />
-              </button>
-
-              {onOpenLotteryRules && (
-                <div className="flex items-center justify-between gap-2 px-1 text-[10.5px] sm:text-[11px] text-[#94A3B8]">
-                  <span className="inline-flex items-center gap-1 truncate">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span className="truncate">Provably fair automated draws</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={onOpenLotteryRules}
-                    className="text-amber-400 hover:text-amber-300 font-bold inline-flex items-center gap-0.5 cursor-pointer whitespace-nowrap shrink-0"
-                  >
-                    <span>Rules</span>
-                    <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
+            <div
+              data-testid="hero-top-jackpot-card"
+              className="px-2.5 py-2 sm:px-3.5 sm:py-3 rounded-xl sm:rounded-2xl bg-[#0B0F19]/90 border border-amber-500/20 min-w-0 flex flex-col justify-between gap-1"
+            >
+              <span className="text-[9.5px] sm:text-[10.5px] uppercase tracking-wider text-[#94A3B8] font-bold whitespace-nowrap">
+                Top Jackpot
+              </span>
+              <span className="font-mono-numbers font-black text-[11px] xs:text-xs sm:text-sm xl:text-[13.5px] 2xl:text-[15px] text-amber-300 leading-tight break-words">
+                {topJackpotDisplay}
+              </span>
             </div>
           </div>
         </div>
