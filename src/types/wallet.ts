@@ -39,9 +39,9 @@ export interface WithdrawalRequest {
 }
 
 export interface FloConversionRate {
-  rate: number; // 1 FLO = 1 USDT
+  rate: number;
   minimumDeposit: number;
   minimumWithdrawal: number;
-  withdrawalFeePercent: number;
+  withdrawalFeeUsdt: number;
 }
 

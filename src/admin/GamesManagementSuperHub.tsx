@@ -76,8 +76,6 @@ export default function GamesManagementSuperHub({
   eventBannerImage,
   setEventBannerImage,
   handleBannerFileUpload,
-  eventWinnerSharePercent,
-  setEventWinnerSharePercent,
   eventWinnerCount,
   setEventWinnerCount,
   handleCreateSubmit,
@@ -257,7 +255,6 @@ export default function GamesManagementSuperHub({
     winnerMode: 'single' as 'single' | 'multiple',
     winnerCount: 1,
     winningCodes: ['2538'] as string[],
-    winnerPayoutSharePercent: 90,
     distributionRule: 'tiered' as 'equal' | 'tiered',
     winnerDistribution: [{ position: 1, percent: 100 }] as Array<{ position: number; percent: number }>,
     publishMode: 'now' as 'now' | 'schedule',
@@ -282,7 +279,6 @@ export default function GamesManagementSuperHub({
   const [wcDrawMode, setWcDrawMode] = useState<'random' | 'preset'>('preset');
   const [wcWinningCodes, setWcWinningCodes] = useState<string[]>(['2538']);
   const [wcDistribution, setWcDistribution] = useState<Array<{ position: number; percent: number }>>([{ position: 1, percent: 100 }]);
-  const [wcPayoutSharePercent, setWcPayoutSharePercent] = useState(90);
   const [wcSaving, setWcSaving] = useState(false);
 
   // Helper: Generate distinct 4-digit codes
@@ -325,7 +321,6 @@ export default function GamesManagementSuperHub({
       codes = ['2538', '7412', '9065'];
     }
     setWcWinningCodes(codes);
-    setWcPayoutSharePercent(evt.winnerPayoutSharePercent || evt.winnerSharePercent || 90);
 
     if (Array.isArray(evt.winnerDistribution) && evt.winnerDistribution.length > 0) {
       setWcDistribution(evt.winnerDistribution);
@@ -985,7 +980,6 @@ export default function GamesManagementSuperHub({
                       winnerMode: 'single' as const,
                       winnerCount: 1,
                       winningCodes: ['2538'],
-                      winnerPayoutSharePercent: 90,
                       distributionRule: 'tiered' as const,
                       winnerDistribution: [{ position: 1, percent: 100 }],
                       publishMode: 'now' as const,
@@ -1167,20 +1161,20 @@ export default function GamesManagementSuperHub({
                               <div>
                                 <span className="text-[9px] text-[#8b92a2] block uppercase">Jackpot Pool</span>
                                 <div className="text-amber-400 font-bold text-xs truncate">
-                                  {evt.lockedJackpot ? (
-                                    <span>{Number(evt.lockedJackpot).toLocaleString()} {currency}</span>
-                                  ) : evt.jackpotMode === 'fixed' ? (
-                                    <span>{(evt.fixedJackpot || evt.poolPrize || 5000).toLocaleString()} {currency}</span>
+                                  {evt.jackpotMode === 'range' && !isConcluded ? (
+                                    <span>{Number(evt.minPrize || evt.minJackpot || 0).toLocaleString()}–{Number(evt.maxPrize || evt.maxJackpot || 0).toLocaleString()} {currency}</span>
+                                  ) : evt.jackpotMode === 'range' && isConcluded ? (
+                                    <span>{Number(evt.lockedJackpot || evt.poolPrize || evt.minPrize || 0).toLocaleString()} {currency}</span>
                                   ) : (
-                                    <span>{(evt.minPrize || 1000).toLocaleString()}-{(evt.maxPrize || 10000).toLocaleString()} {currency}</span>
+                                    <span>{Number(evt.lockedJackpot || evt.fixedJackpot || evt.poolPrize || 0).toLocaleString()} {currency}</span>
                                   )}
                                 </div>
                                 <span className="text-[8px] text-[#94A3B8] block uppercase">
                                   {evt.jackpotMode === 'fixed'
-                                    ? 'Fixed Pot'
+                                    ? 'Fixed Jackpot'
                                     : evt.jackpotSelectionMethod === 'manual'
-                                      ? 'Manual Exact'
-                                      : 'Random RNG'}
+                                      ? 'Range · Manual'
+                                      : 'Range · RNG'}
                                 </span>
                               </div>
                               <div>
@@ -1199,7 +1193,7 @@ export default function GamesManagementSuperHub({
                                   )}
                                 </div>
                                 <span className="text-[8px] text-[#94A3B8] block">
-                                  {evt.winnerPayoutSharePercent ? `${evt.winnerPayoutSharePercent}% Pool Share` : '100% Pool Share'}
+                                  {evt.winnerMode === 'single' ? '100% Prize Award' : 'Tiered Code Split'}
                                 </span>
                               </div>
                             </div>
@@ -1731,36 +1725,46 @@ export default function GamesManagementSuperHub({
                         </div>
 
                         {wizardData.jackpotMode === 'fixed' ? (
-                          <div className="pt-2">
-                            <label className="text-[10px] text-[#8b92a2] block mb-1">Fixed Jackpot Amount (USDT) *</label>
-                            <input
-                              type="number"
-                              min={10}
-                              value={wizardData.fixedJackpot}
-                              onChange={(e) => {
-                                const val = Math.max(1, parseFloat(e.target.value) || 1);
-                                setWizardData(prev => {
-                                  const updated = { ...prev, fixedJackpot: val, selectedJackpotAmount: val };
-                                  updated.roomDescription = generateAutoDescription(updated);
-                                  return updated;
-                                });
-                              }}
-                              className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
-                            />
+                          <div className="pt-2 space-y-2">
+                            <div>
+                              <label className="text-[10px] text-[#8b92a2] block mb-1">Fixed Jackpot Amount (USDT) *</label>
+                              <input
+                                type="number"
+                                min={1}
+                                step="any"
+                                data-testid="wizard-fixed-jackpot-input"
+                                value={wizardData.fixedJackpot}
+                                onChange={(e) => {
+                                  const val = Math.max(1, parseFloat(e.target.value) || 1);
+                                  setWizardData(prev => {
+                                    const updated = { ...prev, fixedJackpot: val, selectedJackpotAmount: val };
+                                    updated.roomDescription = generateAutoDescription(updated);
+                                    return updated;
+                                  });
+                                }}
+                                className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
+                              />
+                            </div>
+                            <p className="text-[10px] text-emerald-300/90 leading-relaxed">
+                              Exact predetermined prize ({Number(wizardData.fixedJackpot || 0).toLocaleString()} USDT). Settled at 100% of this configured prize; Platform House Charge ({Number(platformSettings?.houseFeePercent ?? 5)}%) is accounted separately on ticket sales.
+                            </p>
                           </div>
                         ) : (
-                          <div className="pt-2 space-y-2">
+                          <div className="pt-2 space-y-2.5">
                             <div className="grid grid-cols-2 gap-3">
                               <div>
                                 <label className="text-[10px] text-[#8b92a2] block mb-1">Minimum Jackpot (USDT)</label>
                                 <input
                                   type="number"
                                   min={1}
+                                  data-testid="wizard-min-jackpot-input"
                                   value={wizardData.minJackpot}
                                   onChange={(e) => {
                                     const val = Math.max(1, parseFloat(e.target.value) || 1);
                                     setWizardData(prev => {
-                                      const updated = { ...prev, minJackpot: val };
+                                      const nextMax = Math.max(val, prev.maxJackpot);
+                                      const nextSel = Math.max(val, Math.min(nextMax, prev.selectedJackpotAmount || val));
+                                      const updated = { ...prev, minJackpot: val, maxJackpot: nextMax, selectedJackpotAmount: nextSel };
                                       updated.roomDescription = generateAutoDescription(updated);
                                       return updated;
                                     });
@@ -1772,12 +1776,15 @@ export default function GamesManagementSuperHub({
                                 <label className="text-[10px] text-[#8b92a2] block mb-1">Maximum Jackpot (USDT)</label>
                                 <input
                                   type="number"
-                                  min={1}
+                                  min={wizardData.minJackpot}
+                                  data-testid="wizard-max-jackpot-input"
                                   value={wizardData.maxJackpot}
                                   onChange={(e) => {
-                                    const val = Math.max(1, parseFloat(e.target.value) || 1);
+                                    const rawVal = Math.max(1, parseFloat(e.target.value) || 1);
                                     setWizardData(prev => {
-                                      const updated = { ...prev, maxJackpot: val };
+                                      const val = Math.max(prev.minJackpot, rawVal);
+                                      const nextSel = Math.max(prev.minJackpot, Math.min(val, prev.selectedJackpotAmount || prev.minJackpot));
+                                      const updated = { ...prev, maxJackpot: val, selectedJackpotAmount: nextSel };
                                       updated.roomDescription = generateAutoDescription(updated);
                                       return updated;
                                     });
@@ -1788,11 +1795,16 @@ export default function GamesManagementSuperHub({
                             </div>
 
                             <div>
-                              <label className="text-[10px] text-[#8b92a2] block mb-1">Determination Method</label>
+                              <label className="text-[10px] text-[#8b92a2] block mb-1">Range Final Prize Determination</label>
                               <div className="grid grid-cols-2 gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => setWizardData(prev => ({ ...prev, jackpotSelectionMethod: 'manual' }))}
+                                  data-testid="wizard-range-method-manual"
+                                  onClick={() => setWizardData(prev => ({
+                                    ...prev,
+                                    jackpotSelectionMethod: 'manual',
+                                    selectedJackpotAmount: Math.max(prev.minJackpot, Math.min(prev.maxJackpot, prev.selectedJackpotAmount || prev.minJackpot))
+                                  }))}
                                   className={`p-2 rounded-lg border text-left cursor-pointer text-xs ${
                                     wizardData.jackpotSelectionMethod === 'manual'
                                       ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
@@ -1803,6 +1815,7 @@ export default function GamesManagementSuperHub({
                                 </button>
                                 <button
                                   type="button"
+                                  data-testid="wizard-range-method-random"
                                   onClick={() => setWizardData(prev => ({ ...prev, jackpotSelectionMethod: 'random' }))}
                                   className={`p-2 rounded-lg border text-left cursor-pointer text-xs ${
                                     wizardData.jackpotSelectionMethod === 'random'
@@ -1814,6 +1827,30 @@ export default function GamesManagementSuperHub({
                                 </button>
                               </div>
                             </div>
+
+                            {wizardData.jackpotSelectionMethod === 'manual' ? (
+                              <div>
+                                <label className="text-[10px] text-[#8b92a2] block mb-1">
+                                  Selected Exact Prize Within Range ({wizardData.minJackpot}–{wizardData.maxJackpot} USDT)
+                                </label>
+                                <input
+                                  type="number"
+                                  min={wizardData.minJackpot}
+                                  max={wizardData.maxJackpot}
+                                  data-testid="wizard-range-manual-input"
+                                  value={wizardData.selectedJackpotAmount}
+                                  onChange={(e) => {
+                                    const raw = parseFloat(e.target.value) || wizardData.minJackpot;
+                                    setWizardData(prev => ({ ...prev, selectedJackpotAmount: raw }));
+                                  }}
+                                  className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
+                                />
+                              </div>
+                            ) : (
+                              <p className="text-[10px] text-amber-300/90 leading-relaxed">
+                                Users see the configured range ({wizardData.minJackpot}–{wizardData.maxJackpot} USDT). Server deterministically selects the final prize strictly within this range at draw finalization.
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1865,36 +1902,26 @@ export default function GamesManagementSuperHub({
                         </div>
 
                         {wizardData.winnerMode === 'multiple' && (
-                          <div className="pt-2 grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-[10px] text-[#8b92a2] block mb-1">Number of Winners</label>
-                              <input
-                                type="number"
-                                min={2}
-                                max={10}
-                                value={wizardData.winnerCount}
-                                onChange={(e) => {
-                                  const c = Math.max(2, Math.min(10, parseInt(e.target.value) || 2));
-                                  setWizardData(prev => ({
-                                    ...prev,
-                                    winnerCount: c,
-                                    winningCodes: generateDistinctCodes(c)
-                                  }));
-                                }}
-                                className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[10px] text-[#8b92a2] block mb-1">Payout Share (%)</label>
-                              <input
-                                type="number"
-                                min={50}
-                                max={100}
-                                value={wizardData.winnerPayoutSharePercent}
-                                onChange={(e) => setWizardData(prev => ({ ...prev, winnerPayoutSharePercent: parseFloat(e.target.value) || 90 }))}
-                                className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
-                              />
-                            </div>
+                          <div className="pt-2">
+                            <label className="text-[10px] text-[#8b92a2] block mb-1">Number of Winners</label>
+                            <input
+                              type="number"
+                              min={2}
+                              max={10}
+                              value={wizardData.winnerCount}
+                              onChange={(e) => {
+                                const c = Math.max(2, Math.min(10, parseInt(e.target.value) || 2));
+                                setWizardData(prev => ({
+                                  ...prev,
+                                  winnerCount: c,
+                                  winningCodes: generateDistinctCodes(c)
+                                }));
+                              }}
+                              className="w-full bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none focus:border-amber-400"
+                            />
+                            <p className="text-[10px] text-[#94A3B8] mt-1">
+                              Configured event prize is distributed 100% across these {wizardData.winnerCount} winning positions.
+                            </p>
                           </div>
                         )}
                       </div>
@@ -2149,7 +2176,7 @@ export default function GamesManagementSuperHub({
                         <div className="flex justify-between items-center text-xs">
                           <span className="text-[#94A3B8]">Winner Mode:</span>
                           <strong className="text-white">
-                            {wizardData.winnerMode === 'single' ? 'Single Winner (100%)' : `Multiple Winners (${wizardData.winnerCount} Codes · ${wizardData.winnerPayoutSharePercent}%)`}
+                            {wizardData.winnerMode === 'single' ? 'Single Winner (100% Prize)' : `Multiple Winners (${wizardData.winnerCount} Codes · 100% Split)`}
                           </strong>
                         </div>
                         <div className="flex justify-between items-center text-xs pt-2 border-t border-[#1f2737]">
@@ -2378,7 +2405,6 @@ export default function GamesManagementSuperHub({
                                   winningCodes: boundedCodes,
                                   winningCodeCount: boundedCodes.length,
                                   winnerCount: boundedCodes.length,
-                                  winnerPayoutSharePercent: wcPayoutSharePercent,
                                   winnerDistribution: wcDistribution,
                                   codesTiming: 'configured'
                                 });
@@ -2537,9 +2563,11 @@ export default function GamesManagementSuperHub({
                         </strong>
                       </div>
                       <div>
-                        <span className="text-[10px] text-[#64748B] block uppercase">Jackpot Pool</span>
+                        <span className="text-[10px] text-[#64748B] block uppercase">Jackpot Prize</span>
                         <strong className="text-amber-400">
-                          {Number(viewDetailsEvent.lockedJackpot || viewDetailsEvent.fixedJackpot || viewDetailsEvent.poolPrize || 5000).toLocaleString()} USDT
+                          {viewDetailsEvent.jackpotMode === 'range' && !isConcluded
+                            ? `${Number(viewDetailsEvent.minPrize || viewDetailsEvent.minJackpot || 0).toLocaleString()}–${Number(viewDetailsEvent.maxPrize || viewDetailsEvent.maxJackpot || 0).toLocaleString()} USDT`
+                            : `${Number(viewDetailsEvent.lockedJackpot || viewDetailsEvent.fixedJackpot || viewDetailsEvent.poolPrize || 0).toLocaleString()} USDT`}
                         </strong>
                       </div>
                       <div>
@@ -2547,6 +2575,18 @@ export default function GamesManagementSuperHub({
                         <strong className="text-white">
                           {viewDetailsEvent.winnerMode === 'single' ? 'Single Winner' : `${viewDetailsEvent.winningCodeCount || 3} Codes`}
                         </strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-[#64748B] block uppercase">Gross Sales</span>
+                        <strong className="text-white">{Number(viewDetailsEvent.grossTicketSales || 0).toFixed(2)} USDT</strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-[#64748B] block uppercase">House Charge</span>
+                        <strong className="text-emerald-400">{Number(viewDetailsEvent.houseChargeCollected || 0).toFixed(2)} USDT</strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-[#64748B] block uppercase">Net Funding</span>
+                        <strong className="text-cyan-400">{Number(viewDetailsEvent.netPrizeFunding || 0).toFixed(2)} USDT</strong>
                       </div>
                     </div>
 

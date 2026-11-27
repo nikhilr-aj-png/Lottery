@@ -640,7 +640,7 @@ export default function WinnerPayoutsManagement({ usersList = [] }: WinnerPayout
                       <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#1f2737]">
                         <span className="text-[#64748b]">Pool Audit</span>
                         <span className="font-mono-numbers text-white text-right">
-                          {p.ticketsSold} tkts · Pool {Number(p.totalPoolCollected || 0).toFixed(2)} USDT ({p.winnerSharePercent}%)
+                          {p.ticketsSold} tkts · Sales {Number(p.totalPoolCollected || 0).toFixed(2)} USDT · Pos Split {p.winnerSharePercent}%
                         </span>
                       </div>
                     )}
@@ -894,7 +894,7 @@ export default function WinnerPayoutsManagement({ usersList = [] }: WinnerPayout
                                   </span>
                                 </div>
                                 <div className="text-[10px] text-[#8b92a2] font-mono-numbers leading-tight">
-                                  Pool ${Number(p.totalPoolCollected || 0).toFixed(0)} · {p.winnerSharePercent}%
+                                  Sales ${Number(p.totalPoolCollected || 0).toFixed(0)} · Split {p.winnerSharePercent}%
                                 </div>
                               </>
                             )}

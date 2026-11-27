@@ -52,8 +52,8 @@ const FAQS = [
     a: 'Yes! The platform is a Progressive Web App (PWA) that installs on any Android or iOS device directly from your browser. We also provide an official native Flutter Android APK download in the navbar.'
   },
   {
-    q: 'What is the RTP (Return to Player) percentage for Four-Digit Lottery?',
-    a: 'Four-Digit Lottery features a 95.0% RTP with a transparent 5.0% house operating margin, ensuring high payout pool distributions back to lucky draw winners.'
+    q: 'What is the platform prize funding and house charge policy?',
+    a: 'All Four-Digit Lottery prizes follow each event’s configured Fixed Jackpot or Jackpot Range rules. A transparent server-configured Platform House Charge applies cleanly on ticket sales.'
   },
   {
     q: 'How do I participate in the Four-Digit Lottery?',

@@ -13,7 +13,8 @@ interface FooterProps {
 }
 
 export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
-  const { isNativeApp, apkDirectDownloadUrl } = useLottery();
+  const { isNativeApp, apkDirectDownloadUrl, platformSettings } = useLottery();
+  const netPoolSharePct = Math.max(0, Math.min(100, 100 - Number(platformSettings?.houseFeePercent ?? 5))).toFixed(1);
   const { isInstalled, isInstallable, triggerInstall } = usePwa();
 
   const handleLinkClick = (e: React.MouseEvent, tabId: string, path: string) => {
@@ -70,7 +71,7 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
                 18+ Players Only
               </span>
               <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold text-[10px] whitespace-nowrap">
-                95.0% RTP
+                {netPoolSharePct}% Net Funding
               </span>
             </div>
           </div>

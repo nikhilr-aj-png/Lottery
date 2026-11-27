@@ -31,6 +31,7 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
     showToast
   } = useLottery();
   const [selectedResultEvent, setSelectedResultEvent] = useState<any>(null);
+  const netPoolSharePct = Math.max(0, Math.min(100, 100 - Number(platformSettings?.houseFeePercent ?? 5))).toFixed(1);
 
   // Results Retention Setting from Admin Panel (Default: 1 hour)
   const retentionHours = useMemo(() => {
@@ -197,7 +198,7 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
                 18+ Players
               </span>
               <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 text-[9px] sm:text-[10px] font-bold font-mono-numbers whitespace-nowrap">
-                95.0% RTP
+                {netPoolSharePct}% Net Funding
               </span>
             </div>
           </div>

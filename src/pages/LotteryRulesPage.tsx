@@ -110,7 +110,7 @@ export default function LotteryRulesPage({ onBackToHome, onNavigateToTab }: Lott
             </p>
             <ul className="space-y-1.5 list-disc list-inside text-[#94A3B8] text-xs">
               <li>Only <strong>one 4-digit combination</strong> is selected by the provably fair oracle.</li>
-              <li>The verified ticket holder matching that combination receives <strong>100% of the winner payout share</strong> (typically 90% of the entire pool, after the standard 5% platform house fee).</li>
+              <li>The verified ticket holder matching that combination receives <strong>100% of the event&apos;s configured prize</strong> (Fixed Jackpot or finalized Jackpot Range amount).</li>
               <li>No secondary winners are created for a Single Winner event.</li>
             </ul>
           </div>
@@ -146,14 +146,14 @@ export default function LotteryRulesPage({ onBackToHome, onNavigateToTab }: Lott
           <div className="bg-[#161F33] p-3.5 sm:p-4 rounded-xl border border-[#273248] space-y-1.5 sm:space-y-2">
             <span className="font-bold text-white block text-xs sm:text-sm">Fixed Jackpot Pools</span>
             <p className="text-[#94A3B8]">
-              Guarantees a preset, predetermined jackpot prize in USDT (e.g. 10,000 USDT) regardless of the number of participants. The winner receives the full prize amount allocated.
+              Guarantees a preset, predetermined jackpot prize in USDT (e.g. 5,000 USDT) regardless of the number of participants. Verified winners receive 100% of the configured prize allocation.
             </p>
           </div>
 
           <div className="bg-[#161F33] p-3.5 sm:p-4 rounded-xl border border-[#273248] space-y-1.5 sm:space-y-2">
-            <span className="font-bold text-white block text-xs sm:text-sm">Dynamic Range Pools</span>
+            <span className="font-bold text-white block text-xs sm:text-sm">Jackpot Range Pools</span>
             <p className="text-[#94A3B8]">
-              The jackpot starts at a minimum guaranteed baseline and dynamically expands with every ticket purchased by participating players (95% of ticket sales added directly to the pool).
+              Displays a configured minimum and maximum USDT prize range to players. At draw finalization, the final prize is selected strictly within the configured minimum and maximum bounds.
             </p>
           </div>
         </div>

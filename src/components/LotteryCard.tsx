@@ -137,7 +137,7 @@ export default function LotteryCard({
         <div className="p-2.5 sm:p-3 rounded-xl bg-[#090D16] border border-[#1F2737] mb-2.5 sm:mb-3">
           <div className="flex items-center justify-between gap-2 text-[9.5px] sm:text-[10.5px] text-[#94A3B8] mb-0.5">
             <span className="font-bold uppercase tracking-wider text-amber-400 truncate">
-              {event.minPrize && event.maxPrize ? 'Prize Pool Range' : 'Jackpot Pool'}
+              {event.minPrize && event.maxPrize && !isCompleted ? 'Prize Pool Range' : 'Jackpot Pool'}
             </span>
             <span className="text-emerald-400 font-mono-numbers font-semibold whitespace-nowrap shrink-0">
               USDT (TRC-20)
@@ -146,9 +146,9 @@ export default function LotteryCard({
 
           <div className="flex items-baseline gap-1.5 min-w-0">
             <span className="font-display font-black text-lg sm:text-xl text-white tracking-tight text-gold-gradient truncate">
-              {event.minPrize && event.maxPrize
+              {event.minPrize && event.maxPrize && !isCompleted
                 ? `${Number(event.minPrize).toLocaleString('en-US')} – ${Number(event.maxPrize).toLocaleString('en-US')}`
-                : Number(event.poolPrize || event.pool_prize || 1000).toLocaleString('en-US')}
+                : Number(event.lockedJackpot || event.poolPrize || event.pool_prize || 0).toLocaleString('en-US')}
             </span>
             <span className="text-xs font-bold text-amber-400 font-mono-numbers shrink-0">
               USDT

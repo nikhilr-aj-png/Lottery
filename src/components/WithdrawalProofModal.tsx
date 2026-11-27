@@ -21,8 +21,10 @@ export default function WithdrawalProofModal({ order, onClose }) {
   if (!order) return null;
 
   const isCompleted = order.status === 'completed';
-  const txHash = order.txHash || (isCompleted ? '0x882a9f14309c690f01ba32c10b4297801a' : null);
-  const fullAddress = order.address || 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m';
+  const rawHash = order.txHash ? String(order.txHash).trim() : '';
+  const isTronOnChainHash = /^[a-fA-F0-9]{64}$/.test(rawHash);
+  const txHash = rawHash || null;
+  const fullAddress = order.address || '—';
 
   const handleCopyHash = () => {
     if (!txHash) return;
@@ -104,7 +106,11 @@ export default function WithdrawalProofModal({ order, onClose }) {
                   {isCompleted ? 'Disbursal Settled & Verified' : 'In Progress (24 Hours)'}
                 </span>
                 <span className="text-[10px] text-white/80">
-                  {isCompleted ? 'Broadcasted on TRON TRC-20 Public Blockchain' : 'Guaranteed payout within 24 hours'}
+                  {isCompleted
+                    ? isTronOnChainHash
+                      ? 'Broadcasted on TRON TRC-20 Public Blockchain'
+                      : 'Approved & Settled via Admin Verification'
+                    : 'Pending Admin Processing (Within 24 Hours)'}
                 </span>
               </div>
             </div>
@@ -169,7 +175,7 @@ export default function WithdrawalProofModal({ order, onClose }) {
               ) : (
                 <div className="text-xs text-amber-400/90 font-mono-numbers italic bg-[#07090d] p-2 rounded-lg border border-amber-500/20 flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5" />
-                  <span>Pending blockchain broadcast · 24-hour processing active</span>
+                  <span>{isCompleted ? 'Settled via manual admin transfer (no on-chain TxHash attached)' : 'Pending admin transfer · 24-hour processing active'}</span>
                 </div>
               )}
             </div>
@@ -220,7 +226,7 @@ export default function WithdrawalProofModal({ order, onClose }) {
 
         {/* Modal Footer CTAs */}
         <div className="p-5 border-t border-[#1f2737] bg-[#090c12]">
-          {txHash ? (
+          {txHash && isTronOnChainHash ? (
             <div className="flex flex-col sm:flex-row items-center gap-3">
               <a
                 href={`https://tronscan.org/#/transaction/${txHash}`}

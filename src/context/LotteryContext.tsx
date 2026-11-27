@@ -15,8 +15,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     connected: false,
     balance: 0,
     network: 'TRC-20',
-    lifetimeWon: 0,
-    depositAddress: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m'
+    lifetimeWon: 0
   });
 
   // User Authentication State (Declared early so downstream effects & callbacks reference safely)
@@ -135,7 +134,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     const presetWinningDigits = row.preset_winning_digits || meta.preset_winning_digits || meta.target_winning_digits || null;
     const winnerMode = row.winner_mode || meta.winner_mode || ((row.winner_count && row.winner_count > 1) ? 'multiple' : 'single');
     const winnerCount = Math.max(1, Number(row.winner_count || meta.winner_count || 1));
-    const winnerPayoutSharePercent = Number(row.winner_payout_share_percent || meta.winner_share_percent || 90);
+    const winnerPayoutSharePercent = Number(row.winner_payout_share_percent || meta.winner_share_percent || 100);
     const winnerDistribution = row.winner_distribution || meta.winner_distribution || [{ position: 1, percent: 100 }];
 
     // Multi-Winning Codes & Lifecycle
@@ -159,7 +158,9 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     );
     const isPaused = Boolean(row.is_paused);
     const pauseReason = row.pause_reason || '';
-    const lockedJackpot = row.locked_jackpot ? Number(row.locked_jackpot) : Number(row.pool_prize || 1000);
+    const lockedJackpot = jackpotMode === 'range'
+      ? (row.locked_jackpot !== null && row.locked_jackpot !== undefined ? Number(row.locked_jackpot) : null)
+      : (row.locked_jackpot !== null && row.locked_jackpot !== undefined ? Number(row.locked_jackpot) : Number(row.pool_prize || 0));
     const drawResultCodes = Array.isArray(row.draw_result_codes) && row.draw_result_codes.length > 0
       ? row.draw_result_codes
       : (row.winning_digits ? [row.winning_digits] : []);
@@ -178,8 +179,11 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       description: row.description || meta.description || '',
       currency,
       ticketPrice: Number(row.ticket_price || 10),
-      poolPrize: Number(row.pool_prize || 1000),
+      poolPrize: Number(row.pool_prize || 0),
       lockedJackpot,
+      grossTicketSales: Number(row.gross_ticket_sales || 0),
+      houseChargeCollected: Number(row.house_charge_collected || 0),
+      netPrizeFunding: Number(row.net_prize_funding || 0),
       durationValue,
       durationUnit,
       cooldownValue,
@@ -1124,7 +1128,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
             ticketsSold: Number(row.tickets_sold || 0),
             ticketPrice: Number(row.ticket_price || 0),
             totalPoolCollected: Number(row.total_pool_collected || 0),
-            winnerSharePercent: Number(row.winner_share_percent || 90),
+            winnerSharePercent: Number(row.winner_share_percent || 100),
             calculatedAmount: Number(row.calculated_amount || 0),
             payoutAmount: Number(row.payout_amount ?? row.calculated_amount ?? 0),
             maxAllowedAmount: row.max_allowed_amount != null ? Number(row.max_allowed_amount) : null,
@@ -1217,8 +1221,6 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     minWithdrawal: 5.0,
     maxWithdrawal: 10000.0,
     houseFeePercent: 5,
-    defaultWinnerSharePercent: 90,
-    treasuryTrc20: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m',
     supportEmail: 'earnflow.user@gmail.com',
     usernameChangeFee: 5.0,
     apkDownloadUrl: '/download/earnflow.apk',
@@ -1281,7 +1283,13 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   const [platformSettings, setPlatformSettings] = useState(() => {
     try {
       const saved = localStorage.getItem('lotto_platform_settings');
-      return saved ? { ...DEFAULT_PLATFORM_SETTINGS, ...JSON.parse(saved) } : DEFAULT_PLATFORM_SETTINGS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        delete parsed.treasuryTrc20;
+        delete parsed.defaultWinnerSharePercent;
+        return { ...DEFAULT_PLATFORM_SETTINGS, ...parsed };
+      }
+      return DEFAULT_PLATFORM_SETTINGS;
     } catch {
       return DEFAULT_PLATFORM_SETTINGS;
     }
@@ -1306,7 +1314,12 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           const globalRow = data.find((row: any) => row.key === 'global' && row.value);
           const refRow = data.find((row: any) => row.key === 'referral_settings' && row.value);
           if (globalRow) {
-            merged = { ...merged, ...globalRow.value };
+            const cleanGlobal = { ...globalRow.value };
+            delete cleanGlobal.treasuryTrc20;
+            delete cleanGlobal.defaultWinnerSharePercent;
+            merged = { ...merged, ...cleanGlobal };
+            delete merged.treasuryTrc20;
+            delete merged.defaultWinnerSharePercent;
           }
           data.forEach((row: any) => {
             if (row.key === 'results_retention' && row.value) {
@@ -1365,16 +1378,23 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         ? normalizeReferralSettings({ ...platformSettings.referralSettings, ...newSettings.referralSettings })
         : normalizeReferralSettings(platformSettings.referralSettings);
 
-      const updated = {
+      const parsedHouseFee = parseFloat(
+        newSettings.houseFeePercent !== undefined ? newSettings.houseFeePercent : platformSettings.houseFeePercent
+      );
+      if (!Number.isFinite(parsedHouseFee) || parsedHouseFee < 0 || parsedHouseFee > 30) {
+        const errMsg = 'Platform House Charge must be between 0% and 30%.';
+        showToast(errMsg, 'error');
+        return { success: false, error: errMsg };
+      }
+
+      const payload: any = {
         ...platformSettings,
         ...newSettings,
         supportedNetwork: 'TRC-20',
         supportedCurrency: 'USDT',
         minWithdrawal: parseFloat(newSettings.minWithdrawal !== undefined ? newSettings.minWithdrawal : platformSettings.minWithdrawal),
         maxWithdrawal: parseFloat(newSettings.maxWithdrawal !== undefined ? newSettings.maxWithdrawal : platformSettings.maxWithdrawal),
-        houseFeePercent: parseFloat(newSettings.houseFeePercent !== undefined ? newSettings.houseFeePercent : platformSettings.houseFeePercent),
-        defaultWinnerSharePercent: parseFloat(newSettings.defaultWinnerSharePercent !== undefined ? newSettings.defaultWinnerSharePercent : platformSettings.defaultWinnerSharePercent),
-        treasuryTrc20: (newSettings.treasuryTrc20 || platformSettings.treasuryTrc20).trim(),
+        houseFeePercent: parsedHouseFee,
         supportEmail: (newSettings.supportEmail || platformSettings.supportEmail).trim(),
         usernameChangeFee: parseFloat(newSettings.usernameChangeFee !== undefined ? newSettings.usernameChangeFee : (platformSettings.usernameChangeFee ?? 5.0)),
         apkDownloadUrl: (newSettings.apkDownloadUrl !== undefined ? newSettings.apkDownloadUrl : (platformSettings.apkDownloadUrl || '/download/earnflow.apk')).trim(),
@@ -1390,75 +1410,32 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         referralSettings: normalizedRefIfProvided,
         spinWheelSettings: newSettings.spinWheelSettings ? { ...platformSettings.spinWheelSettings, ...newSettings.spinWheelSettings } : platformSettings.spinWheelSettings
       };
+      delete payload.treasuryTrc20;
+      delete payload.defaultWinnerSharePercent;
 
-      // Optimistic update
+      // Authoritative Server-Side Validation & Persistence via RPC
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('admin_update_platform_settings_secure', {
+        p_payload: payload
+      });
+
+      if (rpcErr || !rpcRes?.success) {
+        const errMsg = rpcRes?.error || rpcErr?.message || 'Failed to update platform settings';
+        showToast(errMsg, 'error');
+        return { success: false, error: errMsg };
+      }
+
+      const updated = rpcRes.settings ? { ...payload, ...rpcRes.settings } : payload;
+      delete updated.treasuryTrc20;
+      delete updated.defaultWinnerSharePercent;
+
       setPlatformSettings(updated);
       localStorage.setItem('lotto_platform_settings', JSON.stringify(updated));
-
-      // Persist global settings
-      const { error: globalErr } = await supabase
-        .from('platform_settings')
-        .upsert({
-          key: 'global',
-          value: updated,
-          updated_at: new Date().toISOString()
-        });
-
-      if (globalErr) {
-        throw new Error(globalErr.message || 'Failed to update platform settings');
-      }
-
-      // Keep withdrawal_settings synchronized
-      await supabase
-        .from('platform_settings')
-        .upsert({
-          key: 'withdrawal_settings',
-          value: {
-            supportedNetwork: 'TRC-20',
-            supportedCurrency: 'USDT',
-            minWithdrawal: updated.minWithdrawal,
-            maxWithdrawal: updated.maxWithdrawal,
-            networkFee: 1.0
-          },
-          updated_at: new Date().toISOString()
-        });
-
-      // Persist results retention
-      if (newSettings.resultsRetentionHours !== undefined) {
-        const hours = Number(newSettings.resultsRetentionHours);
-        const { error: retentionErr } = await supabase
-          .from('platform_settings')
-          .upsert({
-            key: 'results_retention',
-            value: {
-              duration_hours: hours,
-              retention_duration_hours: hours,
-              default_option: hours >= 1 ? `${hours}_hour${hours === 1 ? '' : 's'}` : `${Math.round(hours * 60)}_min`,
-              label: `${hours} hour(s)`
-            },
-            updated_at: new Date().toISOString()
-          });
-        if (retentionErr) {
-          console.warn('Supabase results_retention upsert error:', retentionErr.message);
-        }
-      }
 
       // Persist referral settings atomically if included alongside general settings
       if (newSettings.referralSettings) {
         await supabase.rpc('admin_update_referral_settings_secure', {
           p_payload: newSettings.referralSettings
         });
-      }
-
-      // Persist spin wheel settings
-      if (newSettings.spinWheelSettings) {
-        await supabase
-          .from('platform_settings')
-          .upsert({
-            key: 'spin_wheel_settings',
-            value: updated.spinWheelSettings,
-            updated_at: new Date().toISOString()
-          });
       }
 
       const isRetentionOnly =
@@ -2524,8 +2501,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       connected: false,
       balance: 0,
       network: 'TRC-20',
-      lifetimeWon: 0,
-      depositAddress: 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m'
+      lifetimeWon: 0
     });
     try {
       localStorage.removeItem('lotto_wallet');
@@ -3304,7 +3280,11 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         return;
       }
       await fetchWithdrawals();
-      showToast(`Withdrawal #${orderId} approved and disbursed! TxHash: ${String(rpcRes.tx_hash || '').slice(0, 10)}...`);
+      showToast(
+        rpcRes.tx_hash
+          ? `Withdrawal #${orderId} approved! TxHash: ${String(rpcRes.tx_hash).slice(0, 12)}...`
+          : `Withdrawal #${orderId} marked as completed.`
+      );
     } catch (err: any) {
       console.error('Supabase approval error:', err);
       showToast('Withdrawal approval failed: ' + err.message, 'error');
@@ -3471,31 +3451,40 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       const currency = 'USDT';
       const ticketPrice = parseFloat(eventData.ticketPrice || 10);
 
-      // Jackpot Configuration (Part 1 - Manual vs Random determination)
-      const jackpotMode = eventData.jackpotMode || 'fixed';
-      const minJackpot = eventData.minJackpot ? parseFloat(eventData.minJackpot) : null;
-      const maxJackpot = eventData.maxJackpot ? parseFloat(eventData.maxJackpot) : null;
-      const jackpotSelectionMethod = eventData.jackpotSelectionMethod || 'manual';
+      // Jackpot Configuration (Fixed Jackpot vs Jackpot Range)
+      const jackpotMode = eventData.jackpotMode === 'range' ? 'range' : 'fixed';
+      const minJackpot = jackpotMode === 'range' && eventData.minJackpot ? parseFloat(eventData.minJackpot) : null;
+      const maxJackpot = jackpotMode === 'range' && eventData.maxJackpot ? parseFloat(eventData.maxJackpot) : null;
+      const jackpotSelectionMethod = eventData.jackpotSelectionMethod === 'random' ? 'random' : 'manual';
 
-      let poolPrize = 1000;
-      let lockedJackpot = 1000;
+      let poolPrize = 0;
+      let lockedJackpot: number | null = null;
 
       if (jackpotMode === 'fixed') {
-        poolPrize = parseFloat(eventData.fixedJackpot || eventData.poolPrize || eventData.initialJackpot || 1000);
+        const fixedAmt = parseFloat(eventData.fixedJackpot ?? eventData.poolPrize ?? eventData.initialJackpot ?? 0);
+        if (!Number.isFinite(fixedAmt) || fixedAmt <= 0) {
+          showToast('Fixed Jackpot amount must be greater than 0 USDT.', 'error');
+          return { success: false, error: 'Fixed Jackpot amount must be greater than 0 USDT.' };
+        }
+        poolPrize = Math.round(fixedAmt * 100) / 100;
         lockedJackpot = poolPrize;
-      } else if (jackpotMode === 'range') {
-        const floor = minJackpot || 500;
-        const ceiling = maxJackpot || 2500;
+      } else {
+        const floor = minJackpot ?? 0;
+        const ceiling = maxJackpot ?? 0;
+        if (!Number.isFinite(floor) || !Number.isFinite(ceiling) || floor <= 0 || ceiling < floor) {
+          showToast('Jackpot Range requires valid Min and Max amounts (Max >= Min > 0).', 'error');
+          return { success: false, error: 'Invalid Jackpot Range bounds.' };
+        }
         if (jackpotSelectionMethod === 'manual') {
-          // Manual: Admin enters exact jackpot within range
-          const selected = parseFloat(eventData.selectedJackpot || eventData.poolPrize || floor);
-          poolPrize = Math.max(floor, Math.min(ceiling, selected));
+          const selected = parseFloat(eventData.selectedJackpotAmount ?? eventData.selectedJackpot ?? eventData.poolPrize ?? floor);
+          const clamped = Math.max(floor, Math.min(ceiling, Number.isFinite(selected) ? selected : floor));
+          poolPrize = Math.round(clamped * 100) / 100;
           lockedJackpot = poolPrize;
         } else {
-          // Random: Backend determines jackpot within range
-          const rnd = floor + Math.random() * (ceiling - floor);
-          poolPrize = Math.round(rnd * 100) / 100;
-          lockedJackpot = poolPrize;
+          // Random RNG Determination: server determines final prize within [floor, ceiling] at finalization
+          // Never display a premature single guaranteed amount while active
+          poolPrize = Math.round(floor * 100) / 100;
+          lockedJackpot = null;
         }
       }
 
@@ -3526,8 +3515,8 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       const winningCodeCount = winnerMode === 'single' ? 1 : Math.max(1, parseInt(eventData.winningCodeCount || (winningCodes.length > 0 ? winningCodes.length : eventData.winnerCount) || 1, 10));
       const presetDigits = winningCodes.length > 0 ? winningCodes[0] : null;
 
-      // Payout Distribution (Part 5)
-      const winnerPayoutSharePercent = parseFloat(eventData.winnerPayoutSharePercent || eventData.winnerSharePercent || 90);
+      // Winner Position Distribution (100% of event's configured prize)
+      const winnerPayoutSharePercent = 100;
       let winnerDistribution = Array.isArray(eventData.winnerDistribution) && eventData.winnerDistribution.length > 0
         ? eventData.winnerDistribution
         : [{ position: 1, percent: 100 }];
@@ -3689,7 +3678,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
       const winnerMode = configData.winnerMode || event.winnerMode || 'single';
       const drawMode = configData.drawMode || event.drawMode || 'preset';
-      const winnerPayoutSharePercent = parseFloat(configData.winnerPayoutSharePercent || event.winnerPayoutSharePercent || 90);
+      const winnerPayoutSharePercent = 100;
 
       let winningCodes: string[] = [];
       if (Array.isArray(configData.winningCodes)) {

@@ -270,7 +270,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
   const [eventWinningDigits, setEventWinningDigits] = useState('7429');
   const [eventBadge, setEventBadge] = useState('VIP DRAW');
   const [eventBannerImage, setEventBannerImage] = useState(''); // Empty by default
-  const [eventWinnerSharePercent, setEventWinnerSharePercent] = useState('90');
   const [eventWinnerCount, setEventWinnerCount] = useState('1');
 
   // Handle local banner file upload from device
@@ -313,8 +312,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
   const [minWithdrawal, setMinWithdrawal] = useState(() => String(platformSettings?.minWithdrawal ?? '5.00'));
   const [maxWithdrawal, setMaxWithdrawal] = useState(() => String(platformSettings?.maxWithdrawal ?? '10000.00'));
   const [houseFeePercent, setHouseFeePercent] = useState(() => String(platformSettings?.houseFeePercent ?? '5'));
-  const [defaultWinnerSharePercent, setDefaultWinnerSharePercent] = useState(() => String(platformSettings?.defaultWinnerSharePercent ?? '90'));
-  const [treasuryTrc20, setTreasuryTrc20] = useState(() => platformSettings?.treasuryTrc20 || 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m');
   const [supportEmail, setSupportEmail] = useState(() => platformSettings?.supportEmail || 'earnflow.user@gmail.com');
   const [usernameChangeFee, setUsernameChangeFee] = useState(() => String(platformSettings?.usernameChangeFee ?? '5.00'));
   const [apkDownloadUrl, setApkDownloadUrl] = useState(() => platformSettings?.apkDownloadUrl || '/download/earnflow.apk');
@@ -327,8 +324,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       setMinWithdrawal(String(platformSettings.minWithdrawal ?? '5.00'));
       setMaxWithdrawal(String(platformSettings.maxWithdrawal ?? '10000.00'));
       setHouseFeePercent(String(platformSettings.houseFeePercent ?? '5'));
-      setDefaultWinnerSharePercent(String(platformSettings.defaultWinnerSharePercent ?? '90'));
-      setTreasuryTrc20(platformSettings.treasuryTrc20 || 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m');
       setSupportEmail(platformSettings.supportEmail || 'earnflow.user@gmail.com');
       setUsernameChangeFee(String(platformSettings.usernameChangeFee ?? '5.00'));
       setApkDownloadUrl(platformSettings.apkDownloadUrl || '/download/earnflow.apk');
@@ -382,7 +377,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       theme: 'custom',
       badge: eventBadge?.trim() || 'VIP DRAW',
       bannerImage: eventBannerImage ? eventBannerImage.trim() : '',
-      winnerSharePercent: eventWinnerSharePercent,
       winnerCount: parseInt(eventWinnerCount || '1', 10)
     });
     setEventTitle('');
@@ -450,8 +444,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
         minWithdrawal,
         maxWithdrawal,
         houseFeePercent,
-        defaultWinnerSharePercent,
-        treasuryTrc20,
         supportEmail,
         usernameChangeFee,
         apkDownloadUrl
@@ -1120,8 +1112,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
             eventBannerImage={eventBannerImage}
             setEventBannerImage={setEventBannerImage}
             handleBannerFileUpload={handleBannerFileUpload}
-            eventWinnerSharePercent={eventWinnerSharePercent}
-            setEventWinnerSharePercent={setEventWinnerSharePercent}
             eventWinnerCount={eventWinnerCount}
             setEventWinnerCount={setEventWinnerCount}
             handleCreateSubmit={handleCreateSubmit}
@@ -1217,7 +1207,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                             <td className="py-3.5 px-4">
                               <div className="flex items-center gap-1.5">
                                 <span className="font-mono-numbers text-xs text-[#e1e2eb]">
-                                  {order.address || order.destination_address || 'TYv7s8K3eL2QpNm4xW9jRtZbCuYxK9m'}
+                                  {order.address || order.destination_address || '—'}
                                 </span>
                                 <button
                                   onClick={() => handleCopy(order.address || order.destination_address, order.id)}
@@ -1468,10 +1458,10 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-display font-bold text-sm sm:text-base text-white">
-                    Platform Governance &amp; Treasury Settings
+                    Platform Governance &amp; Financial Settings
                   </h3>
                   <p className="text-xs text-[#9b8f7c] mt-0.5 leading-relaxed">
-                    Configure global withdrawal thresholds, house fees, and official TRC-20 disbursement wallets.
+                    Configure global withdrawal limits, server-side Platform House Charge percentage, and user portal settings.
                   </p>
                 </div>
               </div>
@@ -1530,7 +1520,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-1.5">
                         <label className="text-xs text-[#e1e2eb] font-semibold">
-                          Platform House Charge / Fee (%)
+                          Platform House Charge (%)
                         </label>
                         <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold shrink-0">
                           House Fee
@@ -1538,8 +1528,10 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                       </div>
                       <input
                         type="number"
-                        min="1"
-                        max="20"
+                        min="0"
+                        max="30"
+                        step="0.1"
+                        data-testid="platform-house-charge-input"
                         value={houseFeePercent}
                         onChange={(e) => setHouseFeePercent(e.target.value)}
                         className="w-full min-w-0 bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
@@ -1547,32 +1539,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                       />
                     </div>
                     <p className="text-[11px] text-[#05d5aa]/90 leading-relaxed">
-                      Deducted automatically during settlement to fund oracle and operational infrastructure.
-                    </p>
-                  </div>
-
-                  <div className="bg-[#07090d] p-3.5 sm:p-4 rounded-xl border border-[#1f2737] flex flex-col justify-between gap-2 min-w-0">
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-1.5">
-                        <label className="text-xs text-[#e1e2eb] font-semibold">
-                          Default Winner Pool Share (%)
-                        </label>
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold shrink-0">
-                          Winner Share
-                        </span>
-                      </div>
-                      <input
-                        type="number"
-                        min="10"
-                        max="100"
-                        value={defaultWinnerSharePercent}
-                        onChange={(e) => setDefaultWinnerSharePercent(e.target.value)}
-                        className="w-full min-w-0 bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
-                        required
-                      />
-                    </div>
-                    <p className="text-[11px] text-[#9b8f7c] leading-relaxed">
-                      Percentage of total ticket pool disbursed to the verified winning combination.
+                      Server-side commission percentage deducted from gross ticket sales on every new ticket purchase (0%–30%).
                     </p>
                   </div>
 
@@ -1623,28 +1590,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                       Displayed across Contact Us, Terms &amp; Conditions, and Privacy Policy pages.
                     </p>
                   </div>
-                </div>
-
-                {/* Master Treasury TRC-20 Address */}
-                <div className="bg-[#07090d] p-3.5 sm:p-4 rounded-xl border border-[#1f2737] space-y-2">
-                  <div className="flex flex-wrap items-center justify-between gap-1.5">
-                    <label className="text-xs text-[#e1e2eb] font-semibold">
-                      Master Treasury TRC-20 Address (Disbursement Hot Wallet)
-                    </label>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold shrink-0">
-                      TRON Network
-                    </span>
-                  </div>
-                  <input
-                    type="text"
-                    value={treasuryTrc20}
-                    onChange={(e) => setTreasuryTrc20(e.target.value)}
-                    className="w-full min-w-0 bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-xl px-3 py-2 text-xs text-white font-mono-numbers outline-none"
-                    required
-                  />
-                  <p className="text-[11px] text-[#8b92a2] leading-relaxed">
-                    All automated 24h withdrawals are signed and broadcast from this TRON smart contract address.
-                  </p>
                 </div>
 
                 {/* Android APK Download URL Settings */}
