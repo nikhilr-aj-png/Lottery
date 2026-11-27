@@ -32,15 +32,15 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
   return (
     <footer
       data-testid="site-footer"
-      className="shrink-0 w-full mt-auto border-t border-[#1F2737] bg-[#07090D] text-left pt-4 sm:pt-6 pb-20 md:pb-6 px-3 xs:px-4 sm:px-6 lg:px-8 select-none box-border"
+      className="shrink-0 w-full mt-auto border-t border-[#1F2737] bg-[#07090D] text-left pt-5 sm:pt-6 pb-24 sm:pb-28 lg:pb-28 px-3 xs:px-4 sm:px-6 lg:px-8 select-none box-border overflow-visible relative z-10"
     >
-      <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto space-y-3.5 sm:space-y-5">
+      <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto space-y-4 sm:space-y-5">
         
         {/* 1. MAIN FOOTER GRID */}
-        <div className="grid grid-cols-2 lg:grid-cols-12 gap-x-3 gap-y-4 xs:gap-x-4 sm:gap-5 pb-4 sm:pb-5 border-b border-[#1F2737]">
+        <div className="grid grid-cols-2 md:grid-cols-12 gap-x-3 gap-y-5 xs:gap-x-4 md:gap-5 pb-4 sm:pb-5 border-b border-[#1F2737]">
           
           {/* Column 1: Brand & Overview */}
-          <div className={`col-span-2 ${showAppSection ? 'lg:col-span-3 xl:col-span-4' : 'lg:col-span-6 xl:col-span-5'} space-y-2.5 sm:space-y-3.5 min-w-0`}>
+          <div className={`col-span-2 ${showAppSection ? 'md:col-span-5 lg:col-span-4 xl:col-span-4' : 'md:col-span-6 lg:col-span-6 xl:col-span-5'} space-y-2.5 sm:space-y-3 min-w-0`}>
             <div 
               onClick={onGoHome}
               className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group select-none inline-flex"
@@ -58,25 +58,25 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
               </span>
             </div>
 
-            <p className="text-[11px] xs:text-xs text-[#94A3B8] leading-relaxed max-w-md">
+            <p className="text-[11px] xs:text-xs text-[#94A3B8] leading-relaxed max-w-md break-words">
               EarnFlow.in is an online Four-Digit Lottery platform offering transparent 0000–9999 lucky draws with instant USDT (TRC-20) wallet settlements and 24-hour payouts.
             </p>
 
             <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono-numbers text-[#94A3B8] pt-0.5">
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold text-[10px]">
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold text-[10px] whitespace-nowrap">
                 USDT TRC-20
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold text-[10px]">
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold text-[10px] whitespace-nowrap">
                 18+ Players Only
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold text-[10px]">
+              <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold text-[10px] whitespace-nowrap">
                 95.0% RTP
               </span>
             </div>
           </div>
 
-          {/* Row 1 Left on Mobile (50%) | Col 2 on Desktop: Information Pages */}
-          <div data-testid="footer-col-info" className="col-span-1 lg:col-span-3 space-y-2 sm:space-y-2.5 min-w-0">
+          {/* Column 2: Information Pages */}
+          <div data-testid="footer-col-info" className={`col-span-1 ${showAppSection ? 'md:col-span-3 lg:col-span-3' : 'md:col-span-3 lg:col-span-3'} space-y-2 sm:space-y-2.5 min-w-0`}>
             <h4 className="font-display font-bold text-[11px] xs:text-xs uppercase tracking-wider text-white">
               Information
             </h4>
@@ -111,8 +111,8 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
             </ul>
           </div>
 
-          {/* Row 1 Right on Mobile (50%) | Col 3 on Desktop: Support & Legal */}
-          <div data-testid="footer-col-legal" className={`col-span-1 ${showAppSection ? 'lg:col-span-3' : 'lg:col-span-3 xl:col-span-4'} space-y-2 sm:space-y-2.5 min-w-0`}>
+          {/* Column 3: Support & Legal */}
+          <div data-testid="footer-col-legal" className={`col-span-1 ${showAppSection ? 'md:col-span-4 lg:col-span-2 xl:col-span-3' : 'md:col-span-3 lg:col-span-3 xl:col-span-4'} space-y-2 sm:space-y-2.5 min-w-0`}>
             <h4 className="font-display font-bold text-[11px] xs:text-xs uppercase tracking-wider text-white">
               Support &amp; Legal
             </h4>
@@ -156,21 +156,21 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
             </ul>
           </div>
 
-          {/* Row 2 & Row 3 on Mobile (Centered + 50/50 Buttons) | Col 4 on Desktop: App & Mobile */}
+          {/* Column 4: App & Mobile (Full compact bar on mobile/tablet, dedicated column on laptop/desktop) */}
           {showAppSection && (
-            <div data-testid="footer-col-app" className="col-span-2 lg:col-span-3 xl:col-span-2 space-y-2.5 pt-1 lg:pt-0 text-center lg:text-left min-w-0">
+            <div data-testid="footer-col-app" className="col-span-2 md:col-span-12 lg:col-span-3 xl:col-span-2 space-y-2.5 md:space-y-0 lg:space-y-2.5 pt-1 md:pt-3 lg:pt-0 border-t border-[#1F2737]/70 lg:border-t-0 md:flex md:items-center md:justify-between lg:block text-center md:text-left min-w-0 gap-4">
               <div className="space-y-1">
                 <h4 className="font-display font-bold text-xs uppercase tracking-wider text-white">
                   App &amp; Mobile
                 </h4>
-                <p className="text-[11px] text-[#94A3B8] leading-snug max-w-xs mx-auto lg:mx-0">
+                <p className="text-[11px] text-[#94A3B8] leading-snug max-w-xs mx-auto md:mx-0">
                   Play in full-screen with instant one-tap draws.
                 </p>
               </div>
 
               <div
                 data-testid="footer-app-buttons"
-                className={`grid ${apkDirectDownloadUrl ? 'grid-cols-2' : 'grid-cols-1 max-w-[200px]'} lg:grid-cols-1 gap-2 xs:gap-2.5 pt-0.5 max-w-md mx-auto lg:mx-0 w-full`}
+                className={`grid ${apkDirectDownloadUrl ? 'grid-cols-2' : 'grid-cols-1 max-w-[200px]'} md:flex md:items-center lg:grid lg:grid-cols-1 gap-2 xs:gap-2.5 pt-0.5 md:pt-0 max-w-md md:max-w-none mx-auto md:mx-0 w-full md:w-auto lg:w-full shrink-0`}
               >
                 {apkDirectDownloadUrl && (
                   <a
@@ -178,7 +178,7 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
                     download="earnflow.apk"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full min-h-[38px] inline-flex items-center justify-center gap-1.5 px-2 xs:px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 active:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 text-[11px] xs:text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+                    className="w-full md:w-auto lg:w-full min-h-[38px] inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 active:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 text-[11px] xs:text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
                     title="Direct Android APK Download"
                   >
                     <Download className="w-3.5 h-3.5 shrink-0" />
@@ -188,7 +188,7 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
                 <button
                   type="button"
                   onClick={triggerInstall}
-                  className="w-full min-h-[38px] inline-flex items-center justify-center gap-1.5 px-2 xs:px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 active:bg-amber-500/30 border border-amber-500/30 text-amber-300 text-[11px] xs:text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+                  className="w-full md:w-auto lg:w-full min-h-[38px] inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 active:bg-amber-500/30 border border-amber-500/30 text-amber-300 text-[11px] xs:text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
                   title="Install EarnFlow Web App (PWA)"
                 >
                   <Smartphone className="w-3.5 h-3.5 shrink-0" />
@@ -201,11 +201,14 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
         </div>
 
         {/* 2. COPYRIGHT & COMPLIANCE BAR */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left text-[11px] text-[#94A3B8]">
-          <div>
+        <div
+          data-testid="footer-copyright-bar"
+          className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-2 text-center sm:text-left text-[11px] text-[#94A3B8]"
+        >
+          <div className="break-words">
             © 2026 EarnFlow.in. All rights reserved. Online Four-Digit Lottery Platform.
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center justify-center gap-2 shrink-0">
             <span>18+ Play Responsibly</span>
             <span>•</span>
             <span>USDT TRC-20 Settlements</span>

@@ -25,7 +25,10 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
     setActiveTab,
     platformSettings,
     requireAuth,
-    user
+    user,
+    getServerNowMs,
+    verifyRoomEntry,
+    showToast
   } = useLottery();
   const [selectedResultEvent, setSelectedResultEvent] = useState<any>(null);
 
@@ -40,20 +43,22 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1.0;
   }, [platformSettings?.resultsRetentionHours, platformSettings?.resultsRetention]);
 
-  // 1. Available Pool: Active and scheduled events (LIVE event first)
+  // 1. Available Pool: ONLY active & upcoming events still within their valid availability window (LIVE event first)
   const availableEvents = useMemo(() => {
+    const serverNow = getServerNowMs ? getServerNowMs() : Date.now();
     const list = (events || []).filter((e: any) => {
-      if (e.status === 'deleted' || e.is_deleted) return false;
-      if (e.status === 'completed' || Boolean(e.winningDigits)) return false;
-      return true;
+      const info = getEventStatusInfo(e, undefined, serverNow);
+      return !info.isEnd;
     });
 
     return list.sort((a: any, b: any) => {
-      if (a.status === 'active' && b.status !== 'active') return -1;
-      if (b.status === 'active' && a.status !== 'active') return 1;
+      const aInfo = getEventStatusInfo(a, undefined, serverNow);
+      const bInfo = getEventStatusInfo(b, undefined, serverNow);
+      if (!aInfo.isUpcoming && bInfo.isUpcoming) return -1;
+      if (aInfo.isUpcoming && !bInfo.isUpcoming) return 1;
       return (a.drawTime || 0) - (b.drawTime || 0);
     });
-  }, [events]);
+  }, [events, getServerNowMs]);
 
   // Primary Live Event for Hero metadata & top jackpot lookup
   const primaryLiveEvent = useMemo(() => {
@@ -96,8 +101,8 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
       .sort((a: any, b: any) => (b.drawTime || 0) - (a.drawTime || 0));
   }, [events, retentionHours]);
 
-  // Single-action Direct Room Entry (Protected: Login required)
-  const handleDirectEnterRoom = (eventOrId?: any) => {
+  // Single-action Direct Room Entry (Protected: Login + Authoritative Server Active Check)
+  const handleDirectEnterRoom = async (eventOrId?: any) => {
     const targetId =
       typeof eventOrId === 'string'
         ? eventOrId
@@ -106,6 +111,14 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
     const roomId = targetId && targetId !== 'lottery' && targetId !== 'four-digit-lottery' ? targetId : null;
     if (!requireAuth({ type: 'game', gameSlug: 'four-digit-lottery', roomId }, 'Please log in to enter the Live Draw Room.')) {
       return;
+    }
+
+    if (roomId && verifyRoomEntry) {
+      const check = await verifyRoomEntry(roomId);
+      if (!check?.allowed) {
+        showToast?.(check?.message || 'This event has expired. Room entry is no longer available.', 'error');
+        return;
+      }
     }
 
     if (onLaunchGame) {

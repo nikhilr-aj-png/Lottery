@@ -652,8 +652,11 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
               </button>
 
               <button
+                type="button"
+                data-testid="profile-quick-my-tickets"
                 onClick={() => {
                   setActiveTab('tickets');
+                  try { window.history.pushState(null, '', '/my-tickets'); } catch {}
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="p-3 rounded-xl bg-[#141924] hover:bg-[#1a2130] border border-[#272a31] hover:border-[#ffd700]/30 transition-all text-left flex flex-col justify-between cursor-pointer group"

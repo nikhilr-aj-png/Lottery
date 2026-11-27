@@ -1,266 +1,329 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  History,
+  AlertCircle,
   ArrowDownLeft,
+  ArrowLeft,
   ArrowUpRight,
-  Coins,
-  RefreshCw,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  ExternalLink,
   Check,
-  FileCheck,
-  Search,
+  Clock,
+  Copy,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  History,
   Lock,
-  LogIn
+  RefreshCw,
+  Search,
+  Sparkles,
+  Wallet,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useLottery } from '../context/LotteryContext';
 import WithdrawalProofModal from '../components/WithdrawalProofModal';
+import {
+  formatCompactTxId,
+  formatTransactionStatusMeta,
+  formatTransactionTimestamp,
+  formatTransactionTypeLabel,
+  getTransactionTypeMeta,
+} from '../utils/transactionFormatters';
 
-export interface TransactionHistoryPageProps {
+export { formatTransactionTypeLabel, getTransactionTypeMeta };
+
+interface TransactionHistoryPageProps {
   onBackToWallet?: () => void;
   onBackToHome?: () => void;
 }
 
-const TRANSACTION_TYPE_MAP: Record<string, { label: string; bg: string }> = {
-  welcome_grant: {
-    label: 'Welcome Bonus',
-    bg: 'bg-purple-500/15 text-purple-300 border-purple-500/30'
-  },
-  daily_reward: {
-    label: 'Daily Reward',
-    bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-  },
-  daily_bonus: {
-    label: 'Daily Reward',
-    bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-  },
-  lucky_wheel_spin: {
-    label: 'Lucky Wheel Spin',
-    bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-  },
-  lottery_win: {
-    label: 'Lottery Win',
-    bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-  },
-  game_win: {
-    label: 'Game Win',
-    bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-  },
-  monthly_leaderboard_reward: {
-    label: 'Leaderboard Prize',
-    bg: 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-  },
-  referral_reward: {
-    label: 'Referral Reward',
-    bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-  },
-  referral_registration_reward: {
-    label: 'Registration Bonus',
-    bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-  },
-  referral_commission: {
-    label: 'Referral Commission',
-    bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-  },
-  deposit: {
-    label: 'Deposit',
-    bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-  },
-  crypto_deposit: {
-    label: 'Crypto Deposit',
-    bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-  },
-  withdrawal: {
-    label: 'Withdrawal',
-    bg: 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-  },
-  withdrawal_request: {
-    label: 'Withdrawal Request',
-    bg: 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-  },
-  withdrawal_refund: {
-    label: 'Withdrawal Refund',
-    bg: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-  },
-  ticket_purchase: {
-    label: 'Ticket Purchase',
-    bg: 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-  },
-  game_bet: {
-    label: 'Game Wager',
-    bg: 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-  },
-  admin_adjustment: {
-    label: 'Admin Grant',
-    bg: 'bg-blue-500/15 text-blue-300 border-blue-500/30'
-  }
-};
+type HistoryTab = 'all' | 'deposits' | 'withdrawals';
+type DepositFilter = 'all' | 'completed' | 'waiting' | 'expired';
 
-export function formatTransactionTypeLabel(rawType?: string | null): string {
-  const normalized = String(rawType || '').trim().toLowerCase();
-  if (!normalized) return 'Transaction';
-  if (TRANSACTION_TYPE_MAP[normalized]) {
-    return TRANSACTION_TYPE_MAP[normalized].label;
-  }
-  return normalized
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .split(' ')
-    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : ''))
-    .join(' ');
+const PAGE_SIZE = 12;
+
+interface TxIdBadgeProps {
+  txId: string;
+  compactChars?: number;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  copied: boolean;
+  onCopy: () => void;
 }
 
-export function getTransactionTypeMeta(rawType?: string | null): { label: string; bg: string } {
-  const normalized = String(rawType || '').trim().toLowerCase();
-  if (TRANSACTION_TYPE_MAP[normalized]) {
-    return TRANSACTION_TYPE_MAP[normalized];
-  }
-  return {
-    label: formatTransactionTypeLabel(rawType),
-    bg: 'bg-white/10 text-white/85 border-white/20'
-  };
+function TxIdControl({
+  txId,
+  compactChars = 6,
+  expanded,
+  onToggleExpand,
+  copied,
+  onCopy,
+}: TxIdBadgeProps) {
+  const cleanId = String(txId || '').trim();
+  const isTruncated = cleanId.length > compactChars + 7;
+
+  return (
+    <div className="inline-flex items-center gap-1.5 min-w-0 max-w-full">
+      <span
+        className="font-mono text-xs text-slate-200 bg-slate-900/90 border border-white/10 rounded-lg px-2 py-1 tracking-tight truncate max-w-[140px] sm:max-w-[165px]"
+        title={cleanId}
+      >
+        {formatCompactTxId(cleanId, compactChars, 4)}
+      </span>
+      <button
+        type="button"
+        onClick={onCopy}
+        aria-label={copied ? 'Copied TX ID' : 'Copy full TX ID'}
+        title={copied ? 'Copied!' : 'Copy full TX ID'}
+        className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border transition-colors shrink-0 ${
+          copied
+            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+            : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/25'
+        }`}
+      >
+        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+      </button>
+      {isTruncated && (
+        <button
+          type="button"
+          onClick={onToggleExpand}
+          aria-label={expanded ? 'Hide full TX ID' : 'View full TX ID'}
+          title={expanded ? 'Hide full TX ID' : 'View full TX ID'}
+          className={`inline-flex items-center justify-center h-7 w-7 rounded-lg border transition-colors shrink-0 ${
+            expanded
+              ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+              : 'bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/25'
+          }`}
+        >
+          {expanded ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+        </button>
+      )}
+    </div>
+  );
 }
 
-export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }: TransactionHistoryPageProps) {
-  const { 
+export default function TransactionHistoryPage({
+  onBackToWallet,
+  onBackToHome,
+}: TransactionHistoryPageProps) {
+  const {
     wallet,
     user,
     setIsAuthModalOpen,
-    withdrawals = [], 
-    deposits = [], 
-    loadingDeposits, 
-    fetchDeposits, 
-    cancelDeposit, 
-    walletLedger = [], 
-    loadingLedger, 
+    withdrawals = [],
+    deposits = [],
+    loadingDeposits,
+    fetchDeposits,
+    cancelDeposit,
+    walletLedger = [],
+    loadingLedger,
     fetchWalletLedger,
     fetchWithdrawals,
-    setActiveTab
+    setActiveTab,
   } = useLottery();
 
-  const [activeHistoryTab, setActiveHistoryTab] = useState('all'); // 'all' | 'deposits' | 'withdrawals'
-  const [depositFilter, setDepositFilter] = useState('all'); // 'all' | 'completed' | 'waiting' | 'expired'
+  const [activeSubTab, setActiveSubTab] = useState<HistoryTab>('all');
+  const [depositFilter, setDepositFilter] = useState<DepositFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProofOrder, setSelectedProofOrder] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [now, setNow] = useState(Date.now());
+  const [selectedProofOrder, setSelectedProofOrder] = useState<any | null>(null);
+  const [copiedIdKey, setCopiedIdKey] = useState<string | null>(null);
+  const [expandedIdKeys, setExpandedIdKeys] = useState<Record<string, boolean>>({});
 
-  // Page title sync
   useEffect(() => {
-    document.title = 'Transaction History · EarnFlow.in';
+    const timer = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(timer);
   }, []);
-
-  // 1-second interval to update live countdown timers
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setNow(Date.now());
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Fetch latest ledger, deposits, and withdrawals on mount
-  useEffect(() => {
-    if (user) {
-      if (fetchWalletLedger) fetchWalletLedger();
-      if (fetchDeposits) fetchDeposits();
-      if (fetchWithdrawals) fetchWithdrawals();
-    }
-  }, [user]);
 
   const handleRefresh = async () => {
+    if (isRefreshing || !user) return;
     setIsRefreshing(true);
     try {
-      await Promise.allSettled([
-        fetchWalletLedger ? fetchWalletLedger() : Promise.resolve(),
-        fetchDeposits ? fetchDeposits() : Promise.resolve(),
-        fetchWithdrawals ? fetchWithdrawals() : Promise.resolve()
+      await Promise.all([
+        fetchWalletLedger?.(),
+        fetchDeposits?.(),
+        fetchWithdrawals?.(),
       ]);
     } finally {
-      setIsRefreshing(false);
+      setTimeout(() => setIsRefreshing(false), 350);
     }
   };
 
-  const formatSLATime = (targetMs) => {
-    if (!targetMs) return '24h window';
-    const diff = Math.max(0, targetMs - now);
-    const h = Math.floor(diff / (1000 * 60 * 60));
-    const m = Math.floor((diff / (1000 * 60)) % 60);
-    const s = Math.floor((diff / 1000) % 60);
-    return `${h}h ${m}m ${s}s remaining`;
+  const handleBack = () => {
+    if (onBackToWallet) {
+      onBackToWallet();
+      return;
+    }
+    if (onBackToHome) {
+      onBackToHome();
+      return;
+    }
+    setActiveTab?.('wallet');
   };
 
-  // Filtered ledger records for 'All' tab (supports both raw type & formatted label searches)
-  const filteredLedger = walletLedger.filter(tx => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    const formattedType = formatTransactionTypeLabel(tx.transaction_type).toLowerCase();
-    return (
-      (tx.id && String(tx.id).toLowerCase().includes(q)) ||
-      (tx.transaction_type && tx.transaction_type.toLowerCase().includes(q)) ||
-      formattedType.includes(q) ||
-      (tx.description && tx.description.toLowerCase().includes(q)) ||
-      (tx.reference_id && tx.reference_id.toLowerCase().includes(q))
-    );
-  });
+  const handleCopyTxId = async (rowKey: string, txId: string) => {
+    const clean = String(txId || '').trim();
+    if (!clean) return;
+    try {
+      await navigator.clipboard.writeText(clean);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = clean;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+    setCopiedIdKey(rowKey);
+    setTimeout(() => {
+      setCopiedIdKey((prev) => (prev === rowKey ? null : prev));
+    }, 1800);
+  };
 
-  // Filtered deposits for 'Deposit Orders' tab
-  const filteredDeposits = deposits.filter(d => {
-    const matchesSearch = !searchQuery.trim() || (
-      (d.id && String(d.id).toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (d.invoice_id && String(d.invoice_id).toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (d.pay_currency && d.pay_currency.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-    if (!matchesSearch) return false;
+  const toggleExpandId = (rowKey: string) => {
+    setExpandedIdKeys((prev) => ({
+      ...prev,
+      [rowKey]: !prev[rowKey],
+    }));
+  };
 
-    if (depositFilter === 'all') return true;
-    const isFin = d.status === 'finished' || d.status === 'confirmed';
-    if (depositFilter === 'completed') return isFin;
-    const createdAt = d.created_at ? new Date(d.created_at).getTime() : now;
-    const isWait = d.status === 'waiting' && (now - createdAt <= 15 * 60 * 1000);
-    if (depositFilter === 'waiting') return isWait;
-    if (depositFilter === 'expired') return !isFin && !isWait;
-    return true;
-  });
+  const normalizedQuery = searchQuery.trim().toLowerCase();
 
-  // Filtered withdrawals for 'Withdrawal Orders' tab
-  const filteredWithdrawals = withdrawals.filter(w => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      (w.id && String(w.id).toLowerCase().includes(q)) ||
-      (w.address && w.address.toLowerCase().includes(q)) ||
-      (w.network && w.network.toLowerCase().includes(q))
-    );
-  });
+  // Filter All Ledger transactions using TX ID and both raw + formatted Transaction Type
+  const filteredLedger = useMemo(() => {
+    if (!normalizedQuery) return walletLedger;
+    return walletLedger.filter((tx: any) => {
+      const idStr = String(tx.id || '').toLowerCase();
+      const rawType = String(tx.transaction_type || '').toLowerCase();
+      const formattedType = formatTransactionTypeLabel(tx.transaction_type).toLowerCase();
+      return (
+        idStr.includes(normalizedQuery) ||
+        rawType.includes(normalizedQuery) ||
+        formattedType.includes(normalizedQuery)
+      );
+    });
+  }, [walletLedger, normalizedQuery]);
 
-  // Unauthenticated visitors prompt
+  // Filter Deposits
+  const filteredDeposits = useMemo(() => {
+    return deposits.filter((dep: any) => {
+      const createdAtMs = dep.created_at ? new Date(dep.created_at).getTime() : 0;
+      const isTimedOut =
+        dep.status === 'waiting' && createdAtMs > 0 && nowMs - createdAtMs >= 15 * 60 * 1000;
+      const effectiveStatus = isTimedOut ? 'expired' : String(dep.status || '').toLowerCase();
+
+      if (depositFilter === 'completed') {
+        if (!['finished', 'confirmed', 'completed'].includes(effectiveStatus)) return false;
+      } else if (depositFilter === 'waiting') {
+        if (!['waiting', 'confirming', 'sending', 'partially_paid'].includes(effectiveStatus)) {
+          return false;
+        }
+      } else if (depositFilter === 'expired') {
+        if (!['expired', 'failed', 'refunded'].includes(effectiveStatus)) return false;
+      }
+
+      if (!normalizedQuery) return true;
+      const txId = String(dep.invoice_id || dep.id || '').toLowerCase();
+      const formattedType = formatTransactionTypeLabel('deposit').toLowerCase();
+      return (
+        txId.includes(normalizedQuery) ||
+        formattedType.includes(normalizedQuery) ||
+        'deposit'.includes(normalizedQuery)
+      );
+    });
+  }, [deposits, depositFilter, normalizedQuery, nowMs]);
+
+  // Filter Withdrawals
+  const filteredWithdrawals = useMemo(() => {
+    if (!normalizedQuery) return withdrawals;
+    return withdrawals.filter((w: any) => {
+      const txId = String(w.txHash || w.id || '').toLowerCase();
+      const formattedType = formatTransactionTypeLabel('withdrawal').toLowerCase();
+      return (
+        txId.includes(normalizedQuery) ||
+        formattedType.includes(normalizedQuery) ||
+        'withdrawal'.includes(normalizedQuery)
+      );
+    });
+  }, [withdrawals, normalizedQuery]);
+
+  // Real summary stats computed solely from loaded records
+  const summaryStats = useMemo(() => {
+    const totalInflow = walletLedger.reduce((acc: number, tx: any) => {
+      const val = Number(tx.amount || 0);
+      return val > 0 ? acc + val : acc;
+    }, 0);
+
+    const activePendingDeposits = deposits.filter((dep: any) => {
+      const st = String(dep.status || '').toLowerCase();
+      if (!['waiting', 'confirming', 'sending'].includes(st)) return false;
+      const createdAtMs = dep.created_at ? new Date(dep.created_at).getTime() : 0;
+      return createdAtMs === 0 || nowMs - createdAtMs < 15 * 60 * 1000;
+    }).length;
+
+    const pendingWithdrawals = withdrawals.filter((w: any) =>
+      ['pending', 'processing'].includes(String(w.status || '').toLowerCase())
+    ).length;
+
+    return {
+      totalRecords: walletLedger.length,
+      totalInflow,
+      pendingCount: activePendingDeposits + pendingWithdrawals,
+    };
+  }, [walletLedger, deposits, withdrawals, nowMs]);
+
+  // Active paginated slice for current tab
+  const activeRows =
+    activeSubTab === 'all'
+      ? filteredLedger
+      : activeSubTab === 'deposits'
+      ? filteredDeposits
+      : filteredWithdrawals;
+
+  const totalPages = Math.max(1, Math.ceil(activeRows.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedRows = activeRows.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE
+  );
+
   if (!user) {
     return (
-      <div className="w-full max-w-4xl 2xl:max-w-5xl mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-8 sm:py-16 text-center animate-in fade-in duration-200">
-        <div className="glass-panel p-6 sm:p-12 rounded-3xl border border-amber-500/30 bg-gradient-to-br from-[#151C2B] via-[#0F1420] to-[#0B0F19] space-y-6">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400 shadow-lg shadow-amber-500/20">
-            <Lock className="w-8 h-8 sm:w-10 sm:h-10" />
+      <div className="w-full max-w-4xl mx-auto px-3 sm:px-6 py-8 sm:py-12 pb-24 md:pb-12">
+        <div className="bg-[#0d1526]/95 border border-white/10 rounded-2xl p-6 sm:p-10 text-center space-y-5 shadow-xl">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <Lock className="w-7 h-7" />
           </div>
-
           <div className="space-y-2 max-w-md mx-auto">
-            <h1 className="font-display font-black text-2xl sm:text-3xl text-white">
+            <h1 className="text-xl sm:text-2xl font-bold text-white">
               Transaction History
             </h1>
-            <p className="text-xs sm:text-sm text-[#9b8f7c] leading-relaxed">
-              Please sign in to view your complete cryptocurrency deposit orders, withdrawal disbursements, and USDT transaction ledger.
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Sign in to view your deposits, withdrawals, lottery wins, and promotional reward history.
             </p>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
             <button
-              onClick={() => setIsAuthModalOpen && setIsAuthModalOpen(true)}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl btn-gold text-[#0B0F19] font-display font-extrabold text-xs sm:text-sm shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95"
+              type="button"
+              onClick={() => setIsAuthModalOpen(true)}
+              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition-colors shadow-lg shadow-amber-500/20"
             >
-              <LogIn className="w-4 h-4 text-black" />
-              <span>Sign In to Your Account</span>
+              Sign In to Continue
+            </button>
+            <button
+              type="button"
+              onClick={handleBack}
+              className="px-5 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 font-semibold text-sm border border-white/10 transition-colors"
+            >
+              Back
             </button>
           </div>
         </div>
@@ -271,738 +334,807 @@ export default function TransactionHistoryPage({ onBackToWallet, onBackToHome }:
   return (
     <div
       data-testid="transaction-history-page"
-      className="w-full max-w-[1360px] mx-auto px-2.5 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 text-left box-border overflow-x-clip animate-in fade-in duration-200"
+      className="w-full max-w-6xl mx-auto px-3 sm:px-4 xl:px-8 py-4 sm:py-6 pb-24 md:pb-10 space-y-4 sm:space-y-6"
     >
-      {/* 1. TOP HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-3.5 border-b border-[#1F2737] min-w-0">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <History className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 shrink-0" aria-hidden="true" />
-            <h1 className="font-display font-extrabold text-xl sm:text-2xl lg:text-3xl text-white tracking-tight truncate">
+      {/* Header Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={handleBack}
+            aria-label="Back to Wallet"
+            className="mt-0.5 sm:mt-0 inline-flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-[#10192b] border border-white/10 text-slate-300 hover:text-white hover:border-amber-500/40 transition-colors shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight truncate">
               Transaction History
             </h1>
+            <p className="text-xs sm:text-sm text-slate-400 truncate">
+              Your complete record of deposits, withdrawals, game wins, and rewards
+            </p>
           </div>
-          <p className="text-xs sm:text-sm text-[#9b8f7c] mt-0.5 leading-snug">
-            Verified record of all wallet ledger activity, deposit orders, and withdrawal disbursements.
+        </div>
+
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={isRefreshing || loadingLedger || loadingDeposits}
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#10192b] border border-white/10 text-xs sm:text-sm font-semibold text-slate-200 hover:text-white hover:border-amber-500/40 transition-colors disabled:opacity-60 shrink-0"
+        >
+          <RefreshCw
+            className={`w-3.5 h-3.5 text-amber-400 ${
+              isRefreshing || loadingLedger || loadingDeposits ? 'animate-spin' : ''
+            }`}
+          />
+          <span>Refresh</span>
+        </button>
+      </div>
+
+      {/* Summary Strip */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-4">
+        <div className="bg-[#0e172a] border border-white/10 rounded-xl p-3 sm:p-4 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">
+              Available Balance
+            </span>
+            <Wallet className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          </div>
+          <p className="text-base sm:text-xl font-extrabold text-white tabular-nums truncate">
+            {Number(wallet?.balance || 0).toFixed(2)}{' '}
+            <span className="text-[11px] sm:text-xs font-bold text-amber-400">USDT</span>
           </p>
         </div>
 
-        {/* Quick Refresh & Balance Indicator */}
-        <div className="flex items-center justify-between xs:justify-start gap-2 self-stretch xs:self-start sm:self-auto shrink-0">
-          <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#111827] border border-[#1F2737] text-[11px] sm:text-xs font-mono-numbers min-w-0">
-            <span className="text-[#9b8f7c] shrink-0">Balance:</span>
-            <span className="text-purple-400 font-black truncate">{Number(wallet?.balance || 0).toFixed(2)} USDT</span>
+        <div className="bg-[#0e172a] border border-white/10 rounded-xl p-3 sm:p-4 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">
+              Total Credited
+            </span>
+            <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
           </div>
+          <p className="text-base sm:text-xl font-extrabold text-emerald-400 tabular-nums truncate">
+            +{summaryStats.totalInflow.toFixed(2)}{' '}
+            <span className="text-[11px] sm:text-xs font-bold text-emerald-300/80">USDT</span>
+          </p>
+        </div>
 
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isRefreshing || loadingLedger || loadingDeposits}
-            className="min-h-[36px] px-3 sm:px-3.5 py-1.5 rounded-xl bg-[#111827] hover:bg-[#151C2B] text-[#9b8f7c] hover:text-amber-300 border border-[#1F2737] hover:border-amber-400/40 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 disabled:opacity-50"
-            title="Refresh All Records"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${isRefreshing ? 'animate-spin text-amber-400' : ''}`} />
-            <span className="hidden xs:inline">Refresh</span>
-          </button>
+        <div className="col-span-2 md:col-span-1 bg-[#0e172a] border border-white/10 rounded-xl p-3 sm:p-4 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">
+              Records &amp; Pending
+            </span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          </div>
+          <div className="flex items-baseline gap-2.5 flex-wrap">
+            <p className="text-base sm:text-xl font-extrabold text-white tabular-nums">
+              {summaryStats.totalRecords}{' '}
+              <span className="text-[11px] sm:text-xs font-medium text-slate-400">Entries</span>
+            </p>
+            <span className="text-xs font-semibold text-amber-400 tabular-nums">
+              {summaryStats.pendingCount} Pending
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* 2. THREE SECTION OPTIONS (All, Deposit Orders, Withdrawal Orders) + SEARCH BAR */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3 min-w-0">
-        <div
-          data-testid="tx-filter-tabs"
-          className="flex items-center gap-1 sm:gap-1.5 bg-[#0b0e14] p-1 rounded-2xl border border-[#272a31] w-full md:w-auto max-w-full overflow-x-auto ef-subtle-scroll box-border"
-        >
-          {/* Option 1: All */}
-          <button
-            type="button"
-            data-testid="tx-tab-all"
-            onClick={() => setActiveHistoryTab('all')}
-            className={`shrink-0 min-h-[36px] px-2.5 sm:px-4 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
-              activeHistoryTab === 'all'
-                ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-md font-extrabold'
-                : 'text-[#9b8f7c] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Coins className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-            <span>All ({walletLedger.length})</span>
-          </button>
-
-          {/* Option 2: Deposit Orders */}
-          <button
-            type="button"
-            data-testid="tx-tab-deposits"
-            onClick={() => setActiveHistoryTab('deposits')}
-            className={`shrink-0 min-h-[36px] px-2.5 sm:px-4 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
-              activeHistoryTab === 'deposits'
-                ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-md font-extrabold'
-                : 'text-[#9b8f7c] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <ArrowDownLeft className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-            <span>Deposit Orders ({deposits.length})</span>
-          </button>
-
-          {/* Option 3: Withdrawal Orders */}
-          <button
-            type="button"
-            data-testid="tx-tab-withdrawals"
-            onClick={() => setActiveHistoryTab('withdrawals')}
-            className={`shrink-0 min-h-[36px] px-2.5 sm:px-4 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
-              activeHistoryTab === 'withdrawals'
-                ? 'bg-gradient-to-r from-[#ffd700] to-[#f5c451] text-[#0b0e14] shadow-md font-extrabold'
-                : 'text-[#9b8f7c] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <ArrowUpRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-            <span>Withdrawal Orders ({withdrawals.length})</span>
-          </button>
-        </div>
-
-        {/* Search Filter */}
-        <div className="relative w-full md:w-64 min-w-0 box-border">
-          <Search className="w-4 h-4 text-[#9b8f7c] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
-          <input
-            type="text"
-            data-testid="tx-search-input"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by ID, type..."
-            aria-label="Search transactions by ID or type"
-            className="w-full min-h-[40px] pl-9 pr-3 py-2 rounded-xl bg-[#111827] border border-[#272a31] text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-amber-400/60 box-border"
-          />
-        </div>
-      </div>
-
-      {/* 3. OPTION 1: ALL TRANSACTIONS (USDT LEDGER) */}
-      {activeHistoryTab === 'all' && (
-        <div
-          data-testid="tx-ledger-card"
-          className="glass-panel rounded-2xl p-3 xs:p-4 sm:p-6 space-y-3.5 sm:space-y-4 w-full min-w-0 box-border overflow-hidden"
-        >
-          <div
-            data-testid="tx-ledger-header"
-            className="flex flex-col xs:flex-row xs:items-center justify-between gap-1 text-xs text-[#9b8f7c] pb-2.5 border-b border-[#272a31] min-w-0"
-          >
-            <span className="font-semibold text-white/90 truncate">
-              All Transaction Records ({filteredLedger.length})
-            </span>
-            <span className="text-[11px] font-mono-numbers text-purple-400 font-bold whitespace-nowrap">
-              USDT (TRC-20) Settlement
-            </span>
-          </div>
-
-          {/* MOBILE COMPACT CARDS (< 768px) — Zero table overflow at 320px-767px */}
-          <div
-            data-testid="tx-mobile-cards"
-            className="md:hidden space-y-2.5 max-h-[560px] overflow-y-auto ef-subtle-scroll min-w-0"
-          >
-            {filteredLedger.length === 0 ? (
-              <div className="py-8 text-center text-xs text-[#9b8f7c] font-mono-numbers">
-                {searchQuery ? 'No transactions matching your search query.' : 'No transactions recorded in ledger yet.'}
-              </div>
-            ) : (
-              filteredLedger.map((tx) => {
-                const isCredit = Number(tx.amount) > 0;
-                const typeConfig = getTransactionTypeMeta(tx.transaction_type);
-
+      {/* Main Ledger Card */}
+      <div
+        data-testid="tx-ledger-card"
+        className="bg-[#0c1424] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+      >
+        {/* Controls Bar: Filter Tabs + Search */}
+        <div className="p-3 sm:p-4 lg:p-5 border-b border-white/10 space-y-3 bg-[#0e172a]/70">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            {/* Primary Tabs */}
+            <div
+              role="tablist"
+              data-testid="tx-filter-tabs"
+              aria-label="Transaction Categories"
+              className="flex flex-wrap items-center gap-1.5 sm:gap-2"
+            >
+              {(
+                [
+                  { id: 'all', label: 'All', count: walletLedger.length },
+                  { id: 'deposits', label: 'Deposit Orders', count: deposits.length },
+                  { id: 'withdrawals', label: 'Withdrawal Orders', count: withdrawals.length },
+                ] as const
+              ).map((tab) => {
+                const isActive = activeSubTab === tab.id;
                 return (
-                  <article
-                    key={tx.id}
-                    data-testid={`tx-mobile-card-${tx.id}`}
-                    className="rounded-xl bg-[#0B0F19]/95 border border-[#1F2737] p-3 space-y-2 w-full min-w-0 box-border"
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => {
+                      setActiveSubTab(tab.id);
+                      setCurrentPage(1);
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                      isActive
+                        ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                        : 'bg-slate-900/90 text-slate-300 border border-white/10 hover:text-white hover:border-white/25'
+                    }`}
                   >
-                    {/* Top Row: Transaction Type Badge + Status Badge */}
-                    <div className="flex flex-wrap items-center justify-between gap-1.5 min-w-0">
-                      <span
-                        data-testid={`tx-type-badge-${tx.id}`}
-                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10.5px] font-semibold border max-w-full break-words leading-snug ${typeConfig.bg}`}
-                      >
-                        {typeConfig.label}
-                      </span>
-
-                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 shrink-0 whitespace-nowrap">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" aria-hidden="true" />
-                        <span>Completed</span>
-                      </span>
-                    </div>
-
-                    {/* Main Row: Amount (USDT) & TX ID */}
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1 min-w-0">
-                      <span
-                        className={`font-mono-numbers font-black text-sm ${
-                          isCredit ? 'text-emerald-400' : 'text-rose-400'
-                        }`}
-                      >
-                        {isCredit ? '+' : ''}
-                        {Number(tx.amount).toFixed(2)} USDT
-                      </span>
-
-                      <span
-                        className="bg-[#10141F] px-2 py-0.5 rounded border border-[#272A31] text-[10.5px] text-amber-400/90 font-mono max-w-full truncate"
-                        title={tx.id ? String(tx.id) : ''}
-                      >
-                        #{tx.id ? String(tx.id).slice(0, 14) : '—'}
-                      </span>
-                    </div>
-
-                    {/* Secondary Metadata: Network & Balance After */}
-                    <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-[#1F2737]/70 text-[11px] font-mono-numbers min-w-0">
-                      <div className="min-w-0">
-                        <span className="text-[9.5px] uppercase text-[#94A3B8] block">Network</span>
-                        <span className="text-purple-300 font-bold">TRC-20</span>
-                      </div>
-                      <div className="text-right min-w-0">
-                        <span className="text-[9.5px] uppercase text-[#94A3B8] block">Balance After</span>
-                        <span className="text-purple-300 font-bold truncate block">
-                          {Number(tx.balance_after || 0).toFixed(2)} USDT
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Description / Reference + Timestamp */}
-                    <div className="pt-1.5 border-t border-[#1F2737]/70 space-y-0.5 min-w-0">
-                      <p className="text-[11px] text-white/80 leading-snug break-words">
-                        {tx.description || tx.reference_id || 'Virtual Credit Adjustment'}
-                      </p>
-                      {tx.reference_id && (
-                        <p className="text-[10px] text-[#9b8f7c] font-mono break-all">
-                          Ref: {tx.reference_id}
-                        </p>
-                      )}
-                      <span className="block text-[10px] font-mono-numbers text-[#94A3B8]">
-                        {tx.created_at ? new Date(tx.created_at).toLocaleString() : 'Recent'}
-                      </span>
-                    </div>
-                  </article>
+                    <span>{tab.label}</span>
+                    <span
+                      className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold tabular-nums ${
+                        isActive
+                          ? 'bg-slate-950/20 text-slate-950'
+                          : 'bg-slate-800 text-slate-300'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
                 );
-              })
+              })}
+            </div>
+
+            {/* Search Input */}
+            <div className="relative w-full lg:w-80 xl:w-96 min-w-0">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                data-testid="tx-search-input"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Search TX ID or type..."
+                aria-label="Search transactions by TX ID or transaction type"
+                className="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-950/90 border border-white/10 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500/60"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setCurrentPage(1);
+                  }}
+                  aria-label="Clear search"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Deposit Sub-Filters */}
+          {activeSubTab === 'deposits' && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              {(
+                [
+                  { id: 'all', label: 'All Orders' },
+                  { id: 'completed', label: 'Completed' },
+                  { id: 'waiting', label: 'Waiting' },
+                  { id: 'expired', label: 'Expired / Failed' },
+                ] as const
+              ).map((sub) => (
+                <button
+                  key={sub.id}
+                  type="button"
+                  onClick={() => {
+                    setDepositFilter(sub.id);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold border transition-colors ${
+                    depositFilter === sub.id
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-slate-900/70 text-slate-400 border-white/10 hover:text-slate-200'
+                  }`}
+                >
+                  {sub.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Empty / Loading States */}
+        {(activeSubTab === 'all' && loadingLedger && walletLedger.length === 0) ||
+        (activeSubTab === 'deposits' && loadingDeposits && deposits.length === 0) ? (
+          <div className="py-16 px-4 text-center space-y-3">
+            <RefreshCw className="w-7 h-7 text-amber-400 animate-spin mx-auto" />
+            <p className="text-sm font-medium text-slate-400">Loading transaction history...</p>
+          </div>
+        ) : paginatedRows.length === 0 ? (
+          <div className="py-14 px-4 text-center space-y-3">
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center text-slate-500">
+              <History className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm sm:text-base font-bold text-slate-200">
+                No matching transactions found
+              </p>
+              <p className="text-xs sm:text-sm text-slate-400 max-w-sm mx-auto">
+                {searchQuery
+                  ? 'Try searching a different TX ID or transaction type.'
+                  : 'Your completed deposits, withdrawals, and reward entries will appear here.'}
+              </p>
+            </div>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white border border-white/10"
+              >
+                Reset Search
+              </button>
             )}
           </div>
+        ) : (
+          <>
+            {/* ===================================================================== */}
+            {/* MOBILE VIEW (< 768px): Clean Stacked Cards with 5 Required Fields     */}
+            {/* ===================================================================== */}
+            <div className="md:hidden p-3 space-y-2.5">
+              {activeSubTab === 'all' &&
+                paginatedRows.map((tx: any, idx: number) => {
+                  const rowKey = `ledger-${tx.id || idx}`;
+                  const txId = String(tx.id || '—');
+                  const typeMeta = getTransactionTypeMeta(tx.transaction_type);
+                  const amountVal = Number(tx.amount || 0);
+                  const isPositive = amountVal >= 0;
+                  const statusMeta = formatTransactionStatusMeta(tx.status || 'completed');
+                  const formattedTs = formatTransactionTimestamp(tx.created_at);
+                  const isExpanded = Boolean(expandedIdKeys[rowKey]);
 
-          {/* DESKTOP TABLE (>= 768px) — Preserved Table Layout with Contained Horizontal Scroll */}
-          <div
-            data-testid="tx-desktop-table-wrap"
-            className="hidden md:block max-h-[540px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#272a31]/70 min-w-0"
-          >
-            <table className="w-full min-w-[760px] text-left text-xs">
-              <thead className="sticky top-0 z-10 bg-[#0e131e]/95 backdrop-blur-md shadow-[0_1px_0_0_#272a31]">
-                <tr className="text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
-                  <th className="py-3 px-3 whitespace-nowrap">Tx ID</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Transaction Type</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Amount (USDT)</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Network</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Balance After</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Status</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Description / Reference</th>
-                  <th className="py-3 px-3 text-right whitespace-nowrap">Timestamp</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1f2737]">
-                {filteredLedger.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="py-10 text-center text-[#9b8f7c] font-mono-numbers">
-                      {searchQuery ? 'No transactions matching your search query.' : 'No transactions recorded in ledger yet.'}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredLedger.map((tx) => {
-                    const isCredit = Number(tx.amount) > 0;
-                    const typeConfig = getTransactionTypeMeta(tx.transaction_type);
-
-                    return (
-                      <tr key={tx.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-3.5 px-3 font-mono-numbers text-[11px] text-white/70 whitespace-nowrap">
-                          <span
-                            className="bg-[#10141f] px-2 py-0.5 rounded border border-[#272a31] text-amber-400/90 font-mono"
-                            title={tx.id ? String(tx.id) : ''}
-                          >
-                            #{tx.id ? String(tx.id).slice(0, 14) : '—'}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-3 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ${typeConfig.bg}`}>
-                            {typeConfig.label}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-3 font-mono-numbers font-black text-sm whitespace-nowrap">
-                          <span className={isCredit ? 'text-emerald-400' : 'text-rose-400'}>
-                            {isCredit ? '+' : ''}{Number(tx.amount).toFixed(2)} USDT
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-3 font-mono-numbers font-bold text-xs whitespace-nowrap">
-                          <span className="text-purple-300 font-mono">
-                            TRC-20
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-3 font-mono-numbers text-xs text-white/90 whitespace-nowrap">
-                          <span className="text-purple-300 font-bold">{Number(tx.balance_after || 0).toFixed(2)} USDT</span>
-                        </td>
-                        <td className="py-3.5 px-3 whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                            <span>Completed</span>
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-3 text-xs text-white/80 max-w-[260px] truncate">
-                          <span title={tx.description || tx.reference_id}>
-                            {tx.description || tx.reference_id || 'Virtual Credit Adjustment'}
-                          </span>
-                          {tx.reference_id && (
-                            <span className="block text-[10px] text-[#9b8f7c] font-mono truncate">
-                              Ref: {tx.reference_id}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3.5 px-3 text-right text-[11px] font-mono-numbers text-[#9b8f7c] whitespace-nowrap">
-                          {tx.created_at ? new Date(tx.created_at).toLocaleString() : 'Recent'}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* 4. OPTION 2: DEPOSIT ORDERS */}
-      {activeHistoryTab === 'deposits' && (
-        <div
-          data-testid="tx-deposits-card"
-          className="glass-panel rounded-2xl p-3 xs:p-4 sm:p-6 space-y-3.5 sm:space-y-4 w-full min-w-0 box-border overflow-hidden"
-        >
-          {/* Sub-Filter Pills */}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pb-2 border-b border-[#272a31] min-w-0">
-            {[
-              { id: 'all', label: `All (${deposits.length})` },
-              { id: 'completed', label: `Successful (${deposits.filter(d => d.status === 'finished' || d.status === 'confirmed').length})` },
-              { id: 'waiting', label: `Awaiting (${deposits.filter(d => d.status === 'waiting' && (now - new Date(d.created_at || now).getTime() <= 15 * 60 * 1000)).length})` },
-              { id: 'expired', label: `Unpaid/Expired (${deposits.filter(d => d.status === 'expired' || d.status === 'cancelled' || d.status === 'failed' || (d.status === 'waiting' && now - new Date(d.created_at || now).getTime() > 15 * 60 * 1000)).length})` }
-            ].map(f => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setDepositFilter(f.id)}
-                className={`px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs font-mono-numbers font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  depositFilter === f.id
-                    ? 'bg-amber-500 text-black shadow-sm font-extrabold'
-                    : 'bg-[#10141f] text-[#9b8f7c] hover:text-white border border-[#272a31]'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Mobile Cards for Deposit Orders (< 768px) */}
-          <div className="md:hidden space-y-2.5 max-h-[540px] overflow-y-auto ef-subtle-scroll min-w-0">
-            {filteredDeposits.length === 0 ? (
-              <div className="py-8 text-center text-xs text-[#9b8f7c]">
-                No deposit orders matching filter.
-              </div>
-            ) : (
-              filteredDeposits.map((order) => {
-                const isFinished = order.status === 'finished' || order.status === 'confirmed';
-                const isCancelled = order.status === 'cancelled';
-                const isExplicitExpired = order.status === 'expired' || order.status === 'failed';
-                const isWaiting = order.status === 'waiting';
-
-                const createdAtMs = order.created_at ? new Date(order.created_at).getTime() : now;
-                const ageMs = now - createdAtMs;
-                const timeoutMs = 15 * 60 * 1000;
-                const isTimedOut = isWaiting && ageMs > timeoutMs;
-                const remainingMs = Math.max(0, timeoutMs - ageMs);
-                const remMin = Math.floor(remainingMs / 60000);
-                const remSec = Math.floor((remainingMs % 60000) / 1000);
-
-                return (
-                  <article
-                    key={order.id}
-                    className="rounded-xl bg-[#0B0F19]/95 border border-[#1F2737] p-3 space-y-2 w-full min-w-0 box-border text-xs"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
-                      <span className="px-2 py-0.5 rounded bg-[#10131a] text-[#ffd700] border border-[#f5c451]/30 font-mono-numbers font-bold text-[10px]">
-                        {(order.pay_currency || 'usdttrc20').toUpperCase()}
-                      </span>
-                      <span className="font-mono-numbers text-white/75 text-[11px] truncate" title={order.id}>
-                        #{order.invoice_id || (order.id ? String(order.id).slice(0, 14) : 'DEP')}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
-                      <span className="font-mono-numbers font-black text-sm text-[#05d5aa]">
-                        +{Number(order.amount || 0).toFixed(2)} USDT
-                      </span>
-                      <span className="text-[10px] font-mono-numbers text-[#94A3B8]">
-                        {order.created_at ? new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Just now'}
-                      </span>
-                    </div>
-
-                    <div className="pt-1.5 border-t border-[#1F2737] flex flex-wrap items-center justify-between gap-2 min-w-0">
-                      {isFinished ? (
-                        <span className="px-2 py-0.5 rounded bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold text-[11px] inline-flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 shrink-0" />
-                          <span>Success (+{order.amount} USDT)</span>
+                  return (
+                    <article
+                      key={rowKey}
+                      data-tx-card="all"
+                      className="bg-[#111b2e] border border-white/10 rounded-xl p-3.5 space-y-2.5 shadow-sm overflow-hidden"
+                    >
+                      {/* Row 1: Transaction Type Badge + Status */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-[11px] font-bold leading-tight max-w-full break-words ${typeMeta.bg}`}
+                        >
+                          {typeMeta.label}
                         </span>
-                      ) : isCancelled ? (
-                        <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-bold text-[11px] inline-flex items-center gap-1">
-                          <XCircle className="w-3 h-3 shrink-0" />
-                          <span>Cancelled</span>
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wide shrink-0 ${statusMeta.pillClass}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dotClass}`} />
+                          {statusMeta.label}
                         </span>
-                      ) : (isExplicitExpired || isTimedOut) ? (
-                        <span className="px-2 py-0.5 rounded bg-[#161a23] text-[#9b8f7c] border border-[#272a31] font-bold text-[11px] inline-flex items-center gap-1">
-                          <Clock className="w-3 h-3 shrink-0" />
-                          <span>Unpaid (Expired 15m)</span>
-                        </span>
-                      ) : (
-                        <span className="text-amber-400 font-bold text-[11px]">
-                          Awaiting Payment ({remMin}m {remSec < 10 ? '0' : ''}{remSec}s)
-                        </span>
-                      )}
+                      </div>
 
-                      {isWaiting && !isTimedOut && (
-                        <div className="flex items-center gap-1.5">
-                          {order.invoice_url && (
-                            <a
-                              href={order.invoice_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-2.5 py-1 rounded-lg bg-[rgba(245,196,81,0.15)] text-[#ffd700] text-[11px] font-bold border border-[#f5c451]/30 inline-flex items-center gap-1"
-                            >
-                              <span>Pay Now</span>
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => cancelDeposit(order.id)}
-                            className="px-2.5 py-1 rounded-lg bg-rose-950/40 text-rose-300 text-[11px] font-bold border border-rose-500/30 cursor-pointer"
-                          >
-                            Cancel
-                          </button>
+                      {/* Row 2: Amount + TX ID */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span
+                          className={`text-base font-extrabold tabular-nums ${
+                            isPositive ? 'text-emerald-400' : 'text-white'
+                          }`}
+                        >
+                          {isPositive ? '+' : ''}
+                          {amountVal.toFixed(2)}{' '}
+                          <span className="text-[11px] font-bold opacity-80">USDT</span>
+                        </span>
+
+                        <TxIdControl
+                          txId={txId}
+                          compactChars={5}
+                          expanded={isExpanded}
+                          onToggleExpand={() => toggleExpandId(rowKey)}
+                          copied={copiedIdKey === rowKey}
+                          onCopy={() => handleCopyTxId(rowKey, txId)}
+                        />
+                      </div>
+
+                      {isExpanded && (
+                        <div className="bg-slate-950/90 border border-white/10 rounded-lg px-2.5 py-2">
+                          <p className="text-[10px] uppercase tracking-wider text-slate-400 mb-0.5">
+                            Complete TX ID
+                          </p>
+                          <p className="font-mono text-[11px] text-slate-200 break-all select-all">
+                            {txId}
+                          </p>
                         </div>
                       )}
-                    </div>
-                  </article>
-                );
-              })
-            )}
-          </div>
 
-          <div className="hidden md:block max-h-[540px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#272a31]/70 min-w-0">
-            <table className="w-full min-w-[640px] text-left text-xs">
-              <thead className="sticky top-0 z-10 bg-[#0e131e]/95 backdrop-blur-md shadow-[0_1px_0_0_#272a31]">
-                <tr className="text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
-                  <th className="py-3 px-3 whitespace-nowrap">Invoice / Order ID</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Amount (USDT)</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Payment Asset</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Initiated At</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Status</th>
-                  <th className="py-3 px-3 text-right whitespace-nowrap">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1f2737]">
-                {filteredDeposits.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-10 text-center text-[#9b8f7c]">
-                      No deposit orders matching filter.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredDeposits.map((order) => {
-                    const isFinished = order.status === 'finished' || order.status === 'confirmed';
-                    const isCancelled = order.status === 'cancelled';
-                    const isExplicitExpired = order.status === 'expired' || order.status === 'failed';
-                    const isWaiting = order.status === 'waiting';
-
-                    const createdAtMs = order.created_at ? new Date(order.created_at).getTime() : now;
-                    const ageMs = now - createdAtMs;
-                    const timeoutMs = 15 * 60 * 1000;
-                    const isTimedOut = isWaiting && ageMs > timeoutMs;
-                    const remainingMs = Math.max(0, timeoutMs - ageMs);
-                    const remMin = Math.floor(remainingMs / 60000);
-                    const remSec = Math.floor((remainingMs % 60000) / 1000);
-
-                    return (
-                      <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-4 px-3 font-mono-numbers font-bold text-white whitespace-nowrap">
-                          <span title={order.id}>
-                            #{order.invoice_id || (order.id ? String(order.id).slice(0, 14) : 'DEP')}
+                      {/* Row 3: Timestamp */}
+                      <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2 text-[11px] text-slate-400">
+                        <span className="inline-flex items-center gap-1.5 min-w-0 truncate">
+                          <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <span className="tabular-nums truncate">
+                            {formattedTs ? formattedTs.full : '—'}
                           </span>
-                        </td>
-                        <td className="py-4 px-3 font-mono-numbers font-black text-sm text-[#05d5aa] whitespace-nowrap">
-                          +{Number(order.amount || 0).toFixed(2)} USDT
-                        </td>
-                        <td className="py-4 px-3 whitespace-nowrap">
-                          <span className="px-2.5 py-0.5 rounded bg-[#10131a] text-[#ffd700] border border-[#f5c451]/30 font-mono-numbers font-bold text-[10px] whitespace-nowrap inline-flex items-center">
-                            {(order.pay_currency || 'usdttrc20').toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="py-4 px-3 font-mono-numbers text-white/80 whitespace-nowrap text-[11px]">
-                          {order.created_at ? new Date(order.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Just now'}
-                        </td>
-                        <td className="py-4 px-3 whitespace-nowrap">
-                          {isFinished ? (
-                            <span className="px-2.5 py-1 rounded-md bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold flex items-center gap-1.5 w-max whitespace-nowrap">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              Success (+{order.amount} USDT)
-                            </span>
-                          ) : isCancelled ? (
-                            <span className="px-2.5 py-1 rounded-md bg-slate-800 text-slate-400 border border-slate-700 font-bold flex items-center gap-1 w-max whitespace-nowrap text-[11px]">
-                              <XCircle className="w-3.5 h-3.5 text-slate-400" />
-                              Cancelled
-                            </span>
-                          ) : (isExplicitExpired || isTimedOut) ? (
-                            <span className="px-2.5 py-1 rounded-md bg-[#161a23] text-[#9b8f7c] border border-[#272a31] font-bold flex items-center gap-1.5 w-max whitespace-nowrap text-[11px]">
-                              <Clock className="w-3.5 h-3.5 text-[#9b8f7c]" />
-                              Unpaid (Expired 15m)
-                            </span>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
-                              <div>
-                                <span className="text-amber-400 font-bold block whitespace-nowrap text-xs">
-                                  Awaiting Payment
-                                </span>
-                                <span className="text-[10px] font-mono-numbers text-amber-200/80 whitespace-nowrap">
-                                  Expires in {remMin}m {remSec < 10 ? '0' : ''}{remSec}s
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-4 px-3 text-right whitespace-nowrap">
-                          {isWaiting && !isTimedOut ? (
-                            <div className="flex items-center justify-end gap-2">
-                              {order.invoice_url && (
-                                <a
-                                  href={order.invoice_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="px-2.5 py-1 rounded-lg bg-[rgba(245,196,81,0.15)] hover:bg-[#f5c451] text-[#ffd700] hover:text-[#0b0e14] text-[11px] font-bold border border-[#f5c451]/30 transition-all inline-flex items-center gap-1 cursor-pointer"
-                                >
-                                  <span>Pay Now</span>
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => cancelDeposit(order.id)}
-                                className="px-2.5 py-1 rounded-lg bg-rose-950/40 hover:bg-rose-600 text-rose-300 hover:text-white text-[11px] font-bold border border-rose-500/30 transition-all cursor-pointer"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : isFinished ? (
-                            <span className="text-[11px] text-[#05d5aa] font-mono-numbers font-bold flex items-center justify-end gap-1">
-                              <Check className="w-3.5 h-3.5" />
-                              Credited
-                            </span>
-                          ) : (
-                            <span className="text-[11px] text-[#6b7280] font-mono-numbers">
-                              Closed
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* 5. OPTION 3: WITHDRAWAL ORDERS */}
-      {activeHistoryTab === 'withdrawals' && (
-        <div
-          data-testid="tx-withdrawals-card"
-          className="glass-panel rounded-2xl p-3 xs:p-4 sm:p-6 space-y-3.5 sm:space-y-4 w-full min-w-0 box-border overflow-hidden"
-        >
-          <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1 text-xs text-[#9b8f7c] pb-2.5 border-b border-[#272a31] min-w-0">
-            <span className="font-semibold text-white/90 truncate">
-              Withdrawal Disbursement Orders ({filteredWithdrawals.length})
-            </span>
-            <span className="text-[11px] font-mono-numbers whitespace-nowrap">Automated 24h Payouts</span>
-          </div>
-
-          {/* Mobile Cards for Withdrawal Orders (< 768px) */}
-          <div className="md:hidden space-y-2.5 max-h-[540px] overflow-y-auto ef-subtle-scroll min-w-0">
-            {filteredWithdrawals.length === 0 ? (
-              <div className="py-8 text-center text-xs text-[#9b8f7c]">
-                {searchQuery ? 'No withdrawals matching your search query.' : 'No withdrawals yet.'}
-              </div>
-            ) : (
-              filteredWithdrawals.map((order) => {
-                const isProcessing = order.status === 'processing';
-                const isCompleted = order.status === 'completed';
-
-                return (
-                  <article
-                    key={order.id}
-                    className="rounded-xl bg-[#0B0F19]/95 border border-[#1F2737] p-3 space-y-2 w-full min-w-0 box-border text-xs"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
-                      <span className="px-2 py-0.5 rounded bg-[#10131a] text-[#05d5aa] border border-[#05d5aa]/30 font-mono-numbers font-bold text-[10px]">
-                        {order.network || 'TRC20'}
-                      </span>
-                      <span className="font-mono-numbers font-bold text-white/80 text-[11px]">
-                        #{order.id}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap items-baseline justify-between gap-2 min-w-0">
-                      <div>
-                        <span className="font-mono-numbers font-black text-sm text-[#ffd700] block">
-                          {Number(order.amount || 0).toFixed(2)} USDT
                         </span>
-                        <span className="text-[10px] text-[#9b8f7c] font-mono-numbers">
-                          Net: {Number(order.netDisbursal || order.amount || 0).toFixed(2)} USDT
+                      </div>
+                    </article>
+                  );
+                })}
+
+              {activeSubTab === 'deposits' &&
+                paginatedRows.map((dep: any, idx: number) => {
+                  const rowKey = `dep-${dep.id || idx}`;
+                  const txId = String(dep.invoice_id || dep.id || '—');
+                  const createdAtMs = dep.created_at ? new Date(dep.created_at).getTime() : 0;
+                  const elapsedMs = createdAtMs > 0 ? nowMs - createdAtMs : 0;
+                  const remainingMs = Math.max(0, 15 * 60 * 1000 - elapsedMs);
+                  const isTimedOut =
+                    dep.status === 'waiting' && createdAtMs > 0 && remainingMs === 0;
+                  const effectiveStatus = isTimedOut ? 'expired' : dep.status;
+                  const typeMeta = getTransactionTypeMeta('deposit');
+                  const statusMeta = formatTransactionStatusMeta(effectiveStatus);
+                  const amountVal = Number(dep.amount ?? dep.price_amount ?? 0);
+                  const formattedTs = formatTransactionTimestamp(dep.created_at);
+                  const isExpanded = Boolean(expandedIdKeys[rowKey]);
+                  const canActOnWaiting =
+                    String(effectiveStatus || '').toLowerCase() === 'waiting' && !isTimedOut;
+                  const mins = Math.floor(remainingMs / 60000);
+                  const secs = Math.floor((remainingMs % 60000) / 1000);
+
+                  return (
+                    <article
+                      key={rowKey}
+                      data-tx-card="deposit"
+                      className="bg-[#111b2e] border border-white/10 rounded-xl p-3.5 space-y-2.5 shadow-sm overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-[11px] font-bold leading-tight ${typeMeta.bg}`}
+                        >
+                          {typeMeta.label}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wide shrink-0 ${statusMeta.pillClass}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dotClass}`} />
+                          {canActOnWaiting
+                            ? `Awaiting (${mins}m ${String(secs).padStart(2, '0')}s)`
+                            : statusMeta.label}
                         </span>
                       </div>
 
-                      <span className="font-mono-numbers text-white/75 text-[11px] truncate" title={order.address}>
-                        {order.address ? `${order.address.slice(0, 6)}...${order.address.slice(-6)}` : 'TRC-20 Address'}
-                      </span>
-                    </div>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="text-base font-extrabold text-emerald-400 tabular-nums">
+                          +{amountVal.toFixed(2)}{' '}
+                          <span className="text-[11px] font-bold opacity-80">USDT</span>
+                        </span>
+                        <TxIdControl
+                          txId={txId}
+                          compactChars={5}
+                          expanded={isExpanded}
+                          onToggleExpand={() => toggleExpandId(rowKey)}
+                          copied={copiedIdKey === rowKey}
+                          onCopy={() => handleCopyTxId(rowKey, txId)}
+                        />
+                      </div>
 
-                    <div className="pt-1.5 border-t border-[#1F2737] flex flex-wrap items-center justify-between gap-2 min-w-0">
-                      {isProcessing ? (
-                        <span className="text-amber-400 font-bold text-[11px]">
-                          In Progress ({formatSLATime(order.slaTargetMs)})
-                        </span>
-                      ) : isCompleted ? (
-                        <span className="px-2 py-0.5 rounded bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold text-[11px] inline-flex items-center gap-1">
-                          <Check className="w-3 h-3 shrink-0" />
-                          <span>Completed</span>
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30 font-bold text-[11px]">
-                          Flagged / Refunded
-                        </span>
+                      {isExpanded && (
+                        <div className="bg-slate-950/90 border border-white/10 rounded-lg px-2.5 py-2">
+                          <p className="text-[10px] uppercase tracking-wider text-slate-400 mb-0.5">
+                            Complete TX ID
+                          </p>
+                          <p className="font-mono text-[11px] text-slate-200 break-all select-all">
+                            {txId}
+                          </p>
+                        </div>
                       )}
 
-                      <button
-                        type="button"
-                        onClick={() => setSelectedProofOrder(order)}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold font-mono-numbers cursor-pointer whitespace-nowrap ${
-                          isCompleted
-                            ? 'bg-emerald-500/15 text-[#05d5aa] border border-[#05d5aa]/30'
-                            : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                        }`}
-                      >
-                        <FileCheck className="w-3 h-3 shrink-0" />
-                        <span>{isCompleted ? 'View Receipt' : 'Track Order'}</span>
-                      </button>
-                    </div>
-                  </article>
-                );
-              })
-            )}
-          </div>
+                      <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2 flex-wrap text-[11px] text-slate-400">
+                        <span className="inline-flex items-center gap-1.5 min-w-0 truncate">
+                          <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <span className="tabular-nums truncate">
+                            {formattedTs ? formattedTs.full : '—'}
+                          </span>
+                        </span>
 
-          <div className="hidden md:block max-h-[540px] overflow-y-auto overflow-x-auto ef-subtle-scroll overscroll-contain rounded-xl border border-[#272a31]/70 min-w-0">
-            <table className="w-full min-w-[640px] text-left text-xs">
-              <thead className="sticky top-0 z-10 bg-[#0e131e]/95 backdrop-blur-md shadow-[0_1px_0_0_#272a31]">
-                <tr className="text-[#9b8f7c] font-mono-numbers uppercase tracking-wider text-[10px] xs:text-xs">
-                  <th className="py-3 px-3 whitespace-nowrap">Order ID</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Amount (USDT)</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Network</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Destination Address</th>
-                  <th className="py-3 px-3 whitespace-nowrap">Status / Timer</th>
-                  <th className="py-3 px-3 text-right whitespace-nowrap">Receipt / Tracking</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1f2737]">
-                {filteredWithdrawals.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-10 text-center text-[#9b8f7c]">
-                      {searchQuery ? 'No withdrawals matching your search query.' : 'No withdrawals yet.'}
-                    </td>
+                        {canActOnWaiting && (
+                          <div className="flex items-center gap-1.5">
+                            {dep.invoice_url && (
+                              <a
+                                href={dep.invoice_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold text-[11px]"
+                              >
+                                <span>Pay Now</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => cancelDeposit?.(dep.id)}
+                              className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-white/10 font-semibold text-[11px] hover:text-white"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+
+              {activeSubTab === 'withdrawals' &&
+                paginatedRows.map((w: any, idx: number) => {
+                  const rowKey = `wd-${w.id || idx}`;
+                  const txId = String(w.txHash || w.id || '—');
+                  const typeMeta = getTransactionTypeMeta('withdrawal');
+                  const statusMeta = formatTransactionStatusMeta(w.status);
+                  const amountVal = Number(w.amount || 0);
+                  const formattedTs = formatTransactionTimestamp(w.requestedAt);
+                  const isExpanded = Boolean(expandedIdKeys[rowKey]);
+
+                  return (
+                    <article
+                      key={rowKey}
+                      data-tx-card="withdrawal"
+                      className="bg-[#111b2e] border border-white/10 rounded-xl p-3.5 space-y-2.5 shadow-sm overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-[11px] font-bold leading-tight ${typeMeta.bg}`}
+                        >
+                          {typeMeta.label}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wide shrink-0 ${statusMeta.pillClass}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dotClass}`} />
+                          {statusMeta.label}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="text-base font-extrabold text-white tabular-nums">
+                          -{Math.abs(amountVal).toFixed(2)}{' '}
+                          <span className="text-[11px] font-bold text-slate-400">USDT</span>
+                        </span>
+                        <TxIdControl
+                          txId={txId}
+                          compactChars={5}
+                          expanded={isExpanded}
+                          onToggleExpand={() => toggleExpandId(rowKey)}
+                          copied={copiedIdKey === rowKey}
+                          onCopy={() => handleCopyTxId(rowKey, txId)}
+                        />
+                      </div>
+
+                      {isExpanded && (
+                        <div className="bg-slate-950/90 border border-white/10 rounded-lg px-2.5 py-2">
+                          <p className="text-[10px] uppercase tracking-wider text-slate-400 mb-0.5">
+                            Complete TX ID
+                          </p>
+                          <p className="font-mono text-[11px] text-slate-200 break-all select-all">
+                            {txId}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2 flex-wrap text-[11px] text-slate-400">
+                        <span className="inline-flex items-center gap-1.5 min-w-0 truncate">
+                          <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <span className="tabular-nums truncate">
+                            {formattedTs ? formattedTs.full : '—'}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProofOrder(w)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-semibold text-[11px] transition-colors"
+                        >
+                          <span>{w.status === 'completed' ? 'Receipt' : 'Track'}</span>
+                          <ArrowUpRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+            </div>
+
+            {/* ===================================================================== */}
+            {/* TABLET & DESKTOP VIEW (>= 768px): Strict 5-Column Clean Table         */}
+            {/* ===================================================================== */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 bg-slate-950/60 text-[10px] xl:text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="py-3 pl-3 pr-2 xl:pl-5 xl:pr-3">TX ID</th>
+                    <th className="py-3 px-2 xl:px-3">Transaction Type</th>
+                    <th className="py-3 px-2 xl:px-3 text-right">Amount (USDT)</th>
+                    <th className="py-3 px-2 xl:px-3 text-center">Status</th>
+                    <th className="py-3 pl-2 pr-3 xl:pl-3 xl:pr-5 text-right">Timestamp</th>
                   </tr>
-                ) : (
-                  filteredWithdrawals.map((order) => {
-                    const isProcessing = order.status === 'processing';
-                    const isCompleted = order.status === 'completed';
+                </thead>
+                <tbody className="divide-y divide-white/5 text-xs xl:text-sm">
+                  {activeSubTab === 'all' &&
+                    paginatedRows.map((tx: any, idx: number) => {
+                      const rowKey = `d-ledger-${tx.id || idx}`;
+                      const txId = String(tx.id || '—');
+                      const typeMeta = getTransactionTypeMeta(tx.transaction_type);
+                      const amountVal = Number(tx.amount || 0);
+                      const isPositive = amountVal >= 0;
+                      const statusMeta = formatTransactionStatusMeta(tx.status || 'completed');
+                      const formattedTs = formatTransactionTimestamp(tx.created_at);
+                      const isExpanded = Boolean(expandedIdKeys[rowKey]);
 
-                    return (
-                      <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-4 px-3 font-mono-numbers font-bold text-white whitespace-nowrap">
-                          #{order.id}
-                        </td>
-                        <td className="py-4 px-3 font-mono-numbers font-black text-sm text-[#ffd700] whitespace-nowrap">
-                          {Number(order.amount || 0).toFixed(2)} USDT
-                          <span className="block text-[10px] text-[#9b8f7c] font-normal">
-                            Net: {Number(order.netDisbursal || order.amount || 0).toFixed(2)} USDT
-                          </span>
-                        </td>
-                        <td className="py-4 px-3 whitespace-nowrap">
-                          <span className="px-2.5 py-0.5 rounded bg-[#10131a] text-[#05d5aa] border border-[#05d5aa]/30 font-mono-numbers font-bold text-[10px] whitespace-nowrap inline-flex items-center">
-                            {order.network || 'TRC20'}
-                          </span>
-                        </td>
-                        <td className="py-4 px-3 font-mono-numbers text-white/80 whitespace-nowrap">
-                          {order.address ? `${order.address.slice(0, 6)}...${order.address.slice(-6)}` : 'TRC-20 Address'}
-                        </td>
-                        <td className="py-4 px-3 whitespace-nowrap">
-                          {isProcessing ? (
-                            <div className="flex items-center gap-2">
-                              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shrink-0" />
-                              <div>
-                                <span className="text-amber-400 font-bold block whitespace-nowrap">
-                                  In Progress (24 Hours)
+                      return (
+                        <React.Fragment key={rowKey}>
+                          <tr className="hover:bg-white/[0.025] transition-colors">
+                            <td className="py-3 pl-3 pr-2 xl:pl-5 xl:pr-3 whitespace-nowrap">
+                              <TxIdControl
+                                txId={txId}
+                                compactChars={5}
+                                expanded={isExpanded}
+                                onToggleExpand={() => toggleExpandId(rowKey)}
+                                copied={copiedIdKey === rowKey}
+                                onCopy={() => handleCopyTxId(rowKey, txId)}
+                              />
+                            </td>
+                            <td className="py-3 px-2 xl:px-3">
+                              <span
+                                className={`inline-flex items-center px-2 xl:px-2.5 py-1 rounded-lg border text-[11px] xl:text-xs font-bold whitespace-nowrap ${typeMeta.bg}`}
+                              >
+                                {typeMeta.label}
+                              </span>
+                            </td>
+                            <td
+                              className={`py-3 px-2 xl:px-3 text-right font-extrabold tabular-nums whitespace-nowrap ${
+                                isPositive ? 'text-emerald-400' : 'text-white'
+                              }`}
+                            >
+                              {isPositive ? '+' : ''}
+                              {amountVal.toFixed(2)}{' '}
+                              <span className="text-[10px] xl:text-[11px] font-bold opacity-75">USDT</span>
+                            </td>
+                            <td className="py-3 px-2 xl:px-3 text-center whitespace-nowrap">
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-2 xl:px-2.5 py-1 rounded-full border text-[10px] xl:text-[11px] font-bold uppercase tracking-wide ${statusMeta.pillClass}`}
+                              >
+                                <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dotClass}`} />
+                                {statusMeta.label}
+                              </span>
+                            </td>
+                            <td className="py-3 pl-2 pr-3 xl:pl-3 xl:pr-5 text-right text-[11px] xl:text-xs text-slate-300 tabular-nums whitespace-nowrap">
+                              {formattedTs ? formattedTs.full : '—'}
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr className="bg-slate-950/60">
+                              <td colSpan={5} className="px-4 xl:px-5 py-2.5 text-xs">
+                                <span className="text-slate-400 mr-2 font-semibold">
+                                  Complete TX ID:
                                 </span>
-                                <span className="text-[10px] font-mono-numbers text-amber-200/80 whitespace-nowrap">
-                                  {formatSLATime(order.slaTargetMs)}
+                                <span className="font-mono text-slate-200 select-all break-all">
+                                  {txId}
                                 </span>
-                              </div>
-                            </div>
-                          ) : isCompleted ? (
-                            <span className="px-2.5 py-1 rounded-md bg-[rgba(5,213,170,0.15)] text-[#05d5aa] border border-[#05d5aa]/40 font-bold flex items-center gap-1.5 w-max whitespace-nowrap">
-                              <Check className="w-3.5 h-3.5" />
-                              Completed (Disbursed)
-                            </span>
-                          ) : (
-                            <span className="px-2.5 py-1 rounded-md bg-red-950/40 text-red-400 border border-red-500/30 font-bold whitespace-nowrap">
-                              Flagged / Refunded
-                            </span>
+                              </td>
+                            </tr>
                           )}
-                        </td>
-                        <td className="py-4 px-3 text-right whitespace-nowrap">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedProofOrder(order)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-mono-numbers transition-all cursor-pointer whitespace-nowrap ${
-                              isCompleted
-                                ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-[#05d5aa] border border-[#05d5aa]/30 shadow-[0_0_15px_rgba(5,213,170,0.15)]'
-                                : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30'
-                            }`}
-                          >
-                            <FileCheck className="w-3.5 h-3.5" />
-                            <span>{isCompleted ? 'View Receipt' : 'Track Order'}</span>
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                        </React.Fragment>
+                      );
+                    })}
 
-      {/* Cryptographic Withdrawal Proof Modal */}
-      {selectedProofOrder && (
-        <WithdrawalProofModal 
-          order={selectedProofOrder} 
-          onClose={() => setSelectedProofOrder(null)} 
-        />
-      )}
+                  {activeSubTab === 'deposits' &&
+                    paginatedRows.map((dep: any, idx: number) => {
+                      const rowKey = `d-dep-${dep.id || idx}`;
+                      const txId = String(dep.invoice_id || dep.id || '—');
+                      const createdAtMs = dep.created_at ? new Date(dep.created_at).getTime() : 0;
+                      const elapsedMs = createdAtMs > 0 ? nowMs - createdAtMs : 0;
+                      const remainingMs = Math.max(0, 15 * 60 * 1000 - elapsedMs);
+                      const isTimedOut =
+                        dep.status === 'waiting' && createdAtMs > 0 && remainingMs === 0;
+                      const effectiveStatus = isTimedOut ? 'expired' : dep.status;
+                      const typeMeta = getTransactionTypeMeta('deposit');
+                      const statusMeta = formatTransactionStatusMeta(effectiveStatus);
+                      const amountVal = Number(dep.amount ?? dep.price_amount ?? 0);
+                      const formattedTs = formatTransactionTimestamp(dep.created_at);
+                      const isExpanded = Boolean(expandedIdKeys[rowKey]);
+                      const canActOnWaiting =
+                        String(effectiveStatus || '').toLowerCase() === 'waiting' && !isTimedOut;
+                      const mins = Math.floor(remainingMs / 60000);
+                      const secs = Math.floor((remainingMs % 60000) / 1000);
 
+                      return (
+                        <React.Fragment key={rowKey}>
+                          <tr className="hover:bg-white/[0.025] transition-colors">
+                            <td className="py-3 pl-3 pr-2 xl:pl-5 xl:pr-3 whitespace-nowrap">
+                              <TxIdControl
+                                txId={txId}
+                                compactChars={5}
+                                expanded={isExpanded}
+                                onToggleExpand={() => toggleExpandId(rowKey)}
+                                copied={copiedIdKey === rowKey}
+                                onCopy={() => handleCopyTxId(rowKey, txId)}
+                              />
+                            </td>
+                            <td className="py-3 px-2 xl:px-3">
+                              <span
+                                className={`inline-flex items-center px-2 xl:px-2.5 py-1 rounded-lg border text-[11px] xl:text-xs font-bold whitespace-nowrap ${typeMeta.bg}`}
+                              >
+                                {typeMeta.label}
+                              </span>
+                            </td>
+                            <td className="py-3 px-2 xl:px-3 text-right font-extrabold text-emerald-400 tabular-nums whitespace-nowrap">
+                              +{amountVal.toFixed(2)}{' '}
+                              <span className="text-[10px] xl:text-[11px] font-bold opacity-75">USDT</span>
+                            </td>
+                            <td className="py-3 px-2 xl:px-3 text-center whitespace-nowrap">
+                              <div className="inline-flex flex-col items-center gap-1.5">
+                                <span
+                                  className={`inline-flex items-center gap-1.5 px-2 xl:px-2.5 py-1 rounded-full border text-[10px] xl:text-[11px] font-bold uppercase tracking-wide ${statusMeta.pillClass}`}
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dotClass}`} />
+                                  {canActOnWaiting
+                                    ? `Awaiting (${mins}m ${String(secs).padStart(2, '0')}s)`
+                                    : statusMeta.label}
+                                </span>
+                                {canActOnWaiting && (
+                                  <div className="flex items-center gap-1.5">
+                                    {dep.invoice_url && (
+                                      <a
+                                        href={dep.invoice_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-bold text-[10px]"
+                                      >
+                                        Pay Now <ExternalLink className="w-2.5 h-2.5" />
+                                      </a>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => cancelDeposit?.(dep.id)}
+                                      className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-white/10 text-[10px] font-semibold hover:text-white"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 pl-2 pr-3 xl:pl-3 xl:pr-5 text-right text-[11px] xl:text-xs text-slate-300 tabular-nums whitespace-nowrap">
+                              {formattedTs ? formattedTs.full : '—'}
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr className="bg-slate-950/60">
+                              <td colSpan={5} className="px-4 xl:px-5 py-2.5 text-xs">
+                                <span className="text-slate-400 mr-2 font-semibold">
+                                  Complete TX ID:
+                                </span>
+                                <span className="font-mono text-slate-200 select-all break-all">
+                                  {txId}
+                                </span>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+
+                  {activeSubTab === 'withdrawals' &&
+                    paginatedRows.map((w: any, idx: number) => {
+                      const rowKey = `d-wd-${w.id || idx}`;
+                      const txId = String(w.txHash || w.id || '—');
+                      const typeMeta = getTransactionTypeMeta('withdrawal');
+                      const statusMeta = formatTransactionStatusMeta(w.status);
+                      const amountVal = Number(w.amount || 0);
+                      const formattedTs = formatTransactionTimestamp(w.requestedAt);
+                      const isExpanded = Boolean(expandedIdKeys[rowKey]);
+
+                      return (
+                        <React.Fragment key={rowKey}>
+                          <tr className="hover:bg-white/[0.025] transition-colors">
+                            <td className="py-3 pl-3 pr-2 xl:pl-5 xl:pr-3 whitespace-nowrap">
+                              <TxIdControl
+                                txId={txId}
+                                compactChars={5}
+                                expanded={isExpanded}
+                                onToggleExpand={() => toggleExpandId(rowKey)}
+                                copied={copiedIdKey === rowKey}
+                                onCopy={() => handleCopyTxId(rowKey, txId)}
+                              />
+                            </td>
+                            <td className="py-3 px-2 xl:px-3">
+                              <span
+                                className={`inline-flex items-center px-2 xl:px-2.5 py-1 rounded-lg border text-[11px] xl:text-xs font-bold whitespace-nowrap ${typeMeta.bg}`}
+                              >
+                                {typeMeta.label}
+                              </span>
+                            </td>
+                            <td className="py-3 px-2 xl:px-3 text-right font-extrabold text-white tabular-nums whitespace-nowrap">
+                              -{Math.abs(amountVal).toFixed(2)}{' '}
+                              <span className="text-[10px] xl:text-[11px] font-bold text-slate-400">USDT</span>
+                            </td>
+                            <td className="py-3 px-2 xl:px-3 text-center whitespace-nowrap">
+                              <div className="inline-flex items-center gap-1.5">
+                                <span
+                                  className={`inline-flex items-center gap-1.5 px-2 xl:px-2.5 py-1 rounded-full border text-[10px] xl:text-[11px] font-bold uppercase tracking-wide ${statusMeta.pillClass}`}
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dotClass}`} />
+                                  {statusMeta.label}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedProofOrder(w)}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-[10px] xl:text-[11px] font-semibold transition-colors"
+                                >
+                                  <span>{w.status === 'completed' ? 'Receipt' : 'Track'}</span>
+                                  <ArrowUpRight className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="py-3 pl-2 pr-3 xl:pl-3 xl:pr-5 text-right text-[11px] xl:text-xs text-slate-300 tabular-nums whitespace-nowrap">
+                              {formattedTs ? formattedTs.full : '—'}
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr className="bg-slate-950/60">
+                              <td colSpan={5} className="px-4 xl:px-5 py-2.5 text-xs">
+                                <span className="text-slate-400 mr-2 font-semibold">
+                                  Complete TX ID:
+                                </span>
+                                <span className="font-mono text-slate-200 select-all break-all">
+                                  {txId}
+                                </span>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Footer */}
+            <div className="px-3.5 sm:px-5 py-3 border-t border-white/10 bg-[#0e172a]/60 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+              <span className="tabular-nums">
+                Showing {(safePage - 1) * PAGE_SIZE + 1}–
+                {Math.min(safePage * PAGE_SIZE, activeRows.length)} of {activeRows.length}
+              </span>
+
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={safePage <= 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-white/10 text-slate-200 hover:border-white/25 disabled:opacity-40 transition-colors"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>Prev</span>
+                  </button>
+                  <span className="px-2 font-bold text-slate-200 tabular-nums">
+                    {safePage} / {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={safePage >= totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-white/10 text-slate-200 hover:border-white/25 disabled:opacity-40 transition-colors"
+                  >
+                    <span>Next</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Info Footnote */}
+      <div className="flex items-start gap-2.5 bg-[#0d1526]/80 border border-white/10 rounded-xl px-3.5 py-3 text-xs text-slate-400">
+        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+        <p className="leading-relaxed">
+          All timestamps reflect recorded ledger and order events. Tap the copy or view icon beside any compact TX ID to inspect or copy the complete transaction identifier.
+        </p>
+      </div>
+
+      <WithdrawalProofModal
+        order={selectedProofOrder}
+        onClose={() => setSelectedProofOrder(null)}
+      />
     </div>
   );
 }

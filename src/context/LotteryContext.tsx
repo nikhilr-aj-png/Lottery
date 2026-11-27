@@ -29,8 +29,11 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   // Ref to hold executeDraw function for auto-settling timer
   const executeDrawRef = React.useRef<any>(null);
   const autoSettlingEventsRef = React.useRef<Set<string>>(new Set());
+  const [serverTimeOffsetMs, setServerTimeOffsetMs] = useState<number>(0);
+  const getServerNowMs = () => Date.now() + serverTimeOffsetMs;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const formatEventRow = (row: any) => {
+  const formatEventRow = (row: any, nowMs: number = Date.now()) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let meta: any = {};
     if (row.block_target && typeof row.block_target === 'string') {
@@ -46,13 +49,44 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       meta = { ...meta, ...row.metadata };
     }
 
-    const drawTimeMs = Number(row.draw_time || (Date.now() + 86400000));
-    const isTimedOut = Boolean(drawTimeMs && drawTimeMs <= Date.now());
-    
-    // Status strictly driven by database: 'active', 'scheduled', 'result_pending', 'completed', 'deleted'
+    const startTimeMs = Number(row.start_time || meta.start_time || 0);
+    const rawDrawTimeMs = Number(row.draw_time || 0);
+
+    // Duration & Cooldown
+    const durationValue = Number(row.duration_value || meta.duration_value || 1);
+    const durationUnit = row.duration_unit || meta.duration_unit || 'hours';
+    const durUnitLower = String(durationUnit).toLowerCase();
+    const durMs =
+      durationValue > 0
+        ? durUnitLower.startsWith('min')
+          ? durationValue * 60 * 1000
+          : durUnitLower.startsWith('day')
+            ? durationValue * 86400 * 1000
+            : durationValue * 3600 * 1000
+        : 0;
+    const computedEndMs = startTimeMs > 0 && durMs > 0 ? startTimeMs + durMs : 0;
+    const drawTimeMs =
+      rawDrawTimeMs > 0 && computedEndMs > 0
+        ? Math.min(rawDrawTimeMs, computedEndMs)
+        : rawDrawTimeMs > 0
+          ? rawDrawTimeMs
+          : computedEndMs;
+
+    const isDeleted = Boolean(row.is_deleted) || row.status === 'deleted';
+    const isActiveFlag = row.is_active !== false;
+    const isTimedOut = drawTimeMs <= 0 || drawTimeMs <= nowMs;
+    const isUpcoming = startTimeMs > 0 && nowMs < startTimeMs;
+
+    // Status strictly driven by database + server timestamp
     let effectiveStatus = row.status || 'active';
-    if (row.status === 'completed' || row.winning_digits) {
+    if (isDeleted) {
+      effectiveStatus = 'deleted';
+    } else if (row.status === 'completed' || row.winning_digits) {
       effectiveStatus = 'completed';
+    } else if (!isActiveFlag) {
+      effectiveStatus = 'expired';
+    } else if (isUpcoming && row.status !== 'paused') {
+      effectiveStatus = 'scheduled';
     } else if (isTimedOut && row.status === 'active') {
       effectiveStatus = 'result_pending';
     }
@@ -65,11 +99,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
     // Room Identification
     const roomName = row.room_name || meta.room_name || row.title || 'Room 1';
-    const roomId = row.room_id || meta.room_id || null;
-
-    // Duration & Cooldown
-    const durationValue = Number(row.duration_value || meta.duration_value || 1);
-    const durationUnit = row.duration_unit || meta.duration_unit || 'hours';
+    const roomId = row.room_id || meta.room_id || `room-${row.id}`;
     const cooldownValue = Number(row.cooldown_value || meta.cooldown_value || 0);
     const cooldownUnit = row.cooldown_unit || meta.cooldown_unit || 'minutes';
     const cooldownUntil = row.cooldown_until ? Number(row.cooldown_until) : (meta.cooldown_until ? Number(meta.cooldown_until) : null);
@@ -158,7 +188,10 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       winnerSharePercent: winnerPayoutSharePercent,
       winnerPayoutSharePercent,
       winnerDistribution,
+      startTime: startTimeMs,
       drawTime: drawTimeMs,
+      isActive: isActiveFlag,
+      isDeleted,
       status: isPaused ? 'paused' : effectiveStatus,
       winningDigits: effectiveWinningDigits,
       targetWinningDigits: presetWinningDigits,
@@ -305,29 +338,26 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   const [events, setEvents] = useState<any[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
 
-  // Fetch events directly from Supabase database & update status for expired ones
+  // Fetch events directly from Supabase database synced with authoritative server time
   const refreshEvents = async () => {
     try {
-      const { data, error } = await supabase
-        .from('lottery_events')
-        .select('*')
-        .neq('status', 'deleted')
-        .order('created_at', { ascending: false });
+      const [{ data: srvTime }, { data, error }] = await Promise.all([
+        supabase.rpc('get_server_time_ms'),
+        supabase
+          .from('lottery_events')
+          .select('*')
+          .neq('status', 'deleted')
+          .order('created_at', { ascending: false })
+      ]);
+
+      let serverNow = Date.now() + serverTimeOffsetMs;
+      if (typeof srvTime === 'number' && srvTime > 0) {
+        serverNow = srvTime;
+        setServerTimeOffsetMs(srvTime - Date.now());
+      }
 
       if (!error && Array.isArray(data)) {
-        const now = Date.now();
-        const formatted = data.map(row => {
-          const evt = formatEventRow(row);
-          // If active draw countdown expired and no draw concluded yet, mark result_pending in DB
-          if (row.status === 'active' && evt.drawTime <= now && !row.winning_digits) {
-            supabase
-              .from('lottery_events')
-              .update({ status: 'result_pending' })
-              .eq('id', row.id)
-              .then(() => {});
-          }
-          return evt;
-        });
+        const formatted = data.map(row => formatEventRow(row, serverNow));
         setEvents(formatted);
       } else if (error) {
         console.error('Supabase fetch lottery_events error:', error);
@@ -336,6 +366,27 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       console.error('refreshEvents error:', err);
     } finally {
       setLoadingEvents(false);
+    }
+  };
+
+  // Server-authoritative Room Entry Verification
+  const verifyRoomEntry = async (eventOrRoomId: string) => {
+    if (!eventOrRoomId) {
+      return { allowed: false, reason: 'invalid_room', message: 'Invalid lottery room identifier.' };
+    }
+    try {
+      const { data, error } = await supabase.rpc('verify_room_entry_secure', {
+        p_event_or_room_id: eventOrRoomId
+      });
+      if (error) {
+        return { allowed: false, reason: 'verification_error', message: error.message || 'Unable to verify room access.' };
+      }
+      if (typeof data?.server_now_ms === 'number' && data.server_now_ms > 0) {
+        setServerTimeOffsetMs(data.server_now_ms - Date.now());
+      }
+      return data || { allowed: false, reason: 'expired', message: 'This event has expired. Room entry is no longer available.' };
+    } catch (err: any) {
+      return { allowed: false, reason: 'verification_error', message: err?.message || 'Unable to verify room access.' };
     }
   };
 
@@ -348,30 +399,25 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('lotto_events');
     } catch (e) {}
 
-    // Timer check: run every 3 seconds to transition any expired active event to 'result_pending' (Pending Official Declaration)
-    // CRITICAL FINANCIAL INTEGRITY: Never auto-finalize or disburse payouts without explicit Admin Official Declaration!
-    const timerCheck = setInterval(async () => {
-      const now = Date.now();
+    // Timer check: evaluate local reactive status using server-synced clock without unprivileged DB writes
+    const timerCheck = setInterval(() => {
+      const now = Date.now() + serverTimeOffsetMs;
       setEvents(prev => {
         let hasChanges = false;
         const updated = prev.map(e => {
+          if (e.status === 'scheduled' && e.startTime > 0 && now >= e.startTime && e.drawTime > now) {
+            hasChanges = true;
+            return { ...e, status: 'active' };
+          }
           if (e.status === 'active' && e.drawTime && e.drawTime <= now) {
             hasChanges = true;
-            supabase
-              .from('lottery_events')
-              .update({ status: 'result_pending' })
-              .eq('id', e.id)
-              .then(() => {});
-            return {
-              ...e,
-              status: 'result_pending'
-            };
+            return { ...e, status: 'result_pending' };
           }
           return e;
         });
         return hasChanges ? updated : prev;
       });
-    }, 3000);
+    }, 1000);
 
     // Subscribe to Supabase Realtime changes for lottery_events & game_configurations
     const eventChannel = supabase
@@ -2251,26 +2297,82 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Fetch tickets directly from Supabase (Authenticated Only - RLS scoped to own tickets unless admin)
+  const [loadingTickets, setLoadingTickets] = useState(false);
+  const [ticketsError, setTicketsError] = useState<string | null>(null);
+
+  // Fetch tickets directly from Supabase (Authenticated Only - Joined with authoritative event/room & server clock)
   const fetchTickets = async () => {
     if (!user?.id) {
       setTickets([]);
+      setTicketsError(null);
       return;
     }
+    setLoadingTickets(true);
+    setTicketsError(null);
     try {
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('get_user_tickets_with_events');
+      if (!rpcErr && rpcData && Array.isArray(rpcData.tickets)) {
+        if (typeof rpcData.server_now_ms === 'number' && rpcData.server_now_ms > 0) {
+          setServerTimeOffsetMs(rpcData.server_now_ms - Date.now());
+        }
+        const mappedTickets = rpcData.tickets.map((t: any) => ({
+          id: t.id,
+          userId: user.id,
+          eventId: t.event_id,
+          eventTitle: t.event_title,
+          ticketNumber: String(t.ticket_number || '0000').padStart(4, '0'),
+          price: parseFloat(t.price || 0),
+          currency: t.currency || 'USDT',
+          purchaseTime: Number(t.purchase_time || Date.now()),
+          createdAt: t.created_at,
+          status: t.status,
+          matchTier: t.match_tier,
+          wonAmount: parseFloat(t.won_amount || 0),
+          claimed: Boolean(t.claimed),
+          userAddress: t.user_address,
+          username: t.username || `@${(t.user_address || '').slice(0, 6) || 'player'}`,
+          ledgerTxRef: t.ledger_tx_ref || null,
+          eventExists: Boolean(t.event_exists),
+          roomId: t.room_id || `room-${t.event_id}`,
+          roomName: t.room_name || t.event_title || 'Lottery Room',
+          lotteryType: t.lottery_type || 'four-digit-lottery',
+          startTime: Number(t.start_time || 0),
+          drawTime: Number(t.draw_time || 0),
+          durationValue: t.duration_value ? Number(t.duration_value) : 1,
+          durationUnit: t.duration_unit || 'hours',
+          poolPrize: Number(t.pool_prize || 0),
+          eventStatus: t.event_status || 'expired',
+          eventIsActive: Boolean(t.event_is_active),
+          eventIsDeleted: Boolean(t.event_is_deleted),
+          eventIsPaused: Boolean(t.event_is_paused),
+          winningDigits: t.winning_digits || null,
+          drawResultCodes: Array.isArray(t.draw_result_codes) ? t.draw_result_codes : []
+        }));
+        setTickets(mappedTickets);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('lottery_tickets')
         .select('*')
+        .eq('user_id', user.id)
         .order('purchase_time', { ascending: false });
 
-      if (!error && Array.isArray(data)) {
-        const mappedTickets = data.map(t => ({
+      if (error) {
+        throw error;
+      }
+
+      if (Array.isArray(data)) {
+        const mappedTickets = data.map((t: any) => ({
           id: t.id,
+          userId: t.user_id,
           eventId: t.event_id,
           eventTitle: t.event_title,
-          ticketNumber: t.ticket_number,
+          ticketNumber: String(t.ticket_number || '0000').padStart(4, '0'),
           price: parseFloat(t.price || 0),
+          currency: t.currency || 'USDT',
           purchaseTime: Number(t.purchase_time || Date.now()),
+          createdAt: t.created_at,
           status: t.status,
           matchTier: t.match_tier,
           wonAmount: parseFloat(t.won_amount || 0),
@@ -2280,8 +2382,11 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         }));
         setTickets(mappedTickets);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('fetchTickets error:', err);
+      setTicketsError('Unable to load your tickets right now. Please try again.');
+    } finally {
+      setLoadingTickets(false);
     }
   };
 
@@ -3960,9 +4065,14 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         adminDeleteGame,
         adminUpdateGameConfig,
         tickets,
+        loadingTickets,
+        ticketsError,
         fetchTickets,
         fetchTakenTicketNumbers,
         takenTicketsByEvent,
+        serverTimeOffsetMs,
+        getServerNowMs,
+        verifyRoomEntry,
         withdrawals,
         activeTab,
         setActiveTab,

@@ -898,17 +898,13 @@ function LotteryAppContent() {
                   />
                 ))}
 
-                {/* VIEW 3: MY TICKETS */}
+                {/* VIEW 3: MY TICKETS (Strictly View-Only Room-Grouped Dashboard) */}
                 {activeTab === 'tickets' && (user ? (
                   <MyTicketsView
-                    onOpenPicker={() => {
-                      const liveEvent = activeEvents[0];
-                      if (liveEvent) {
-                        setSelectedEventForModal(liveEvent);
-                      } else {
-                        setActiveTab('lotteries');
-                        showToast('All previous rounds have ended! Check Results tab.', 'info');
-                      }
+                    onExploreEvents={handleGoHome}
+                    onNavigateToRoom={async (targetEventId: string) => {
+                      if (!targetEventId) return;
+                      navigate('/games/four-digit-lottery/' + targetEventId);
                     }}
                   />
                 ) : (

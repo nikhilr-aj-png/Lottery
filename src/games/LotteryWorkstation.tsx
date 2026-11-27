@@ -54,7 +54,8 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
     isUserTicketNumberPurchased,
     getUnsoldRandomNumber,
     showToast,
-    setIsAuthModalOpen
+    setIsAuthModalOpen,
+    getServerNowMs
   } = useLottery();
 
   // ---------------------------------------------------------------------------
@@ -170,43 +171,20 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
   };
 
   // ---------------------------------------------------------------------------
-  // 2. Resolve Matching or Active Lottery Event for This Room
+  // 2. Resolve Exact Lottery Event for This Room (Zero Fallback to Legacy Events)
   // ---------------------------------------------------------------------------
   const event = useMemo(() => {
-    if (!room) return events[0] || null;
+    if (!room) return null;
     if (room.event) return room.event;
 
-    const matching = events.find(
-      (e: any) =>
-        e.id === room.id ||
-        e.id === room.drawId ||
-        (room.name && e.title && e.title.toLowerCase().includes(room.name.toLowerCase()))
+    return (
+      events.find(
+        (e: any) =>
+          e.id === room.id ||
+          e.id === room.drawId ||
+          (room.roomId && e.roomId === room.roomId)
+      ) || null
     );
-    if (matching) return matching;
-
-    const active = events.find((e: any) => e.status === 'active');
-    if (active) {
-      return {
-        ...active,
-        id: room.drawId || room.id || active.id,
-        title: room.name || active.title,
-        ticketPrice: room.minStakeFC || active.ticketPrice || 10,
-        poolPrize: room.prizeInfo?.match(/\d+[\d,]*/)?.[0]?.replace(',', '') || active.poolPrize || 1000
-      };
-    }
-
-    return {
-      id: room.drawId || room.id || 'evt-default',
-      title: room.name || 'Four-Digit Lottery Draw',
-      ticketPrice: room.minStakeFC || 10,
-      currency: room.currency || 'USDT',
-      poolPrize: room.poolPrize || 1000,
-      drawTime: Date.now() + (room.drawDurationHours || 24) * 3600 * 1000,
-      status: 'active',
-      ticketsSold: 0,
-      participantsCount: 0,
-      sha256Seed: ''
-    };
   }, [room, events]);
 
   // ---------------------------------------------------------------------------
@@ -223,15 +201,18 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
   const [copiedSeed, setCopiedSeed] = useState<boolean>(false);
 
   // ---------------------------------------------------------------------------
-  // 4. Countdown Timer & Status
+  // 4. Countdown Timer & Server-Synced Status
   // ---------------------------------------------------------------------------
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
-  const statusInfo = getEventStatusInfo(event);
-  const isTimedOut = statusInfo.isEnd;
+  const serverNowMs = getServerNowMs ? getServerNowMs() : Date.now();
+  const statusInfo = getEventStatusInfo(event, undefined, serverNowMs);
+  const isTimedOut = statusInfo.isEnd || statusInfo.isUpcoming;
 
   useEffect(() => {
     const updateTime = () => {
-      const diff = Math.max(0, (event?.drawTime || Date.now() + 86400000) - Date.now());
+      const now = getServerNowMs ? getServerNowMs() : Date.now();
+      const target = statusInfo.expiresAtMs || event?.drawTime || 0;
+      const diff = target > 0 ? Math.max(0, target - now) : 0;
       const h = Math.floor(diff / (1000 * 60 * 60));
       const m = Math.floor((diff / (1000 * 60)) % 60);
       const s = Math.floor((diff / 1000) % 60);
@@ -241,7 +222,7 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, [event?.drawTime]);
+  }, [event?.drawTime, statusInfo.expiresAtMs, getServerNowMs]);
 
   const currentNumberStr = digits.join('');
 
@@ -367,8 +348,8 @@ export default function LotteryWorkstation({ room }: LotteryWorkstationProps) {
   const handlePurchaseAction = async () => {
     if (isSubmitting) return;
 
-    if (isTimedOut) {
-      showToast('This draw has concluded and is closed for purchases!', 'error');
+    if (isTimedOut || !event?.id) {
+      showToast('This event has expired. Ticket purchasing and room entry are closed.', 'error');
       return;
     }
     if (!user) {

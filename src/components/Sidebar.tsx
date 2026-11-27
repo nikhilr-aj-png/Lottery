@@ -4,6 +4,7 @@ import {
   Award,
   Wallet,
   LayoutGrid,
+  Ticket,
   History,
   Gift,
   Share2,
@@ -81,6 +82,7 @@ export default function Sidebar({
       title: 'Lottery',
       items: [
         { id: 'lotteries', label: 'Home', icon: LayoutGrid, isLobby: true },
+        { id: 'tickets', label: 'My Ticket', icon: Ticket, requiresAuth: true },
         { id: 'results', label: 'Results', icon: Trophy },
         { id: 'leaderboard', label: 'Leaderboard', icon: Award, requiresAuth: true }
       ]

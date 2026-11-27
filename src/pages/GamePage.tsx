@@ -6,8 +6,9 @@ import {
   ROOM_STATUSES
 } from '../engine';
 import { useLottery } from '../context/LotteryContext';
-import { Info, Layers } from 'lucide-react';
+import { Info, Layers, Clock, Lock } from 'lucide-react';
 import { LotteryWorkstation } from '../games';
+import { getEventStatusInfo } from '../utils/eventStatus';
 
 export interface GamePageProps {
   gameSlug: string;
@@ -19,9 +20,27 @@ export interface GamePageProps {
 export default function GamePage({
   gameSlug,
   roomId = null,
+  onNavigate,
   onBackToHome
 }: GamePageProps) {
-  const { events, loadingEvents } = useLottery();
+  const { events, loadingEvents, getServerNowMs, verifyRoomEntry } = useLottery();
+  const [serverTickNow, setServerTickNow] = useState<number>(() =>
+    getServerNowMs ? getServerNowMs() : Date.now()
+  );
+  const [roomAccessState, setRoomAccessState] = useState<{
+    checking: boolean;
+    allowed: boolean;
+    reason?: string;
+    message?: string;
+  }>({ checking: gameSlug === 'four-digit-lottery' || gameSlug === 'lottery', allowed: true });
+
+  // Update server-aligned clock once per second so expired rooms lock out immediately
+  useEffect(() => {
+    const tick = setInterval(() => {
+      setServerTickNow(getServerNowMs ? getServerNowMs() : Date.now());
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [getServerNowMs]);
 
   // Resolve game metadata
   const game = useMemo(() => getGameById(gameSlug), [gameSlug]);
@@ -39,54 +58,97 @@ export default function GamePage({
     }
   }, [game?.id]);
 
-  // For Four-Digit Lottery: rooms are 100% database-driven from active lottery_events
+  // For Four-Digit Lottery: rooms are 100% database-driven from lottery_events
   const lotteryRooms = useMemo(() => {
     if (game?.id !== 'lottery') return [];
-    return (events || []).map((evt, idx) => ({
-      id: evt.id,
-      gameId: 'lottery',
-      drawId: evt.id,
-      name: evt.title || evt.roomName || `Room ${idx + 1}`,
-      type: evt.badge?.toLowerCase().includes('vip')
-        ? ROOM_TYPES.VIP
-        : (evt.badge?.toLowerCase().includes('high') ? ROOM_TYPES.HIGH_ROLLER : ROOM_TYPES.STANDARD),
-      status: evt.status === 'completed' ? ROOM_STATUSES.COMPLETED : ROOM_STATUSES.ACTIVE,
-      description: evt.description || `Pick 4 lucky digits from 0000 to 9999. Payouts distributed in ${evt.currency || 'USDT'}.`,
-      minStakeUSDT: evt.ticketPrice || 10,
-      maxStakeUSDT: evt.ticketPrice || 10,
-      minStakeFC: evt.ticketPrice || 10,
-      maxStakeFC: evt.ticketPrice || 10,
-      currency: evt.currency || 'USDT',
-      playerCapacity: evt.maxTotalTickets || 1000,
-      currentPlayers: evt.participantsCount || 0,
-      ticketsSold: evt.ticketsSold || 0,
-      drawDurationHours: evt.durationValue || 24,
-      poolPrize: evt.poolPrize,
-      minPrize: evt.minPrize,
-      maxPrize: evt.maxPrize,
-      jackpotMode: evt.jackpotMode,
-      drawTime: evt.drawTime,
-      winningDigits: evt.winningDigits,
-      sortOrder: idx + 1,
-      event: evt
-    }));
-  }, [game?.id, events]);
+    return (events || []).map((evt, idx) => {
+      const st = getEventStatusInfo(evt, undefined, serverTickNow);
+      return {
+        id: evt.id,
+        roomId: evt.roomId || `room-${evt.id}`,
+        gameId: 'lottery',
+        drawId: evt.id,
+        name: evt.roomName || evt.title || `Room ${idx + 1}`,
+        type: evt.badge?.toLowerCase().includes('vip')
+          ? ROOM_TYPES.VIP
+          : (evt.badge?.toLowerCase().includes('high') ? ROOM_TYPES.HIGH_ROLLER : ROOM_TYPES.STANDARD),
+        status: st.isEnd || evt.status === 'completed' ? ROOM_STATUSES.COMPLETED : ROOM_STATUSES.ACTIVE,
+        isEnterable: !st.isEnd && !st.isUpcoming,
+        isUpcoming: st.isUpcoming,
+        description: evt.description || `Pick 4 lucky digits from 0000 to 9999. Payouts distributed in ${evt.currency || 'USDT'}.`,
+        minStakeUSDT: evt.ticketPrice || 10,
+        maxStakeUSDT: evt.ticketPrice || 10,
+        minStakeFC: evt.ticketPrice || 10,
+        maxStakeFC: evt.ticketPrice || 10,
+        currency: evt.currency || 'USDT',
+        playerCapacity: evt.maxTotalTickets || 1000,
+        currentPlayers: evt.participantsCount || 0,
+        ticketsSold: evt.ticketsSold || 0,
+        drawDurationHours: evt.durationValue || 1,
+        poolPrize: evt.poolPrize,
+        minPrize: evt.minPrize,
+        maxPrize: evt.maxPrize,
+        jackpotMode: evt.jackpotMode,
+        startTime: evt.startTime,
+        drawTime: evt.drawTime,
+        winningDigits: evt.winningDigits,
+        sortOrder: idx + 1,
+        event: evt
+      };
+    });
+  }, [game?.id, events, serverTickNow]);
 
   const activeRooms = useMemo(() => {
     if (game?.id === 'lottery') return lotteryRooms;
     return rooms;
   }, [game?.id, lotteryRooms, rooms]);
 
-  // Directly resolve requested or primary active lottery room without intermediate Lobby hops
+  // STRICT Room-to-Event Mapping: Never substitute another unrelated or legacy room when roomId is given
   const selectedRoom = useMemo(() => {
     if (roomId) {
-      return activeRooms.find(r => r.id === roomId) || activeRooms.find(r => r.status === ROOM_STATUSES.ACTIVE) || activeRooms[0] || null;
+      return activeRooms.find((r: any) => r.id === roomId || r.roomId === roomId || r.drawId === roomId) || null;
     }
     if (game?.id === 'lottery' && activeRooms.length > 0) {
-      return activeRooms.find(r => r.status === ROOM_STATUSES.ACTIVE) || activeRooms[0];
+      return activeRooms.find((r: any) => r.isEnterable) || null;
     }
     return null;
   }, [activeRooms, roomId, game?.id]);
+
+  // Verify room access directly against authoritative PostgreSQL server clock & event state
+  const targetVerificationKey = roomId || selectedRoom?.id || null;
+  useEffect(() => {
+    if (game?.id !== 'lottery') {
+      setRoomAccessState({ checking: false, allowed: true });
+      return;
+    }
+    if (!targetVerificationKey) {
+      if (!loadingEvents) {
+        setRoomAccessState({
+          checking: false,
+          allowed: false,
+          reason: 'expired',
+          message: 'This event has expired. Room entry is no longer available.'
+        });
+      }
+      return;
+    }
+
+    let cancelled = false;
+    setRoomAccessState(prev => ({ ...prev, checking: true }));
+    verifyRoomEntry(targetVerificationKey).then((res: any) => {
+      if (cancelled) return;
+      setRoomAccessState({
+        checking: false,
+        allowed: Boolean(res?.allowed),
+        reason: res?.reason,
+        message: res?.message
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [game?.id, targetVerificationKey, loadingEvents]);
 
   if (!game) {
     return (
@@ -106,8 +168,8 @@ export default function GamePage({
     );
   }
 
-  // While events are loading on direct navigation, show a single-screen 3-column skeleton (prevents layout flash)
-  if (loadingEvents && !selectedRoom) {
+  // While events or server room verification are loading (skip waiting on events if server already rejected roomId)
+  if ((roomAccessState.checking || (loadingEvents && roomAccessState.allowed)) && !selectedRoom?.isEnterable) {
     return (
       <div className="w-full h-full flex flex-col p-3 lg:p-4 gap-3 overflow-hidden bg-[#080C16]">
         <div className="h-12 lg:h-14 rounded-2xl bg-[#111728] border border-[#1B2238] animate-pulse shrink-0" />
@@ -115,6 +177,66 @@ export default function GamePage({
           <div className="rounded-2xl bg-[#111728] border border-[#1B2238] animate-pulse" />
           <div className="rounded-2xl bg-[#111728] border border-[#1B2238] animate-pulse" />
           <div className="rounded-2xl bg-[#111728] border border-[#1B2238] animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  // Strict Client + Server Expiration / Upcoming / Archived Room Block
+  const selectedStatus = selectedRoom?.event
+    ? getEventStatusInfo(selectedRoom.event, undefined, serverTickNow)
+    : null;
+  const isBlocked =
+    game.id === 'lottery' &&
+    (!selectedRoom ||
+      !roomAccessState.allowed ||
+      Boolean(selectedStatus && (selectedStatus.isEnd || selectedStatus.isUpcoming)));
+
+  if (isBlocked) {
+    const isUpcoming = roomAccessState.reason === 'upcoming' || Boolean(selectedStatus?.isUpcoming);
+    const blockMsg =
+      roomAccessState.message ||
+      (isUpcoming
+        ? 'This event has not started yet. Room entry opens at the scheduled start time.'
+        : 'This event has expired. Room entry is no longer available.');
+
+    return (
+      <div
+        data-testid="room-access-blocked"
+        className="w-full h-full flex items-center justify-center p-4 overflow-y-auto bg-[#080C16]"
+      >
+        <div className="max-w-md w-full bg-[#111728] border border-rose-500/35 rounded-2xl p-6 sm:p-7 text-center space-y-4 shadow-2xl">
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/35 flex items-center justify-center mx-auto text-rose-400">
+            {isUpcoming ? <Clock className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="font-display font-extrabold text-lg sm:text-xl text-white">
+              {isUpcoming ? 'Event Not Started Yet' : 'Room Entry Closed'}
+            </h2>
+            <p className="text-xs sm:text-sm text-[#CBD5E1] leading-relaxed">
+              {blockMsg}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+            {onBackToHome && (
+              <button
+                type="button"
+                onClick={onBackToHome}
+                className="btn-gold px-5 py-2.5 rounded-xl text-xs font-bold text-black cursor-pointer"
+              >
+                Explore Active Events
+              </button>
+            )}
+            {onNavigate && (
+              <button
+                type="button"
+                onClick={() => onNavigate('/results')}
+                className="px-5 py-2.5 rounded-xl bg-[#0B0F19] hover:bg-[#171E2E] border border-[#2A354A] text-xs font-bold text-white cursor-pointer"
+              >
+                View Results
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -129,7 +251,7 @@ export default function GamePage({
     );
   }
 
-  // Empty state if database has zero lottery rooms published
+  // Empty state if database has zero active lottery rooms published
   return (
     <div className="w-full h-full flex items-center justify-center p-4 overflow-hidden">
       <div className="max-w-md w-full bg-[#111728] border border-[#1F2737] rounded-2xl p-6 text-center space-y-3 shadow-xl">

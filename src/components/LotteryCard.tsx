@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Users, Ticket, ArrowRight, Flame, Trophy, Play, CheckCircle2 } from 'lucide-react';
 import { getEventStatusInfo } from '../utils/eventStatus';
+import { useLottery } from '../context/LotteryContext';
 
 interface LotteryCardProps {
   event: any;
@@ -19,12 +20,18 @@ export default function LotteryCard({
   mode = 'available',
   isLive = false 
 }: LotteryCardProps) {
+  const { getServerNowMs } = useLottery();
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 });
+  const serverNowMs = getServerNowMs ? getServerNowMs() : Date.now();
+  const statusInfo = getEventStatusInfo(event, undefined, serverNowMs);
 
   useEffect(() => {
     const updateCountdown = () => {
-      const targetTime = event.drawTime || (Date.now() + 86400000);
-      const diff = Math.max(0, targetTime - Date.now());
+      const now = getServerNowMs ? getServerNowMs() : Date.now();
+      const targetTime = statusInfo.isUpcoming
+        ? (statusInfo.startTimeMs || event.drawTime || 0)
+        : (statusInfo.expiresAtMs || event.drawTime || 0);
+      const diff = targetTime > 0 ? Math.max(0, targetTime - now) : 0;
       const totalSecs = Math.floor(diff / 1000);
       const d = Math.floor(diff / (1000 * 60 * 60 * 24));
       const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
@@ -36,11 +43,10 @@ export default function LotteryCard({
     updateCountdown();
     const timer = setInterval(updateCountdown, 1000);
     return () => clearInterval(timer);
-  }, [event.drawTime]);
+  }, [event.drawTime, statusInfo.isUpcoming, statusInfo.startTimeMs, statusInfo.expiresAtMs, getServerNowMs]);
 
-  const statusInfo = getEventStatusInfo(event);
   const isCompleted = mode === 'result' || statusInfo.isEnd || Boolean(event.winningDigits) || event.status === 'completed';
-  const isTimedOut = isCompleted || (timeLeft.totalSeconds === 0 && Boolean(event.drawTime && event.drawTime <= Date.now()));
+  const isTimedOut = isCompleted || (timeLeft.totalSeconds === 0 && Boolean(statusInfo.expiresAtMs && statusInfo.expiresAtMs <= serverNowMs));
 
   // Authoritative event title (Never fallback to generic verification text)
   const eventTitle = event.title || event.name || event.roomName || 'Four Digit Lottery Draw';
@@ -227,6 +233,15 @@ export default function LotteryCard({
             <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
             <span>Show Result</span>
             <ArrowRight className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          </button>
+        ) : statusInfo.isUpcoming ? (
+          <button
+            type="button"
+            disabled
+            className="w-full min-h-[40px] py-2 rounded-xl bg-[#141924] text-blue-300 border border-blue-500/30 font-extrabold text-xs flex items-center justify-center gap-2 cursor-not-allowed opacity-85 whitespace-nowrap"
+          >
+            <Clock className="w-3.5 h-3.5 shrink-0" />
+            <span>Starts Soon</span>
           </button>
         ) : (
           <button
