@@ -836,7 +836,7 @@ function LotteryAppContent() {
             }`}
         >
 
-          <div className={currentGameRoute ? 'flex-1 min-h-0 flex flex-col overflow-hidden h-full' : 'w-full flex-grow shrink-0 px-2.5 xs:px-4 sm:px-6 lg:px-8'}>
+          <div className={currentGameRoute ? 'flex-1 min-h-0 flex flex-col overflow-hidden h-full' : 'w-full min-w-0 flex-grow shrink-0 px-2.5 xs:px-4 sm:px-6 lg:px-8'}>
             {/* DEDICATED SEPARATE PAGE: TRANSACTION HISTORY */}
             {(isTransactionRoute || activeTab === 'transactions') ? (user ? (
               <TransactionHistoryPage

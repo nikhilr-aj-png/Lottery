@@ -23,7 +23,7 @@ import {
  */
 export default function ResultsView() {
   const { events, tickets, platformSettings, getServerNowMs } = useLottery();
-  const [statusFilter, setStatusFilter] = useState<'recent' | 'pending' | 'archive'>('recent');
+  const [statusFilter, setStatusFilter] = useState<'recent' | 'archive'>('recent');
   const [selectedShowResultEvent, setSelectedShowResultEvent] = useState<any>(null);
   const [nowTick, setNowTick] = useState<number>(() => (getServerNowMs ? getServerNowMs() : Date.now()));
 
@@ -44,11 +44,10 @@ export default function ResultsView() {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1.0;
   }, [platformSettings?.resultsRetentionHours, platformSettings?.resultsRetention]);
 
-  // Categorize all concluded/expired events cleanly into Recent (1H visible), Pending Declaration, and Historical Archive
-  const { recentDeclaredEvents, pendingEvents, archivedDeclaredEvents } = useMemo(() => {
+  // Display ONLY successfully finalized & published official results (Recent 1H Window + Historical Archive)
+  const { recentDeclaredEvents, archivedDeclaredEvents } = useMemo(() => {
     const seenIds = new Set<string>();
     const recentList: any[] = [];
-    const pendingList: any[] = [];
     const archiveList: any[] = [];
     const retentionMs = retentionHours * 3600 * 1000;
 
@@ -56,39 +55,26 @@ export default function ResultsView() {
       if (!e || !e.id || seenIds.has(e.id) || e.isDeleted || e.status === 'deleted' || e.status === 'draft') return;
 
       const isFinalizedCompleted =
-        e.status === 'completed' &&
+        (e.status === 'completed' || e.status === 'settled') &&
         Boolean(e.resultPublishedAtMs || e.finalizedAtMs || e.drawExecutedAt) &&
         Boolean(e.winningDigits);
 
-      const isPendingOrExpired =
-        !isFinalizedCompleted &&
-        Boolean(
-          e.status === 'result_pending' ||
-          e.status === 'processing' ||
-          e.status === 'expired' ||
-          (e.status !== 'scheduled' && e.drawTime && new Date(e.drawTime).getTime() <= nowTick)
-        );
-
-      if (!isFinalizedCompleted && !isPendingOrExpired) return;
+      if (!isFinalizedCompleted) return;
       seenIds.add(e.id);
 
-      if (isFinalizedCompleted) {
-        const publishedAtMs =
-          e.resultPublishedAtMs ||
-          e.finalizedAtMs ||
-          (e.drawExecutedAt ? new Date(e.drawExecutedAt).getTime() : 0);
-        const visDeadlineMs =
-          e.resultVisibleUntilMs ||
-          e.ticketVisibilityUntilMs ||
-          (publishedAtMs > 0 ? publishedAtMs + retentionMs : 0);
+      const publishedAtMs =
+        e.resultPublishedAtMs ||
+        e.finalizedAtMs ||
+        (e.drawExecutedAt ? new Date(e.drawExecutedAt).getTime() : 0);
+      const visDeadlineMs =
+        e.resultVisibleUntilMs ||
+        e.ticketVisibilityUntilMs ||
+        (publishedAtMs > 0 ? publishedAtMs + retentionMs : 0);
 
-        if (visDeadlineMs > 0 && nowTick >= visDeadlineMs) {
-          archiveList.push(e);
-        } else {
-          recentList.push(e);
-        }
+      if (visDeadlineMs > 0 && nowTick >= visDeadlineMs) {
+        archiveList.push(e);
       } else {
-        pendingList.push(e);
+        recentList.push(e);
       }
     });
 
@@ -100,16 +86,13 @@ export default function ResultsView() {
 
     return {
       recentDeclaredEvents: recentList.sort(sortDesc),
-      pendingEvents: pendingList.sort(sortDesc),
       archivedDeclaredEvents: archiveList.sort(sortDesc)
     };
   }, [events, retentionHours, nowTick]);
 
   const displayEvents = useMemo(() => {
-    if (statusFilter === 'pending') return pendingEvents;
-    if (statusFilter === 'archive') return archivedDeclaredEvents;
-    return recentDeclaredEvents;
-  }, [statusFilter, recentDeclaredEvents, pendingEvents, archivedDeclaredEvents]);
+    return statusFilter === 'archive' ? archivedDeclaredEvents : recentDeclaredEvents;
+  }, [statusFilter, recentDeclaredEvents, archivedDeclaredEvents]);
 
   return (
     <div
@@ -141,11 +124,10 @@ export default function ResultsView() {
         </div>
       </div>
 
-      {/* 2. Filter Pills — Recent Results (1H Window), Pending Declaration, and Historical Archive */}
+      {/* 2. View Switcher — Recent Results (1H Window) and Historical Archive ONLY */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
         {[
           { key: 'recent', label: `Recent Results (${recentDeclaredEvents.length})`, testId: 'results-tab-recent' },
-          { key: 'pending', label: `Pending Official Declaration (${pendingEvents.length})`, testId: 'results-tab-pending' },
           { key: 'archive', label: `Historical Archive (${archivedDeclaredEvents.length})`, testId: 'results-tab-archive' }
         ].map((tab) => (
           <button
@@ -173,18 +155,14 @@ export default function ResultsView() {
             <Trophy className="w-6 h-6" />
           </div>
           <h3 className="font-display font-bold text-base text-white">
-            {statusFilter === 'pending'
-              ? 'No Draws Pending Official Declaration'
-              : statusFilter === 'archive'
-                ? 'No Archived Results Yet'
-                : 'No Recent Results Currently Visible'}
+            {statusFilter === 'archive'
+              ? 'No Archived Results Yet'
+              : 'No Recent Results Currently Visible'}
           </h3>
           <p className="text-xs text-[#94A3B8] leading-relaxed">
-            {statusFilter === 'pending'
-              ? 'There are currently no concluded lottery events awaiting official result finalization.'
-              : statusFilter === 'archive'
-                ? 'Official results move here automatically after their active 1-hour showcase window completes.'
-                : 'Newly published official results appear here automatically with a 1-hour live visibility countdown.'}
+            {statusFilter === 'archive'
+              ? 'Official results move here automatically after their active 1-hour showcase window completes.'
+              : 'Newly published official results appear here automatically with a 1-hour live visibility countdown.'}
           </p>
         </div>
       ) : (

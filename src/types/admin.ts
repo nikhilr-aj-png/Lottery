@@ -11,7 +11,6 @@ export type AdminTab =
   | 'withdrawals' 
   | 'deposits'
   | 'users' 
-  | 'winner-payouts' 
   | 'support' 
   | 'settings';
 

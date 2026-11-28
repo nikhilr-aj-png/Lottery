@@ -11,7 +11,7 @@ export default function Toast(): React.JSX.Element | null {
   const isInfo = toastMessage.type === 'info';
 
   return (
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 max-w-[calc(100vw-2rem)] animate-in slide-in-from-bottom duration-300">
+    <div className="fixed bottom-20 md:bottom-6 right-3 sm:right-6 z-50 max-w-[calc(100vw-1.5rem)] animate-in slide-in-from-bottom duration-300">
       <div className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border shadow-2xl backdrop-blur-xl ${
         isError 
           ? 'bg-red-950/90 border-red-500/50 text-red-200' 

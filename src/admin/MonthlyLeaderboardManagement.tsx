@@ -34,10 +34,6 @@ interface MonthAnnouncementRecord {
   published_at?: string;
 }
 
-interface MonthlyLeaderboardManagementProps {
-  onGoToWinnerPayouts?: () => void;
-}
-
 const getCurrentMonthKey = (): string => {
   const now = new Date();
   const y = now.getFullYear();
@@ -60,9 +56,7 @@ const createEmptyTiers = (): PrizeTier[] =>
     reward_usdt: '0.00'
   }));
 
-export default function MonthlyLeaderboardManagement({
-  onGoToWinnerPayouts
-}: MonthlyLeaderboardManagementProps = {}) {
+export default function MonthlyLeaderboardManagement() {
   const { showToast, adminFinalizeMonthlyLeaderboard } = useLottery() as any;
 
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonthKey);
@@ -588,17 +582,7 @@ export default function MonthlyLeaderboardManagement({
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600/25 hover:bg-purple-600/40 border border-purple-500/40 text-xs font-bold text-purple-200 transition-colors cursor-pointer disabled:opacity-45"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  Finalize {formatMonthLabel(selectedMonth)} &amp; Queue Payouts
-                </button>
-              )}
-
-              {onGoToWinnerPayouts && (
-                <button
-                  type="button"
-                  onClick={onGoToWinnerPayouts}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#111827] border border-[#272a31] hover:border-amber-500/40 text-xs font-bold text-amber-300 transition-colors cursor-pointer"
-                >
-                  Review &amp; Approve Payouts →
+                  Finalize {formatMonthLabel(selectedMonth)} &amp; Credit Winners
                 </button>
               )}
             </div>
@@ -617,8 +601,8 @@ export default function MonthlyLeaderboardManagement({
                   </h4>
                   <p className="text-xs text-[#94A3B8] leading-relaxed">
                     {isMonthElapsed
-                      ? 'This will rank Top 10 eligible winners using win-rate rules and create individual Pending Approval reward payouts in Winner Payouts (Add USDT).'
-                      : 'Warning: This competition month has not closed yet. Finalizing early will immediately lock and generate Top-10 Pending Approval payouts using standings so far.'}
+                      ? 'This will rank Top 10 eligible winners using win-rate rules and automatically credit USDT rewards directly to their wallets.'
+                      : 'Warning: This competition month has not closed yet. Finalizing early will immediately lock and automatically credit Top-10 USDT rewards directly to winner wallets.'}
                   </p>
                 </div>
                 <div className="flex items-center justify-end gap-2.5">

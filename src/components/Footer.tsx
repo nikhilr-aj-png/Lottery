@@ -33,7 +33,7 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
   return (
     <footer
       data-testid="site-footer"
-      className="shrink-0 w-full mt-auto border-t border-[#1F2737] bg-[#07090D] text-left pt-5 sm:pt-6 pb-24 sm:pb-28 lg:pb-28 px-3 xs:px-4 sm:px-6 lg:px-8 select-none box-border overflow-visible relative z-10"
+      className="shrink-0 w-full mt-auto border-t border-[#1F2737] bg-[#07090D] text-left pt-5 sm:pt-6 pb-[calc(6.75rem+env(safe-area-inset-bottom,0px))] md:pb-8 px-3 xs:px-4 sm:px-6 lg:px-8 select-none box-border overflow-visible relative z-10"
     >
       <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] 4k:max-w-[2000px] mx-auto space-y-4 sm:space-y-5">
         
@@ -171,7 +171,7 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
 
               <div
                 data-testid="footer-app-buttons"
-                className={`grid ${apkDirectDownloadUrl ? 'grid-cols-2' : 'grid-cols-1 max-w-[200px]'} md:flex md:items-center lg:grid lg:grid-cols-1 gap-2 xs:gap-2.5 pt-0.5 md:pt-0 max-w-md md:max-w-none mx-auto md:mx-0 w-full md:w-auto lg:w-full shrink-0`}
+                className={`grid ${apkDirectDownloadUrl ? 'grid-cols-1 xs:grid-cols-2' : 'grid-cols-1 max-w-[200px]'} md:flex md:items-center lg:grid lg:grid-cols-1 gap-2 xs:gap-2.5 pt-0.5 md:pt-0 max-w-md md:max-w-none mx-auto md:mx-0 w-full md:w-auto lg:w-full shrink-0`}
               >
                 {apkDirectDownloadUrl && (
                   <a
@@ -204,15 +204,15 @@ export default function Footer({ onSelectTab, onGoHome }: FooterProps) {
         {/* 2. COPYRIGHT & COMPLIANCE BAR */}
         <div
           data-testid="footer-copyright-bar"
-          className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-2 text-center sm:text-left text-[11px] text-[#94A3B8]"
+          className="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-2 text-center sm:text-left text-[11px] leading-relaxed text-[#94A3B8] w-full max-w-full min-w-0"
         >
-          <div className="break-words">
+          <div className="w-full sm:w-auto max-w-full break-words min-w-0">
             © 2026 EarnFlow.in. All rights reserved. Online Four-Digit Lottery Platform.
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-2 shrink-0">
-            <span>18+ Play Responsibly</span>
-            <span>•</span>
-            <span>USDT TRC-20 Settlements</span>
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 max-w-full min-w-0">
+            <span className="whitespace-nowrap">18+ Play Responsibly</span>
+            <span aria-hidden="true">•</span>
+            <span className="whitespace-nowrap">USDT TRC-20 Settlements</span>
           </div>
         </div>
 

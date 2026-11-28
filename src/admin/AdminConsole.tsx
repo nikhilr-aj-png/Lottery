@@ -59,7 +59,6 @@ import {
 import ReferralsManagement from './ReferralsManagement';
 import SpinWheelManagement from './SpinWheelManagement';
 import MonthlyLeaderboardManagement from './MonthlyLeaderboardManagement';
-import WinnerPayoutsManagement from './WinnerPayoutsManagement';
 
 interface AdminConsoleProps {
   onLogout?: () => void;
@@ -72,7 +71,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
     profile,
     events, 
     withdrawals, 
-    winnerPayouts = [],
     games = [],
     loadingGames = false,
     executeDraw, 
@@ -80,9 +78,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
     adminDeleteEvent,
     adminApproveWithdrawal, 
     adminRejectWithdrawal,
-    adminApproveWinnerPayout,
-    adminRejectWinnerPayout,
-    adminAddManualWinnerCredit,
     adminFetchAllUsers,
     adminAdjustUserWallet,
     adminUpdateUserPlayerCategory,
@@ -101,14 +96,13 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
     getDirectDownloadUrl
   } = useLottery();
 
-  // Navigation tab: 'overview' | 'games-management' | 'pools' | 'games' | 'game-rounds' | 'withdrawals' | 'users' | 'winner-payouts' | 'support' | 'rewards-control' | 'referrals' | 'spin-wheel' | 'monthly-leaderboard' | 'settings'
+  // Navigation tab: 'overview' | 'games-management' | 'pools' | 'games' | 'game-rounds' | 'withdrawals' | 'users' | 'support' | 'rewards-control' | 'referrals' | 'spin-wheel' | 'monthly-leaderboard' | 'settings'
   const [activeAdminTab, setActiveAdminTab] = useState(() => {
     if (typeof window !== 'undefined') {
       const p = window.location.pathname.toLowerCase();
       if (p.includes('/referrals') || window.location.search.includes('tab=referrals')) return 'referrals';
       if (p.includes('/spin-wheel') || window.location.search.includes('tab=spin-wheel')) return 'spin-wheel';
       if (p.includes('/monthly-leaderboard') || window.location.search.includes('tab=monthly-leaderboard')) return 'monthly-leaderboard';
-      if (p.includes('/winner-payouts') || window.location.search.includes('tab=winner-payouts')) return 'winner-payouts';
       if (p.includes('/settings') || window.location.search.includes('tab=settings')) return 'settings';
     }
     return 'overview';
@@ -158,7 +152,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       if (tab === 'referrals') targetPath = '/admin/referrals';
       else if (tab === 'spin-wheel') targetPath = '/admin/spin-wheel';
       else if (tab === 'monthly-leaderboard') targetPath = '/admin/monthly-leaderboard';
-      else if (tab === 'winner-payouts') targetPath = '/admin/winner-payouts';
       else if (tab === 'settings') targetPath = '/admin/settings';
       window.history.replaceState(null, '', targetPath);
     } catch (e) {}
@@ -186,13 +179,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
 
   // Withdrawals filter state
   const [withdrawalFilter, setWithdrawalFilter] = useState('all');
-
-  // Winner Payouts state
-  const [payoutFilter, setPayoutFilter] = useState('all');
-  const [editedPayoutAmounts, setEditedPayoutAmounts] = useState<any>({});
-  const [manualWinnerUser, setManualWinnerUser] = useState('');
-  const [manualWinnerAmount, setManualWinnerAmount] = useState('');
-  const [manualWinnerNote, setManualWinnerNote] = useState('Special Seasonal Reward');
 
   // Bonus & Daily Reward Controls State
   const [bonusRewardSettings, setBonusRewardSettings] = useState({
@@ -483,22 +469,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
     setEventBannerImage('');
   };
 
-  const handleApprovePayout = async (payoutId) => {
-    const customAmt = editedPayoutAmounts[payoutId];
-    await adminApproveWinnerPayout(payoutId, customAmt);
-  };
-
-  const handleManualCreditSubmit = async (e) => {
-    e.preventDefault();
-    if (!manualWinnerAmount || parseFloat(manualWinnerAmount) <= 0) {
-      showToast('Please enter a valid USDT amount', 'error');
-      return;
-    }
-    const target = manualWinnerUser || (usersList[0]?.username ? `@${usersList[0]?.username}` : 'VIP Player');
-    await adminAddManualWinnerCredit(target, manualWinnerAmount, manualWinnerNote);
-    setManualWinnerAmount('');
-  };
-
   const handleTriggerDraw = (e) => {
     e.preventDefault();
     if (!selectedEventId) {
@@ -608,14 +578,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
     return true;
   });
 
-  // Filtered winner payouts list
-  const filteredWinnerPayouts = winnerPayouts.filter(p => {
-    if (payoutFilter === 'pending') return p.status === 'pending_approval';
-    if (payoutFilter === 'completed') return p.status === 'completed';
-    if (payoutFilter === 'rejected') return p.status === 'rejected';
-    return true;
-  });
-
   // Filtered support tickets list
   const filteredSupportTickets = supportTickets.filter(t => {
     if (supportFilter === 'pending') return t.status === 'pending';
@@ -636,10 +598,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
   });
 
   const pendingSupportCount = supportTickets.filter(t => t.status === 'pending').length;
-
-  const pendingWinnerApprovalCount = winnerPayouts.filter(
-    p => p.status === 'pending_approval' || p.status === 'failed'
-  ).length;
 
   const adminNavItems = [
     {
@@ -687,19 +645,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       onClick: () => {
         switchAdminTab('users');
         loadUsers();
-      }
-    },
-    {
-      id: 'winner-payouts',
-      label: 'Winner Payouts (Add USDT)',
-      icon: Trophy,
-      isActive: activeAdminTab === 'winner-payouts',
-      badge: pendingWinnerApprovalCount > 0 ? String(pendingWinnerApprovalCount) : undefined,
-      badgeTone: 'emerald-solid',
-      compactCount: pendingWinnerApprovalCount > 0 ? pendingWinnerApprovalCount : null,
-      onClick: () => {
-        switchAdminTab('winner-payouts');
-        if (usersList.length === 0) loadUsers();
       }
     },
     {
@@ -1903,13 +1848,6 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
         )}
 
         {/* ============================================================== */}
-        {/* TAB: WINNER PAYOUTS (ADD USDT)                                */}
-        {/* ============================================================== */}
-        {activeAdminTab === 'winner-payouts' && (
-          <WinnerPayoutsManagement usersList={usersList} />
-        )}
-
-        {/* ============================================================== */}
         {/* TAB 5: PLATFORM SETTINGS & GOVERNANCE                         */}
         {/* ============================================================== */}
         {activeAdminTab === 'settings' && (
@@ -2238,12 +2176,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
         {/* TAB: MONTHLY LEADERBOARD ANNOUNCEMENT & PRIZES                 */}
         {/* ============================================================== */}
         {activeAdminTab === 'monthly-leaderboard' && (
-          <MonthlyLeaderboardManagement
-            onGoToWinnerPayouts={() => {
-              switchAdminTab('winner-payouts');
-              if (usersList.length === 0) loadUsers();
-            }}
-          />
+          <MonthlyLeaderboardManagement />
         )}
 
         {/* ============================================================== */}
