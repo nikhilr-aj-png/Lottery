@@ -272,7 +272,7 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
                   </p>
                 ) : (
                   <p className="text-xs text-[#94A3B8] leading-relaxed">
-                    Upgrade to <strong className="text-amber-300">VIP Player</strong> to unlock exclusive VIP Events. One-time fee:{' '}
+                    Upgrade to <strong className="text-amber-300">VIP Player</strong> to unlock exclusive VIP Events &amp; boosted rewards. One-time fee:{' '}
                     <strong data-testid="vip-fee-display" className="text-white font-mono-numbers">
                       {Number(vipMembershipPrice).toFixed(2)} USDT
                     </strong>{' '}
@@ -283,6 +283,24 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
                     ).
                   </p>
                 )}
+
+                <div
+                  data-testid="vip-benefits-list"
+                  className="pt-1.5 flex flex-wrap gap-1.5 text-[10px] font-semibold"
+                >
+                  <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/25">
+                    VIP Exclusive Lottery Events
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/25">
+                    VIP Spin Wheel Rewards
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/25">
+                    VIP 7-Day Check-In Rewards
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-300 border border-cyan-500/25">
+                    VIP Affiliate Promotions
+                  </span>
+                </div>
               </div>
             </div>
 

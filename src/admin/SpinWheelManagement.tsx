@@ -20,6 +20,8 @@ interface SegmentConfig {
   label: string;
   usdt_amount: number;
   amount?: number;
+  vip_usdt_amount?: number;
+  vip_amount?: number;
   probability_percent: number;
   probability?: number;
   color: string;
@@ -27,14 +29,14 @@ interface SegmentConfig {
 }
 
 const DEFAULT_SEGMENTS: SegmentConfig[] = [
-  { id: 1, index: 0, label: '0.10 USDT', usdt_amount: 0.10, probability_percent: 25.0, color: '#3b82f6' },
-  { id: 2, index: 1, label: '0.20 USDT', usdt_amount: 0.20, probability_percent: 20.0, color: '#10b981' },
-  { id: 3, index: 2, label: '0.25 USDT', usdt_amount: 0.25, probability_percent: 18.0, color: '#f59e0b' },
-  { id: 4, index: 3, label: '0.50 USDT', usdt_amount: 0.50, probability_percent: 15.0, color: '#8b5cf6' },
-  { id: 5, index: 4, label: '0.75 USDT', usdt_amount: 0.75, probability_percent: 10.0, color: '#ec4899' },
-  { id: 6, index: 5, label: '1.00 USDT', usdt_amount: 1.00, probability_percent: 7.0, color: '#06b6d4' },
-  { id: 7, index: 6, label: '2.50 USDT', usdt_amount: 2.50, probability_percent: 3.5, color: '#f97316' },
-  { id: 8, index: 7, label: '5.00 USDT', usdt_amount: 5.00, probability_percent: 1.5, color: '#eab308' }
+  { id: 1, index: 0, label: '0.10 USDT', usdt_amount: 0.10, vip_usdt_amount: 0.20, probability_percent: 25.0, color: '#3b82f6' },
+  { id: 2, index: 1, label: '0.20 USDT', usdt_amount: 0.20, vip_usdt_amount: 0.40, probability_percent: 20.0, color: '#10b981' },
+  { id: 3, index: 2, label: '0.25 USDT', usdt_amount: 0.25, vip_usdt_amount: 0.50, probability_percent: 18.0, color: '#f59e0b' },
+  { id: 4, index: 3, label: '0.50 USDT', usdt_amount: 0.50, vip_usdt_amount: 1.00, probability_percent: 15.0, color: '#8b5cf6' },
+  { id: 5, index: 4, label: '0.75 USDT', usdt_amount: 0.75, vip_usdt_amount: 1.50, probability_percent: 10.0, color: '#ec4899' },
+  { id: 6, index: 5, label: '1.00 USDT', usdt_amount: 1.00, vip_usdt_amount: 2.00, probability_percent: 7.0, color: '#06b6d4' },
+  { id: 7, index: 6, label: '2.50 USDT', usdt_amount: 2.50, vip_usdt_amount: 5.00, probability_percent: 3.5, color: '#f97316' },
+  { id: 8, index: 7, label: '5.00 USDT', usdt_amount: 5.00, vip_usdt_amount: 10.00, probability_percent: 1.5, color: '#eab308' }
 ];
 
 export default function SpinWheelManagement() {
@@ -42,6 +44,9 @@ export default function SpinWheelManagement() {
 
   // Spin Wheel Configuration
   const [isActive, setIsActive] = useState(true);
+  const [enabledForNormal, setEnabledForNormal] = useState(true);
+  const [enabledForVip, setEnabledForVip] = useState(true);
+  const [vipRewardMode, setVipRewardMode] = useState<'double_normal' | 'custom'>('double_normal');
   const [dailySpinsLimit, setDailySpinsLimit] = useState(1);
   const [minDepositRequired, setMinDepositRequired] = useState(0);
 
@@ -65,10 +70,19 @@ export default function SpinWheelManagement() {
     () =>
       segments.some((s) => {
         const amt = Number(s.usdt_amount);
+        const vipAmt = vipRewardMode === 'custom' ? Number(s.vip_usdt_amount ?? amt * 2) : amt * 2;
         const prob = Number(s.probability_percent);
-        return !Number.isFinite(amt) || amt < 0.01 || !Number.isFinite(prob) || prob <= 0 || prob > 100;
+        return (
+          !Number.isFinite(amt) ||
+          amt < 0.01 ||
+          !Number.isFinite(vipAmt) ||
+          vipAmt < 0.01 ||
+          !Number.isFinite(prob) ||
+          prob <= 0 ||
+          prob > 100
+        );
       }),
-    [segments]
+    [segments, vipRewardMode]
   );
 
   const isProbabilityValid = Math.abs(totalProbability - 100) < 0.01 && !hasInvalidSegment;
@@ -94,11 +108,21 @@ export default function SpinWheelManagement() {
 
       if (setRow && setRow.value) {
         setIsActive(setRow.value.is_active !== false && setRow.value.enabled !== false);
+        setEnabledForNormal(setRow.value.enabled_for_normal !== false);
+        setEnabledForVip(setRow.value.enabled_for_vip !== false);
+        setVipRewardMode(
+          String(setRow.value.vip_reward_mode || '').toLowerCase() === 'custom'
+            ? 'custom'
+            : 'double_normal'
+        );
         setDailySpinsLimit(Number(setRow.value.daily_spins_limit ?? setRow.value.daily_spin_limit ?? 1));
         setMinDepositRequired(Number(setRow.value.min_deposit_required ?? 0));
         if (Array.isArray(setRow.value.segments) && setRow.value.segments.length > 0) {
           const normalized = setRow.value.segments.map((s: any, idx: number) => {
             const rawAmt = Number(s.usdt_amount ?? s.amount ?? DEFAULT_SEGMENTS[idx]?.usdt_amount ?? 0.1);
+            const rawVipAmt = Number(
+              s.vip_usdt_amount ?? s.vip_amount ?? DEFAULT_SEGMENTS[idx]?.vip_usdt_amount ?? Math.round(rawAmt * 2 * 100) / 100
+            );
             const rawProb = Number(s.probability_percent ?? s.probability ?? DEFAULT_SEGMENTS[idx]?.probability_percent ?? 0);
             const idNum = Number(s.id ?? (s.index !== undefined ? Number(s.index) + 1 : idx + 1));
             return {
@@ -106,6 +130,8 @@ export default function SpinWheelManagement() {
               id: idNum,
               index: s.index ?? idx,
               usdt_amount: rawAmt,
+              vip_usdt_amount: rawVipAmt,
+              vip_amount: rawVipAmt,
               probability_percent: rawProb,
               label: s.label || `${rawAmt.toFixed(2)} USDT`,
               color: s.color || DEFAULT_SEGMENTS[idx % DEFAULT_SEGMENTS.length].color
@@ -205,11 +231,18 @@ export default function SpinWheelManagement() {
       const updated = {
         is_active: isActive,
         enabled: isActive,
+        enabled_for_normal: enabledForNormal,
+        enabled_for_vip: enabledForVip,
+        vip_reward_mode: vipRewardMode,
         daily_spins_limit: Math.max(1, dailySpinsLimit),
         daily_spin_limit: Math.max(1, dailySpinsLimit),
         min_deposit_required: Math.max(0, minDepositRequired),
         segments: segments.map((s, idx) => {
           const amt = Math.max(0.01, parseFloat(String(s.usdt_amount)) || 0.10);
+          const vipAmt =
+            vipRewardMode === 'custom'
+              ? Math.max(0.01, parseFloat(String(s.vip_usdt_amount ?? amt * 2)) || amt * 2)
+              : Math.round(amt * 2 * 100) / 100;
           const prob = Math.max(0.1, parseFloat(String(s.probability_percent)) || 1.0);
           return {
             ...s,
@@ -218,6 +251,8 @@ export default function SpinWheelManagement() {
             label: `${amt.toFixed(2)} USDT`,
             usdt_amount: amt,
             amount: amt,
+            vip_usdt_amount: Math.round(vipAmt * 100) / 100,
+            vip_amount: Math.round(vipAmt * 100) / 100,
             probability_percent: prob,
             probability: prob
           };
@@ -285,7 +320,7 @@ export default function SpinWheelManagement() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <div className="bg-[#111622] border border-[#272a31] rounded-xl p-3.5 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <span className="text-xs font-bold text-white block">Wheel Status</span>
@@ -330,6 +365,72 @@ export default function SpinWheelManagement() {
                 className="w-full bg-[#07090d] border border-[#272a31] rounded-lg px-3 py-1.5 text-xs font-bold font-mono-numbers text-white outline-none focus:border-amber-400"
               />
               <span className="text-[10px] text-[#8b92a2] block">0 = 100% Free for all users</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            <div className="bg-[#111622] border border-[#272a31] rounded-xl p-3.5 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <span className="text-xs font-bold text-white block">Normal Players</span>
+                <span className="text-[11px] text-[#8b92a2] block">Enable wheel for Normal users</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  data-testid="spin-toggle-normal"
+                  checked={enabledForNormal}
+                  onChange={(e) => setEnabledForNormal(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-[#272a31] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500" />
+              </label>
+            </div>
+
+            <div className="bg-[#111622] border border-[#272a31] rounded-xl p-3.5 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <span className="text-xs font-bold text-amber-300 block">VIP Players</span>
+                <span className="text-[11px] text-[#8b92a2] block">Enable wheel for VIP members</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  data-testid="spin-toggle-vip"
+                  checked={enabledForVip}
+                  onChange={(e) => setEnabledForVip(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-[#272a31] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500" />
+              </label>
+            </div>
+
+            <div className="bg-[#111622] border border-[#272a31] rounded-xl p-3.5 space-y-1.5">
+              <span className="text-xs font-bold text-white block">VIP Reward Mode</span>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  data-testid="spin-vip-mode-double"
+                  onClick={() => setVipRewardMode('double_normal')}
+                  className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                    vipRewardMode === 'double_normal'
+                      ? 'bg-amber-500/20 border-amber-400 text-amber-300'
+                      : 'bg-[#07090d] border-[#272a31] text-[#8b92a2] hover:text-white'
+                  }`}
+                >
+                  Double Normal (2x)
+                </button>
+                <button
+                  type="button"
+                  data-testid="spin-vip-mode-custom"
+                  onClick={() => setVipRewardMode('custom')}
+                  className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                    vipRewardMode === 'custom'
+                      ? 'bg-amber-500/20 border-amber-400 text-amber-300'
+                      : 'bg-[#07090d] border-[#272a31] text-[#8b92a2] hover:text-white'
+                  }`}
+                >
+                  Custom VIP Reward
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -436,7 +537,7 @@ export default function SpinWheelManagement() {
                   <div className="space-y-2">
                     <div>
                       <label className="text-[10px] font-semibold text-[#94A3B8] block mb-1">
-                        Prize Amount (USDT)
+                        Normal Prize (USDT)
                       </label>
                       <div className="relative">
                         <input
@@ -457,6 +558,36 @@ export default function SpinWheelManagement() {
                         </span>
                       </div>
                     </div>
+
+                    {vipRewardMode === 'custom' ? (
+                      <div>
+                        <label className="text-[10px] font-semibold text-amber-300 block mb-1">
+                          VIP Prize (USDT)
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            data-testid={`spin-slice-vip-input-${idx}`}
+                            aria-label={`Slice ${seg.id ?? idx + 1} VIP Prize Amount USDT`}
+                            step="0.05"
+                            min="0.01"
+                            value={seg.vip_usdt_amount ?? Math.round(Number(seg.usdt_amount || 0.1) * 2 * 100) / 100}
+                            onChange={(e) => handleSegmentChange(idx, 'vip_usdt_amount', e.target.value)}
+                            className="w-full bg-[#07090d] border border-amber-500/40 rounded-lg pl-2.5 pr-11 py-1.5 text-xs font-bold font-mono-numbers text-amber-300 outline-none focus:border-amber-400"
+                          />
+                          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-amber-400 pointer-events-none">
+                            VIP
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-center justify-between text-[10px] font-mono-numbers">
+                        <span className="text-[#94A3B8]">VIP (2x Auto):</span>
+                        <span className="text-amber-300 font-bold">
+                          {(Math.round(Number(seg.usdt_amount || 0) * 2 * 100) / 100).toFixed(2)} USDT
+                        </span>
+                      </div>
+                    )}
 
                     <div>
                       <label className="text-[10px] font-semibold text-[#94A3B8] block mb-1">

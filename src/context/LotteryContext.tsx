@@ -228,6 +228,9 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       publishedAt,
       publishedAtMs,
       processingStartedAt,
+      processingError: row.processing_error || null,
+      processingErrorAt: row.processing_error_at || null,
+      processingAttempts: Number(row.processing_attempts || 0),
       isScheduledUnpublished,
       isFinalized,
       winnerMode,
@@ -309,8 +312,8 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase
         .from('game_configurations')
-        .update({ 
-          is_enabled: enabled, 
+        .update({
+          is_enabled: enabled,
           status: enabled ? 'active' : 'disabled',
           updated_at: new Date().toISOString()
         })
@@ -331,8 +334,8 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase
         .from('game_configurations')
-        .update({ 
-          status: 'deleted', 
+        .update({
+          status: 'deleted',
           is_enabled: false,
           updated_at: new Date().toISOString()
         })
@@ -444,7 +447,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     // Clean up any stale localStorage mock pools
     try {
       localStorage.removeItem('lotto_events');
-    } catch (e) {}
+    } catch (e) { }
 
     // Timer check: lock expired active events reactively using server-synced clock; never promote unpublished scheduled events client-side
     const timerCheck = setInterval(() => {
@@ -527,7 +530,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
                 .from('lottery_deposits')
                 .update({ status: 'expired', updated_at: new Date().toISOString() })
                 .eq('id', dep.id)
-                .then(() => {});
+                .then(() => { });
             }
           }
         });
@@ -597,7 +600,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
             const updated = { ...prev, balance: nextBalance };
             try {
               localStorage.setItem('lotto_wallet', JSON.stringify(updated));
-            } catch (e) {}
+            } catch (e) { }
             return updated;
           });
 
@@ -856,7 +859,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     return Math.min(1.00, Math.max(0.10, amount));
   };
 
-  // Check 24-hour daily reward status from server-authoritative RPC
+  // Check daily reward status from server-authoritative RPC (Asia/Kolkata + VIP category sync)
   const getDailyFloRewardStatus = async () => {
     if (!wallet?.address && !user?.id) {
       return { canClaim: false, secondsRemaining: 0, availableReward: 0.10, currentStreak: 1, nextStreak: 2, nextRewardAmount: 0.15 };
@@ -869,21 +872,27 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       if (!error && data && data.success) {
         return {
           canClaim: Boolean(data.can_claim),
+          eligibilityError: data.eligibility_error || null,
           secondsRemaining: Number(data.seconds_remaining || 0),
           availableReward: parseFloat(data.available_reward || 0.10),
           currentStreak: Number(data.current_streak || 1),
           highestStreak: Number(data.highest_streak || 0),
           nextStreak: Number(data.next_streak || 2),
           nextRewardAmount: parseFloat(data.next_reward_amount || 0.15),
+          playerCategory: data.player_category || 'normal',
+          vipRewardMode: data.vip_reward_mode || 'double_normal',
+          effectiveStreakRewards: data.effective_streak_rewards || null,
           bonusSettings: data.bonus_settings || null,
           checkinSettings: data.checkin_settings || null,
-          lastClaimedAt: data.last_claimed_at || null
+          lastClaimedAt: data.last_claimed_at || null,
+          lastCheckinDate: data.last_checkin_date || null,
+          todayDate: data.today_date || null
         };
       }
-      return { canClaim: true, secondsRemaining: 0, availableReward: 0.10, currentStreak: 1, nextStreak: 2, nextRewardAmount: 0.15 };
-    } catch (e) {
+      return { canClaim: false, secondsRemaining: 0, availableReward: 0.10, currentStreak: 1, nextStreak: 2, nextRewardAmount: 0.15, error: data?.error || error?.message };
+    } catch (e: any) {
       console.warn('getDailyFloRewardStatus rpc error:', e);
-      return { canClaim: true, secondsRemaining: 0, availableReward: 0.10, currentStreak: 1, nextStreak: 2, nextRewardAmount: 0.15 };
+      return { canClaim: false, secondsRemaining: 0, availableReward: 0.10, currentStreak: 1, nextStreak: 2, nextRewardAmount: 0.15, error: e?.message };
     }
   };
 
@@ -1123,8 +1132,8 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
             rawStatus === 'paid'
               ? 'completed'
               : rawStatus === 'rejected'
-              ? 'cancelled'
-              : rawStatus;
+                ? 'cancelled'
+                : rawStatus;
 
           return {
             id: row.id,
@@ -1147,8 +1156,8 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
               (row.competition_month
                 ? 'monthly_leaderboard'
                 : row.ticket_id === 'MANUAL' || row.event_id === 'manual-reward'
-                ? 'manual_grant'
-                : 'lottery_win'),
+                  ? 'manual_grant'
+                  : 'lottery_win'),
             competitionMonth: row.competition_month || null,
             leaderboardRank: row.leaderboard_rank != null ? Number(row.leaderboard_rank) : row.position != null ? Number(row.position) : null,
             payoutReference: row.payout_reference || row.id,
@@ -1308,7 +1317,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       localStorage.setItem('lotto_platform_settings', JSON.stringify(platformSettings));
-    } catch (e) {}
+    } catch (e) { }
   }, [platformSettings]);
 
   // Fetch platform settings from dedicated platform_settings table in Supabase
@@ -1421,11 +1430,11 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         resultsRetentionHours: Number(newSettings.resultsRetentionHours !== undefined ? newSettings.resultsRetentionHours : (platformSettings.resultsRetentionHours || 1)),
         resultsRetention: newSettings.resultsRetentionHours !== undefined
           ? {
-              ...(platformSettings.resultsRetention || {}),
-              duration_hours: Number(newSettings.resultsRetentionHours),
-              retention_duration_hours: Number(newSettings.resultsRetentionHours),
-              label: `${Number(newSettings.resultsRetentionHours)} hour(s)`
-            }
+            ...(platformSettings.resultsRetention || {}),
+            duration_hours: Number(newSettings.resultsRetentionHours),
+            retention_duration_hours: Number(newSettings.resultsRetentionHours),
+            label: `${Number(newSettings.resultsRetentionHours)} hour(s)`
+          }
           : platformSettings.resultsRetention,
         referralSettings: normalizedRefIfProvided,
         spinWheelSettings: newSettings.spinWheelSettings ? { ...platformSettings.spinWheelSettings, ...newSettings.spinWheelSettings } : platformSettings.spinWheelSettings
@@ -1493,7 +1502,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       } else {
         sessionStorage.removeItem('earnflow_pending_redirect');
       }
-    } catch {}
+    } catch { }
   };
 
   const clearPendingAuthRedirect = () => setPendingAuthRedirect(null);
@@ -1625,7 +1634,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           if (storedRef) {
             await processReferralSignup(userId, storedRef);
           }
-        } catch (e) {}
+        } catch (e) { }
       } else {
         // First-time login without existing profile record
         const initialProfile = {
@@ -1649,7 +1658,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           if (storedRef) {
             await processReferralSignup(userId, storedRef);
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     } catch (err) {
       console.error('Fetch profile error:', err);
@@ -1800,13 +1809,13 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   const checkUsernameAvailability = async (rawUsername) => {
     const username = (rawUsername || '').trim().replace(/^@\s*/, '').trim();
     if (!username) return { valid: false, message: 'User ID is required' };
-    
+
     // Validation: Alphabet, number, underscore (_) only
     const validPattern = /^[a-zA-Z0-9_]+$/;
     if (!validPattern.test(username)) {
-      return { 
-        valid: false, 
-        message: 'Only letters, numbers, and underscore (_) are allowed' 
+      return {
+        valid: false,
+        message: 'Only letters, numbers, and underscore (_) are allowed'
       };
     }
 
@@ -1892,9 +1901,9 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       if (username) {
         await supabase
           .from('profiles')
-          .update({ 
-            username: username.trim(), 
-            updated_at: new Date().toISOString() 
+          .update({
+            username: username.trim(),
+            updated_at: new Date().toISOString()
           })
           .eq('id', res.data.user.id);
       }
@@ -2295,7 +2304,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       if (savedPayouts && savedPayouts.includes('WP-8841')) {
         localStorage.removeItem('lotto_winner_payouts');
       }
-    } catch (e) {}
+    } catch (e) { }
   }, []);
 
   // Fetch safe occupied 4-digit ticket numbers per event across all players (no PII)
@@ -2526,7 +2535,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.removeItem('lotto_wallet');
       localStorage.removeItem('lotto_support_tickets');
-    } catch {}
+    } catch { }
   };
 
   useEffect(() => {
@@ -2673,8 +2682,8 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     const formatted = String(number).padStart(4, '0');
     const globalTaken = takenTicketsByEvent[eventId] || [];
     if (globalTaken.includes(formatted)) return true;
-    return tickets.some(t => 
-      (t.eventId === eventId || t.event_id === eventId) && 
+    return tickets.some(t =>
+      (t.eventId === eventId || t.event_id === eventId) &&
       String(t.ticketNumber ?? t.ticket_number ?? '').padStart(4, '0') === formatted
     );
   };
@@ -2683,8 +2692,8 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   const isUserTicketNumberPurchased = (eventId, number) => {
     if (!eventId || number === undefined || number === null) return false;
     const formatted = String(number).padStart(4, '0');
-    return tickets.some(t => 
-      (t.eventId === eventId || t.event_id === eventId) && 
+    return tickets.some(t =>
+      (t.eventId === eventId || t.event_id === eventId) &&
       String(t.ticketNumber ?? t.ticket_number ?? '').padStart(4, '0') === formatted &&
       (
         (wallet?.address && t.userAddress === wallet.address) ||
@@ -2757,14 +2766,14 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
     // Check if any requested ticket number is already purchased in this event!
     // Each 4-digit number (0000-9999) can only be purchased ONCE across all players.
-    const takenTicketsForEvent = tickets.filter(t => 
+    const takenTicketsForEvent = tickets.filter(t =>
       (t.eventId === eventId || t.event_id === eventId)
     );
     const takenSet = new Set([
       ...(takenTicketsByEvent[eventId] || []),
       ...takenTicketsForEvent.map(t => String(t.ticketNumber).padStart(4, '0'))
     ]);
-    
+
     const seenInOrder = new Set();
     for (const num of ticketNumbers) {
       const formatted = String(num).padStart(4, '0');
@@ -3356,7 +3365,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     targetUserId: string,
     action: 'add' | 'deduct',
     amount: number,
-    reason: string,
+    reason: string = 'admin_balance_adjustment',
     idempotencyKey?: string
   ) => {
     try {
@@ -3364,7 +3373,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         p_target_user_id: targetUserId,
         p_action: action,
         p_amount: amount,
-        p_reason: reason,
+        p_reason: reason?.trim() || 'admin_balance_adjustment',
         p_idempotency_key: idempotencyKey || null
       });
       if (rpcErr || !rpcRes?.success) {

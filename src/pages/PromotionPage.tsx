@@ -15,7 +15,7 @@ import {
   Gift
 } from 'lucide-react';
 import { useSoundFX } from '../hooks/useSoundFX';
-import { normalizeReferralSettings, formatNumericDisplay } from '../utils/referralConfig';
+import { normalizeReferralSettings, formatNumericDisplay, resolveVipRewardValue } from '../utils/referralConfig';
 
 interface PromotionPageProps {
   onBackToHome?: () => void;
@@ -30,7 +30,7 @@ interface PromotionPageProps {
  * - Verified referral reward transaction ledger
  */
 export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
-  const { user, profile, wallet, showToast, setIsAuthModalOpen, platformSettings, requireAuth } = useLottery();
+  const { user, profile, wallet, showToast, setIsAuthModalOpen, platformSettings, requireAuth, isVipMember } = useLottery();
   const { playClick } = useSoundFX();
 
   // Copy state
@@ -169,32 +169,61 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
 
   // Authoritative referral program settings synchronized 1:1 with Admin Panel & Postgres
   const referralSettings = normalizeReferralSettings(platformSettings?.referralSettings);
+  const categoryEnabled = isVipMember ? referralSettings.vip_enabled : referralSettings.normal_enabled;
+
+  const activeRegAmount = resolveVipRewardValue(
+    referralSettings.registration_reward_amount,
+    referralSettings.vip_registration_reward_amount,
+    isVipMember,
+    referralSettings.vip_reward_mode
+  );
+  const activeFdPercent = Math.min(
+    100,
+    resolveVipRewardValue(
+      referralSettings.first_deposit_reward_percent,
+      referralSettings.vip_first_deposit_reward_percent,
+      isVipMember,
+      referralSettings.vip_reward_mode
+    )
+  );
+  const activeLcPercent = Math.min(
+    50,
+    resolveVipRewardValue(
+      referralSettings.lifetime_commission_percent,
+      referralSettings.vip_lifetime_commission_percent,
+      isVipMember,
+      referralSettings.vip_reward_mode
+    )
+  );
 
   const regActive =
     referralSettings.enabled &&
+    categoryEnabled &&
     referralSettings.registration_reward_enabled &&
-    referralSettings.registration_reward_amount > 0;
+    activeRegAmount > 0;
   const regDisplay = regActive
-    ? `${formatNumericDisplay(referralSettings.registration_reward_amount)} USDT`
+    ? `${formatNumericDisplay(activeRegAmount)} USDT`
     : '0 USDT (Disabled)';
 
   const fdActive =
     referralSettings.enabled &&
+    categoryEnabled &&
     referralSettings.first_deposit_reward_enabled &&
-    referralSettings.first_deposit_reward_percent > 0;
+    activeFdPercent > 0;
   const fdDisplay = fdActive
-    ? `${formatNumericDisplay(referralSettings.first_deposit_reward_percent)}% Bonus`
+    ? `${formatNumericDisplay(activeFdPercent)}% Bonus`
     : '0% (Disabled)';
 
   const lcActive =
     referralSettings.enabled &&
+    categoryEnabled &&
     referralSettings.lifetime_commission_enabled &&
-    referralSettings.lifetime_commission_percent > 0;
+    activeLcPercent > 0;
   const lcDisplay = lcActive
-    ? `${formatNumericDisplay(referralSettings.lifetime_commission_percent)}% Lifetime`
+    ? `${formatNumericDisplay(activeLcPercent)}% Lifetime`
     : '0% (Disabled)';
   const lcStatDisplay = lcActive
-    ? `${formatNumericDisplay(referralSettings.lifetime_commission_percent)}%`
+    ? `${formatNumericDisplay(activeLcPercent)}%`
     : '0%';
 
   return (
@@ -220,7 +249,15 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono-numbers shrink-0 max-w-full">
+        <div className="flex items-center gap-2 text-xs font-mono-numbers shrink-0 max-w-full flex-wrap">
+          {isVipMember && (
+            <span
+              data-testid="promo-vip-badge"
+              className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold inline-flex items-center gap-1 whitespace-nowrap"
+            >
+              <span>VIP Rewards Active</span>
+            </span>
+          )}
           <span className="px-2.5 sm:px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold inline-flex items-center gap-1.5 whitespace-nowrap">
             <CheckCircle2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             <span>Instant USDT TRC-20 Payouts</span>

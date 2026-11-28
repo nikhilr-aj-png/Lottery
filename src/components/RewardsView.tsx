@@ -281,6 +281,7 @@ export default function RewardsView() {
     wallet,
     setWallet,
     user,
+    isVipMember,
     claimDailyBonus,
     claimDailyFloReward,
     getDailyFloRewardStatus,
@@ -327,7 +328,7 @@ export default function RewardsView() {
 
   useEffect(() => {
     refreshDailyRewardStatus();
-  }, [wallet?.address, user?.id]);
+  }, [wallet?.address, user?.id, isVipMember]);
 
   // Tick countdown timer for streak cooldown
   useEffect(() => {
@@ -423,31 +424,54 @@ export default function RewardsView() {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Sync wheel segments with admin configuration when available, keeping static fallback
+  // Sync wheel segments and eligibility with admin configuration & player category
+  const spinConfig = platformSettings?.spinWheelSettings || {};
+  const spinVipRewardMode =
+    String(spinConfig.vip_reward_mode || '').toLowerCase() === 'custom' ? 'custom' : 'double_normal';
+  const spinEnabledForUser =
+    spinConfig.is_active !== false &&
+    spinConfig.enabled !== false &&
+    (isVipMember ? spinConfig.enabled_for_vip !== false : spinConfig.enabled_for_normal !== false);
+
   const wheelSlices = useMemo(() => {
-    const cfgSegments = platformSettings?.spinWheelSettings?.segments;
-    if (!Array.isArray(cfgSegments) || cfgSegments.length !== 8) {
-      return WHEEL_SLICES;
-    }
+    const cfgSegments = spinConfig?.segments;
+    const baseList = Array.isArray(cfgSegments) && cfgSegments.length === 8 ? cfgSegments : WHEEL_SLICES;
     return WHEEL_SLICES.map((fallback, idx) => {
-      const match = cfgSegments.find((s: any) => Number(s.index) === idx) ?? cfgSegments[idx];
-      if (!match) return fallback;
-      const amount = Number(match.amount ?? fallback.amount);
+      const match = baseList.find((s: any) => Number(s.index) === idx) ?? baseList[idx] ?? fallback;
+      const normalAmount = Number(match.usdt_amount ?? match.amount ?? fallback.amount);
+      const customVipAmount = Number(
+        match.vip_usdt_amount ?? match.vip_amount ?? Math.round(normalAmount * 2 * 100) / 100
+      );
+      const effectiveAmount = isVipMember
+        ? spinVipRewardMode === 'custom'
+          ? customVipAmount
+          : Math.round(normalAmount * 2 * 100) / 100
+        : normalAmount;
       return {
         ...fallback,
         index: idx,
-        amount,
-        label: match.label || `${amount.toFixed(2)} USDT`,
+        amount: effectiveAmount,
+        label: `${effectiveAmount.toFixed(2)} USDT`,
         color: match.color || fallback.color,
         textColor: match.textColor || fallback.textColor,
-        isJackpot: idx === WHEEL_SLICES.length - 1 || amount >= 5
+        isJackpot: idx === WHEEL_SLICES.length - 1 || effectiveAmount >= 5
       };
     });
-  }, [platformSettings?.spinWheelSettings?.segments]);
+  }, [spinConfig?.segments, spinVipRewardMode, isVipMember]);
 
   // Spin the Lucky Wheel
   const handleSpinWheel = async () => {
     if (isSpinningWheel) return;
+
+    if (!spinEnabledForUser) {
+      showToast(
+        isVipMember
+          ? 'Daily Spin Wheel is currently disabled for VIP Players by administrator.'
+          : 'Daily Spin Wheel is currently disabled for Normal Players by administrator.',
+        'info'
+      );
+      return;
+    }
 
     if (!user || !wallet?.address) {
       showToast('Please log in with your account to spin the Lucky Wheel!', 'info');
@@ -619,20 +643,56 @@ export default function RewardsView() {
   const wheelBonusPct = Math.round((faucetMultiplier - 1.0) * 100);
 
   // Seven-Day Check-In derived status values (exact backend values preserved)
+  const checkinCfg = dailyRewardStatus.checkinSettings || {};
+  const checkinEnabledForUser =
+    dailyRewardStatus.enabledForUser !== false &&
+    checkinCfg.enabled !== false &&
+    (isVipMember ? checkinCfg.enabled_for_vip !== false : checkinCfg.enabled_for_normal !== false);
+  const checkinEligibilityError: string | null =
+    dailyRewardStatus.eligibilityError ||
+    (!checkinEnabledForUser
+      ? isVipMember
+        ? 'Daily Check-In is currently disabled for VIP Players by administrator.'
+        : 'Daily Check-In is currently disabled for Normal Players by administrator.'
+      : null);
+  const effectiveCheckinMap: Record<string, number> = useMemo(() => {
+    const precomputed = dailyRewardStatus.effectiveStreakRewards;
+    const mode =
+      String(dailyRewardStatus.vipRewardMode || checkinCfg.vip_reward_mode || '').toLowerCase() === 'custom'
+        ? 'custom'
+        : 'double_normal';
+    const result: Record<string, number> = {};
+    for (let d = 1; d <= 7; d++) {
+      const k = `day${d}`;
+      if (precomputed && precomputed[k] !== undefined && dailyRewardStatus.isVip === isVipMember) {
+        result[k] = Number(precomputed[k]);
+      } else {
+        const normalVal = Number(checkinCfg.streak_rewards?.[k] ?? DEFAULT_STREAK_REWARDS[d - 1]);
+        const vipCustomVal = Number(checkinCfg.vip_streak_rewards?.[k] ?? Math.round(normalVal * 2 * 100) / 100);
+        result[k] = isVipMember
+          ? mode === 'custom'
+            ? vipCustomVal
+            : Math.round(normalVal * 2 * 100) / 100
+          : normalVal;
+      }
+    }
+    return result;
+  }, [dailyRewardStatus.effectiveStreakRewards, dailyRewardStatus.vipRewardMode, dailyRewardStatus.isVip, checkinCfg, isVipMember]);
+
   const currentDayNum = Math.max(1, Math.min(7, Number(dailyRewardStatus.currentStreak || 1)));
-  const canClaimToday = Boolean(dailyRewardStatus.canClaim);
+  const canClaimToday = Boolean(dailyRewardStatus.canClaim) && checkinEnabledForUser;
   const completedDaysCount = canClaimToday ? currentDayNum - 1 : currentDayNum;
   const remainingDaysCount = Math.max(0, 7 - completedDaysCount);
   const nextStreakDay = Number(dailyRewardStatus.nextStreak || ((currentDayNum % 7) + 1));
   const todayRewardAmount = Number(
-    dailyRewardStatus.availableReward ??
-      dailyRewardStatus.checkinSettings?.streak_rewards?.[`day${currentDayNum}`] ??
-      DEFAULT_STREAK_REWARDS[currentDayNum - 1]
+    (dailyRewardStatus.isVip === isVipMember ? dailyRewardStatus.availableReward : undefined) ??
+    effectiveCheckinMap[`day${currentDayNum}`] ??
+    DEFAULT_STREAK_REWARDS[currentDayNum - 1]
   );
   const nextRewardAmount = Number(
-    dailyRewardStatus.nextRewardAmount ??
-      dailyRewardStatus.checkinSettings?.streak_rewards?.[`day${nextStreakDay}`] ??
-      DEFAULT_STREAK_REWARDS[nextStreakDay - 1]
+    (dailyRewardStatus.isVip === isVipMember ? dailyRewardStatus.nextRewardAmount : undefined) ??
+    effectiveCheckinMap[`day${nextStreakDay}`] ??
+    DEFAULT_STREAK_REWARDS[nextStreakDay - 1]
   );
 
   // Milestone summary calculations
@@ -889,7 +949,11 @@ export default function RewardsView() {
                     +{Number(recentPrize.final_prize).toFixed(2)} USDT Credited to Wallet
                   </span>
                   <span className="text-[10px] text-[#94A3B8] font-mono-numbers block mt-0.5">
-                    VIP {faucetMultiplier}x Multiplier Applied
+                    {isVipMember
+                      ? spinVipRewardMode === 'custom'
+                        ? 'VIP Custom Reward Applied'
+                        : 'VIP 2x Normal Reward Applied'
+                      : 'Normal Player Reward Applied'}
                   </span>
                 </div>
               )}
@@ -900,19 +964,25 @@ export default function RewardsView() {
                   type="button"
                   data-testid="daily-spin-button"
                   onClick={handleSpinWheel}
-                  disabled={isSpinningWheel || wheelCooldownSeconds > 0}
-                  className={`w-full min-h-[44px] px-4 py-2.5 rounded-xl font-display font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all ${
-                    isSpinningWheel
+                  disabled={isSpinningWheel || wheelCooldownSeconds > 0 || !spinEnabledForUser}
+                  className={`w-full min-h-[44px] px-4 py-2.5 rounded-xl font-display font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all ${isSpinningWheel
                       ? 'bg-amber-500/25 text-amber-200 border border-amber-400/40 cursor-not-allowed'
-                      : wheelCooldownSeconds > 0
+                      : !spinEnabledForUser || wheelCooldownSeconds > 0
                         ? 'bg-[#151C2B] text-[#94A3B8] border border-[#2D3545] cursor-not-allowed'
                         : 'btn-gold text-black shadow-lg shadow-amber-500/20 cursor-pointer active:scale-[0.98]'
-                  }`}
+                    }`}
                 >
                   {isSpinningWheel ? (
                     <>
                       <Sparkles className="w-4 h-4 animate-spin shrink-0" />
                       <span>Spinning Wheel...</span>
+                    </>
+                  ) : !spinEnabledForUser ? (
+                    <>
+                      <Lock className="w-4 h-4 text-[#94A3B8] shrink-0" />
+                      <span className="truncate">
+                        {isVipMember ? 'Disabled for VIP Players' : 'Disabled for Normal Players'}
+                      </span>
                     </>
                   ) : wheelCooldownSeconds > 0 ? (
                     <>
@@ -930,10 +1000,16 @@ export default function RewardsView() {
                 <div className="flex items-center justify-between gap-2 text-[10px] sm:text-[10.5px] text-[#94A3B8] px-0.5">
                   <span className="flex items-center gap-1 truncate">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span className="truncate">Instant USDT credit · VIP {faucetMultiplier}x</span>
+                    <span className="truncate">
+                      {isVipMember
+                        ? spinVipRewardMode === 'custom'
+                          ? 'Instant USDT · VIP Custom Tier'
+                          : 'Instant USDT · VIP 2x Tier'
+                        : 'Instant USDT · Normal Tier'}
+                    </span>
                   </span>
                   <span className="font-mono-numbers text-amber-300 font-semibold whitespace-nowrap shrink-0">
-                    {wheelCooldownSeconds > 0 ? '24h Cooldown' : 'Ready'}
+                    {!spinEnabledForUser ? 'Paused' : wheelCooldownSeconds > 0 ? '24h Cooldown' : 'Ready'}
                   </span>
                 </div>
               </div>
@@ -964,11 +1040,21 @@ export default function RewardsView() {
                   <span className="text-[9px] font-mono-numbers px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/35 uppercase font-bold tracking-wider whitespace-nowrap">
                     USDT TRC-20
                   </span>
+                  {isVipMember && (
+                    <span
+                      data-testid="checkin-vip-badge"
+                      className="text-[9px] font-mono-numbers px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase font-bold tracking-wider whitespace-nowrap"
+                    >
+                      VIP Tier
+                    </span>
+                  )}
                 </div>
                 <p className="text-[11px] text-[#94A3B8] leading-snug mt-0.5">
-                  {canClaimToday
-                    ? `Day ${currentDayNum} ready (+${todayRewardAmount.toFixed(2)} USDT) · Next: Day ${nextStreakDay} (+${nextRewardAmount.toFixed(2)} USDT)`
-                    : `Today claimed · Day ${nextStreakDay} (+${nextRewardAmount.toFixed(2)} USDT) in ${formatCooldown(dailyRewardStatus.secondsRemaining)}`}
+                  {!checkinEnabledForUser
+                    ? checkinEligibilityError
+                    : canClaimToday
+                      ? `Day ${currentDayNum} ready (+${todayRewardAmount.toFixed(2)} USDT) · Next: Day ${nextStreakDay} (+${nextRewardAmount.toFixed(2)} USDT)`
+                      : `Today claimed · Day ${nextStreakDay} (+${nextRewardAmount.toFixed(2)} USDT) in ${formatCooldown(dailyRewardStatus.secondsRemaining)}`}
                 </p>
               </div>
             </div>
@@ -976,11 +1062,10 @@ export default function RewardsView() {
             <div className="flex items-center gap-1.5 flex-wrap shrink-0">
               <span
                 data-testid="checkin-streak-badge"
-                className={`text-[10px] font-mono-numbers px-2.5 py-0.5 rounded-full border font-bold whitespace-nowrap ${
-                  canClaimToday
+                className={`text-[10px] font-mono-numbers px-2.5 py-0.5 rounded-full border font-bold whitespace-nowrap ${canClaimToday
                     ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
                     : 'bg-[#0B0F19] text-[#CBD5E1] border-[#2D3545]'
-                }`}
+                  }`}
               >
                 Streak: Day {currentDayNum} / 7
               </span>
@@ -1001,12 +1086,9 @@ export default function RewardsView() {
             className="grid grid-cols-3 min-[400px]:grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-2.5 my-auto"
           >
             {[1, 2, 3, 4, 5, 6, 7].map((day) => {
-              const isCompleted = day < currentDayNum || (!canClaimToday && day === currentDayNum);
+              const isCompleted = day < currentDayNum || (!canClaimToday && Boolean(dailyRewardStatus.lastCheckinDate) && day === currentDayNum && checkinEnabledForUser);
               const isCurrent = day === currentDayNum && canClaimToday;
-              const rewardVal =
-                dailyRewardStatus.checkinSettings?.streak_rewards?.[`day${day}`] !== undefined
-                  ? Number(dailyRewardStatus.checkinSettings.streak_rewards[`day${day}`])
-                  : DEFAULT_STREAK_REWARDS[day - 1];
+              const rewardVal = Number(effectiveCheckinMap[`day${day}`] ?? DEFAULT_STREAK_REWARDS[day - 1]);
               const isJackpot = day === 7;
               const statusText = isCompleted ? 'Claimed' : isCurrent ? 'Available' : 'Locked';
 
@@ -1014,17 +1096,15 @@ export default function RewardsView() {
                 <div
                   key={day}
                   data-testid={`checkin-day-${day}`}
-                  className={`rounded-2xl border p-2 sm:p-2.5 flex flex-col justify-between gap-1.5 min-w-0 transition-all box-border ${
-                    isJackpot ? 'col-span-3 min-[400px]:col-span-2 md:col-span-3 lg:col-span-2' : 'col-span-1'
-                  } ${
-                    isCurrent
+                  className={`rounded-2xl border p-2 sm:p-2.5 flex flex-col justify-between gap-1.5 min-w-0 transition-all box-border ${isJackpot ? 'col-span-3 min-[400px]:col-span-2 md:col-span-3 lg:col-span-2' : 'col-span-1'
+                    } ${isCurrent
                       ? 'bg-gradient-to-b from-amber-500/20 via-amber-500/10 to-[#0B0F19] border-amber-400 shadow-lg shadow-amber-500/10'
                       : isCompleted
                         ? 'bg-[#0B0F19]/90 border-emerald-500/40'
                         : isJackpot
                           ? 'bg-gradient-to-br from-purple-950/35 via-[#0B0F19] to-[#111827] border-purple-500/35'
                           : 'bg-[#0B0F19] border-[#1F2737] opacity-90'
-                  }`}
+                    }`}
                 >
                   {isJackpot ? (
                     <div className="flex items-center justify-between gap-2 w-full h-full min-w-0">
@@ -1049,20 +1129,18 @@ export default function RewardsView() {
 
                       <div className="text-right shrink-0">
                         <span
-                          className={`font-mono-numbers font-black text-xs sm:text-sm block whitespace-nowrap ${
-                            isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-purple-200'
-                          }`}
+                          className={`font-mono-numbers font-black text-xs sm:text-sm block whitespace-nowrap ${isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-purple-200'
+                            }`}
                         >
                           +{rewardVal.toFixed(2)} USDT
                         </span>
                         <span
-                          className={`inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-[8.5px] font-bold uppercase tracking-wider whitespace-nowrap ${
-                            isCompleted
+                          className={`inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-[8.5px] font-bold uppercase tracking-wider whitespace-nowrap ${isCompleted
                               ? 'bg-emerald-500/15 text-emerald-300'
                               : isCurrent
                                 ? 'bg-amber-400/20 text-amber-300'
                                 : 'bg-[#151C2B] text-[#94A3B8]'
-                          }`}
+                            }`}
                         >
                           {isCompleted ? (
                             <CheckCircle2 className="w-2.5 h-2.5 shrink-0" />
@@ -1090,33 +1168,30 @@ export default function RewardsView() {
 
                       <div className="flex flex-col items-center text-center gap-1 min-w-0 py-0.5">
                         <div
-                          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 border ${
-                            isCurrent
+                          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 border ${isCurrent
                               ? 'bg-amber-500/20 border-amber-400/40 text-amber-300'
                               : isCompleted
                                 ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-400'
                                 : 'bg-[#151C2B] border-[#1F2737] text-[#94A3B8]'
-                          }`}
+                            }`}
                         >
                           <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </div>
                         <span
-                          className={`font-mono-numbers font-black text-[10.5px] sm:text-xs block whitespace-nowrap ${
-                            isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-white'
-                          }`}
+                          className={`font-mono-numbers font-black text-[10.5px] sm:text-xs block whitespace-nowrap ${isCurrent ? 'text-amber-300' : isCompleted ? 'text-emerald-400' : 'text-white'
+                            }`}
                         >
                           +{rewardVal.toFixed(2)} USDT
                         </span>
                       </div>
 
                       <span
-                        className={`block w-full text-center py-0.5 rounded text-[8.5px] sm:text-[9px] uppercase tracking-wider font-bold whitespace-nowrap ${
-                          isCompleted
+                        className={`block w-full text-center py-0.5 rounded text-[8.5px] sm:text-[9px] uppercase tracking-wider font-bold whitespace-nowrap ${isCompleted
                             ? 'bg-emerald-500/15 text-emerald-300'
                             : isCurrent
                               ? 'bg-amber-400/20 text-amber-300'
                               : 'bg-[#151C2B] text-[#94A3B8]'
-                        }`}
+                          }`}
                       >
                         {statusText}
                       </span>
@@ -1136,9 +1211,11 @@ export default function RewardsView() {
               <div className="text-xs font-bold text-white flex items-center gap-1.5 flex-wrap">
                 <Flame className={`w-3.5 h-3.5 shrink-0 ${canClaimToday ? 'text-amber-400' : 'text-emerald-400'}`} />
                 <span>
-                  {canClaimToday
-                    ? `Available Today: Day ${currentDayNum} (+${todayRewardAmount.toFixed(2)} USDT)`
-                    : `Day ${currentDayNum} Claimed · Cooldown ${formatCooldown(dailyRewardStatus.secondsRemaining)}`}
+                  {!checkinEnabledForUser
+                    ? checkinEligibilityError
+                    : canClaimToday
+                      ? `Available Today: Day ${currentDayNum} (+${todayRewardAmount.toFixed(2)} USDT)`
+                      : `Day ${currentDayNum} Claimed · Cooldown ${formatCooldown(dailyRewardStatus.secondsRemaining)}`}
                 </span>
               </div>
               <p className="text-[10.5px] text-[#94A3B8] font-mono-numbers">
@@ -1152,16 +1229,20 @@ export default function RewardsView() {
               data-testid="checkin-claim-button"
               onClick={handleClaimDailyStreak}
               disabled={!canClaimToday || isClaimingStreak}
-              className={`w-full lg:w-auto min-h-[44px] px-5 rounded-xl text-xs sm:text-sm font-display font-black flex items-center justify-center gap-2 transition-all whitespace-nowrap shrink-0 ${
-                canClaimToday
+              className={`w-full lg:w-auto min-h-[44px] px-5 rounded-xl text-xs sm:text-sm font-display font-black flex items-center justify-center gap-2 transition-all whitespace-nowrap shrink-0 ${canClaimToday
                   ? 'btn-gold text-black shadow-lg shadow-amber-500/20 cursor-pointer active:scale-[0.98]'
                   : 'bg-[#151C2B] text-[#94A3B8] border border-[#2D3545] cursor-not-allowed shadow-none'
-              }`}
+                }`}
             >
               {isClaimingStreak ? (
                 <>
                   <RotateCcw className="w-4 h-4 animate-spin text-black shrink-0" />
                   <span>Crediting Wallet...</span>
+                </>
+              ) : !checkinEnabledForUser ? (
+                <>
+                  <Lock className="w-4 h-4 text-[#94A3B8] shrink-0" />
+                  <span>{isVipMember ? 'Disabled for VIP' : 'Disabled for Normal'}</span>
                 </>
               ) : canClaimToday ? (
                 <>
@@ -1253,13 +1334,12 @@ export default function RewardsView() {
                 <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
                   <div
                     data-testid={`milestone-icon-${ach.id}`}
-                    className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl border flex items-center justify-center shrink-0 shadow-inner ${
-                      achState === 'claimed'
+                    className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl border flex items-center justify-center shrink-0 shadow-inner ${achState === 'claimed'
                         ? 'bg-emerald-500/12 border-emerald-500/35'
                         : achState === 'completed' || achState === 'in_progress'
                           ? 'bg-amber-500/12 border-amber-500/35'
                           : 'bg-[#151C2B] border-[#253045]'
-                    }`}
+                      }`}
                   >
                     {renderAchievementIcon(ach.icon, achState)}
                   </div>
@@ -1285,13 +1365,12 @@ export default function RewardsView() {
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <div className="flex-1 h-1.5 bg-[#151C2B] rounded-full overflow-hidden border border-[#1F2737]">
                       <div
-                        className={`h-full rounded-full transition-all duration-300 ${
-                          achState === 'claimed'
+                        className={`h-full rounded-full transition-all duration-300 ${achState === 'claimed'
                             ? 'bg-emerald-400'
                             : achState === 'completed'
                               ? 'bg-amber-400'
                               : 'bg-amber-400/80'
-                        }`}
+                          }`}
                         style={{ width: `${Math.max(0, Math.min(100, ach.progress))}%` }}
                       />
                     </div>

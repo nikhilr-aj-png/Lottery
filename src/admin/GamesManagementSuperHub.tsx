@@ -28,8 +28,9 @@ import {
   Clock, 
   Hash, 
   AlertTriangle,
-  Lock,
+  Lock, 
   Unlock,
+  Crown,
   ChevronRight,
   ArrowLeft,
   ArrowRight,
@@ -199,6 +200,7 @@ export default function GamesManagementSuperHub({
 
   // Central Event Table Filters (Part 7.2 & 8)
   const [lotteryRoomFilter, setLotteryRoomFilter] = useState('all');
+  const [lotteryCategoryFilter, setLotteryCategoryFilter] = useState<'all' | 'normal' | 'vip'>('all');
   const [lotteryStatusFilter, setLotteryStatusFilter] = useState('all');
   const [lotterySearchQuery, setLotterySearchQuery] = useState('');
 
@@ -767,6 +769,7 @@ export default function GamesManagementSuperHub({
           .filter((e: any) => e.status !== 'deleted')
           .filter((e: any) => {
             if (lotteryRoomFilter !== 'all' && e.roomName !== lotteryRoomFilter) return false;
+            if (lotteryCategoryFilter !== 'all' && (e.eventCategory || 'normal') !== lotteryCategoryFilter) return false;
             
             const isConcluded = e.status === 'completed' && Boolean(e.finalizedAtMs || e.drawExecutedAt || e.winningDigits);
             const isScheduled = e.status === 'scheduled' && !e.publishedAt;
@@ -885,7 +888,7 @@ export default function GamesManagementSuperHub({
 
             {/* PART 7.2: EVENT ROOM SELECTOR & CENTRAL FILTERS BAR */}
             <div className="p-3.5 sm:p-5 rounded-2xl bg-[#0d1117] border border-[#272a31] shadow-lg space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                 {/* Event Room Selector (Primary Filter) */}
                 <div className="space-y-1 min-w-0">
                   <label className="text-[11px] font-bold text-[#94A3B8] flex items-center gap-1">
@@ -906,6 +909,24 @@ export default function GamesManagementSuperHub({
                         </option>
                       );
                     })}
+                  </select>
+                </div>
+
+                {/* Category Filter (Normal vs VIP) */}
+                <div className="space-y-1 min-w-0">
+                  <label className="text-[11px] font-bold text-[#94A3B8] flex items-center gap-1">
+                    <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Event Category:</span>
+                  </label>
+                  <select
+                    data-testid="lottery-category-filter"
+                    value={lotteryCategoryFilter}
+                    onChange={(e) => setLotteryCategoryFilter(e.target.value as 'all' | 'normal' | 'vip')}
+                    className="w-full min-w-0 bg-[#07090d] border border-[#272a31] rounded-xl px-3 py-2 text-xs font-bold text-white outline-none cursor-pointer focus:border-amber-400"
+                  >
+                    <option value="all">All Categories</option>
+                    <option value="normal">Normal Events</option>
+                    <option value="vip">VIP Events</option>
                   </select>
                 </div>
 
@@ -1038,6 +1059,7 @@ export default function GamesManagementSuperHub({
                     type="button"
                     onClick={() => {
                       setLotteryRoomFilter('all');
+                      setLotteryCategoryFilter('all');
                       setLotteryStatusFilter('all');
                       setLotterySearchQuery('');
                       setIsWizardOpen(true);
@@ -1272,6 +1294,14 @@ export default function GamesManagementSuperHub({
                                   <p className="text-[10px] text-[#94A3B8]">
                                     Winning digits are permanently locked at expiration. Backend scheduler settles and publishes automatically.
                                   </p>
+                                  {evt.processingError && (
+                                    <div
+                                      data-testid={`event-processing-error-${evt.id}`}
+                                      className="mt-1.5 p-2 rounded-lg bg-rose-500/15 border border-rose-500/40 text-[10px] text-rose-300 font-mono-numbers break-words"
+                                    >
+                                      <strong>Last Error{evt.processingAttempts ? ` (#${evt.processingAttempts})` : ''}:</strong> {evt.processingError}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -2605,10 +2635,16 @@ export default function GamesManagementSuperHub({
                       </div>
                       <div>
                         <span className="text-[10px] text-[#64748B] block uppercase">Status</span>
-                        <strong className={`font-bold uppercase ${isConcluded ? 'text-purple-400' : 'text-emerald-400'}`}>
+                        <strong className={`font-bold uppercase ${isConcluded ? 'text-purple-400' : viewDetailsEvent.processingError ? 'text-rose-400' : 'text-emerald-400'}`}>
                           {isConcluded ? 'Settled & Paid' : viewDetailsEvent.status}
                         </strong>
                       </div>
+                      {viewDetailsEvent.processingError && (
+                        <div className="col-span-2 sm:col-span-3 p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-xs text-rose-300">
+                          <strong>Processing Failure Diagnostic{viewDetailsEvent.processingAttempts ? ` (Attempt #${viewDetailsEvent.processingAttempts})` : ''}:</strong>{' '}
+                          {viewDetailsEvent.processingError}
+                        </div>
+                      )}
                       <div>
                         <span className="text-[10px] text-[#64748B] block uppercase">Ticket Price</span>
                         <strong className="text-white">{viewDetailsEvent.ticketPrice || 10} USDT</strong>

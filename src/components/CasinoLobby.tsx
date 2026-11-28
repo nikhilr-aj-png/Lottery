@@ -281,8 +281,9 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* 2. AVAILABLE POOL: ACTIVE & UPCOMING EVENTS (LIVE EVENT FIRST)     */}
+      {/* 2. AVAILABLE POOL: ONLY RENDERED WHEN ACTIVE/UPCOMING POOLS EXIST  */}
       {/* ------------------------------------------------------------------ */}
+      {availableEvents.length > 0 && (
       <section data-testid="available-pool-section" className="space-y-3 sm:space-y-4">
         <div className="pb-2.5 border-b border-[#1F2737] space-y-1">
           <div className="flex items-center justify-between gap-2">
@@ -303,47 +304,6 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
           </p>
         </div>
 
-        {availableEvents.length === 0 ? (
-          <div
-            data-testid="available-pool-empty"
-            className="p-4 sm:p-5 rounded-2xl bg-[#111827] border border-[#1F2737] flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4"
-          >
-            <div className="flex items-start sm:items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center shrink-0">
-                <Ticket className="w-5 h-5 text-amber-400" />
-              </div>
-              <div className="min-w-0 space-y-0.5">
-                <h3 className="font-display font-bold text-white text-sm sm:text-base leading-tight">
-                  New Draws Coming Soon
-                </h3>
-                <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-snug">
-                  Our automated lottery engine publishes new USDT pools regularly. Check past winning numbers in Results.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setActiveTab('results')}
-                className="w-full sm:w-auto min-h-[38px] px-4 py-2 rounded-xl bg-[#0B0F19] hover:bg-[#151C2B] border border-amber-500/30 text-amber-300 text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
-              >
-                <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>View Results</span>
-              </button>
-              {user && (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('wallet')}
-                  className="w-full sm:w-auto min-h-[38px] px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors whitespace-nowrap"
-                >
-                  <Wallet className="w-3.5 h-3.5 shrink-0" />
-                  <span>Wallet</span>
-                </button>
-              )}
-            </div>
-          </div>
-        ) : (
           <div className="space-y-6">
             {/* Normal Events */}
             {normalAvailableEvents.length > 0 && (
@@ -418,8 +378,8 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
               </div>
             )}
           </div>
-        )}
       </section>
+      )}
 
       {/* ------------------------------------------------------------------ */}
       {/* 3. RESULTS: CONCLUDED DRAWS WITHIN CONFIGURABLE RETENTION PERIOD   */}

@@ -22,14 +22,20 @@ export default function ReferralsManagement() {
   // Settings State (synchronized 1:1 with authoritative backend referral_settings)
   const [settings, setSettings] = useState({
     enabled: true,
+    normal_enabled: true,
+    vip_enabled: true,
+    vip_reward_mode: 'double_normal' as 'double_normal' | 'custom',
     registration_reward_enabled: true,
     registration_reward_amount: '0.25',
+    vip_registration_reward_amount: '0.50',
     first_deposit_reward_enabled: true,
     first_deposit_reward_percent: '5',
+    vip_first_deposit_reward_percent: '10',
     minimum_qualifying_deposit: '10',
     maximum_first_deposit_bonus: '50',
     lifetime_commission_enabled: true,
     lifetime_commission_percent: '2',
+    vip_lifetime_commission_percent: '4',
     config_version: 1
   });
 
@@ -65,14 +71,20 @@ export default function ReferralsManagement() {
         const norm = normalizeReferralSettings(rawConfig);
         setSettings({
           enabled: norm.enabled,
+          normal_enabled: norm.normal_enabled,
+          vip_enabled: norm.vip_enabled,
+          vip_reward_mode: norm.vip_reward_mode,
           registration_reward_enabled: norm.registration_reward_enabled,
           registration_reward_amount: String(norm.registration_reward_amount),
+          vip_registration_reward_amount: String(norm.vip_registration_reward_amount),
           first_deposit_reward_enabled: norm.first_deposit_reward_enabled,
           first_deposit_reward_percent: String(norm.first_deposit_reward_percent),
+          vip_first_deposit_reward_percent: String(norm.vip_first_deposit_reward_percent),
           minimum_qualifying_deposit: String(norm.minimum_qualifying_deposit),
           maximum_first_deposit_bonus: String(norm.maximum_first_deposit_bonus),
           lifetime_commission_enabled: norm.lifetime_commission_enabled,
           lifetime_commission_percent: String(norm.lifetime_commission_percent),
+          vip_lifetime_commission_percent: String(norm.vip_lifetime_commission_percent),
           config_version: norm.config_version
         });
       } else {
@@ -161,20 +173,50 @@ export default function ReferralsManagement() {
       return;
     }
 
+    const vipRegAmtRaw = parseFloat(settings.vip_registration_reward_amount);
+    const vipFdPctRaw = parseFloat(settings.vip_first_deposit_reward_percent);
+    const vipLcPctRaw = parseFloat(settings.vip_lifetime_commission_percent);
+    const isCustomVip = settings.vip_reward_mode === 'custom';
+
+    const vipRegAmt = isCustomVip ? vipRegAmtRaw : Math.round(regAmt * 2 * 100) / 100;
+    const vipFdPct = isCustomVip ? vipFdPctRaw : Math.min(100, Math.round(fdPct * 2 * 100) / 100);
+    const vipLcPct = isCustomVip ? vipLcPctRaw : Math.min(50, Math.round(lcPct * 2 * 100) / 100);
+
+    if (isCustomVip) {
+      if (!Number.isFinite(vipRegAmt) || vipRegAmt < 0) {
+        setSettingsError('VIP registration reward amount must be 0 or greater.');
+        return;
+      }
+      if (!Number.isFinite(vipFdPct) || vipFdPct < 0 || vipFdPct > 100) {
+        setSettingsError('VIP first deposit percentage must be between 0% and 100%.');
+        return;
+      }
+      if (!Number.isFinite(vipLcPct) || vipLcPct < 0 || vipLcPct > 50) {
+        setSettingsError('VIP lifetime commission percentage must be between 0% and 50%.');
+        return;
+      }
+    }
+
     setSavingSettings(true);
     try {
       const updated = {
         enabled: Boolean(settings.enabled),
+        normal_enabled: Boolean(settings.normal_enabled),
+        vip_enabled: Boolean(settings.vip_enabled),
+        vip_reward_mode: settings.vip_reward_mode,
         reward_currency: 'USDT',
         supported_network: 'TRC-20',
-        registration_reward_enabled: Boolean(settings.registration_reward_enabled) && regAmt > 0,
+        registration_reward_enabled: Boolean(settings.registration_reward_enabled) && (regAmt > 0 || vipRegAmt > 0),
         registration_reward_amount: Math.round(regAmt * 100) / 100,
+        vip_registration_reward_amount: Math.round(vipRegAmt * 100) / 100,
         first_deposit_reward_enabled: Boolean(settings.first_deposit_reward_enabled),
         first_deposit_reward_percent: Math.round(fdPct * 100) / 100,
+        vip_first_deposit_reward_percent: Math.round(vipFdPct * 100) / 100,
         minimum_qualifying_deposit: Math.round(minDep * 100) / 100,
         maximum_first_deposit_bonus: Math.round(maxBonus * 100) / 100,
         lifetime_commission_enabled: Boolean(settings.lifetime_commission_enabled),
-        lifetime_commission_percent: Math.round(lcPct * 100) / 100
+        lifetime_commission_percent: Math.round(lcPct * 100) / 100,
+        vip_lifetime_commission_percent: Math.round(vipLcPct * 100) / 100
       };
 
       const res = await adminUpdatePlatformSettings({
@@ -190,14 +232,20 @@ export default function ReferralsManagement() {
         const norm = normalizeReferralSettings(res.settings.referralSettings);
         setSettings({
           enabled: norm.enabled,
+          normal_enabled: norm.normal_enabled,
+          vip_enabled: norm.vip_enabled,
+          vip_reward_mode: norm.vip_reward_mode,
           registration_reward_enabled: norm.registration_reward_enabled,
           registration_reward_amount: String(norm.registration_reward_amount),
+          vip_registration_reward_amount: String(norm.vip_registration_reward_amount),
           first_deposit_reward_enabled: norm.first_deposit_reward_enabled,
           first_deposit_reward_percent: String(norm.first_deposit_reward_percent),
+          vip_first_deposit_reward_percent: String(norm.vip_first_deposit_reward_percent),
           minimum_qualifying_deposit: String(norm.minimum_qualifying_deposit),
           maximum_first_deposit_bonus: String(norm.maximum_first_deposit_bonus),
           lifetime_commission_enabled: norm.lifetime_commission_enabled,
           lifetime_commission_percent: String(norm.lifetime_commission_percent),
+          vip_lifetime_commission_percent: String(norm.vip_lifetime_commission_percent),
           config_version: norm.config_version
         });
       }
@@ -297,6 +345,73 @@ export default function ReferralsManagement() {
         </div>
 
         <form onSubmit={handleSaveSettings} className="space-y-5">
+          {/* Player Category Eligibility & VIP Reward Mode */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-[#141924] border border-[#272a31] rounded-xl p-3.5 flex items-center justify-between gap-2">
+              <div>
+                <span className="text-xs font-bold text-white block">Normal Players</span>
+                <span className="text-[10px] text-[#8b92a2] block">Enable referral rewards for Normal</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  data-testid="referral-toggle-normal"
+                  checked={settings.normal_enabled}
+                  onChange={(e) => setSettings(prev => ({ ...prev, normal_enabled: e.target.checked }))}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-[#272a31] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+
+            <div className="bg-[#141924] border border-[#272a31] rounded-xl p-3.5 flex items-center justify-between gap-2">
+              <div>
+                <span className="text-xs font-bold text-amber-300 block">VIP Players</span>
+                <span className="text-[10px] text-[#8b92a2] block">Enable referral rewards for VIP</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  data-testid="referral-toggle-vip"
+                  checked={settings.vip_enabled}
+                  onChange={(e) => setSettings(prev => ({ ...prev, vip_enabled: e.target.checked }))}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-[#272a31] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+              </label>
+            </div>
+
+            <div className="bg-[#141924] border border-[#272a31] rounded-xl p-3.5 space-y-1.5">
+              <span className="text-xs font-bold text-white block">VIP Reward Mode</span>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  data-testid="referral-vip-mode-double"
+                  onClick={() => setSettings(prev => ({ ...prev, vip_reward_mode: 'double_normal' }))}
+                  className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                    settings.vip_reward_mode === 'double_normal'
+                      ? 'bg-amber-500/20 border-amber-400 text-amber-300'
+                      : 'bg-[#0b0e14] border-[#272a31] text-[#8b92a2] hover:text-white'
+                  }`}
+                >
+                  Double Normal (2x)
+                </button>
+                <button
+                  type="button"
+                  data-testid="referral-vip-mode-custom"
+                  onClick={() => setSettings(prev => ({ ...prev, vip_reward_mode: 'custom' }))}
+                  className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                    settings.vip_reward_mode === 'custom'
+                      ? 'bg-amber-500/20 border-amber-400 text-amber-300'
+                      : 'bg-[#0b0e14] border-[#272a31] text-[#8b92a2] hover:text-white'
+                  }`}
+                >
+                  Custom VIP Reward
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Rule 1: Registration Bonus */}
             <div className="bg-[#141924] border border-[#272a31] rounded-xl p-4 space-y-3">
@@ -320,7 +435,7 @@ export default function ReferralsManagement() {
               </p>
               <div>
                 <label className="text-[10px] uppercase font-bold text-[#8b92a2] block mb-1">
-                  Reward Amount (USDT)
+                  Normal Reward Amount (USDT)
                 </label>
                 <div className="relative">
                   <input
@@ -334,6 +449,32 @@ export default function ReferralsManagement() {
                   <span className="absolute right-3 top-2.5 text-[10px] text-amber-400 font-bold">USDT</span>
                 </div>
               </div>
+              {settings.vip_reward_mode === 'custom' ? (
+                <div>
+                  <label className="text-[10px] uppercase font-bold text-amber-300 block mb-1">
+                    VIP Reward Amount (USDT)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      data-testid="referral-vip-reg-input"
+                      step="0.01"
+                      min="0"
+                      value={settings.vip_registration_reward_amount}
+                      onChange={(e) => setSettings(prev => ({ ...prev, vip_registration_reward_amount: e.target.value }))}
+                      className="w-full bg-[#0b0e14] border border-amber-500/40 rounded-lg px-3 py-2 pr-14 text-xs font-bold font-mono-numbers text-amber-300 outline-none focus:border-amber-400"
+                    />
+                    <span className="absolute right-3 top-2.5 text-[10px] text-amber-400 font-bold">VIP</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-center justify-between text-[10px] font-mono-numbers">
+                  <span className="text-[#94A3B8]">VIP (2x Auto):</span>
+                  <span className="text-amber-300 font-bold">
+                    {(Math.round((parseFloat(settings.registration_reward_amount) || 0) * 2 * 100) / 100).toFixed(2)} USDT
+                  </span>
+                </div>
+              )}
               <div className="pt-1 flex items-center justify-between text-[10px] text-[#8b92a2] font-mono-numbers">
                 <span>Settlement Asset: USDT</span>
                 <span className="text-emerald-400 font-bold">Network: TRC-20</span>
@@ -362,7 +503,7 @@ export default function ReferralsManagement() {
               </p>
               <div>
                 <label className="text-[10px] uppercase font-bold text-[#8b92a2] block mb-1">
-                  Reward Percentage (%)
+                  Normal Reward Percentage (%)
                 </label>
                 <div className="relative">
                   <input
@@ -377,6 +518,33 @@ export default function ReferralsManagement() {
                   <span className="absolute right-3 top-2.5 text-[10px] text-emerald-400 font-bold">%</span>
                 </div>
               </div>
+              {settings.vip_reward_mode === 'custom' ? (
+                <div>
+                  <label className="text-[10px] uppercase font-bold text-amber-300 block mb-1">
+                    VIP Reward Percentage (%)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      data-testid="referral-vip-fd-input"
+                      step="0.5"
+                      min="0"
+                      max="100"
+                      value={settings.vip_first_deposit_reward_percent}
+                      onChange={(e) => setSettings(prev => ({ ...prev, vip_first_deposit_reward_percent: e.target.value }))}
+                      className="w-full bg-[#0b0e14] border border-amber-500/40 rounded-lg px-3 py-2 text-xs font-bold font-mono-numbers text-amber-300 outline-none focus:border-amber-400"
+                    />
+                    <span className="absolute right-3 top-2.5 text-[10px] text-amber-400 font-bold">% VIP</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-center justify-between text-[10px] font-mono-numbers">
+                  <span className="text-[#94A3B8]">VIP (2x Auto):</span>
+                  <span className="text-amber-300 font-bold">
+                    {Math.min(100, Math.round((parseFloat(settings.first_deposit_reward_percent) || 0) * 2 * 100) / 100)}%
+                  </span>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] uppercase font-bold text-[#8b92a2] block mb-1">
@@ -429,7 +597,7 @@ export default function ReferralsManagement() {
               </p>
               <div>
                 <label className="text-[10px] uppercase font-bold text-[#8b92a2] block mb-1">
-                  Commission Percentage (%)
+                  Normal Commission Percentage (%)
                 </label>
                 <div className="relative">
                   <input
@@ -444,6 +612,33 @@ export default function ReferralsManagement() {
                   <span className="absolute right-3 top-2.5 text-[10px] text-purple-400 font-bold">%</span>
                 </div>
               </div>
+              {settings.vip_reward_mode === 'custom' ? (
+                <div>
+                  <label className="text-[10px] uppercase font-bold text-amber-300 block mb-1">
+                    VIP Commission Percentage (%)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      data-testid="referral-vip-lc-input"
+                      step="0.1"
+                      min="0"
+                      max="50"
+                      value={settings.vip_lifetime_commission_percent}
+                      onChange={(e) => setSettings(prev => ({ ...prev, vip_lifetime_commission_percent: e.target.value }))}
+                      className="w-full bg-[#0b0e14] border border-amber-500/40 rounded-lg px-3 py-2 text-xs font-bold font-mono-numbers text-amber-300 outline-none focus:border-amber-400"
+                    />
+                    <span className="absolute right-3 top-2.5 text-[10px] text-amber-400 font-bold">% VIP</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-center justify-between text-[10px] font-mono-numbers">
+                  <span className="text-[#94A3B8]">VIP (2x Auto):</span>
+                  <span className="text-amber-300 font-bold">
+                    {Math.min(50, Math.round((parseFloat(settings.lifetime_commission_percent) || 0) * 2 * 100) / 100)}%
+                  </span>
+                </div>
+              )}
               <div className="pt-1 flex items-center justify-between text-[10px] text-[#8b92a2] font-mono-numbers">
                 <span>Config Version: v{settings.config_version}</span>
                 <label className="inline-flex items-center gap-1.5 cursor-pointer text-white">

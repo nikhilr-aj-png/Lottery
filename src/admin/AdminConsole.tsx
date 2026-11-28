@@ -207,6 +207,9 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
 
   const [dailyCheckinSettings, setDailyCheckinSettings] = useState({
     enabled: true,
+    enabled_for_normal: true,
+    enabled_for_vip: true,
+    vip_reward_mode: 'double_normal' as 'double_normal' | 'custom',
     streak_rewards: {
       day1: 0.10,
       day2: 0.15,
@@ -215,6 +218,15 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       day5: 0.30,
       day6: 0.40,
       day7: 1.00
+    },
+    vip_streak_rewards: {
+      day1: 0.20,
+      day2: 0.30,
+      day3: 0.40,
+      day4: 0.50,
+      day5: 0.60,
+      day6: 0.80,
+      day7: 2.00
     },
     full_streak_bonus: 1.00,
     missed_day_policy: 'reset'
@@ -240,7 +252,24 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
           setBonusRewardSettings(prev => ({ ...prev, ...data.bonus_settings }));
         }
         if (data.checkin_settings) {
-          setDailyCheckinSettings(prev => ({ ...prev, ...data.checkin_settings }));
+          setDailyCheckinSettings(prev => ({
+            ...prev,
+            ...data.checkin_settings,
+            enabled_for_normal: data.checkin_settings.enabled_for_normal !== false,
+            enabled_for_vip: data.checkin_settings.enabled_for_vip !== false,
+            vip_reward_mode:
+              String(data.checkin_settings.vip_reward_mode || '').toLowerCase() === 'custom'
+                ? 'custom'
+                : 'double_normal',
+            streak_rewards: {
+              ...prev.streak_rewards,
+              ...(data.checkin_settings.streak_rewards || {})
+            },
+            vip_streak_rewards: {
+              ...prev.vip_streak_rewards,
+              ...(data.checkin_settings.vip_streak_rewards || {})
+            }
+          }));
         }
       }
     } catch (e) {
@@ -1597,7 +1626,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div>
-                          <label className="text-[10px] text-[#94A3B8] block mb-1">Amount (USDT) *</label>
+                          <label className="text-[10px] text-[#94A3B8] block mb-1">Adjustment Amount (USDT) *</label>
                           <input
                             type="number"
                             step="0.01"
@@ -1619,25 +1648,18 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                           >
                             {exceedsBal ? 'Insufficient Balance' : `${previewBal.toFixed(2)} USDT`}
                           </strong>
+                          {validAmt && !exceedsBal && (
+                            <span className="text-[10px] font-mono-numbers text-[#94A3B8]">
+                              {curBal.toFixed(2)} {walletAdjType === 'add' ? '+' : '-'} {parsedAmt.toFixed(2)} = {previewBal.toFixed(2)} USDT
+                            </span>
+                          )}
                         </div>
-                      </div>
-
-                      <div>
-                        <label className="text-[10px] text-[#94A3B8] block mb-1">Admin Note / Reason *</label>
-                        <input
-                          type="text"
-                          data-testid="wallet-adj-reason-input"
-                          value={walletAdjReason}
-                          onChange={(e) => setWalletAdjReason(e.target.value)}
-                          placeholder="e.g. Manual compensation / balance correction"
-                          className="w-full bg-[#07090d] border border-[#272a31] focus:border-amber-400 rounded-xl px-3 py-2 text-xs text-white outline-none"
-                        />
                       </div>
 
                       <button
                         type="button"
                         data-testid="confirm-wallet-adj-btn"
-                        disabled={walletAdjSubmitting || !validAmt || exceedsBal || !walletAdjReason.trim()}
+                        disabled={walletAdjSubmitting || !validAmt || exceedsBal}
                         onClick={async () => {
                           setWalletAdjSubmitting(true);
                           try {
@@ -1645,7 +1667,7 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                               editingUser.id,
                               walletAdjType,
                               parsedAmt,
-                              walletAdjReason.trim(),
+                              'admin_balance_adjustment',
                               walletAdjIdemKey
                             );
                             if (res?.success) {
@@ -1662,9 +1684,15 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                             setWalletAdjSubmitting(false);
                           }
                         }}
-                        className="w-full py-2.5 rounded-xl btn-gold text-xs font-black uppercase tracking-wider cursor-pointer disabled:opacity-45"
+                        className={`w-full py-2.5 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer disabled:opacity-45 transition-all ${
+                          walletAdjType === 'add'
+                            ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-lg shadow-emerald-500/20'
+                            : 'bg-rose-500 hover:bg-rose-400 text-white shadow-lg shadow-rose-500/20'
+                        }`}
                       >
-                        {walletAdjSubmitting ? 'Processing Adjustment...' : 'Confirm Adjustment'}
+                        {walletAdjSubmitting
+                          ? walletAdjType === 'add' ? 'Adding Balance...' : 'Deducting Balance...'
+                          : walletAdjType === 'add' ? 'Add Balance' : 'Deduct Balance'}
                       </button>
                     </div>
 
@@ -2640,6 +2668,83 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                 </div>
 
                 <div className="space-y-4">
+                  {/* Normal & VIP Eligibility + VIP Reward Mode */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-3 rounded-xl bg-[#141924] border border-[#272a31] flex items-center justify-between gap-2">
+                      <div>
+                        <span className="text-xs font-bold text-white block">Normal Players</span>
+                        <span className="text-[10px] text-[#8b92a2] block">Allow check-in for Normal users</span>
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          data-testid="checkin-toggle-normal"
+                          checked={dailyCheckinSettings.enabled_for_normal}
+                          onChange={(e) => setDailyCheckinSettings(prev => ({ ...prev, enabled_for_normal: e.target.checked }))}
+                          className="sr-only"
+                        />
+                        <div className={`w-10 h-5 rounded-full transition-colors relative ${dailyCheckinSettings.enabled_for_normal ? 'bg-emerald-500' : 'bg-gray-700'}`}>
+                          <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-[3px] transition-transform ${dailyCheckinSettings.enabled_for_normal ? 'left-[22px]' : 'left-[3px]'}`} />
+                        </div>
+                      </label>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#141924] border border-[#272a31] flex items-center justify-between gap-2">
+                      <div>
+                        <span className="text-xs font-bold text-amber-300 block">VIP Players</span>
+                        <span className="text-[10px] text-[#8b92a2] block">Allow check-in for VIP members</span>
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          data-testid="checkin-toggle-vip"
+                          checked={dailyCheckinSettings.enabled_for_vip}
+                          onChange={(e) => setDailyCheckinSettings(prev => ({ ...prev, enabled_for_vip: e.target.checked }))}
+                          className="sr-only"
+                        />
+                        <div className={`w-10 h-5 rounded-full transition-colors relative ${dailyCheckinSettings.enabled_for_vip ? 'bg-amber-400' : 'bg-gray-700'}`}>
+                          <div className={`w-3.5 h-3.5 rounded-full bg-black absolute top-[3px] transition-transform ${dailyCheckinSettings.enabled_for_vip ? 'left-[22px]' : 'left-[3px]'}`} />
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* VIP Reward Mode Selector */}
+                  <div>
+                    <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-1.5">
+                      VIP Reward Mode
+                    </label>
+                    <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        data-testid="checkin-vip-mode-double"
+                        onClick={() => setDailyCheckinSettings(prev => ({ ...prev, vip_reward_mode: 'double_normal' }))}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          dailyCheckinSettings.vip_reward_mode === 'double_normal'
+                            ? 'bg-amber-500/15 border-amber-400 text-amber-300'
+                            : 'bg-[#141924] border-[#272a31] text-[#8b92a2] hover:text-white'
+                        }`}
+                      >
+                        <div className="text-xs font-bold">Double Normal Reward (2x)</div>
+                        <div className="text-[10px] text-[#8b92a2]">VIP users automatically receive 2x Normal Day 1–7 rewards</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        data-testid="checkin-vip-mode-custom"
+                        onClick={() => setDailyCheckinSettings(prev => ({ ...prev, vip_reward_mode: 'custom' }))}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          dailyCheckinSettings.vip_reward_mode === 'custom'
+                            ? 'bg-amber-500/15 border-amber-400 text-amber-300'
+                            : 'bg-[#141924] border-[#272a31] text-[#8b92a2] hover:text-white'
+                        }`}
+                      >
+                        <div className="text-xs font-bold">Custom VIP Reward</div>
+                        <div className="text-[10px] text-[#8b92a2]">Configure exact VIP USDT amounts for Day 1–7 (no doubling)</div>
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Missed Day Policy */}
                   <div>
                     <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-1.5">
@@ -2677,26 +2782,31 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                   {/* 7 Days Reward Inputs */}
                   <div>
                     <label className="block text-xs font-bold text-[#8b92a2] uppercase tracking-wider mb-2">
-                      Daily Streak Reward Ladder (USDT TRC-20)
+                      Daily Streak Reward Ladder (Normal &amp; VIP USDT TRC-20)
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                       {[1, 2, 3, 4, 5, 6, 7].map((day) => {
-                        const dayKey = `day${day}`;
+                        const dayKey = `day${day}` as keyof typeof dailyCheckinSettings.streak_rewards;
                         const currentVal = dailyCheckinSettings.streak_rewards?.[dayKey] ?? (day === 7 ? 1.00 : 0.10 * day);
+                        const customVipVal =
+                          dailyCheckinSettings.vip_streak_rewards?.[dayKey] ??
+                          Math.round(Number(currentVal) * 2 * 100) / 100;
+                        const autoVipVal = Math.round(Number(currentVal) * 2 * 100) / 100;
                         return (
-                          <div key={day} className="p-2.5 rounded-xl bg-[#141924] border border-[#272a31] space-y-1">
+                          <div key={day} className="p-2.5 rounded-xl bg-[#141924] border border-[#272a31] space-y-1.5">
                             <span className="text-[10px] font-mono-numbers font-bold text-[#8b92a2] block">
                               Day {day} {day === 7 ? '★ Jackpot' : ''}
                             </span>
-                            <div className="relative">
+                            <div>
+                              <span className="text-[9px] text-[#94A3B8] block mb-0.5">Normal (USDT)</span>
                               <input
                                 type="number"
                                 step="0.01"
                                 min="0.01"
-                                max="1.00"
+                                max="100.00"
                                 value={currentVal}
                                 onChange={(e) => {
-                                  const val = Math.min(1.00, Math.max(0.01, parseFloat(e.target.value) || 0.05));
+                                  const val = Math.min(100.00, Math.max(0.01, parseFloat(e.target.value) || 0.05));
                                   setDailyCheckinSettings(prev => ({
                                     ...prev,
                                     streak_rewards: {
@@ -2705,12 +2815,37 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                                     }
                                   }));
                                 }}
-                                className="w-full px-2 py-1.5 bg-[#0b0e14] border border-[#272a31] rounded-lg text-white text-xs font-mono-numbers font-bold focus:border-amber-400 outline-none"
+                                className="w-full px-2 py-1 bg-[#0b0e14] border border-[#272a31] rounded-lg text-white text-xs font-mono-numbers font-bold focus:border-amber-400 outline-none"
                               />
                             </div>
-                            <span className="text-[9px] text-amber-400/80 font-mono-numbers block">
-                              = ${Number(currentVal).toFixed(2)} USDT
-                            </span>
+                            {dailyCheckinSettings.vip_reward_mode === 'custom' ? (
+                              <div>
+                                <span className="text-[9px] text-amber-300 font-bold block mb-0.5">VIP Custom (USDT)</span>
+                                <input
+                                  type="number"
+                                  data-testid={`checkin-vip-day-${day}`}
+                                  step="0.01"
+                                  min="0.01"
+                                  max="200.00"
+                                  value={customVipVal}
+                                  onChange={(e) => {
+                                    const val = Math.min(200.00, Math.max(0.01, parseFloat(e.target.value) || 0.05));
+                                    setDailyCheckinSettings(prev => ({
+                                      ...prev,
+                                      vip_streak_rewards: {
+                                        ...(prev.vip_streak_rewards || {}),
+                                        [dayKey]: val
+                                      }
+                                    }));
+                                  }}
+                                  className="w-full px-2 py-1 bg-[#0b0e14] border border-amber-500/40 rounded-lg text-amber-300 text-xs font-mono-numbers font-bold focus:border-amber-400 outline-none"
+                                />
+                              </div>
+                            ) : (
+                              <span className="text-[9.5px] text-amber-300 font-mono-numbers block">
+                                VIP (2x): ${autoVipVal.toFixed(2)} USDT
+                              </span>
+                            )}
                           </div>
                         );
                       })}
