@@ -345,6 +345,20 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
   const [maxWithdrawal, setMaxWithdrawal] = useState(() => String(platformSettings?.maxWithdrawal ?? '10000.00'));
   const [houseFeePercent, setHouseFeePercent] = useState(() => String(platformSettings?.houseFeePercent ?? '5'));
   const [vipMembershipPrice, setVipMembershipPrice] = useState(() => String(platformSettings?.vipMembershipPrice ?? '25'));
+  const [vipPlansConfig, setVipPlansConfig] = useState(() => ({
+    '1_month': {
+      price: String(platformSettings?.vipPlans?.['1_month']?.price ?? platformSettings?.vipMembershipPrice ?? '25'),
+      enabled: platformSettings?.vipPlans?.['1_month']?.enabled !== false
+    },
+    '2_months': {
+      price: String(platformSettings?.vipPlans?.['2_months']?.price ?? '45'),
+      enabled: platformSettings?.vipPlans?.['2_months']?.enabled !== false
+    },
+    '1_year': {
+      price: String(platformSettings?.vipPlans?.['1_year']?.price ?? '200'),
+      enabled: platformSettings?.vipPlans?.['1_year']?.enabled !== false
+    }
+  }));
   const [supportEmail, setSupportEmail] = useState(() => platformSettings?.supportEmail || 'earnflow.user@gmail.com');
   const [usernameChangeFee, setUsernameChangeFee] = useState(() => String(platformSettings?.usernameChangeFee ?? '5.00'));
   const [apkDownloadUrl, setApkDownloadUrl] = useState(() => platformSettings?.apkDownloadUrl || '/download/earnflow.apk');
@@ -369,7 +383,23 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
       setMinWithdrawal(String(platformSettings.minWithdrawal ?? '5.00'));
       setMaxWithdrawal(String(platformSettings.maxWithdrawal ?? '10000.00'));
       setHouseFeePercent(String(platformSettings.houseFeePercent ?? '5'));
-      setVipMembershipPrice(String(platformSettings.vipMembershipPrice ?? '25'));
+      setVipMembershipPrice(String(platformSettings.vipPlans?.['1_month']?.price ?? platformSettings.vipMembershipPrice ?? '25'));
+      if (platformSettings.vipPlans) {
+        setVipPlansConfig({
+          '1_month': {
+            price: String(platformSettings.vipPlans['1_month']?.price ?? platformSettings.vipMembershipPrice ?? '25'),
+            enabled: platformSettings.vipPlans['1_month']?.enabled !== false
+          },
+          '2_months': {
+            price: String(platformSettings.vipPlans['2_months']?.price ?? '45'),
+            enabled: platformSettings.vipPlans['2_months']?.enabled !== false
+          },
+          '1_year': {
+            price: String(platformSettings.vipPlans['1_year']?.price ?? '200'),
+            enabled: platformSettings.vipPlans['1_year']?.enabled !== false
+          }
+        });
+      }
       setSupportEmail(platformSettings.supportEmail || 'earnflow.user@gmail.com');
       setUsernameChangeFee(String(platformSettings.usernameChangeFee ?? '5.00'));
       setApkDownloadUrl(platformSettings.apkDownloadUrl || '/download/earnflow.apk');
@@ -388,6 +418,30 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
 
   useEffect(() => {
     loadUsers();
+
+    // Real-time Admin Hub sync: reflect user registrations, wallet changes, VIP upgrades/expiries, & bonus claims automatically
+    const adminChannel = supabase
+      .channel('realtime:admin_console_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        loadUsers();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_wallets' }, () => {
+        loadUsers();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vip_membership_logs' }, () => {
+        loadUsers();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_daily_streaks' }, () => {
+        loadRewardsAnalytics();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wallet_ledger' }, () => {
+        loadRewardsAnalytics();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(adminChannel);
+    };
   }, []);
 
   const activeEvents = events.filter(e => e.status === 'active');
@@ -486,11 +540,39 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
     e.preventDefault();
     setIsSavingSettings(true);
     try {
+      const nextVipPlans = {
+        '1_month': {
+          id: '1_month',
+          label: '1 Month',
+          duration_months: 1,
+          duration_years: 0,
+          price: parseFloat(vipPlansConfig['1_month'].price || vipMembershipPrice || '25'),
+          enabled: vipPlansConfig['1_month'].enabled
+        },
+        '2_months': {
+          id: '2_months',
+          label: '2 Months',
+          duration_months: 2,
+          duration_years: 0,
+          price: parseFloat(vipPlansConfig['2_months'].price || '45'),
+          enabled: vipPlansConfig['2_months'].enabled
+        },
+        '1_year': {
+          id: '1_year',
+          label: '1 Year',
+          duration_months: 0,
+          duration_years: 1,
+          price: parseFloat(vipPlansConfig['1_year'].price || '200'),
+          enabled: vipPlansConfig['1_year'].enabled
+        }
+      };
+
       const res = await adminUpdatePlatformSettings({
         minWithdrawal,
         maxWithdrawal,
         houseFeePercent,
-        vipMembershipPrice,
+        vipMembershipPrice: nextVipPlans['1_month'].price,
+        vipPlans: nextVipPlans,
         supportEmail,
         usernameChangeFee,
         apkDownloadUrl
@@ -1924,30 +2006,80 @@ export default function AdminConsole({ onLogout, onSwitchToUserLobby }: AdminCon
                     </p>
                   </div>
 
-                  <div className="bg-[#07090d] p-3.5 sm:p-4 rounded-xl border border-[#1f2737] flex flex-col justify-between gap-2 min-w-0">
-                    <div className="space-y-2">
+                  <div className="bg-[#07090d] p-3.5 sm:p-4 rounded-xl border border-amber-500/25 flex flex-col justify-between gap-2.5 min-w-0 sm:col-span-2 lg:col-span-1">
+                    <div className="space-y-2.5">
                       <div className="flex flex-wrap items-center justify-between gap-1.5">
                         <label className="text-xs text-[#e1e2eb] font-semibold">
-                          VIP Membership Price (USDT)
+                          VIP Subscription Plans (USDT)
                         </label>
                         <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold shrink-0">
-                          VIP Access
+                          Time-Based VIP
                         </span>
                       </div>
-                      <input
-                        type="number"
-                        min="0.01"
-                        max="100000"
-                        step="0.01"
-                        data-testid="vip-membership-price-input"
-                        value={vipMembershipPrice}
-                        onChange={(e) => setVipMembershipPrice(e.target.value)}
-                        className="w-full min-w-0 bg-[#0b0e14] border border-[#272a31] focus:border-[#ffd700] rounded-lg px-3 py-2 text-xs text-white font-mono-numbers outline-none font-bold"
-                        required
-                      />
+
+                      <div className="space-y-2">
+                        {(
+                          [
+                            { id: '1_month', label: '1 Month' },
+                            { id: '2_months', label: '2 Months' },
+                            { id: '1_year', label: '1 Year' }
+                          ] as const
+                        ).map((plan) => {
+                          const cfg = vipPlansConfig[plan.id];
+                          return (
+                            <div
+                              key={plan.id}
+                              className="p-2 rounded-lg bg-[#0b0e14] border border-[#272a31] flex items-center justify-between gap-2"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  data-testid={`vip-plan-toggle-${plan.id}`}
+                                  checked={cfg.enabled}
+                                  onChange={(e) =>
+                                    setVipPlansConfig((prev) => ({
+                                      ...prev,
+                                      [plan.id]: { ...prev[plan.id], enabled: e.target.checked }
+                                    }))
+                                  }
+                                  className="accent-amber-400 cursor-pointer shrink-0"
+                                  title={`Enable ${plan.label} plan`}
+                                />
+                                <span className="text-[11px] font-bold text-white whitespace-nowrap">{plan.label}</span>
+                              </div>
+                              <div className="relative w-28 shrink-0">
+                                <input
+                                  type="number"
+                                  min="0.01"
+                                  max="100000"
+                                  step="0.01"
+                                  data-testid={plan.id === '1_month' ? 'vip-membership-price-input' : `vip-plan-price-${plan.id}`}
+                                  aria-label={`${plan.label} VIP Price USDT`}
+                                  value={cfg.price}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setVipPlansConfig((prev) => ({
+                                      ...prev,
+                                      [plan.id]: { ...prev[plan.id], price: val }
+                                    }));
+                                    if (plan.id === '1_month') {
+                                      setVipMembershipPrice(val);
+                                    }
+                                  }}
+                                  className="w-full bg-[#07090d] border border-[#272a31] focus:border-[#ffd700] rounded-lg pl-2 pr-9 py-1 text-xs text-white font-mono-numbers outline-none font-bold"
+                                  required
+                                />
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-amber-400 pointer-events-none">
+                                  USDT
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                     <p className="text-[11px] text-amber-300/90 leading-relaxed">
-                      One-time fee deducted from a Normal Player&apos;s wallet to unlock VIP Membership &amp; VIP Events.
+                      Configure independent prices &amp; availability for 1 Month, 2 Months, and 1 Year VIP subscriptions.
                     </p>
                   </div>
 

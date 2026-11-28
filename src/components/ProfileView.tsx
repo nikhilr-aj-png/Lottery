@@ -22,7 +22,10 @@ import {
   Headphones,
   CheckCircle,
   ExternalLink,
-  Crown
+  Crown,
+  Clock,
+  Calendar,
+  History
 } from 'lucide-react';
 
 interface ProfileViewProps {
@@ -45,6 +48,9 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
     platformSettings,
     isVipMember = false,
     vipMembershipPrice = 25,
+    vipPlans,
+    vipMembershipLogs = [],
+    getServerNowMs,
     purchaseVipMembership,
     showToast
   } = useLottery();
@@ -64,6 +70,15 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
   const [isConfirmingVip, setIsConfirmingVip] = useState(false);
   const [isUpgradingVip, setIsUpgradingVip] = useState(false);
   const [vipIdemKey, setVipIdemKey] = useState('');
+  const [selectedPlanId, setSelectedPlanId] = useState<'1_month' | '2_months' | '1_year'>('1_month');
+  const [vipNowTick, setVipNowTick] = useState<number>(() => (getServerNowMs ? getServerNowMs() : Date.now()));
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setVipNowTick(getServerNowMs ? getServerNowMs() : Date.now());
+    }, 1000);
+    return () => clearInterval(t);
+  }, [getServerNowMs]);
 
   // Sync TRC-20 input with current wallet address
   useEffect(() => {
@@ -225,58 +240,154 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
         </div>
       )}
 
-      {/* VIP Membership Tier & Self-Service Paid Upgrade Section (Visible on all viewports) */}
-      {profile?.role !== 'super_admin' && (
+      {/* VIP Membership Tier & Time-Based Subscription Section (Visible on all viewports) */}
+      {profile?.role !== 'super_admin' && (() => {
+        const planList = (['1_month', '2_months', '1_year'] as const).map((pid) => {
+          const cfg = vipPlans?.[pid];
+          return {
+            id: pid,
+            label: cfg?.label || (pid === '1_month' ? '1 Month' : pid === '2_months' ? '2 Months' : '1 Year'),
+            price: Number(cfg?.price ?? (pid === '1_month' ? vipMembershipPrice : pid === '2_months' ? 45 : 200)),
+            enabled: cfg?.enabled !== false
+          };
+        });
+        const activeSelectedPlan = planList.find((p) => p.id === selectedPlanId) || planList.find((p) => p.enabled) || planList[0];
+        const effectivePlanPrice = Number(activeSelectedPlan?.price || vipMembershipPrice);
+
+        const vipExpiresAtMs = profile?.vip_expires_at ? new Date(profile.vip_expires_at).getTime() : null;
+        const vipActivatedAtMs = profile?.vip_activated_at ? new Date(profile.vip_activated_at).getTime() : null;
+        const remainingMs = vipExpiresAtMs ? Math.max(0, vipExpiresAtMs - vipNowTick) : 0;
+        const isTimedSubscription = Boolean(vipExpiresAtMs);
+        const isLegacyOrAdminPermanentVip = isVipMember && !isTimedSubscription;
+        const wasExpiredVip = !isVipMember && profile?.vip_status === 'expired';
+
+        const formatRemaining = (ms: number) => {
+          const totalSecs = Math.max(0, Math.floor(ms / 1000));
+          const days = Math.floor(totalSecs / 86400);
+          const hrs = Math.floor((totalSecs % 86400) / 3600);
+          const mins = Math.floor((totalSecs % 3600) / 60);
+          const secs = totalSecs % 60;
+          return `${days}d ${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        };
+
+        const computeExpectedExpiryPreview = (planId: '1_month' | '2_months' | '1_year') => {
+          const base =
+            isVipMember && vipExpiresAtMs && vipExpiresAtMs > vipNowTick
+              ? new Date(vipExpiresAtMs)
+              : new Date(vipNowTick);
+          const d = new Date(base.getTime());
+          const origDate = d.getUTCDate();
+          if (planId === '1_month' || planId === '2_months') {
+            const addM = planId === '1_month' ? 1 : 2;
+            const targetMonth = d.getUTCMonth() + addM;
+            d.setUTCMonth(targetMonth);
+            if (d.getUTCDate() !== origDate) {
+              d.setUTCDate(0);
+            }
+          } else {
+            const targetYear = d.getUTCFullYear() + 1;
+            d.setUTCFullYear(targetYear);
+            if (d.getUTCDate() !== origDate) {
+              d.setUTCDate(0);
+            }
+          }
+          return d;
+        };
+
+        const currentPlanLabel =
+          profile?.vip_plan_id === '1_month'
+            ? '1 Month'
+            : profile?.vip_plan_id === '2_months'
+              ? '2 Months'
+              : profile?.vip_plan_id === '1_year'
+                ? '1 Year'
+                : profile?.vip_source === 'admin_granted'
+                  ? 'Admin Granted'
+                  : 'VIP Access';
+
+        return (
         <section
           data-testid="vip-membership-section"
-          className={`rounded-2xl p-4 sm:p-5 border shadow-lg ${isVipMember
+          className={`rounded-2xl p-4 sm:p-5 border shadow-lg space-y-4 ${isVipMember
             ? 'bg-gradient-to-r from-amber-500/15 via-[#141924] to-[#0d1117] border-amber-500/40'
             : 'bg-[#111728] border-[#272a31]'
             }`}
         >
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-start gap-3 min-w-0">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${isVipMember
                 ? 'bg-amber-500/20 text-amber-300 border-amber-400/50'
                 : 'bg-[#0B0F19] text-slate-300 border-[#272a31]'
                 }`}>
                 <Crown className="w-5 h-5" />
               </div>
-              <div className="space-y-1 min-w-0">
+              <div className="space-y-1.5 min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-display font-black text-sm sm:text-base text-white">
-                    {isVipMember ? 'VIP Player Membership' : 'Normal Player Account'}
+                    {isVipMember ? 'VIP Player Membership' : 'VIP Membership Plans'}
                   </h3>
                   <span
                     data-testid="player-category-badge"
                     className={`px-2 py-0.5 rounded-full text-[10px] font-mono-numbers font-black uppercase border ${isVipMember
                       ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                      : 'bg-slate-800 text-slate-300 border-slate-700'
+                      : wasExpiredVip
+                        ? 'bg-rose-500/15 text-rose-300 border-rose-500/35'
+                        : 'bg-slate-800 text-slate-300 border-slate-700'
                       }`}
                   >
-                    {isVipMember ? 'VIP PLAYER' : 'NORMAL PLAYER'}
+                    {isVipMember ? 'VIP PLAYER' : wasExpiredVip ? 'VIP EXPIRED · NORMAL' : 'NORMAL PLAYER'}
                   </span>
                 </div>
 
                 {isVipMember ? (
-                  <p className="text-xs text-[#CBD5E1] leading-relaxed">
-                    VIP access active — eligible for both Normal Events and exclusive VIP Events.
-                    {profile?.vip_paid_amount != null && (
-                      <span className="text-amber-300 font-mono-numbers font-bold ml-1.5">
-                        (Paid {Number(profile.vip_paid_amount).toFixed(2)} USDT)
-                      </span>
-                    )}
-                    {profile?.vip_source === 'admin_granted' && profile?.vip_paid_amount == null && (
-                      <span className="text-emerald-300 font-semibold ml-1.5">(Admin Granted)</span>
-                    )}
-                  </p>
+                  <div className="space-y-2">
+                    <p className="text-xs text-[#CBD5E1] leading-relaxed">
+                      VIP access active — eligible for Normal Events, exclusive VIP Events &amp; VIP Rewards.
+                      {profile?.vip_paid_amount != null && (
+                        <span className="text-amber-300 font-mono-numbers font-bold ml-1.5">
+                          (Paid {Number(profile.vip_paid_amount).toFixed(2)} USDT)
+                        </span>
+                      )}
+                      {profile?.vip_source === 'admin_granted' && profile?.vip_paid_amount == null && (
+                        <span className="text-emerald-300 font-semibold ml-1.5">(Admin Granted)</span>
+                      )}
+                    </p>
+
+                    <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-2 text-[11px] font-mono-numbers">
+                      <div className="p-2 rounded-lg bg-[#07090d]/80 border border-[#1F2737]">
+                        <span className="text-[9.5px] uppercase text-[#94A3B8] block">Current Plan</span>
+                        <strong data-testid="vip-current-plan" className="text-amber-300 font-bold">{currentPlanLabel}</strong>
+                      </div>
+                      <div className="p-2 rounded-lg bg-[#07090d]/80 border border-[#1F2737]">
+                        <span className="text-[9.5px] uppercase text-[#94A3B8] block">Activated</span>
+                        <strong className="text-white font-semibold">
+                          {vipActivatedAtMs ? new Date(vipActivatedAtMs).toLocaleDateString() : 'Active'}
+                        </strong>
+                      </div>
+                      <div className="p-2 rounded-lg bg-[#07090d]/80 border border-[#1F2737]">
+                        <span className="text-[9.5px] uppercase text-[#94A3B8] block">Expires</span>
+                        <strong data-testid="vip-expiry-display" className="text-white font-semibold">
+                          {vipExpiresAtMs ? new Date(vipExpiresAtMs).toLocaleString() : 'Lifetime / No Expiry'}
+                        </strong>
+                      </div>
+                      <div className="p-2 rounded-lg bg-[#07090d]/80 border border-[#1F2737]">
+                        <span className="text-[9.5px] uppercase text-[#94A3B8] block">Remaining Time</span>
+                        <strong data-testid="vip-remaining-display" className="text-emerald-400 font-bold">
+                          {vipExpiresAtMs ? formatRemaining(remainingMs) : 'Active'}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <p className="text-xs text-[#94A3B8] leading-relaxed">
-                    Upgrade to <strong className="text-amber-300">VIP Player</strong> to unlock exclusive VIP Events &amp; boosted rewards. One-time fee:{' '}
+                    {wasExpiredVip
+                      ? 'Your previous VIP subscription has expired. Choose a plan below to reactivate VIP access.'
+                      : 'Choose a VIP subscription plan to unlock exclusive VIP Events & VIP Rewards.'}{' '}
+                    Selected plan:{' '}
                     <strong data-testid="vip-fee-display" className="text-white font-mono-numbers">
-                      {Number(vipMembershipPrice).toFixed(2)} USDT
+                      {effectivePlanPrice.toFixed(2)} USDT
                     </strong>{' '}
-                    (Available Balance:{' '}
+                    (Balance:{' '}
                     <strong className="text-emerald-400 font-mono-numbers">
                       {Number(wallet?.balance || 0).toFixed(2)} USDT
                     </strong>
@@ -286,7 +397,7 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
 
                 <div
                   data-testid="vip-benefits-list"
-                  className="pt-1.5 flex flex-wrap gap-1.5 text-[10px] font-semibold"
+                  className="pt-1 flex flex-wrap gap-1.5 text-[10px] font-semibold"
                 >
                   <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/25">
                     VIP Exclusive Lottery Events
@@ -303,54 +414,129 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
                 </div>
               </div>
             </div>
-
-            {!isVipMember && (
-              <div className="shrink-0 w-full md:w-auto">
-                <button
-                  type="button"
-                  data-testid="vip-upgrade-open-btn"
-                  onClick={() => {
-                    setVipIdemKey(`vip-upgrade-${user?.id || 'u'}-${Date.now()}`);
-                    setIsConfirmingVip(true);
-                  }}
-                  className="w-full md:w-auto px-5 py-2.5 rounded-xl btn-gold text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg"
-                >
-                  <Crown className="w-4 h-4 text-black shrink-0" />
-                  <span>Upgrade to VIP ({Number(vipMembershipPrice).toFixed(2)} USDT)</span>
-                </button>
-              </div>
-            )}
           </div>
 
-          {/* Explicit Confirmation Step for Paid VIP Upgrade */}
-          {!isVipMember && isConfirmingVip && (
+          {/* Selectable Time-Based Plans: shown for Normal/Expired users OR active timed VIP users for Renewal/Extension */}
+          {!isLegacyOrAdminPermanentVip && (
+            <div className="space-y-3 pt-2 border-t border-[#1F2737]">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#CBD5E1] flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>{isVipMember ? 'Renew or Extend Membership' : 'Select Subscription Duration'}</span>
+                </span>
+                {isVipMember && (
+                  <span className="text-[10px] text-emerald-300 font-mono-numbers">
+                    Early renewal extends from your current expiry date
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {planList.map((plan) => {
+                  const isSelected = activeSelectedPlan?.id === plan.id;
+                  return (
+                    <button
+                      key={plan.id}
+                      type="button"
+                      data-testid={`vip-plan-card-${plan.id}`}
+                      disabled={!plan.enabled}
+                      onClick={() => setSelectedPlanId(plan.id)}
+                      className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between gap-1.5 min-w-0 ${
+                        !plan.enabled
+                          ? 'bg-[#0b0e14]/60 border-[#1F2737] opacity-50 cursor-not-allowed'
+                          : isSelected
+                            ? 'bg-amber-500/15 border-amber-400 shadow-md shadow-amber-500/10 cursor-pointer'
+                            : 'bg-[#0b0e14] border-[#272a31] hover:border-amber-500/40 cursor-pointer'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 w-full">
+                        <span className="text-xs font-extrabold text-white">{plan.label}</span>
+                        {plan.enabled ? (
+                          <span
+                            className={`text-[9.5px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                              isSelected
+                                ? 'bg-amber-400 text-black'
+                                : 'bg-white/5 text-[#94A3B8]'
+                            }`}
+                          >
+                            {isSelected ? 'Selected' : 'VIP Plan'}
+                          </span>
+                        ) : (
+                          <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30 font-bold">
+                            Unavailable
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-mono-numbers font-black text-base text-amber-300">
+                        {plan.price.toFixed(2)} <span className="text-[10px] font-bold">USDT</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {activeSelectedPlan?.enabled && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                  <div className="text-[11px] text-[#94A3B8] font-mono-numbers">
+                    {isVipMember ? 'New Extended Expiry: ' : 'Estimated Expiry: '}
+                    <strong className="text-white">
+                      {computeExpectedExpiryPreview(activeSelectedPlan.id).toLocaleDateString()}
+                    </strong>
+                  </div>
+                  <button
+                    type="button"
+                    data-testid={isVipMember ? 'vip-renew-open-btn' : 'vip-upgrade-open-btn'}
+                    onClick={() => {
+                      setVipIdemKey(`vip-sub-${activeSelectedPlan.id}-${user?.id || 'u'}-${Date.now()}`);
+                      setIsConfirmingVip(true);
+                    }}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl btn-gold text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                  >
+                    <Crown className="w-4 h-4 text-black shrink-0" />
+                    <span>
+                      {isVipMember
+                        ? `Extend ${activeSelectedPlan.label} (${activeSelectedPlan.price.toFixed(2)} USDT)`
+                        : `Upgrade to VIP · ${activeSelectedPlan.label} (${activeSelectedPlan.price.toFixed(2)} USDT)`}
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Explicit Confirmation Step for Time-Based VIP Purchase or Renewal */}
+          {!isLegacyOrAdminPermanentVip && isConfirmingVip && activeSelectedPlan && (
             <div
               data-testid="vip-upgrade-confirm-modal"
-              className="mt-4 p-4 rounded-xl bg-[#07090d] border border-amber-500/40 space-y-3 animate-in fade-in duration-150"
+              className="mt-2 p-4 rounded-xl bg-[#07090d] border border-amber-500/40 space-y-3 animate-in fade-in duration-150"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono-numbers">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-xs font-mono-numbers">
                 <div className="p-2.5 rounded-lg bg-[#111728] border border-[#1F2737]">
-                  <span className="text-[10px] text-[#94A3B8] block">VIP Membership Fee</span>
-                  <strong className="text-amber-300 font-black">{Number(vipMembershipPrice).toFixed(2)} USDT</strong>
+                  <span className="text-[10px] text-[#94A3B8] block">Selected Plan</span>
+                  <strong className="text-white font-black">{activeSelectedPlan.label}</strong>
+                </div>
+                <div className="p-2.5 rounded-lg bg-[#111728] border border-[#1F2737]">
+                  <span className="text-[10px] text-[#94A3B8] block">Amount to Deduct</span>
+                  <strong className="text-amber-300 font-black">{activeSelectedPlan.price.toFixed(2)} USDT</strong>
                 </div>
                 <div className="p-2.5 rounded-lg bg-[#111728] border border-[#1F2737]">
                   <span className="text-[10px] text-[#94A3B8] block">Available Wallet Balance</span>
                   <strong className="text-emerald-400 font-black">{Number(wallet?.balance || 0).toFixed(2)} USDT</strong>
                 </div>
                 <div className="p-2.5 rounded-lg bg-[#111728] border border-[#1F2737]">
-                  <span className="text-[10px] text-[#94A3B8] block">Balance After Upgrade</span>
-                  <strong className={Number(wallet?.balance || 0) >= Number(vipMembershipPrice) ? 'text-white font-black' : 'text-red-400 font-black'}>
-                    {Number(wallet?.balance || 0) >= Number(vipMembershipPrice)
-                      ? `${(Number(wallet?.balance || 0) - Number(vipMembershipPrice)).toFixed(2)} USDT`
+                  <span className="text-[10px] text-[#94A3B8] block">Balance After Payment</span>
+                  <strong className={Number(wallet?.balance || 0) >= activeSelectedPlan.price ? 'text-white font-black' : 'text-red-400 font-black'}>
+                    {Number(wallet?.balance || 0) >= activeSelectedPlan.price
+                      ? `${(Number(wallet?.balance || 0) - activeSelectedPlan.price).toFixed(2)} USDT`
                       : 'Insufficient Funds'}
                   </strong>
                 </div>
               </div>
 
-              {Number(wallet?.balance || 0) < Number(vipMembershipPrice) ? (
+              {Number(wallet?.balance || 0) < activeSelectedPlan.price ? (
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg bg-red-950/30 border border-red-500/35 text-xs text-red-200">
                   <span>
-                    Insufficient wallet balance ({Number(wallet?.balance || 0).toFixed(2)} USDT). Please add funds to your wallet before upgrading to VIP.
+                    Insufficient wallet balance ({Number(wallet?.balance || 0).toFixed(2)} USDT). Please add funds before purchasing {activeSelectedPlan.label} VIP ({activeSelectedPlan.price.toFixed(2)} USDT).
                   </span>
                   <div className="flex gap-2 shrink-0">
                     <button
@@ -389,7 +575,7 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
                     onClick={async () => {
                       setIsUpgradingVip(true);
                       try {
-                        const res = await purchaseVipMembership?.(vipIdemKey);
+                        const res = await purchaseVipMembership?.(activeSelectedPlan.id, vipIdemKey);
                         if (res?.success) {
                           setIsConfirmingVip(false);
                         }
@@ -399,14 +585,49 @@ export default function ProfileView({ onSwitchToAdmin, onBackToHome }: ProfileVi
                     }}
                     className="px-5 py-2 rounded-xl btn-gold text-xs font-black uppercase tracking-wider cursor-pointer disabled:opacity-50"
                   >
-                    {isUpgradingVip ? 'Processing Payment...' : `Confirm & Pay ${Number(vipMembershipPrice).toFixed(2)} USDT`}
+                    {isUpgradingVip
+                      ? 'Processing Payment...'
+                      : isVipMember
+                        ? `Confirm Extension · ${activeSelectedPlan.price.toFixed(2)} USDT`
+                        : `Confirm & Pay ${activeSelectedPlan.price.toFixed(2)} USDT`}
                   </button>
                 </div>
               )}
             </div>
           )}
+
+          {/* Preserved VIP Membership Subscription History */}
+          {Array.isArray(vipMembershipLogs) && vipMembershipLogs.length > 0 && (
+            <div data-testid="vip-purchase-history" className="pt-2 border-t border-[#1F2737] space-y-2">
+              <span className="text-[10.5px] font-bold uppercase tracking-wider text-[#94A3B8] flex items-center gap-1.5">
+                <History className="w-3 h-3 text-amber-400 shrink-0" />
+                <span>Membership Activity History ({vipMembershipLogs.length})</span>
+              </span>
+              <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                {vipMembershipLogs.slice(0, 5).map((log: any) => (
+                  <div
+                    key={log.id}
+                    className="px-2.5 py-1.5 rounded-lg bg-[#0B0F19] border border-[#1F2737] flex flex-wrap items-center justify-between gap-2 text-[10.5px] font-mono-numbers"
+                  >
+                    <span className="text-white font-bold uppercase">
+                      {log.action_type} {log.plan_label ? `(${log.plan_label})` : ''}
+                    </span>
+                    <div className="flex items-center gap-2 text-[#94A3B8]">
+                      {log.paid_amount != null && (
+                        <span className="text-amber-300 font-bold">{Number(log.paid_amount).toFixed(2)} USDT</span>
+                      )}
+                      {log.expires_at && (
+                        <span>Exp: {new Date(log.expires_at).toLocaleDateString()}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
-      )}
+        );
+      })()}
 
       {/* Overview Stats Cards — Hidden on Mobile (320px, 375px, 425px) and Visible on Tablet (768px+) & Desktop */}
       <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

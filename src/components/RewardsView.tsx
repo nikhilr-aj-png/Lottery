@@ -288,7 +288,8 @@ export default function RewardsView() {
     showToast,
     setIsAuthModalOpen,
     fetchWalletLedger,
-    platformSettings
+    platformSettings,
+    rewardsSyncTick
   } = useLottery();
   const { playClick, playRouletteSpin, playDialTick, playWinFanfare } = useSoundFX();
 
@@ -328,7 +329,7 @@ export default function RewardsView() {
 
   useEffect(() => {
     refreshDailyRewardStatus();
-  }, [wallet?.address, user?.id, isVipMember]);
+  }, [wallet?.address, user?.id, isVipMember, rewardsSyncTick]);
 
   // Tick countdown timer for streak cooldown
   useEffect(() => {
@@ -404,7 +405,7 @@ export default function RewardsView() {
 
   useEffect(() => {
     fetchVipStatus();
-  }, [wallet?.address, user?.id]);
+  }, [wallet?.address, user?.id, rewardsSyncTick]);
 
   // Cooldown countdown interval
   useEffect(() => {

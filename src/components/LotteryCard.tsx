@@ -9,16 +9,18 @@ interface LotteryCardProps {
   onEnterRoom?: (event: any) => void;
   onShowResult?: (event: any) => void;
   mode?: 'available' | 'result';
+  hideOnExpiry?: boolean;
   isLive?: boolean;
 }
 
-export default function LotteryCard({ 
-  event, 
-  onSelect, 
-  onEnterRoom, 
+export default function LotteryCard({
+  event,
+  onSelect,
+  onEnterRoom,
   onShowResult,
   mode = 'available',
-  isLive = false 
+  hideOnExpiry = true,
+  isLive = false
 }: LotteryCardProps) {
   const { getServerNowMs, isVipMember, setActiveTab, platformSettings, showToast } = useLottery();
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, totalSeconds: 0 });
@@ -102,8 +104,8 @@ export default function LotteryCard({
     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  // Auto-hide concluded published result card the exact second its visibility countdown expires
-  if (mode === 'result' && isCompleted && Boolean(event.winningDigits) && resultVisibleUntilMs > 0 && resultRemainingMs <= 0) {
+  // Auto-hide concluded published result card the exact second its visibility countdown expires (when hideOnExpiry is true)
+  if (hideOnExpiry && mode === 'result' && isCompleted && Boolean(event.winningDigits) && resultVisibleUntilMs > 0 && resultRemainingMs <= 0) {
     return null;
   }
 
@@ -120,7 +122,7 @@ export default function LotteryCard({
       case 'new_year':
         return 'border-purple-500/50 shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:border-purple-400 hover:shadow-[0_0_40px_rgba(168,85,247,0.35)]';
       default:
-        return isCompleted 
+        return isCompleted
           ? 'border-[#272a31] hover:border-amber-500/40 bg-[#0E131F]/90'
           : 'border-amber-500/35 hover:border-amber-400/80 shadow-[0_0_25px_rgba(245,196,81,0.12)] bg-[#111728]/95';
     }
@@ -293,18 +295,31 @@ export default function LotteryCard({
             </div>
 
             {event.winningDigits && resultVisibleUntilMs > 0 && (
-              <div
-                data-testid={`result-countdown-${event.id}`}
-                className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[10px]"
-              >
-                <span className="inline-flex items-center gap-1 text-amber-300 font-bold truncate">
-                  <Clock className="w-3 h-3 text-amber-400 shrink-0" />
-                  <span>Result Available For:</span>
-                </span>
-                <span className="font-mono-numbers font-black text-amber-200 tracking-wider shrink-0">
-                  {formatCountdownMs(resultRemainingMs)}
-                </span>
-              </div>
+              resultRemainingMs > 0 ? (
+                <div
+                  data-testid={`result-countdown-${event.id}`}
+                  className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[10px]"
+                >
+                  <span className="inline-flex items-center gap-1 text-amber-300 font-bold truncate">
+                    <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                    <span>Result Available For:</span>
+                  </span>
+                  <span className="font-mono-numbers font-black text-amber-200 tracking-wider shrink-0">
+                    {formatCountdownMs(resultRemainingMs)}
+                  </span>
+                </div>
+              ) : (
+                <div
+                  data-testid={`result-archived-${event.id}`}
+                  className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/60 text-[10px]"
+                >
+                  <span className="inline-flex items-center gap-1 text-slate-300 font-bold truncate">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span>Official Historical Archive</span>
+                  </span>
+                  <span className="font-mono-numbers text-slate-400 shrink-0">Settled</span>
+                </div>
+              )
             )}
           </div>
         )}

@@ -30,7 +30,7 @@ interface PromotionPageProps {
  * - Verified referral reward transaction ledger
  */
 export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
-  const { user, profile, wallet, showToast, setIsAuthModalOpen, platformSettings, requireAuth, isVipMember } = useLottery();
+  const { user, profile, wallet, showToast, setIsAuthModalOpen, platformSettings, requireAuth, isVipMember, rewardsSyncTick } = useLottery();
   const { playClick } = useSoundFX();
 
   // Copy state
@@ -98,7 +98,7 @@ export default function PromotionPage({ onBackToHome }: PromotionPageProps) {
 
     fetchReferralData();
     return () => { isMounted = false; };
-  }, [user?.id]);
+  }, [user?.id, rewardsSyncTick]);
 
   // Computed Referral Stats
   const totalReferredCount = referrals.length;

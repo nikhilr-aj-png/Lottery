@@ -25,6 +25,12 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
 
+  // Ref to keep stable wallet address inside persistent Realtime channel handlers without re-subscribing
+  const walletAddressRef = React.useRef<string>('');
+  useEffect(() => {
+    walletAddressRef.current = wallet.address || '';
+  }, [wallet.address]);
+
   // Ref to hold executeDraw function for auto-settling timer
   const executeDrawRef = React.useRef<any>(null);
   const autoSettlingEventsRef = React.useRef<Set<string>>(new Set());
@@ -407,7 +413,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       }
 
       if (!error && Array.isArray(data)) {
-        const formatted = data.map(row => formatEventRow(row, serverNow));
+        const formatted = upsertDeduplicatedEvents(data.map(row => formatEventRow(row, serverNow)));
         setEvents(formatted);
       } else if (error) {
         console.error('Supabase fetch lottery_events error:', error);
@@ -440,6 +446,20 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const [rewardsSyncTick, setRewardsSyncTick] = useState(0);
+
+  // Server-authoritative events deduplicator preserving sort order
+  const upsertDeduplicatedEvents = (incoming: any[]) => {
+    const seen = new Set<string>();
+    const out: any[] = [];
+    for (const evt of incoming) {
+      if (!evt || !evt.id || seen.has(evt.id)) continue;
+      seen.add(evt.id);
+      out.push(evt);
+    }
+    return out;
+  };
+
   useEffect(() => {
     refreshEvents();
     refreshGames();
@@ -449,7 +469,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('lotto_events');
     } catch (e) { }
 
-    // Timer check: lock expired active events reactively using server-synced clock; never promote unpublished scheduled events client-side
+    // Timer check: lock expired active events reactively using server-synced clock
     const timerCheck = setInterval(() => {
       const now = Date.now() + serverTimeOffsetMs;
       setEvents(prev => {
@@ -465,14 +485,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       });
     }, 1000);
 
-    // Subscribe to Supabase Realtime changes for lottery_events & game_configurations
-    const eventChannel = supabase
-      .channel('realtime:lottery_events')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_events' }, () => {
-        refreshEvents();
-      })
-      .subscribe();
-
+    // Subscribe to Supabase Realtime changes for game_configurations
     const gamesChannel = supabase
       .channel('realtime:game_configurations')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'game_configurations' }, () => {
@@ -480,10 +493,23 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
       })
       .subscribe();
 
+    const handleVisibilityOrOnline = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      refreshEvents();
+      refreshGames();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', handleVisibilityOrOnline);
+      document.addEventListener('visibilitychange', handleVisibilityOrOnline);
+    }
+
     return () => {
       clearInterval(timerCheck);
-      supabase.removeChannel(eventChannel);
       supabase.removeChannel(gamesChannel);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('online', handleVisibilityOrOnline);
+        document.removeEventListener('visibilitychange', handleVisibilityOrOnline);
+      }
     };
   }, []);
 
@@ -571,64 +597,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.id, wallet.address]);
 
-  // NOWPayments Realtime Listener (Authenticated Only)
-  useEffect(() => {
-    if (!user?.id) return;
-    const depositChannel = supabase
-      .channel('realtime:lottery_deposits')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_deposits' }, (payload: any) => {
-        // Refresh deposit history ledger whenever any record changes
-        fetchDeposits();
-
-        // Deposit confirmation event
-        if (payload.new && (payload.new.status === 'finished' || payload.new.status === 'confirmed')) {
-          if (payload.old?.status === 'finished' || payload.old?.status === 'confirmed') {
-            return;
-          }
-          const credited = Number(payload.new.amount || 0);
-          showToast(`Deposit confirmed! +${credited} USDT credited to your wallet!`, 'success');
-          confetti({
-            particleCount: 150,
-            spread: 90,
-            origin: { y: 0.6 },
-            colors: ['#05d5aa', '#ffd700', '#00f2fe', '#ffffff']
-          });
-
-          // Instantly credit local wallet state and persist
-          setWallet(prev => {
-            const nextBalance = parseFloat((Number(prev.balance || 0) + credited).toFixed(2));
-            const updated = { ...prev, balance: nextBalance };
-            try {
-              localStorage.setItem('lotto_wallet', JSON.stringify(updated));
-            } catch (e) { }
-            return updated;
-          });
-
-          // Also sync with database record
-          if (wallet.address) {
-            supabase
-              .from('lottery_wallets')
-              .select('balance, lifetime_won')
-              .eq('address', wallet.address)
-              .single()
-              .then(({ data }) => {
-                if (data && typeof data.balance === 'number') {
-                  setWallet(prev => ({
-                    ...prev,
-                    balance: Number(data.balance),
-                    lifetimeWon: Number(data.lifetime_won || prev.lifetimeWon)
-                  }));
-                }
-              });
-          }
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(depositChannel);
-    };
-  }, [wallet.address]);
+  // Authoritative deposit listener is multiplexed into realtime:user_private:{userId} below
 
   // NOWPayments: Create USDT (TRC-20) Deposit Order via Authenticated Supabase Edge Function
   const createNowPaymentsInvoice = async (amount: number | string, payCurrency = 'usdttrc20') => {
@@ -754,7 +723,13 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
 
       const { data, error } = await query;
       if (!error && Array.isArray(data)) {
-        setWalletLedger(data);
+        const seenIds = new Set<string>();
+        const deduped = data.filter((row: any) => {
+          if (!row?.id || seenIds.has(row.id)) return false;
+          seenIds.add(row.id);
+          return true;
+        });
+        setWalletLedger(deduped);
       }
     } catch (err) {
       console.error('fetchWalletLedger error:', err);
@@ -1235,12 +1210,45 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     return trimmed;
   };
 
+  const normalizeVipPlans = (rawPlans: any, fallbackOneMonth = 25) => {
+    const p1 = Number(rawPlans?.['1_month']?.price ?? fallbackOneMonth);
+    const p2 = Number(rawPlans?.['2_months']?.price ?? 45);
+    const p3 = Number(rawPlans?.['1_year']?.price ?? 200);
+    return {
+      '1_month': {
+        id: '1_month',
+        label: rawPlans?.['1_month']?.label || '1 Month',
+        duration_months: 1,
+        duration_years: 0,
+        price: Number.isFinite(p1) && p1 > 0 ? Math.round(p1 * 100) / 100 : 25,
+        enabled: rawPlans?.['1_month']?.enabled !== false
+      },
+      '2_months': {
+        id: '2_months',
+        label: rawPlans?.['2_months']?.label || '2 Months',
+        duration_months: 2,
+        duration_years: 0,
+        price: Number.isFinite(p2) && p2 > 0 ? Math.round(p2 * 100) / 100 : 45,
+        enabled: rawPlans?.['2_months']?.enabled !== false
+      },
+      '1_year': {
+        id: '1_year',
+        label: rawPlans?.['1_year']?.label || '1 Year',
+        duration_months: 0,
+        duration_years: 1,
+        price: Number.isFinite(p3) && p3 > 0 ? Math.round(p3 * 100) / 100 : 200,
+        enabled: rawPlans?.['1_year']?.enabled !== false
+      }
+    };
+  };
+
   // Platform Governance Settings State
   const DEFAULT_PLATFORM_SETTINGS = {
     minWithdrawal: 5.0,
     maxWithdrawal: 10000.0,
     houseFeePercent: 5,
     vipMembershipPrice: 25.0,
+    vipPlans: normalizeVipPlans(null, 25.0),
     supportEmail: 'earnflow.user@gmail.com',
     usernameChangeFee: 5.0,
     apkDownloadUrl: '/download/earnflow.apk',
@@ -1306,7 +1314,8 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         const parsed = JSON.parse(saved);
         delete parsed.treasuryTrc20;
         delete parsed.defaultWinnerSharePercent;
-        return { ...DEFAULT_PLATFORM_SETTINGS, ...parsed };
+        const vipPlans = normalizeVipPlans(parsed.vipPlans, Number(parsed.vipMembershipPrice ?? 25));
+        return { ...DEFAULT_PLATFORM_SETTINGS, ...parsed, vipPlans };
       }
       return DEFAULT_PLATFORM_SETTINGS;
     } catch {
@@ -1332,6 +1341,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
           let merged = { ...prev };
           const globalRow = data.find((row: any) => row.key === 'global' && row.value);
           const refRow = data.find((row: any) => row.key === 'referral_settings' && row.value);
+          const plansRow = data.find((row: any) => row.key === 'vip_plans' && row.value);
           if (globalRow) {
             const cleanGlobal = { ...globalRow.value };
             delete cleanGlobal.treasuryTrc20;
@@ -1356,6 +1366,9 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
               merged.spinWheelSettings = { ...merged.spinWheelSettings, ...row.value };
             }
           });
+          const authoritativePlans = plansRow?.value || globalRow?.value?.vipPlans;
+          merged.vipPlans = normalizeVipPlans(authoritativePlans, Number(merged.vipMembershipPrice ?? 25));
+          merged.vipMembershipPrice = merged.vipPlans['1_month'].price;
           // Authoritative source for referralSettings is always 'referral_settings', synced with 'global'
           const authoritativeRef = refRow?.value || globalRow?.value?.referralSettings;
           if (authoritativeRef) {
@@ -1406,11 +1419,34 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         return { success: false, error: errMsg };
       }
 
-      const parsedVipPrice = parseFloat(
-        newSettings.vipMembershipPrice !== undefined ? newSettings.vipMembershipPrice : (platformSettings.vipMembershipPrice ?? 25)
-      );
-      if (!Number.isFinite(parsedVipPrice) || parsedVipPrice <= 0 || parsedVipPrice > 100000) {
-        const errMsg = 'VIP Membership Price must be greater than 0 and up to 100,000 USDT.';
+      const parsedPlans = newSettings.vipPlans
+        ? normalizeVipPlans(newSettings.vipPlans, Number(newSettings.vipMembershipPrice ?? platformSettings.vipMembershipPrice ?? 25))
+        : normalizeVipPlans(
+            platformSettings.vipPlans,
+            parseFloat(newSettings.vipMembershipPrice !== undefined ? newSettings.vipMembershipPrice : (platformSettings.vipMembershipPrice ?? 25))
+          );
+
+      if (newSettings.vipMembershipPrice !== undefined && !newSettings.vipPlans) {
+        const oneMonthVal = parseFloat(newSettings.vipMembershipPrice);
+        if (!Number.isFinite(oneMonthVal) || oneMonthVal <= 0 || oneMonthVal > 100000) {
+          const errMsg = 'VIP Membership Price must be greater than 0 and up to 100,000 USDT.';
+          showToast(errMsg, 'error');
+          return { success: false, error: errMsg };
+        }
+        parsedPlans['1_month'].price = Math.round(oneMonthVal * 100) / 100;
+      }
+
+      const parsedVipPrice = parsedPlans['1_month'].price;
+      if (
+        !Number.isFinite(parsedVipPrice) ||
+        parsedVipPrice <= 0 ||
+        parsedVipPrice > 100000 ||
+        parsedPlans['2_months'].price <= 0 ||
+        parsedPlans['2_months'].price > 100000 ||
+        parsedPlans['1_year'].price <= 0 ||
+        parsedPlans['1_year'].price > 100000
+      ) {
+        const errMsg = 'All VIP subscription plan prices must be greater than 0 and up to 100,000 USDT.';
         showToast(errMsg, 'error');
         return { success: false, error: errMsg };
       }
@@ -1424,6 +1460,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         maxWithdrawal: parseFloat(newSettings.maxWithdrawal !== undefined ? newSettings.maxWithdrawal : platformSettings.maxWithdrawal),
         houseFeePercent: parsedHouseFee,
         vipMembershipPrice: parsedVipPrice,
+        vipPlans: parsedPlans,
         supportEmail: (newSettings.supportEmail || platformSettings.supportEmail).trim(),
         usernameChangeFee: parseFloat(newSettings.usernameChangeFee !== undefined ? newSettings.usernameChangeFee : (platformSettings.usernameChangeFee ?? 5.0)),
         apkDownloadUrl: (newSettings.apkDownloadUrl !== undefined ? newSettings.apkDownloadUrl : (platformSettings.apkDownloadUrl || '/download/earnflow.apk')).trim(),
@@ -1533,6 +1570,9 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession()
       .then(async ({ data: { session } }) => {
         if (!isMounted) return;
+        if (session?.access_token) {
+          await supabase.realtime.setAuth(session.access_token);
+        }
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         if (currentUser) {
@@ -1547,17 +1587,22 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         if (isMounted) setAuthLoading(false);
       });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+      if (event === 'INITIAL_SESSION') return;
+      if (session?.access_token) {
+        await supabase.realtime.setAuth(session.access_token);
+      }
       if (!isMounted) return;
       const nextUser = session?.user ?? null;
       setUser(nextUser);
-      setAuthLoading(false);
       if (nextUser) {
-        fetchProfile(nextUser.id);
+        await fetchProfile(nextUser.id);
         cleanAuthHash();
       } else {
         setProfile(null);
       }
+      if (isMounted) setAuthLoading(false);
     });
 
     return () => {
@@ -2522,6 +2567,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     setWinnerPayouts([]);
     setSupportTickets([]);
     setUserNotifications([]);
+    setVipMembershipLogs([]);
     setUnreadNotificationsCount(0);
     setUsernameChangeCount(0);
     setTakenTicketsByEvent({});
@@ -2544,6 +2590,29 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   }, [authLoading, user?.id]);
 
+  // VIP Subscription History State (from vip_membership_logs for current user)
+  const [vipMembershipLogs, setVipMembershipLogs] = useState<any[]>([]);
+  const fetchVipMembershipLogs = async (targetUserId?: string) => {
+    const uid = targetUserId || user?.id;
+    if (!uid) {
+      setVipMembershipLogs([]);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('vip_membership_logs')
+        .select('*')
+        .eq('user_id', uid)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (!error && Array.isArray(data)) {
+        setVipMembershipLogs(data);
+      }
+    } catch (err) {
+      console.warn('fetchVipMembershipLogs error:', err);
+    }
+  };
+
   // Sync private user records STRICTLY when authenticated
   useEffect(() => {
     if (!user?.id) return;
@@ -2555,6 +2624,7 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     fetchWallet(wallet.address);
     fetchWalletLedger(wallet.address);
     fetchUserNotifications(wallet.address);
+    fetchVipMembershipLogs(user.id);
   }, [wallet.address, user?.id]);
 
   // Initial public catalog fetch from Supabase (events & platform settings only; private tables gated by user)
@@ -2572,81 +2642,312 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     loadSupabaseData();
   }, []);
 
-  // Realtime Supabase Channels (Settings always; private user channels ONLY when authenticated)
+  // Live Membership Expiry Watchdog: automatically revoke VIP access the exact second vip_expires_at passes
+  const isEffectiveVip = Boolean(
+    profile?.player_type === 'vip' &&
+      profile?.vip_status === 'active' &&
+      (!profile?.vip_expires_at || new Date(profile.vip_expires_at).getTime() > Date.now() + serverTimeOffsetMs)
+  );
+
+  useEffect(() => {
+    if (!user?.id || !profile?.vip_expires_at || profile?.vip_status !== 'active') return;
+    const expMs = new Date(profile.vip_expires_at).getTime();
+    const waitMs = expMs - (Date.now() + serverTimeOffsetMs);
+    if (waitMs <= 0) {
+      fetchProfile(user.id);
+      fetchVipMembershipLogs(user.id);
+      refreshEvents();
+      setRewardsSyncTick((t) => t + 1);
+      return;
+    }
+    if (waitMs > 24 * 3600 * 1000) return; // Safe timer limit
+    const t = setTimeout(() => {
+      fetchProfile(user.id);
+      fetchVipMembershipLogs(user.id);
+      refreshEvents();
+      setRewardsSyncTick((n) => n + 1);
+    }, waitMs + 300);
+    return () => clearTimeout(t);
+  }, [user?.id, profile?.vip_expires_at, profile?.vip_status, serverTimeOffsetMs]);
+
+  // Refresh event visibility immediately whenever user or VIP status changes (including live expiry/purchase)
+  useEffect(() => {
+    refreshEvents();
+  }, [user?.id, isEffectiveVip]);
+
+  // Bind single stable Realtime lottery_events channel with authenticated JWT once auth settles
+  useEffect(() => {
+    if (authLoading) return;
+
+    let active = true;
+    let channelRef: any = null;
+
+    const initEventsRealtime = async () => {
+      try {
+        if (typeof window !== 'undefined') {
+          (window as any).__earnflowEventsRealtimeStatus = 'connecting';
+        }
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!active) return;
+        if (session?.access_token) {
+          await supabase.realtime.setAuth(session.access_token);
+        }
+        if (!active) return;
+        channelRef = supabase
+          .channel(`realtime:lottery_events:${user?.id || 'anon'}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_events' }, (payload: any) => {
+            if (payload?.eventType === 'DELETE' && payload?.old?.id) {
+              setEvents(prev => prev.filter(e => e.id !== payload.old.id));
+            }
+            refreshEvents();
+          })
+          .subscribe((status) => {
+            if (!active) return;
+            if (typeof window !== 'undefined') {
+              (window as any).__earnflowEventsRealtimeStatus = status;
+            }
+            if (status === 'SUBSCRIBED') {
+              refreshEvents();
+            }
+          });
+      } catch (err) {
+        console.warn('Events realtime init error:', err);
+      }
+    };
+
+    initEventsRealtime();
+
+    return () => {
+      active = false;
+      if (channelRef) {
+        supabase.removeChannel(channelRef);
+      }
+    };
+  }, [authLoading, user?.id]);
+
+  // Global Platform Settings Realtime Channel (single persistent channel; independent of auth/profile state)
   useEffect(() => {
     const setChannel = supabase
       .channel('realtime:platform_settings')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'platform_settings' }, () => {
         fetchPlatformSettings();
+        setRewardsSyncTick((t) => t + 1);
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          fetchPlatformSettings();
+        }
+      });
 
-    if (!user?.id) {
-      return () => {
-        supabase.removeChannel(setChannel);
-      };
+    return () => {
+      supabase.removeChannel(setChannel);
+    };
+  }, []);
+
+  // Multiplexed User-Scoped Private Realtime Channel (Authenticated ONLY, waits for authLoading=false so JWT is attached)
+  useEffect(() => {
+    if (authLoading || !user?.id) return;
+
+    const uid = user.id;
+    const userFilter = `user_id=eq.${uid}`;
+
+    const syncAllUserPrivateState = () => {
+      const activeAddr = walletAddressRef.current;
+      fetchProfile(uid);
+      fetchTickets();
+      fetchTakenTicketNumbers();
+      fetchDeposits();
+      fetchWithdrawals();
+      fetchWinnerPayouts();
+      fetchSupportTickets();
+      fetchWallet(activeAddr);
+      fetchWalletLedger(activeAddr);
+      fetchUserNotifications(activeAddr);
+      fetchVipMembershipLogs(uid);
+    };
+
+    const userPrivateChannel = supabase
+      .channel(`realtime:user_private:${uid}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${uid}` },
+        (payload: any) => {
+          if (payload?.new) {
+            setProfile((prev: any) => ({ ...(prev || {}), ...payload.new }));
+          }
+          fetchProfile(uid);
+          fetchVipMembershipLogs(uid);
+          refreshEvents();
+          setRewardsSyncTick((t) => t + 1);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lottery_wallets', filter: userFilter },
+        (payload: any) => {
+          if (payload?.new && payload.new.balance !== undefined && payload.new.balance !== null) {
+            const committedBal = parseFloat(payload.new.balance);
+            if (Number.isFinite(committedBal)) {
+              setWallet(prev => ({
+                ...prev,
+                address: payload.new.address || prev.address,
+                connected: true,
+                balance: committedBal,
+                lifetimeWon: parseFloat(payload.new.lifetime_won ?? prev.lifetimeWon ?? 0),
+                network: payload.new.network || prev.network
+              }));
+            }
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'wallet_ledger', filter: userFilter },
+        (payload: any) => {
+          if (payload?.eventType === 'INSERT' && payload?.new?.id) {
+            setWalletLedger(prev => {
+              if (prev.some((row: any) => row.id === payload.new.id)) return prev;
+              return [payload.new, ...prev].slice(0, 100);
+            });
+          } else {
+            fetchWalletLedger(walletAddressRef.current);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lottery_deposits', filter: userFilter },
+        async (payload: any) => {
+          await fetchDeposits();
+          if (payload.new && (payload.new.status === 'finished' || payload.new.status === 'confirmed')) {
+            if (payload.old?.status === 'finished' || payload.old?.status === 'confirmed') return;
+            const targetAddr = walletAddressRef.current || payload.new.user_address;
+            await Promise.all([
+              fetchWallet(targetAddr),
+              fetchWalletLedger(targetAddr)
+            ]);
+            const credited = Number(payload.new.amount || 0);
+            showToast(`Deposit confirmed! +${credited.toFixed(2)} USDT credited to your wallet!`, 'success');
+            confetti({
+              particleCount: 150,
+              spread: 90,
+              origin: { y: 0.6 },
+              colors: ['#05d5aa', '#ffd700', '#00f2fe', '#ffffff']
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lottery_tickets', filter: userFilter },
+        () => {
+          fetchTickets();
+          fetchTakenTicketNumbers();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lottery_withdrawals', filter: userFilter },
+        () => {
+          fetchWithdrawals();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'winner_payouts', filter: userFilter },
+        () => {
+          fetchWinnerPayouts();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'support_tickets', filter: userFilter },
+        () => {
+          fetchSupportTickets();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_notifications', filter: userFilter },
+        () => {
+          fetchUserNotifications(walletAddressRef.current);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_daily_streaks', filter: userFilter },
+        () => {
+          setRewardsSyncTick((t) => t + 1);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'referral_rewards', filter: `referrer_id=eq.${uid}` },
+        () => {
+          setRewardsSyncTick((t) => t + 1);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'vip_membership_logs', filter: userFilter },
+        () => {
+          fetchVipMembershipLogs(uid);
+        }
+      )
+      .subscribe((status) => {
+        if (typeof window !== 'undefined') {
+          (window as any).__earnflowUserPrivateRealtimeStatus = status;
+        }
+        if (status === 'SUBSCRIBED') {
+          fetchWallet(walletAddressRef.current);
+          fetchWalletLedger(walletAddressRef.current);
+          fetchDeposits();
+        }
+      });
+
+    const handleUserReconnect = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      syncAllUserPrivateState();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', handleUserReconnect);
+      document.addEventListener('visibilitychange', handleUserReconnect);
     }
 
-    const tChannel = supabase
-      .channel('realtime:lottery_tickets')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_tickets' }, () => {
-        fetchTickets();
-        fetchTakenTicketNumbers();
-      })
-      .subscribe();
+    return () => {
+      supabase.removeChannel(userPrivateChannel);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('online', handleUserReconnect);
+        document.removeEventListener('visibilitychange', handleUserReconnect);
+      }
+    };
+  }, [authLoading, user?.id]);
 
-    const wChannel = supabase
-      .channel('realtime:lottery_withdrawals')
+  // Dedicated Admin-Only Realtime Sync (only opened for authenticated super_admin accounts)
+  const isSuperAdmin = profile?.role === 'super_admin';
+  useEffect(() => {
+    if (authLoading || !user?.id || !isSuperAdmin) return;
+
+    const adminChannel = supabase
+      .channel(`realtime:admin_hub:${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_withdrawals' }, () => {
         fetchWithdrawals();
       })
-      .subscribe();
-
-    const wpChannel = supabase
-      .channel('realtime:winner_payouts')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'winner_payouts' }, () => {
         fetchWinnerPayouts();
       })
-      .subscribe();
-
-    const supChannel = supabase
-      .channel('realtime:support_tickets')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
         fetchSupportTickets();
       })
-      .subscribe();
-
-    const walChannel = supabase
-      .channel('realtime:lottery_wallets')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_wallets' }, (payload: any) => {
-        if (payload.new && (payload.new.address === wallet.address || (user?.id && payload.new.user_id === user.id))) {
-          setWallet(prev => ({
-            ...prev,
-            balance: parseFloat(payload.new.balance || 0),
-            lifetimeWon: parseFloat(payload.new.lifetime_won || 0),
-            network: payload.new.network || prev.network
-          }));
-        }
-      })
-      .subscribe();
-
-    const ledChannel = supabase
-      .channel('realtime:wallet_ledger')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'wallet_ledger' }, () => {
-        fetchWalletLedger();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lottery_deposits' }, () => {
+        fetchDeposits();
       })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(tChannel);
-      supabase.removeChannel(wChannel);
-      supabase.removeChannel(wpChannel);
-      supabase.removeChannel(supChannel);
-      supabase.removeChannel(setChannel);
-      supabase.removeChannel(walChannel);
-      supabase.removeChannel(ledChannel);
+      supabase.removeChannel(adminChannel);
     };
-  }, [wallet.address, user?.id]);
+  }, [authLoading, user?.id, isSuperAdmin]);
 
   const showToast = (message, type = 'success') => {
     setToastMessage({ message, type, id: Date.now() });
@@ -3423,29 +3724,55 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const purchaseVipMembership = async (idempotencyKey?: string) => {
+  const purchaseVipMembership = async (planIdOrIdemKey: string = '1_month', idempotencyKey?: string) => {
     if (!user?.id) {
       requireAuth({ type: 'tab', tab: 'profile' }, 'Please log in to upgrade to VIP Membership.');
       return { success: false, error: 'Authentication required' };
     }
+    const validPlans = ['1_month', '2_months', '1_year'];
+    const isPlanId = validPlans.includes(String(planIdOrIdemKey || '').toLowerCase());
+    const resolvedPlanId = isPlanId ? String(planIdOrIdemKey).toLowerCase() : '1_month';
+    const resolvedIdemKey = isPlanId ? idempotencyKey : (idempotencyKey || planIdOrIdemKey);
+
     try {
       const { data: rpcRes, error: rpcErr } = await supabase.rpc('purchase_vip_membership_secure', {
-        p_idempotency_key: idempotencyKey || null
+        p_plan_id: resolvedPlanId,
+        p_idempotency_key: resolvedIdemKey || null
       });
       if (rpcErr || !rpcRes?.success) {
         const msg = rpcRes?.error || rpcErr?.message || 'VIP Membership upgrade failed.';
         showToast(msg, 'error');
         return { success: false, insufficientBalance: Boolean(rpcRes?.insufficient_balance), error: msg };
       }
-      await Promise.all([
+      if (rpcRes?.new_balance !== undefined && rpcRes?.new_balance !== null) {
+        setWallet(prev => ({ ...prev, balance: parseFloat(rpcRes.new_balance) }));
+      }
+      if (rpcRes?.vip_status === 'active') {
+        setProfile((prev: any) => ({
+          ...(prev || {}),
+          player_type: rpcRes.player_type || 'vip',
+          vip_status: rpcRes.vip_status || 'active',
+          vip_plan_id: rpcRes.vip_plan_id || resolvedPlanId,
+          vip_activated_at: rpcRes.vip_activated_at ?? prev?.vip_activated_at,
+          vip_expires_at: rpcRes.vip_expires_at ?? prev?.vip_expires_at,
+          vip_paid_amount: rpcRes.vip_paid_amount ?? prev?.vip_paid_amount,
+          vip_payment_reference: rpcRes.vip_payment_reference ?? prev?.vip_payment_reference
+        }));
+      }
+      Promise.all([
         fetchProfile(user.id),
-        fetchWallet(wallet.address),
-        fetchWalletLedger(wallet.address)
-      ]);
+        fetchWallet(walletAddressRef.current),
+        fetchWalletLedger(walletAddressRef.current),
+        fetchVipMembershipLogs(user.id),
+        refreshEvents()
+      ]).catch(() => {});
+      setRewardsSyncTick((t) => t + 1);
       showToast(
         rpcRes.already_vip
           ? 'Your VIP Membership is already active!'
-          : `Welcome to VIP! Paid ${Number(rpcRes.vip_paid_amount || 0).toFixed(2)} USDT — VIP Events unlocked.`,
+          : rpcRes.is_renewal
+            ? `VIP Extended (${rpcRes.plan_label || resolvedPlanId})! Paid ${Number(rpcRes.vip_paid_amount || 0).toFixed(2)} USDT.`
+            : `Welcome to VIP (${rpcRes.plan_label || resolvedPlanId})! Paid ${Number(rpcRes.vip_paid_amount || 0).toFixed(2)} USDT — VIP Events unlocked.`,
         'success'
       );
       return { success: true, ...rpcRes };
@@ -4110,8 +4437,12 @@ export function LotteryProvider({ children }: { children: ReactNode }) {
         adminAdjustUserWallet,
         adminUpdateUserPlayerCategory,
         purchaseVipMembership,
-        isVipMember: Boolean(profile?.player_type === 'vip' && profile?.vip_status === 'active'),
-        vipMembershipPrice: Number(platformSettings?.vipMembershipPrice ?? 25),
+        isVipMember: isEffectiveVip,
+        vipPlans: platformSettings?.vipPlans || normalizeVipPlans(null, Number(platformSettings?.vipMembershipPrice ?? 25)),
+        vipMembershipLogs,
+        fetchVipMembershipLogs,
+        rewardsSyncTick,
+        vipMembershipPrice: Number(platformSettings?.vipPlans?.['1_month']?.price ?? platformSettings?.vipMembershipPrice ?? 25),
         adminToggleUserStatus,
         adminUpdateUserRole,
         adminDeleteUser,

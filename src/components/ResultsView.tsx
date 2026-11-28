@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import LotteryCard from './LotteryCard';
 import LotteryShowResultScreen from './LotteryShowResultScreen';
-import { 
-  Trophy, 
-  CheckCircle2, 
+import {
+  Trophy,
+  CheckCircle2,
   Clock,
   Layers,
   X
@@ -23,7 +23,7 @@ import {
  */
 export default function ResultsView() {
   const { events, tickets, platformSettings, getServerNowMs } = useLottery();
-  const [statusFilter, setStatusFilter] = useState<'pending' | 'declared'>('pending');
+  const [statusFilter, setStatusFilter] = useState<'recent' | 'pending' | 'archive'>('recent');
   const [selectedShowResultEvent, setSelectedShowResultEvent] = useState<any>(null);
   const [nowTick, setNowTick] = useState<number>(() => (getServerNowMs ? getServerNowMs() : Date.now()));
 
@@ -44,77 +44,79 @@ export default function ResultsView() {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1.0;
   }, [platformSettings?.resultsRetentionHours, platformSettings?.resultsRetention]);
 
-  // Filter and deduplicate strictly to ended events; countdown begins ONLY from result_published_at / finalized_at
-  const endedEvents = useMemo(() => {
+  // Categorize all concluded/expired events cleanly into Recent (1H visible), Pending Declaration, and Historical Archive
+  const { recentDeclaredEvents, pendingEvents, archivedDeclaredEvents } = useMemo(() => {
     const seenIds = new Set<string>();
-    const list: any[] = [];
+    const recentList: any[] = [];
+    const pendingList: any[] = [];
+    const archiveList: any[] = [];
     const retentionMs = retentionHours * 3600 * 1000;
 
     (events || []).forEach((e: any) => {
-      if (!e || !e.id || seenIds.has(e.id) || e.isDeleted || e.status === 'deleted') return;
+      if (!e || !e.id || seenIds.has(e.id) || e.isDeleted || e.status === 'deleted' || e.status === 'draft') return;
 
       const isFinalizedCompleted =
-        e.status === 'completed' && Boolean(e.resultPublishedAtMs || e.finalizedAtMs || e.drawExecutedAt || e.winningDigits);
-      const isPendingOrExpired = Boolean(
-        e.status === 'result_pending' ||
-          e.status === 'expired' ||
-          (!isFinalizedCompleted && e.drawTime && new Date(e.drawTime).getTime() <= nowTick)
-      );
+        e.status === 'completed' &&
+        Boolean(e.resultPublishedAtMs || e.finalizedAtMs || e.drawExecutedAt) &&
+        Boolean(e.winningDigits);
 
-      if (isFinalizedCompleted || isPendingOrExpired) {
-        if (isFinalizedCompleted) {
-          const publishedAtMs =
-            e.resultPublishedAtMs ||
-            e.finalizedAtMs ||
-            (e.drawExecutedAt ? new Date(e.drawExecutedAt).getTime() : 0);
-          const visDeadlineMs =
-            e.resultVisibleUntilMs ||
-            e.ticketVisibilityUntilMs ||
-            (publishedAtMs > 0 ? publishedAtMs + retentionMs : 0);
-          if (visDeadlineMs > 0 && nowTick >= visDeadlineMs) {
-            return;
-          }
+      const isPendingOrExpired =
+        !isFinalizedCompleted &&
+        Boolean(
+          e.status === 'result_pending' ||
+          e.status === 'processing' ||
+          e.status === 'expired' ||
+          (e.status !== 'scheduled' && e.drawTime && new Date(e.drawTime).getTime() <= nowTick)
+        );
+
+      if (!isFinalizedCompleted && !isPendingOrExpired) return;
+      seenIds.add(e.id);
+
+      if (isFinalizedCompleted) {
+        const publishedAtMs =
+          e.resultPublishedAtMs ||
+          e.finalizedAtMs ||
+          (e.drawExecutedAt ? new Date(e.drawExecutedAt).getTime() : 0);
+        const visDeadlineMs =
+          e.resultVisibleUntilMs ||
+          e.ticketVisibilityUntilMs ||
+          (publishedAtMs > 0 ? publishedAtMs + retentionMs : 0);
+
+        if (visDeadlineMs > 0 && nowTick >= visDeadlineMs) {
+          archiveList.push(e);
+        } else {
+          recentList.push(e);
         }
-        seenIds.add(e.id);
-        list.push(e);
+      } else {
+        pendingList.push(e);
       }
     });
 
-    // Sort by finalization time or draw time descending (most recent first)
-    return list.sort((a, b) => {
+    const sortDesc = (a: any, b: any) => {
       const timeA = a.resultPublishedAtMs || a.finalizedAtMs || (a.drawTime ? new Date(a.drawTime).getTime() : 0);
       const timeB = b.resultPublishedAtMs || b.finalizedAtMs || (b.drawTime ? new Date(b.drawTime).getTime() : 0);
       return timeB - timeA;
-    });
+    };
+
+    return {
+      recentDeclaredEvents: recentList.sort(sortDesc),
+      pendingEvents: pendingList.sort(sortDesc),
+      archivedDeclaredEvents: archiveList.sort(sortDesc)
+    };
   }, [events, retentionHours, nowTick]);
 
-  // Declared vs Pending strictly driven by official finalization state in backend
-  const declaredEvents = useMemo(() => {
-    return endedEvents.filter(
-      (e) =>
-        e.status === 'completed' &&
-        Boolean(e.finalizedAtMs || e.drawExecutedAt) &&
-        Boolean(e.winningDigits)
-    );
-  }, [endedEvents]);
-
-  const pendingEvents = useMemo(() => {
-    return endedEvents.filter(
-      (e) =>
-        e.status !== 'completed' ||
-        !Boolean(e.finalizedAtMs || e.drawExecutedAt) ||
-        !Boolean(e.winningDigits)
-    );
-  }, [endedEvents]);
-
-  // Filtered list based on active tab: ONLY 'pending' and 'declared'
   const displayEvents = useMemo(() => {
-    return statusFilter === 'declared' ? declaredEvents : pendingEvents;
-  }, [statusFilter, declaredEvents, pendingEvents]);
+    if (statusFilter === 'pending') return pendingEvents;
+    if (statusFilter === 'archive') return archivedDeclaredEvents;
+    return recentDeclaredEvents;
+  }, [statusFilter, recentDeclaredEvents, pendingEvents, archivedDeclaredEvents]);
 
   return (
-    <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 text-left select-none">
-      
+    <div
+      data-testid="results-page"
+      className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 text-left select-none"
+    >
+
       {/* 1. Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#1F2737]">
         <div>
@@ -127,7 +129,7 @@ export default function ResultsView() {
             </h1>
           </div>
           <p className="text-xs text-[#94A3B8] mt-1">
-            Official winning numbers, prize distributions, and declared results for ended lucky draws
+            Official winning numbers, prize distributions, and live {retentionHours >= 1 ? `${retentionHours}-hour` : `${Math.round(retentionHours * 60)}-minute`} result visibility window
           </p>
         </div>
 
@@ -139,20 +141,22 @@ export default function ResultsView() {
         </div>
       </div>
 
-      {/* 2. Filter Pills — Strictly 2 Status Options (No "All" or "Concluded Draw") */}
+      {/* 2. Filter Pills — Recent Results (1H Window), Pending Declaration, and Historical Archive */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
         {[
-          { key: 'pending', label: `Pending Official Declaration (${pendingEvents.length})` },
-          { key: 'declared', label: `Official Declaration (${declaredEvents.length})` }
+          { key: 'recent', label: `Recent Results (${recentDeclaredEvents.length})`, testId: 'results-tab-recent' },
+          { key: 'pending', label: `Pending Official Declaration (${pendingEvents.length})`, testId: 'results-tab-pending' },
+          { key: 'archive', label: `Historical Archive (${archivedDeclaredEvents.length})`, testId: 'results-tab-archive' }
         ].map((tab) => (
           <button
             key={tab.key}
+            type="button"
+            data-testid={tab.testId}
             onClick={() => setStatusFilter(tab.key as any)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-              statusFilter === tab.key
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${statusFilter === tab.key
                 ? 'bg-amber-500 text-black font-extrabold shadow-md shadow-amber-500/20'
                 : 'bg-[#111728] text-[#94A3B8] hover:text-white hover:bg-[#161D30] border border-[#1F2737]'
-            }`}
+              }`}
           >
             {tab.label}
           </button>
@@ -161,26 +165,39 @@ export default function ResultsView() {
 
       {/* 3. Results Grid — Standard LotteryCard Design */}
       {displayEvents.length === 0 ? (
-        <div className="bg-[#111728] rounded-2xl p-10 border border-[#1F2737] text-center max-w-md mx-auto space-y-3 mt-8">
+        <div
+          data-testid="results-empty-state"
+          className="bg-[#111728] rounded-2xl p-10 border border-[#1F2737] text-center max-w-md mx-auto space-y-3 mt-8"
+        >
           <div className="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
             <Trophy className="w-6 h-6" />
           </div>
           <h3 className="font-display font-bold text-base text-white">
-            {statusFilter === 'pending' ? 'No Draws Pending Official Declaration' : 'No Official Declarations Yet'}
+            {statusFilter === 'pending'
+              ? 'No Draws Pending Official Declaration'
+              : statusFilter === 'archive'
+                ? 'No Archived Results Yet'
+                : 'No Recent Results Currently Visible'}
           </h3>
           <p className="text-xs text-[#94A3B8] leading-relaxed">
             {statusFilter === 'pending'
-              ? 'There are currently no concluded lottery events awaiting official result finalization by the admin.'
-              : 'Once winning digits are officially declared and verified in the Admin Panel, finalized results will appear here.'}
+              ? 'There are currently no concluded lottery events awaiting official result finalization.'
+              : statusFilter === 'archive'
+                ? 'Official results move here automatically after their active 1-hour showcase window completes.'
+                : 'Newly published official results appear here automatically with a 1-hour live visibility countdown.'}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+        <div
+          data-testid={`results-grid-${statusFilter}`}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6"
+        >
           {displayEvents.map((event: any) => (
             <LotteryCard
               key={event.id}
               event={event}
               mode="result"
+              hideOnExpiry={statusFilter === 'recent'}
               onShowResult={(ev) => setSelectedShowResultEvent(ev)}
               onSelect={(ev) => setSelectedShowResultEvent(ev)}
             />

@@ -1,17 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useLottery } from '../context/LotteryContext';
 import {
   Sparkles,
-  Trophy,
-  Ticket,
-  ChevronRight,
-  Wallet,
   Crown,
-  Lock,
-  X
+  Lock
 } from 'lucide-react';
 import LotteryCard from './LotteryCard';
-import LotteryShowResultScreen from './LotteryShowResultScreen';
 import { getEventStatusInfo } from '../utils/eventStatus';
 
 interface CasinoLobbyProps {
@@ -20,47 +14,34 @@ interface CasinoLobbyProps {
   onShowResult?: (event: any) => void;
 }
 
-export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyProps) {
+export default function CasinoLobby({ onLaunchGame }: CasinoLobbyProps) {
   const {
     events,
-    tickets,
     setActiveTab,
     platformSettings,
     requireAuth,
-    user,
     isVipMember,
     getServerNowMs,
     verifyRoomEntry,
     showToast
   } = useLottery();
-  const [selectedResultEvent, setSelectedResultEvent] = useState<any>(null);
-  const [nowTick, setNowTick] = useState<number>(() => (getServerNowMs ? getServerNowMs() : Date.now()));
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setNowTick(getServerNowMs ? getServerNowMs() : Date.now());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [getServerNowMs]);
   const netPoolSharePct = Math.max(0, Math.min(100, 100 - Number(platformSettings?.houseFeePercent ?? 5))).toFixed(1);
-
-  // Results Retention Setting from Admin Panel (Default: 1 hour)
-  const retentionHours = useMemo(() => {
-    const raw =
-      platformSettings?.resultsRetentionHours ??
-      platformSettings?.resultsRetention?.duration_hours ??
-      platformSettings?.resultsRetention?.retention_duration_hours ??
-      1.0;
-    const parsed = Number(raw);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1.0;
-  }, [platformSettings?.resultsRetentionHours, platformSettings?.resultsRetention]);
 
   // 1. Available Pool: ONLY published active events within their valid availability window
   const availableEvents = useMemo(() => {
     const serverNow = getServerNowMs ? getServerNowMs() : Date.now();
+    const seen = new Set<string>();
     const list = (events || []).filter((e: any) => {
+      if (!e || !e.id || seen.has(e.id)) return false;
+      seen.add(e.id);
       const info = getEventStatusInfo(e, undefined, serverNow);
-      return !info.isEnd && !info.isScheduledUnpublished;
+      if (info.isEnd || info.isScheduledUnpublished || e.status === 'draft' || e.status === 'deleted') {
+        return false;
+      }
+      if ((e.eventCategory || e.event_category || 'normal') === 'vip' && !isVipMember) {
+        return false;
+      }
+      return true;
     });
 
     return list.sort((a: any, b: any) => {
@@ -70,7 +51,7 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
       if (aInfo.isUpcoming && !bInfo.isUpcoming) return 1;
       return (a.drawTime || 0) - (b.drawTime || 0);
     });
-  }, [events, getServerNowMs]);
+  }, [events, getServerNowMs, isVipMember]);
 
   // Primary Live Event for Hero metadata & top jackpot lookup
   const primaryLiveEvent = useMemo(() => {
@@ -105,40 +86,6 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
     [availableEvents]
   );
 
-  // 2. Results: Ended events strictly within their authoritative result visibility window
-  const resultsEvents = useMemo(() => {
-    const retentionMs = retentionHours * 3600 * 1000;
-
-    return (events || [])
-      .filter((e: any) => {
-        if (e.status === 'deleted' || e.is_deleted) return false;
-        const isFinalized =
-          e.status === 'completed' &&
-          Boolean(e.winningDigits) &&
-          Boolean(e.resultPublishedAtMs || e.finalizedAtMs || e.drawExecutedAt);
-        const isConcluded = isFinalized || e.status === 'completed' || Boolean(e.winningDigits) || (e.drawTime && e.drawTime <= nowTick);
-        if (!isConcluded) return false;
-
-        const publishedAtMs =
-          e.resultPublishedAtMs ||
-          e.finalizedAtMs ||
-          (e.drawExecutedAt ? new Date(e.drawExecutedAt).getTime() : 0);
-        const visibleUntilMs =
-          e.resultVisibleUntilMs ||
-          e.ticketVisibilityUntilMs ||
-          (publishedAtMs > 0 ? publishedAtMs + retentionMs : 0);
-
-        if (isFinalized && visibleUntilMs > 0) {
-          return nowTick < visibleUntilMs;
-        }
-        if (e.drawTime && nowTick - e.drawTime > retentionMs) {
-          return false;
-        }
-        return true;
-      })
-      .sort((a: any, b: any) => (b.finalizedAtMs || b.drawTime || 0) - (a.finalizedAtMs || a.drawTime || 0));
-  }, [events, retentionHours, nowTick]);
-
   // Single-action Direct Room Entry (Protected: Login + VIP Membership + Authoritative Server Active Check)
   const handleDirectEnterRoom = async (eventOrId?: any) => {
     const targetId =
@@ -168,14 +115,6 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
 
     if (onLaunchGame) {
       onLaunchGame(targetId);
-    }
-  };
-
-  const handleShowResultAction = (evt: any) => {
-    if (onShowResult) {
-      onShowResult(evt);
-    } else {
-      setSelectedResultEvent(evt);
     }
   };
 
@@ -379,92 +318,6 @@ export default function CasinoLobby({ onLaunchGame, onShowResult }: CasinoLobbyP
             )}
           </div>
       </section>
-      )}
-
-      {/* ------------------------------------------------------------------ */}
-      {/* 3. RESULTS: CONCLUDED DRAWS WITHIN CONFIGURABLE RETENTION PERIOD   */}
-      {/* ------------------------------------------------------------------ */}
-      {resultsEvents.length > 0 && (
-        <section data-testid="recent-results-section" className="space-y-3 sm:space-y-4">
-          <div className="pb-2.5 border-b border-[#1F2737] space-y-1">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <Trophy className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
-                <h2 className="font-display font-extrabold text-base sm:text-lg lg:text-xl text-white truncate">
-                  Recent Results
-                </h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('results')}
-                className="text-xs text-amber-400 hover:text-amber-300 font-bold inline-flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap shrink-0"
-              >
-                <span>View All</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <p className="text-[11px] sm:text-xs text-[#94A3B8] leading-snug">
-              Official winning 4-digit results (Retained for{' '}
-              {retentionHours >= 1
-                ? `${retentionHours} hour${retentionHours > 1 ? 's' : ''}`
-                : `${Math.round(retentionHours * 60)} minutes`}
-              ).
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
-            {resultsEvents.map((evt: any) => (
-              <LotteryCard
-                key={evt.id}
-                event={evt}
-                mode="result"
-                onShowResult={() => handleShowResultAction(evt)}
-                onSelect={() => handleShowResultAction(evt)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Full-Screen Draw Result Screen Overlay (matches ResultsView flow) */}
-      {selectedResultEvent && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Official Draw Result"
-          className="fixed inset-0 z-50 bg-[#07090E]/95 backdrop-blur-md flex flex-col overflow-hidden"
-        >
-          <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 bg-[#0B0F19] border-b border-[#1F2737] shrink-0">
-            <span className="text-xs font-mono-numbers font-bold text-amber-400">
-              #{selectedResultEvent.id}
-            </span>
-            <button
-              type="button"
-              onClick={() => setSelectedResultEvent(null)}
-              className="px-3 py-1.5 rounded-xl bg-[#141924] hover:bg-[#1E2536] text-white border border-[#273145] text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition-colors"
-              title="Close Result Screen"
-            >
-              <X className="w-4 h-4 text-amber-400" />
-              <span>Close</span>
-            </button>
-          </div>
-
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <LotteryShowResultScreen
-              event={selectedResultEvent}
-              room={{
-                name: selectedResultEvent.roomName || selectedResultEvent.title?.split(':')[0] || 'Lottery Room',
-                drawId: selectedResultEvent.id
-              }}
-              onBackToLobby={() => setSelectedResultEvent(null)}
-              myTickets={(tickets || []).filter(
-                (t: any) => t.eventId === selectedResultEvent.id || t.event_id === selectedResultEvent.id
-              )}
-            />
-          </div>
-        </div>
       )}
     </div>
   );
